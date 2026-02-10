@@ -1,6 +1,6 @@
 function [ecModel, rmseTrace, kcatTrace, stdTrace] = bayesianSensitivityTuning(ecModel,kcatStd,modelAdapter)
 % bayesianSensitivityTuning
-%   Modifies kcats to better fit experimental data. Currently only works with 
+%   Modifies kcats to better fit experimental data. Currently only works with
 %   light models.
 %
 % Input:
@@ -9,7 +9,7 @@ function [ecModel, rmseTrace, kcatTrace, stdTrace] = bayesianSensitivityTuning(e
 %                   earlier GECKO versions (pre 3.0).
 %   kcatStd         vector of same length as ecModel.ec.kcat, with the
 %                   initial standard deviations (SD) for the kcat values.
-%                   By default, kcatStd is set by multiplying kcat values 
+%                   By default, kcatStd is set by multiplying kcat values
 %                   with params.bayesian.initSDmultiplDef, or by source-
 %                   specific multipliers specified in params.bayesian.
 %                   kcatSources and params.bayesian.initSDmultipl. Instead,
@@ -40,6 +40,9 @@ targetAccept2_5     = params.bayesian.targetAccept2_5;
 targetAccept6_end   = params.bayesian.targetAccept6_end;
 minKeep             = params.bayesian.minKeep;
 maxKeep             = params.bayesian.maxKeep;
+rMax                = params.bayesian.rMax;
+cExpl               = params.bayesian.cExpl;
+tauResidual         = params.bayesian.tauResidual;
 rmseThreshold       = params.bayesian.rmseThreshold;
 maxGenerations      = params.bayesian.maxGenerations;
 basePath            = params.path;
@@ -88,6 +91,12 @@ PB1 = ProgressBar2(maxGenerations, ['Run through ' num2str(maxGenerations) ' gen
 % Switch off default carbon source, will be set in each sample
 tmpModel = setParam(ecModel,'lb',modelAdapter.params.c_source,0);
 
+% Prepare for low-rank + residual proposal kernel
+U_r = [];              % D×r PCA basis
+sqrtLambda_r = [];     % r×r diagonal matrix with sqrt eigenvalues (inflated)
+rEff = 0;              % effective rank
+useLowRankKernel = false;
+
 %% MAIN ABC-SMC LOOP
 generation = 1;
 while rmse > rmseThreshold
@@ -113,7 +122,6 @@ while rmse > rmseThreshold
             % thetaProp = mu_log + sigma_log .* erfinv(2*U-1) * sqrt(2);
             % randomKcats = exp(thetaProp);
 
-
         else
             if generation < 6
                 N = samples2_5;
@@ -130,12 +138,25 @@ while rmse > rmseThreshold
             parent_idx = randi(size(kcatTop,2), [1 N]);
             parents = log(kcatTop(:, parent_idx));
 
-            % Compute Cholesky factor of the log-space covariance SigmaLog
-            % Stabilize with 1e-12*I
-            L = chol(SigmaLog + 1e-12*eye(D), 'lower'); 
-            % Draw normal noise for each proposal and correlate via L
-            Z = randn(D, N); 
-            thetaProp = parents + L * Z; %
+            if useLowRankKernel && rEff > 0
+                % Low-rank kernel + residual proposal
+                % Subspace noise (correlated along learned PCs)
+                Zr = randn(rEff, N);                 % r×N
+                % Residual isotropic noise to keep exploration outside the subspace
+                E  = randn(D, N);                    % D×N
+
+                % θ_new = log(θ_parent) + U_r * sqrtΛ_r * N(0, I_r) + sqrt(τ) * N(0, I_D)
+                thetaProp = parents + U_r * (sqrtLambda_r * Zr) + sqrt(tauResidual) * E;
+
+                % Map back to linear space
+            else
+                % Fallback: Compute Cholesky factor of the log-space
+                % covariance SigmaLog, Stabilize with 1e-12*i
+                L = chol(SigmaLog + 1e-12*eye(D), 'lower');
+                % Draw normal noise for each proposal and correlate via L
+                Z = randn(D, N);
+                thetaProp = parents + L * Z;
+            end
 
             % Map back to linear space
             randomKcats = exp(thetaProp);
@@ -149,7 +170,7 @@ while rmse > rmseThreshold
         %% Evaluate RMSE for each proposed sample
         newRmse  = zeros(N,1);
         PB2 = ProgressBar2(N, ['Simulate ' num2str(N) ' models with random kcats'], 'gui');
-        
+
         parfor j = 1:N
             ecModelIter         = tmpModel;
             ecModelIter.ec.kcat = randomKcats(:,j);
@@ -222,6 +243,53 @@ while rmse > rmseThreshold
         alphaLW = 0.1;
         SigmaLog = (1 - alphaLW) * Cemp + alphaLW * diag(diag(Cemp));
 
+        if useLowRankKernel
+            Kacc = size(thetaClean, 2);
+            if Kacc >= 5   % need at least a handful of accepted samples
+                % Center columns
+                muLog = mean(thetaClean, 2);
+                Xc = thetaClean - muLog;
+
+                % Econ SVD gives principal directions of the sample covariance
+                % cov = (Xc*Xc')/(Kacc-1) -> U * diag(sing) * U' where sing are eigenvalues
+                [U, S, ~] = svd(Xc, 'econ');
+
+                if ~isempty(S)
+                    % Eigenvalues of covariance
+                    sing = diag(S).^2 / max(1, (Kacc - 1));  % vector length = rank(Xc)
+
+                    % Choose rank by variance fraction and rMax
+                    cume = cumsum(sing) / max(eps, sum(sing));
+                    rVar = find(cume >= varFrac, 1, 'first');
+                    if isempty(rVar), rVar = length(sing); end
+                    rEff = min([rVar, rMax, length(sing)]);
+
+                    if rEff >= 1
+                        U_r = U(:, 1:rEff);
+                        % sqrt of eigenvalues for subspace sampling, with exploration inflation
+                        sqrtLambda_r = diag( sqrt( cExpl * sing(1:rEff) ) );
+
+                        % Optional: adapt residual variance to average discarded spectrum
+                        if rEff < length(sing)
+                            tauAdapt = mean(sing(rEff+1:end));
+                        else
+                            tauAdapt = 0;
+                        end
+                        % Keep at least the configured floor
+                        tauResidual = max(tauResidual, 0.1 * tauAdapt);
+                    else
+                        % No informative subspace → disable low-rank this generation
+                        U_r = []; sqrtLambda_r = []; rEff = 0;
+                    end
+                else
+                    U_r = []; sqrtLambda_r = []; rEff = 0;
+                end
+            else
+                % Too few accepted → fallback on LW+chol next generation
+                U_r = []; sqrtLambda_r = []; rEff = 0;
+            end
+        end
+
         %% Track progress (use best, not first)
         [bestRMSE, bestIdx] = min(rmseTop);
         rmseTrace = [rmseTrace, bestRMSE];
@@ -233,7 +301,7 @@ while rmse > rmseThreshold
         tmpModel = applyKcatConstraints(tmpModel);
 
         fprintf('Accepted %d / %d, avg RMSE (accepted): %.2f, best: %.2f.\n', ...
-                numel(rmseTop), numel(rmse), mean(rmseTop), bestRMSE)
+            numel(rmseTop), numel(rmse), mean(rmseTop), bestRMSE)
 
         generation = generation + 1;
     else
