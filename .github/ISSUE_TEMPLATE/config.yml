@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: GitHub Discussions
+    url: https://github.com/SysBioChalmers/GECKO/discussions
+    about: You may also ask for support (or contribute with answers) at the GitHub Discussions page.
