@@ -1,0 +1,3 @@
+
+# A fixture that must keep its byte-order mark and CRLF line endings.
+test/unit_tests/ecTestGEM/data/kcatSourceFixture.tsv -text
