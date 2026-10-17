@@ -62,7 +62,13 @@ classdef (Abstract) ModelAdapter
         end
 
         function folder = getBrendaDBFolder(obj)
-            folder = fullfile(findGECKOroot(),'databases');
+            % The project's data/brenda (geckopy brenda-refresh writes
+            % there) when it exists, otherwise GECKO's BRENDA release,
+            % downloaded once (fetchBrendaAsset).
+            folder = fullfile(obj.params.path,'data','brenda');
+            if ~isfolder(folder)
+                folder = fetchBrendaAsset();
+            end
         end
 
         function x = getPhylDistStructPath(obj)

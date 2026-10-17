@@ -28,11 +28,17 @@ function testEcTreeWorkedExample_tc0084(testCase)
 end
 
 function testBundledMeasurements_tc0085(testCase)
-    m = loadBrendaMeasurements('folder', fullfile(findGECKOroot, 'databases'));
+    m = loadBrendaMeasurements('folder', fetchBrendaAsset());
     verifyTrue(testCase, startsWith(m.release, 'BRENDA release '))
     verifyGreaterThan(testCase, numel(m.ec), 50000)
     verifyTrue(testCase, all(m.kcat > 0))
     verifyFalse(testCase, any(contains(m.ec, '-')))
+    % A file that is not gzipped in the release, and a second call that
+    % reuses the downloads.
+    folder = fetchBrendaAsset({'kcatCombineParams.tsv'});
+    verifyTrue(testCase, isfile(fullfile(folder, 'kcatCombineParams.tsv')))
+    verifyEqual(testCase, fetchBrendaAsset(), folder)
+    verifyError(testCase, @() fetchBrendaAsset({'other.tsv'}), 'fetchBrendaAsset:file')
 end
 
 function testKcatsFromECTreeWritesFile_tc0086(testCase)
