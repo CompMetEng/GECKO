@@ -89,7 +89,8 @@ function testUpdateKcatSources_tc0082(testCase)
     verifyFalse(testCase, isfolder(fullfile(project, 'data', 'kcats')))
     report = updateKcatSources(base, 'modelAdapter', adapter);
     verifyEqual(testCase, report.status', {'skipped','gathered','gathered'})
-    [~, meta] = readKcatSource(fullfile(project, 'data', 'kcats', 'brenda.tsv'));
+    [~, loaded] = loadKcatSource(base, fullfile(project, 'data', 'kcats', 'brenda.tsv'));
+    meta = loaded.header;
     verifyEqual(testCase, meta.parameters, '{"aggregation":"median","force_wildcard_level":0}')
     report = updateKcatSources(base, 'modelAdapter', adapter);
     verifyEqual(testCase, report.status', {'skipped','current','current'})

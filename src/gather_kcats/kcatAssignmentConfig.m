@@ -3,16 +3,33 @@ function config = kcatAssignmentConfig(params)
 %
 % Reads [kcat_assignment] and [kcat_sources.*] of model_adapter.toml (or
 % params.kcat_assignment and params.kcat_sources of an adapter class), and
-% expands a preset into its stages. Without a preset or stages the preset
-% is gecko_median.
-%
-% Returns a struct with:
-% - preset: the preset name, or '' when stages are given;
-% - isozymes, standard: logical;
-% - stages: struct array with action, sources (cell), criteria,
-%   topOriginLimit, bottomOriginLimit, wildcardLimit;
-% - sources: struct, per source name its options (from [kcat_sources]).
+% expands a preset into its stages, as collectKcats and updateKcatSources
+% use them. Without a preset or stages the preset is gecko_median.
 % geckopy's kcat_assignment_config gives the same settings.
+%
+% Parameters
+% ----------
+% params : struct
+%     the parameters of a model adapter (modelAdapter.params).
+%
+% Returns
+% -------
+% config : struct
+%     - preset: the preset name, or '' when stages are given;
+%     - isozymes, standard: logical;
+%     - stages: struct array with action, sources (cell), criteria,
+%       topOriginLimit, bottomOriginLimit and wildcardLimit;
+%     - sources: per source name its options (from [kcat_sources] and the
+%       preset).
+%
+% Examples
+% --------
+%     config = kcatAssignmentConfig(modelAdapter.params);
+%     config.stages(1).sources   % the order of the sources
+%
+% See also
+% --------
+% collectKcats, assignKcats, updateKcatSources
 
 a = struct();
 if isfield(params, 'kcat_assignment') && isstruct(params.kcat_assignment)

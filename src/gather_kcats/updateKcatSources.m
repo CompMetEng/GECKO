@@ -52,7 +52,7 @@ function report = updateKcatSources(model, varargin)
 % --------
 % collectKcats, assignKcats, kcatsFromBrenda, kcatsFromDLKcat, kcatsFromOKP
 
-checkNameValue(varargin, {'dryRun','modelAdapter'}, 'updateKcatSources');
+checkOptions(varargin, {'dryRun','modelAdapter'}, 'updateKcatSources');
 p = parseGECKOargs(varargin, {'dryRun', false; 'modelAdapter', []});
 modelAdapter = p.modelAdapter;
 if isempty(modelAdapter)
@@ -108,7 +108,7 @@ disp(report)
             st = 'missing';
             return
         end
-        [~, meta] = readKcatSource(file);
+        meta = readHeaderLines(file);
         recorded = struct();
         if isfield(meta, 'parameters') && ~isempty(meta.parameters)
             recorded = jsondecode(meta.parameters);
@@ -202,5 +202,58 @@ fclose(fid);
 tok = regexp(line, '^#\s*(BRENDA release [^ ]+)', 'tokens', 'once');
 if ~isempty(tok)
     release = tok{1};
+end
+end
+
+function meta = readHeaderLines(filename)
+% Only the header lines at the top, so that a damaged table does not stop
+% a gathered file from being written again.
+meta = struct();
+fid = fopen(filename, 'r', 'n', 'UTF-8');
+if fid < 0
+    return
+end
+cleanup = onCleanup(@() fclose(fid));
+line = fgetl(fid);
+if ischar(line)
+    line = regexprep(line, ['^' char(65279)], '');
+end
+while ischar(line) && (isempty(strtrim(line)) || startsWith(unquoteField(line), '#'))
+    [key, value] = parseHeaderLine(line);
+    if ~isempty(key)
+        meta.(key) = value;
+    end
+    line = fgetl(fid);
+end
+end
+
+function [key, value] = parseHeaderLine(line)
+key = ''; value = '';
+tok = regexp(unquoteField(line), '^\s*#\s*([A-Za-z][A-Za-z0-9_]{0,62})\s*:\s?(.*)$', 'tokens', 'once');
+if ~isempty(tok)
+    key = lower(tok{1});
+    value = strtrim(tok{2});
+end
+end
+
+function t = unquoteField(t)
+t = strtrim(t);
+if numel(t) >= 2 && t(1) == '"' && t(end) == '"'
+    t = strtrim(strrep(t(2:end-1), '""', '"'));
+end
+end
+
+function checkOptions(args, names, functionName)
+% Options are name-value pairs with known names, so a misspelled option is
+% an error instead of being taken as a positional argument.
+id = [functionName ':arguments'];
+given = args(1:2:end);
+if mod(numel(args), 2) ~= 0 || ~all(cellfun(@(x) ischar(x) || (isstring(x) && isscalar(x)), given))
+    error(id, 'Options of %s are name-value pairs. Options: %s.', functionName, strjoin(names, ', '))
+end
+unknown = setdiff(cellfun(@char, given, 'UniformOutput', false), names);
+if ~isempty(unknown)
+    error(id, 'Unknown option of %s: %s. Options: %s.', functionName, strjoin(unknown, ', '), ...
+        strjoin(names, ', '))
 end
 end

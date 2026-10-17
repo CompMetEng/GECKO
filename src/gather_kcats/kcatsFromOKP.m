@@ -67,7 +67,7 @@ function [kcatList, done] = kcatsFromOKP(model, varargin)
 % --------
 % submitOpenKineticsPredictor, fetchOpenKineticsPredictor, kcatsFromBrenda, saveKcatSource
 
-checkNameValue(varargin, {'method','wait','resubmit','useStored','ecRxns','save','saveAs','modelAdapter'}, 'kcatsFromOKP');
+checkOptions(varargin, {'method','wait','resubmit','useStored','ecRxns','save','saveAs','modelAdapter'}, 'kcatsFromOKP');
 p = parseGECKOargs(varargin, { ...
     'method',       []; ...
     'wait',         false; ...
@@ -108,7 +108,7 @@ if ~isempty(p.ecRxns) && ~submitting
         'submits none (a job for %s exists; use ''resubmit'', true for a new one).'], method)
 end
 if p.save
-    file = kcatSourceFile(name, [], modelAdapter); % fails before submitting, not after
+    file = fullfile(modelAdapter.params.path, 'data', 'kcats', [char(name) '.tsv']);
     if submitting
         warnSubset(p.ecRxns, numel(model.ec.rxns), file);
     end
@@ -211,4 +211,35 @@ for f = {'jobId','method','submittedAt','ecRxns','resultOf'}
     end
 end
 fclose(fid);
+end
+
+function n = countRxns(ecRxns)
+if islogical(ecRxns)
+    n = sum(ecRxns);
+else
+    n = numel(unique(ecRxns));
+end
+end
+
+function warnSubset(ecRxns, nRxns, file)
+% A subset written under the default name replaces the full file.
+if ~isempty(ecRxns) && countRxns(ecRxns) < nRxns && isfile(file)
+    printOrange(sprintf(['%s is replaced by kcats for %d reactions only. Give saveAs ' ...
+        'to keep it.\n'], file, countRxns(ecRxns)));
+end
+end
+
+function checkOptions(args, names, functionName)
+% Options are name-value pairs with known names, so a misspelled option is
+% an error instead of being taken as a positional argument.
+id = [functionName ':arguments'];
+given = args(1:2:end);
+if mod(numel(args), 2) ~= 0 || ~all(cellfun(@(x) ischar(x) || (isstring(x) && isscalar(x)), given))
+    error(id, 'Options of %s are name-value pairs. Options: %s.', functionName, strjoin(names, ', '))
+end
+unknown = setdiff(cellfun(@char, given, 'UniformOutput', false), names);
+if ~isempty(unknown)
+    error(id, 'Unknown option of %s: %s. Options: %s.', functionName, strjoin(unknown, ', '), ...
+        strjoin(names, ', '))
+end
 end

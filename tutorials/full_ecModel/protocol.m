@@ -23,14 +23,14 @@
 %% Installation
 % - Install RAVEN & GECKO
 %   - Install RAVEN by following the installation instructions:
-%     https://github.com/SysBioChalmers/RAVEN/wiki/Installation
+%     https://raven-docs.readthedocs.io/en/latest/installation/raven.html
 %   - Simplest, RAVEN can be installed as MATLAB Add-On:
 %     https://se.mathworks.com/help/matlab/matlab_env/get-add-ons.html
 %   - The installation of Gurobi as LP solver is highly recommended
 checkRaven; % Confirm that RAVEN is functional. On RAVEN 2, run checkInstallation.
 
 %   - Install GECKO by following the installation instructions:
-%     https://github.com/SysBioChalmers/GECKO/wiki/Installation-and-upgrade
+%     https://gecko-docs.readthedocs.io/en/latest/installation/
 %   - As RAVEN, GECKO can also be installed as MATLAB Add-On (link above)
 %   - Add the appropriate GECKO (sub)folders to MATLAB path. GECKOInstaller
 %     is located in the GECKO root folder: navigate there first if it is

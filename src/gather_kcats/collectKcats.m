@@ -90,7 +90,7 @@ function [decisions, report, ecModel] = collectKcats(model, varargin)
 % --------
 % assignKcats, updateKcatSources, loadKcatSource, mergeKcats, assignKcatValues
 
-checkNameValue(varargin, {'modelAdapter','writeReport'}, 'collectKcats');
+checkOptions(varargin, {'modelAdapter','writeReport'}, 'collectKcats');
 p = parseGECKOargs(varargin, {'modelAdapter', []; 'writeReport', true});
 modelAdapter = p.modelAdapter;
 if isempty(modelAdapter)
@@ -232,5 +232,20 @@ if startsWith(token, 'database_')
     name = 'brenda';
 else
     name = token;
+end
+end
+
+function checkOptions(args, names, functionName)
+% Options are name-value pairs with known names, so a misspelled option is
+% an error instead of being taken as a positional argument.
+id = [functionName ':arguments'];
+given = args(1:2:end);
+if mod(numel(args), 2) ~= 0 || ~all(cellfun(@(x) ischar(x) || (isstring(x) && isscalar(x)), given))
+    error(id, 'Options of %s are name-value pairs. Options: %s.', functionName, strjoin(names, ', '))
+end
+unknown = setdiff(cellfun(@char, given, 'UniformOutput', false), names);
+if ~isempty(unknown)
+    error(id, 'Unknown option of %s: %s. Options: %s.', functionName, strjoin(unknown, ', '), ...
+        strjoin(names, ', '))
 end
 end
