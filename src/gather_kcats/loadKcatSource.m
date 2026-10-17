@@ -46,8 +46,8 @@ function [kcatList, report] = loadKcatSource(model, name, varargin)
 %     kcat values per model.ec reaction, as used by mergeKcats and
 %     assignKcatValues: source (the source name), rxns, kcats,
 %     substrates, eccodes, wildcardLvl and origin (from the detail
-%     column), kcatSource (the per-row source), log10sd, and line (the
-%     line of the file each entry comes from).
+%     column), kcatSource (the per-row source), log10sd, detail (the detail
+%     column), and line (the line of the file each entry comes from).
 % report : struct
 %     - invalid: table of the file rows with a missing or invalid kcat;
 %     - unmatched: table of the file rows that apply to no model.ec row;
@@ -159,6 +159,7 @@ kcatList.substrates  = records.substrate(rec);
 kcatList.eccodes     = records.ec_code(rec);
 kcatList.kcatSource  = records.source(rec);
 kcatList.log10sd     = records.log10_sd(rec);
+kcatList.detail      = records.detail(rec);
 [kcatList.wildcardLvl, kcatList.origin] = parseDetail(records.detail(rec));
 kcatList.line        = records.line(rec);
 

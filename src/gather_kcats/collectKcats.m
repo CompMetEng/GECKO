@@ -9,28 +9,44 @@ function [decisions, report, ecModel] = collectKcats(model, varargin)
 % The order is a preset or a list of stages:
 %
 %     [kcat_assignment]
-%     preset = "brenda_ec_tree"    # the default; or gecko_median, gecko_classic
+%     preset = "brenda_ec_tree"    # the default; or ec_tree_okp, okp,
+%                                  # gecko_median, gecko_classic
 %     isozymes = true              # fill from isozymes after the stages
 %     standard = true              # standard kcat for the rest
 %
 %     # instead of a preset:
 %     [[kcat_assignment.stage]]
-%     action = "select"
-%     sources = ["custom", "database_top", "dlkcat", "database_bottom"]
-%     criteria = "max"             # among several values of one source
-%     top_origin_limit = 4
-%     bottom_origin_limit = 6
-%     wildcard_limit = 3
+%     action = "select"            # or "combine"
+%     sources = ["custom", "database_top", "ec_tree"]
+%     criteria = "max"             # select: among several values of one source
+%     top_origin_limit = 1
 %
-% A select stage decides each reaction that is still open by the first
-% listed source with a value (see mergeKcats). Sources are the names of
-% source files (custom, dlkcat, okp_catapro, ...) and the BRENDA quality
-% tiers database_exact, database_top and database_bottom, which read
-% brenda.tsv. The presets:
+%     [kcat_sources.okp]
+%     methods = ["CataPro", "UniKP"]   # the okp source group
+%
+% A stage decides the reactions that are still open:
+% - select: the first listed source with a value (see mergeKcats). Sources
+%   are the names of source files (custom, ec_tree, dlkcat, okp_catapro,
+%   ...) and the BRENDA quality tiers database_exact, database_top and
+%   database_bottom, which read brenda.tsv.
+% - combine: all listed sources with a value, each corrected for its bias
+%   and weighted by 1 / its error variance, both for the source's evidence
+%   for that reaction (the EC tree: measurements of the EC and its EC
+%   level; an OKP method: the enzyme's similarity to the method's training
+%   sequences). The parameters come with the BRENDA files
+%   (kcatCombineParams.tsv). model.ec.source reads 'combined (sd=<log10
+%   sd>, n=<sources>)'; sd is the uncertainty for a new measurement.
+% In both, okp stands for the OKP methods of [kcat_sources.okp] methods
+% (default: all methods with combination parameters).
+%
+% The presets:
 % - brenda_ec_tree (the default): custom kcats, the BRENDA median of
 %   measurements of the organism on the reaction's substrate (origin 1,
-%   without EC wildcards), the EC tree (kcatsFromECTree), then DLKcat for
-%   reactions without an EC number.
+%   without EC wildcards), the EC tree (kcatsFromECTree); then the OKP
+%   methods combined for the reactions left (without an EC number).
+% - ec_tree_okp: custom kcats, the organism's own BRENDA value; then the EC
+%   tree and the OKP methods combined; then the OKP methods combined.
+% - okp: custom kcats; then the OKP methods combined.
 % - gecko_median: custom kcats, the BRENDA median of matches without EC
 %   wildcards from the organism or other organisms, with or without the
 %   substrate (origin 1 to 4), DLKcat, then the other BRENDA matches (EC
@@ -40,10 +56,12 @@ function [decisions, report, ecModel] = collectKcats(model, varargin)
 %   tutorial.
 % Against measured kcats hidden from the search, the EC tree was closer
 % than the BRENDA median at origins 2 and 4 and with EC wildcards and as
-% close at origins 1 and 3; the BRENDA median was as close as DLKcat or
-% closer at every origin, and the maximum further off than the median. The
-% BRENDA aggregation is [kcat_sources.brenda] aggregation (see
-% updateKcatSources).
+% close at origins 1 and 3; the EC tree combined with the OKP methods was
+% slightly closer than the EC tree, and the OKP methods combined as close.
+% In ecModels, values combined with predictions set high-turnover enzymes
+% such as ATP synthase too low, which is why the default uses predictions
+% only where there is no value from measurements. The BRENDA aggregation is
+% [kcat_sources.brenda] aggregation (see updateKcatSources).
 %
 % After the stages:
 % - custom kcats of data/customKcats.tsv are applied (applyCustomKcats),
@@ -74,8 +92,9 @@ function [decisions, report, ecModel] = collectKcats(model, varargin)
 %     one row per model.ec reaction: ecRxn, stage (the stage number, or
 %     custom, isozymes, standard, or empty when no kcat was found), source
 %     (as in model.ec.source), kcat, candidates (the number of values the
-%     deciding source had for the reaction) and spreadLog10 (their range,
-%     in log10 units).
+%     deciding source had for the reaction, or of sources combined),
+%     spreadLog10 (their range, in log10 units) and sdLog10 (the
+%     uncertainty of a combined value).
 % report : struct
 %     - preset: the preset used, or '' with stages;
 %     - missing: source files the stages name that do not exist;
@@ -114,6 +133,8 @@ ecModel.ec.source(:) = {''};
 stage = repmat({''}, nEc, 1);
 candidates = zeros(nEc, 1);
 spread = nan(nEc, 1);
+sd = nan(nEc, 1);
+combineParams = [];
 
 report.preset = config.preset;
 report.missing = {};
@@ -139,10 +160,43 @@ legacyCustom = false;
 
 for s = 1:numel(config.stages)
     st = config.stages(s);
+    if strcmp(st.action, 'combine')
+        names = {};
+        lists = {};
+        for t = 1:numel(st.files)
+            name = st.files{t};
+            if ~isfield(loaded, name)
+                loaded.(name) = loadSource(name);
+            end
+            if ~isempty(loaded.(name))
+                names{end+1} = name; %#ok<AGROW>
+                lists{end+1} = loaded.(name); %#ok<AGROW>
+            end
+        end
+        if isempty(names)
+            continue
+        end
+        if isempty(combineParams)
+            combineParams = loadCombineParams(modelAdapter);
+        end
+        openRxns = ecModel.ec.rxns(ecModel.ec.kcat == 0);
+        c = combineKcats(names, lists, openRxns, combineParams);
+        if isempty(c.rxns)
+            continue
+        end
+        [~, idx] = ismember(c.rxns, ecModel.ec.rxns);
+        ecModel.ec.kcat(idx) = c.kcats;
+        ecModel.ec.source(idx) = cellstr(compose('combined (sd=%.2f, n=%d)', c.sd, c.n));
+        stage(idx) = {sprintf('%d', s)};
+        candidates(idx) = c.n;
+        spread(idx) = c.spread;
+        sd(idx) = c.sd;
+        continue
+    end
     lists = {};
     priority = {};
-    for t = 1:numel(st.sources)
-        token = st.sources{t};
+    for t = 1:numel(st.files)
+        token = st.files{t};
         name = sourceFile(token);
         if ~isfield(loaded, name)
             loaded.(name) = loadSource(name);
@@ -202,11 +256,13 @@ if config.standard
     stage(end+1:n) = {''};
     candidates(end+1:n) = 0;
     spread(end+1:n) = NaN;
+    sd(end+1:n) = NaN;
     stage(strcmp(ecModel.ec.source, 'standard') & ecModel.ec.kcat > 0) = {'standard'};
 end
 
 decisions = table(ecModel.ec.rxns(:), stage(:), ecModel.ec.source(:), ecModel.ec.kcat(:), ...
-    candidates(:), spread(:), 'VariableNames', {'ecRxn','stage','source','kcat','candidates','spreadLog10'});
+    candidates(:), spread(:), sd(:), 'VariableNames', {'ecRxn','stage','source','kcat','candidates', ...
+    'spreadLog10','sdLog10'});
 if p.writeReport
     outDir = fullfile(params.path, 'output');
     if ~isfolder(outDir)
@@ -251,5 +307,151 @@ unknown = setdiff(cellfun(@char, given, 'UniformOutput', false), names);
 if ~isempty(unknown)
     error(id, 'Unknown option of %s: %s. Options: %s.', functionName, strjoin(unknown, ', '), ...
         strjoin(names, ', '))
+end
+end
+
+function params = loadCombineParams(modelAdapter)
+% kcatCombineParams.tsv of the BRENDA folder, or of GECKO's BRENDA release.
+file = fullfile(modelAdapter.getBrendaDBFolder(), 'kcatCombineParams.tsv');
+if ~isfile(file)
+    file = fullfile(fetchBrendaAsset({'kcatCombineParams.tsv'}), 'kcatCombineParams.tsv');
+end
+lines = strsplit(fileread(file), {'\r\n', '\n'});
+params.measurementSd = 0.48;
+params.minVariance = 0.01;
+params.scaleKeys = {};
+params.scales = [];
+k = 1;
+while k <= numel(lines) && startsWith(lines{k}, '#')
+    tok = regexp(lines{k}, '^#\s*([^:]+):\s*(.*)$', 'tokens', 'once');
+    if ~isempty(tok)
+        key = strtrim(tok{1});
+        value = str2double(strtrim(tok{2}));
+        if strcmp(key, 'measurement_sd')
+            params.measurementSd = value;
+        elseif strcmp(key, 'min_variance')
+            params.minVariance = value;
+        elseif startsWith(key, 'interval_scale ')
+            params.scaleKeys{end+1} = key(numel('interval_scale ')+1:end);
+            params.scales(end+1) = value;
+        end
+    end
+    k = k + 1;
+end
+header = strsplit(lines{k}, '\t');
+rows = lines(k+1:end);
+rows = rows(~cellfun(@isempty, strtrim(rows)));
+fields = cellfun(@(r) strsplit(r, '\t', 'CollapseDelimiters', false), rows, 'UniformOutput', false);
+fields = vertcat(fields{:});
+col = @(name) fields(:, strcmp(header, name));
+params.source = col('source');
+params.bin = col('bin');
+params.bias = str2double(col('bias'));
+params.variance = str2double(col('variance'));
+end
+
+function c = combineKcats(names, lists, openRxns, params)
+% One kcat per reaction from several sources: each source's value corrected
+% for its bias and weighted by 1 / its error variance, both for the
+% source's evidence bin (see evidenceBin). Several rows of one source for a
+% reaction give their median, with the bin of best evidence; a value
+% without a known bin gets the source's largest variance. geckopy's
+% combine_kcats does the same.
+unknown = setdiff(names, params.source);
+if ~isempty(unknown)
+    error('collectKcats:combine', 'No combination parameters for %s; known sources: %s.', ...
+        strjoin(unknown, ', '), strjoin(unique(params.source), ', '))
+end
+R = {}; S = {}; X = []; W = []; V = [];
+for k = 1:numel(names)
+    name = names{k};
+    list = lists{k};
+    keep = ismember(list.rxns, openRxns) & list.kcats > 0 & isfinite(list.kcats);
+    rxns = list.rxns(keep);
+    values = log10(list.kcats(keep));
+    details = list.detail(keep);
+    mine = strcmp(params.source, name);
+    srcBins = params.bin(mine);
+    srcBias = params.bias(mine);
+    srcVar = params.variance(mine);
+    [~, worst] = max(srcVar);
+    [u, ~, g] = unique(rxns, 'stable');
+    for r = 1:numel(u)
+        rows = find(g == r);
+        bins = cellfun(@(d) evidenceBin(name, d), details(rows), 'UniformOutput', false);
+        [found, where] = ismember(bins, srcBins);
+        if any(found)
+            [~, best] = min(srcVar(where(found)));
+            pick = where(found);
+            pick = pick(best);
+        else
+            pick = worst;
+        end
+        R{end+1, 1} = u{r}; %#ok<AGROW>
+        S{end+1, 1} = name; %#ok<AGROW>
+        V(end+1, 1) = median(values(rows)); %#ok<AGROW>
+        X(end+1, 1) = median(values(rows)) - srcBias(pick); %#ok<AGROW>
+        W(end+1, 1) = 1 / max(srcVar(pick), params.minVariance); %#ok<AGROW>
+    end
+end
+[u, ~, g] = unique(R, 'stable');
+c.rxns = u;
+n = numel(u);
+c.kcats = zeros(n, 1); c.sd = zeros(n, 1); c.n = zeros(n, 1); c.spread = zeros(n, 1);
+for r = 1:n
+    rows = g == r;
+    w = W(rows);
+    c.kcats(r) = 10 ^ (sum(w .* X(rows)) / sum(w));
+    srcs = S(rows);
+    hasOkp = any(startsWith(srcs, 'okp_'));
+    hasTree = any(strcmp(srcs, 'ec_tree'));
+    if hasTree && hasOkp
+        key = 'ec_tree+okp';
+    elseif hasOkp
+        key = 'okp';
+    elseif hasTree
+        key = 'ec_tree+homologs';
+    else
+        key = '';
+    end
+    scale = 1;
+    hit = strcmp(params.scaleKeys, key);
+    if any(hit)
+        scale = params.scales(find(hit, 1));
+    end
+    c.sd(r) = sqrt(1 / sum(w) + params.measurementSd ^ 2) * scale;
+    c.n(r) = sum(rows);
+    c.spread(r) = max(V(rows)) - min(V(rows));
+end
+end
+
+function b = evidenceBin(source, detail)
+% The evidence bin of a source's value, from its detail column.
+b = '';
+if strcmp(source, 'ec_tree')
+    n = regexp(detail, 'n=(\d+)', 'tokens', 'once');
+    depth = regexp(detail, 'depth=(\d)', 'tokens', 'once');
+    if ~isempty(depth) && strcmp(depth{1}, '4') && ~isempty(n)
+        v = str2double(n{1});
+        edges = [2 5 20 100];
+        labels = {'1-2', '3-5', '6-20', '21-100', '>100'};
+        b = ['ec4:' labels{find([v <= edges, true], 1)}];
+    elseif ~isempty(depth)
+        b = ['ec' depth{1}];
+    else
+        b = 'ec0';
+    end
+elseif strcmp(source, 'homologs')
+    t = regexp(detail, 'identity=([\d.]+)', 'tokens', 'once');
+    if ~isempty(t)
+        labels = {'40', '50', '60', '70', '80', '90'};
+        b = labels{find([str2double(t{1}) <= [0.5 0.6 0.7 0.8 0.9], true], 1)};
+    end
+elseif startsWith(source, 'okp_')
+    t = regexp(detail, 'similarity=([\d.]+)', 'tokens', 'once');
+    if ~isempty(t)
+        labels = {'<40', '40-60', '60-80', '>80'};
+        b = labels{find([str2double(t{1}) <= [40 60 80], true], 1)};
+    end
 end
 end

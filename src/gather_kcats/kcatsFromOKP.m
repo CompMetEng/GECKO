@@ -156,6 +156,11 @@ if p.save
     if isfield(job, 'ecRxns')
         parameters.ec_rxns = str2double(job.ecRxns);
     end
+    if isfield(kcatList, 'similarity')
+        kcatList.detail = repmat({''}, numel(kcatList.rxns), 1);
+        has = ~isnan(kcatList.similarity);
+        kcatList.detail(has) = cellstr("similarity=" + string(kcatList.similarity(has)));
+    end
     saveKcatSource(model, kcatList, name, 'modelAdapter', modelAdapter, ...
         'generator', 'kcatsFromOKP', 'parameters', parameters, 'data', ['OKP job ' job.jobId]);
     fprintf('OKP (%s) kcats for %d reactions written to %s\n', method, ...

@@ -61,12 +61,13 @@ end
 
 function testBrendaEcTreePreset_tc0087(testCase)
     % The default preset: custom.tsv, then BRENDA at origin 1, then the EC
-    % tree, then DLKcat.
+    % tree; then the OKP methods combined.
     [model, adapter, project] = buildProject();
     verifyFalse(testCase, isfield(adapter.params, 'kcat_assignment'))
     writeMeasurements(fullfile(project, 'data', 'measurements.tsv'), measurementsFor(model));
     report = updateKcatSources(model, 'dryRun', true, 'modelAdapter', adapter);
-    verifyEqual(testCase, report.source', {'custom','brenda','ec_tree','dlkcat'})
+    verifyEqual(testCase, report.source(1:3)', {'custom','brenda','ec_tree'})
+    verifyTrue(testCase, all(startsWith(report.source(4:end), 'okp_')))
     verifyEqual(testCase, report.status{3}, 'missing')
     fuzzy = kcatsFromBrenda(model, 'aggregation', 'median', 'modelAdapter', adapter);
     kcatsFromECTree(model, 'modelAdapter', adapter);
@@ -76,7 +77,7 @@ function testBrendaEcTreePreset_tc0087(testCase)
     stage1 = strcmp(decisions.stage, '1');
     fromBrenda = stage1 & startsWith(decisions.source, 'brenda');
     verifyTrue(testCase, all(ismember(decisions.ecRxn(fromBrenda), origin1)))
-    verifyTrue(testCase, all(ismember(decisions.source(stage1 & ~fromBrenda), {'custom','ec_tree','DLKcat'})))
+    verifyTrue(testCase, all(ismember(decisions.source(stage1 & ~fromBrenda), {'custom','ec_tree'})))
     verifyTrue(testCase, any(strcmp(decisions.source, 'ec_tree')))
     % Made from the adapter's measurement table with k = 5, as the preset
     % asks: current. Another k makes it outdated.

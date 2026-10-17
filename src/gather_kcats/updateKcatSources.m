@@ -68,8 +68,8 @@ kcatDir = fullfile(params.path, 'data', 'kcats');
 
 names = {};
 for s = 1:numel(config.stages)
-    for t = 1:numel(config.stages(s).sources)
-        token = config.stages(s).sources{t};
+    for t = 1:numel(config.stages(s).files)
+        token = config.stages(s).files{t};
         if startsWith(token, 'database_')
             token = 'brenda';
         end
