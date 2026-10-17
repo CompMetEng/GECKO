@@ -22,6 +22,7 @@ gather_kcats/loadKcatSource.m	tc0071, tc0072, tc0073, tc0076, tc0077, tc0078
 gather_kcats/kcatsFromBrenda.m	tc0074, tc0078	
 gather_kcats/kcatsFromDLKcat.m	tc0074, tc0078 - reads an existing DLKcat output; running DLKcat needs Docker	
 gather_kcats/kcatsFromOKP.m	tc0075 - reads a stored result; submitting needs the OKP service	
+gather_kcats/readOpenKineticsPredictorOutput.m	tc0030, tc0069	
 gather_kcats/reviewKcatAssignment.m	Has only been tested by running it manually, not tested by test cases
 gather_kcats/ecStatsFromBrenda.m	Not verified against real BRENDA data in this environment -- see its own TODO comment
 get_enzyme_data/calculateMW.m	Not explicitly tested - The code has existed for a long time	
@@ -47,13 +48,20 @@ limit_proteins/flexibilizeProtConcs.m	tc0013
 limit_proteins/getConcControlCoeffs.m	tc0013	
 limit_proteins/updateProtPool.m		
 model_adapter/ModelAdapter.m	Base class for adapters, not explicitly tested.	
-model_adapter/ModelAdapterManager.m	tc0008	
+model_adapter/ModelAdapterManager.m	tc0008, tc0067	
+model_adapter/readAdapterToml.m	tc0061, tc0062	
+model_adapter/writeAdapterToml.m	tc0063	
+model_adapter/loadAdapterParams.m	tc0064, tc0065	
+model_adapter/convertAdapterToToml.m	tc0066	
+model_adapter/TomlAdapter.m	tc0066, tc0067	
+model_adapter/adapterParameters.tsv	tc0064, tc0065	
+model_adapter/adapterTemplate.toml	tc0068	
 utilities/*	Not explicitly tested - The code has existed for a long time. There are a lot of functions in here, unclear which of them are still useful and functional.	
 io/loadConventionalGEM.m	tc0009
 io/loadEcModel.m	tc0009
 io/saveEcModel.m	tc0009
 tutorials/tutorial_Human-GEM/HumanGEMAdapter.m	tcm0002 - does not test all aspects of the adapter, but some.	
-tutorials/tutorial_yeast-GEM/YeastGEMAdapter.m	tcm0001 - does not test all aspects of the adapter, but some.	
+tutorials/full_ecModel/model_adapter.toml	tcm0001 - does not test all aspects of the adapter, but some.	
 tutorials/tutorial_yeast-GEM/code/changeMedia_batch.m	Not explicitly tested - The code has existed for a long time	
 tutorials/tutorial_yeast-GEM/code/getModelParameters_obsolete.m	Deprecated	
 tutorials/tutorial_yeast-GEM/code/manualModifications.m	Deprecated	
