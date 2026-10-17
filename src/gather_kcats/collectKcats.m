@@ -9,7 +9,7 @@ function [decisions, report, ecModel] = collectKcats(model, varargin)
 % The order is a preset or a list of stages:
 %
 %     [kcat_assignment]
-%     preset = "gecko_median"      # the default, or gecko_classic
+%     preset = "brenda_ec_tree"    # the default; or gecko_median, gecko_classic
 %     isozymes = true              # fill from isozymes after the stages
 %     standard = true              # standard kcat for the rest
 %
@@ -26,20 +26,24 @@ function [decisions, report, ecModel] = collectKcats(model, varargin)
 % listed source with a value (see mergeKcats). Sources are the names of
 % source files (custom, dlkcat, okp_catapro, ...) and the BRENDA quality
 % tiers database_exact, database_top and database_bottom, which read
-% brenda.tsv. Both presets order custom, database_top, dlkcat and
-% database_bottom:
-% - gecko_median (the default) uses the BRENDA median, and database_top
-%   holds the matches without EC wildcards from the organism or other
-%   organisms, with or without the substrate (origin 1 to 4). Matches with
-%   EC wildcards and specific-activity matches (origin 5 and 6) rank below
-%   DLKcat.
-% - gecko_classic uses the BRENDA maximum and ranks the specific-activity
-%   matches above DLKcat (origin up to 6), as the GECKO 3 tutorial.
-% Against measured kcats hidden from the search, the BRENDA median of each
-% origin from 1 to 4 was as close as DLKcat or closer, while the maximum was
-% further off than the median at every origin; specific-activity matches
-% could not be tested. The aggregation is [kcat_sources.brenda] aggregation
-% (see updateKcatSources).
+% brenda.tsv. The presets:
+% - brenda_ec_tree (the default): custom kcats, the BRENDA median of
+%   measurements of the organism on the reaction's substrate (origin 1,
+%   without EC wildcards), the EC tree (kcatsFromECTree), then DLKcat for
+%   reactions without an EC number.
+% - gecko_median: custom kcats, the BRENDA median of matches without EC
+%   wildcards from the organism or other organisms, with or without the
+%   substrate (origin 1 to 4), DLKcat, then the other BRENDA matches (EC
+%   wildcards, and specific activities, origin 5 and 6).
+% - gecko_classic: as gecko_median with the BRENDA maximum and the
+%   specific-activity matches above DLKcat (origin up to 6), as the GECKO 3
+%   tutorial.
+% Against measured kcats hidden from the search, the EC tree was closer
+% than the BRENDA median at origins 2 and 4 and with EC wildcards and as
+% close at origins 1 and 3; the BRENDA median was as close as DLKcat or
+% closer at every origin, and the maximum further off than the median. The
+% BRENDA aggregation is [kcat_sources.brenda] aggregation (see
+% updateKcatSources).
 %
 % After the stages:
 % - custom kcats of data/customKcats.tsv are applied (applyCustomKcats),

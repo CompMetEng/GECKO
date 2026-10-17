@@ -106,12 +106,14 @@ custom = 0.1
 
 # How kcats are assigned from the kcat source files in data/kcats (see
 # collectKcats and assignKcats): a preset, or [[kcat_assignment.stage]]
-# tables instead. gecko_median orders custom kcats, the BRENDA median of
-# matches without EC wildcards or specific activities, DLKcat, then the
-# other BRENDA matches; gecko_classic uses the BRENDA maximum and ranks the
-# specific-activity matches above DLKcat, as the GECKO 3 tutorial.
+# tables instead. brenda_ec_tree orders custom kcats, the BRENDA median of
+# measurements of the organism on the reaction's substrate, the EC tree
+# (the EC's median kcat, leaning on its EC class when it has few
+# measurements), then DLKcat for reactions without an EC number.
+# gecko_median and gecko_classic order BRENDA's fuzzy matches and DLKcat,
+# with the BRENDA median and maximum.
 [kcat_assignment]
-preset = "gecko_median"
+preset = "brenda_ec_tree"
 isozymes = true
 standard = true
 
