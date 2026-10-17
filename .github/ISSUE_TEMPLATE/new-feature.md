@@ -16,4 +16,4 @@ assignees: ''
 #### I hereby confirm that:
 <!-- Replace [ ] with [X] to check the box:-->
 - [ ] The new feature is not already in the `main` branch of the repository.
-- [ ] A similar [issue](https://github.com/SysBioChalmers/GECKO/issues) does not already exist.
+- [ ] A similar [issue](https://github.com/CompMetEng/GECKO/issues) does not already exist.

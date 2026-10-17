@@ -63,10 +63,10 @@ function filename = saveKcatSource(model, kcatList, name, varargin)
 %
 % See also
 % --------
-% kcatsFromBrenda, loadKcatSource, readKcatSource, getEcRxnKeys
+% kcatsFromBrenda, loadKcatSource, getEcRxnKeys
 
 names = {'modelAdapter','folder','generator','parameters','data','kind'};
-checkNameValue(varargin, names, 'saveKcatSource');
+checkOptions(varargin, names, 'saveKcatSource');
 p = parseGECKOargs(varargin, { ...
     'modelAdapter', []; ...
     'folder',       []; ...
@@ -224,5 +224,162 @@ v = '';
 file = fullfile(findGECKOroot, 'version.txt');
 if isfile(file)
     v = strtrim(fileread(file));
+end
+end
+
+function filename = kcatSourceFile(name, folder, modelAdapter)
+name = char(name);
+if isempty(regexp(name, '^[A-Za-z0-9_.-]+$', 'once'))
+    error('saveKcatSource:invalidName', ...
+        'The source name "%s" may only contain letters, digits, ''_'', ''-'' and ''.''.', name)
+end
+if isempty(folder)
+    if isempty(modelAdapter)
+        modelAdapter = ModelAdapterManager.getDefault();
+        if isempty(modelAdapter)
+            error('Either send in a modelAdapter or set the default model adapter in the ModelAdapterManager.')
+        end
+    end
+    folder = fullfile(modelAdapter.params.path, 'data', 'kcats');
+end
+filename = fullfile(char(folder), [name '.tsv']);
+if strcmpi(name, 'custom')
+    error('saveKcatSource:curated', ['custom.tsv holds curated kcats and is not ' ...
+        'written by GECKO; edit it by hand.'])
+end
+if isfile(filename)
+    meta = readHeaderLines(filename);
+    if (isfield(meta, 'kind') && strcmpi(meta.kind, 'curated')) || ...
+            (isfield(meta, 'source') && strcmpi(meta.source, 'custom'))
+        error('saveKcatSource:curated', '%s is curated by hand and is not overwritten.', filename)
+    end
+end
+end
+
+function meta = readHeaderLines(filename)
+% Only the header lines at the top, so that a damaged table does not stop
+% a gathered file from being written again.
+meta = struct();
+fid = fopen(filename, 'r', 'n', 'UTF-8');
+if fid < 0
+    return
+end
+cleanup = onCleanup(@() fclose(fid));
+line = fgetl(fid);
+if ischar(line)
+    line = regexprep(line, ['^' char(65279)], '');
+end
+while ischar(line) && (isempty(strtrim(line)) || startsWith(unquoteField(line), '#'))
+    [key, value] = parseHeaderLine(line);
+    if ~isempty(key)
+        meta.(key) = value;
+    end
+    line = fgetl(fid);
+end
+end
+
+function j = kcatSourceJson(v)
+if isstruct(v) && isscalar(v)
+    f = sort(fieldnames(v));
+    parts = cell(1, numel(f));
+    for k = 1:numel(f)
+        parts{k} = [jsonString(f{k}) ':' kcatSourceJson(v.(f{k}))];
+    end
+    j = ['{' strjoin(parts, ',') '}'];
+elseif ischar(v) || (isstring(v) && isscalar(v))
+    j = jsonString(char(v));
+elseif iscell(v)
+    j = ['[' strjoin(cellfun(@kcatSourceJson, v(:)', 'UniformOutput', false), ',') ']'];
+elseif (isnumeric(v) || islogical(v)) && numel(v) ~= 1
+    j = ['[' strjoin(arrayfun(@kcatSourceJson, v(:)', 'UniformOutput', false), ',') ']'];
+elseif islogical(v)
+    j = 'false';
+    if v
+        j = 'true';
+    end
+elseif isnumeric(v)
+    if ~isfinite(v)
+        j = 'null';
+    else
+        j = formatKcatNumber(double(v));
+    end
+elseif isempty(v)
+    j = 'null';
+else
+    error('kcatSourceJson:type', 'Parameters of class %s cannot be written.', class(v))
+end
+end
+
+function s = jsonString(s)
+% JSON escapes, as Python's json.dumps(ensure_ascii=False).
+out = '';
+for c = s
+    switch c
+        case '"', out = [out '\"']; %#ok<AGROW>
+        case '\', out = [out '\\']; %#ok<AGROW>
+        case char(8), out = [out '\b']; %#ok<AGROW>
+        case char(9), out = [out '\t']; %#ok<AGROW>
+        case char(10), out = [out '\n']; %#ok<AGROW>
+        case char(12), out = [out '\f']; %#ok<AGROW>
+        case char(13), out = [out '\r']; %#ok<AGROW>
+        otherwise
+            if double(c) < 32
+                out = [out sprintf('\\u%04x', double(c))]; %#ok<AGROW>
+            else
+                out = [out c]; %#ok<AGROW>
+            end
+    end
+end
+s = ['"' out '"'];
+end
+
+function t = formatKcatNumber(x)
+if isnan(x)
+    t = '';
+elseif isinf(x)
+    t = 'Inf';
+    if x < 0
+        t = '-Inf';
+    end
+elseif x == round(x) && abs(x) < 1e15
+    t = sprintf('%d', x);
+else
+    for digits = 1:17
+        t = sprintf('%.*g', digits, x);
+        if str2double(t) == x
+            break
+        end
+    end
+end
+end
+
+function [key, value] = parseHeaderLine(line)
+key = ''; value = '';
+tok = regexp(unquoteField(line), '^\s*#\s*([A-Za-z][A-Za-z0-9_]{0,62})\s*:\s?(.*)$', 'tokens', 'once');
+if ~isempty(tok)
+    key = lower(tok{1});
+    value = strtrim(tok{2});
+end
+end
+
+function t = unquoteField(t)
+t = strtrim(t);
+if numel(t) >= 2 && t(1) == '"' && t(end) == '"'
+    t = strtrim(strrep(t(2:end-1), '""', '"'));
+end
+end
+
+function checkOptions(args, names, functionName)
+% Options are name-value pairs with known names, so a misspelled option is
+% an error instead of being taken as a positional argument.
+id = [functionName ':arguments'];
+given = args(1:2:end);
+if mod(numel(args), 2) ~= 0 || ~all(cellfun(@(x) ischar(x) || (isstring(x) && isscalar(x)), given))
+    error(id, 'Options of %s are name-value pairs. Options: %s.', functionName, strjoin(names, ', '))
+end
+unknown = setdiff(cellfun(@char, given, 'UniformOutput', false), names);
+if ~isempty(unknown)
+    error(id, 'Unknown option of %s: %s. Options: %s.', functionName, strjoin(unknown, ', '), ...
+        strjoin(names, ', '))
 end
 end

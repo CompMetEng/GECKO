@@ -50,7 +50,7 @@ function kcatList = kcatsFromECTree(model, varargin)
 % --------
 % ecTreeEstimate, loadBrendaMeasurements, kcatsFromBrenda, saveKcatSource, assignKcats
 
-checkNameValue(varargin, {'k','ecRxns','measurements','save','saveAs','modelAdapter'}, 'kcatsFromECTree');
+checkOptions(varargin, {'k','ecRxns','measurements','save','saveAs','modelAdapter'}, 'kcatsFromECTree');
 p = parseGECKOargs(varargin, { ...
     'k',            5; ...
     'ecRxns',       []; ...
@@ -69,7 +69,7 @@ if ~isfield(model.ec, 'eccodes')
     error('No EC codes defined in model.ec.eccodes. First run getECfromGEM() and/or getECfromDatabase().')
 end
 if p.save
-    file = kcatSourceFile(p.saveAs, [], modelAdapter); % fails before estimating, not after
+    file = fullfile(modelAdapter.params.path, 'data', 'kcats', [char(p.saveAs) '.tsv']);
     warnSubset(p.ecRxns, numel(model.ec.rxns), file);
 end
 measurements = p.measurements;
@@ -101,5 +101,36 @@ if p.save
         'generator', 'kcatsFromECTree', 'parameters', parameters, ...
         'data', measurements.release);
     fprintf('EC-tree kcats for %d reactions written to %s\n', numel(kcatList.rxns), file);
+end
+end
+
+function n = countRxns(ecRxns)
+if islogical(ecRxns)
+    n = sum(ecRxns);
+else
+    n = numel(unique(ecRxns));
+end
+end
+
+function warnSubset(ecRxns, nRxns, file)
+% A subset written under the default name replaces the full file.
+if ~isempty(ecRxns) && countRxns(ecRxns) < nRxns && isfile(file)
+    printOrange(sprintf(['%s is replaced by kcats for %d reactions only. Give saveAs ' ...
+        'to keep it.\n'], file, countRxns(ecRxns)));
+end
+end
+
+function checkOptions(args, names, functionName)
+% Options are name-value pairs with known names, so a misspelled option is
+% an error instead of being taken as a positional argument.
+id = [functionName ':arguments'];
+given = args(1:2:end);
+if mod(numel(args), 2) ~= 0 || ~all(cellfun(@(x) ischar(x) || (isstring(x) && isscalar(x)), given))
+    error(id, 'Options of %s are name-value pairs. Options: %s.', functionName, strjoin(names, ', '))
+end
+unknown = setdiff(cellfun(@char, given, 'UniformOutput', false), names);
+if ~isempty(unknown)
+    error(id, 'Unknown option of %s: %s. Options: %s.', functionName, strjoin(unknown, ', '), ...
+        strjoin(names, ', '))
 end
 end

@@ -44,7 +44,9 @@ function testKcatsFromECTreeWritesFile_tc0086(testCase)
     verifyEqual(testCase, sort(kcatList.rxns), sort(withEc))
     [~, i] = ismember(kcatList.rxns, model.ec.rxns);
     verifyEqual(testCase, log10(kcatList.kcats), ecTreeEstimate(model.ec.eccodes(i), m, 5), 'AbsTol', 1e-12)
-    [records, meta] = readKcatSource(fullfile(project, 'data', 'kcats', 'ec_tree.tsv'));
+    [~, loaded] = loadKcatSource(model, fullfile(project, 'data', 'kcats', 'ec_tree.tsv'));
+    records = loaded.records;
+    meta = loaded.header;
     verifyEqual(testCase, meta.parameters, '{"k":5}')
     verifyEqual(testCase, meta.data, 'BRENDA release test')
     verifyEqual(testCase, unique(records.source), {'ec_tree'})

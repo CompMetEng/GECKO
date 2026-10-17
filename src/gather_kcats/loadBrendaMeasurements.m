@@ -30,7 +30,7 @@ function measurements = loadBrendaMeasurements(varargin)
 % --------
 % kcatsFromECTree, ecTreeEstimate, loadBRENDAdata
 
-checkNameValue(varargin, {'modelAdapter','folder'}, 'loadBrendaMeasurements');
+checkOptions(varargin, {'modelAdapter','folder'}, 'loadBrendaMeasurements');
 p = parseGECKOargs(varargin, {'modelAdapter', []; 'folder', []});
 folder = p.folder;
 if isempty(folder)
@@ -72,5 +72,20 @@ tok = regexp(first, '^#\s*(BRENDA release [^ ]+)', 'tokens', 'once');
 measurements.release = '';
 if ~isempty(tok)
     measurements.release = tok{1};
+end
+end
+
+function checkOptions(args, names, functionName)
+% Options are name-value pairs with known names, so a misspelled option is
+% an error instead of being taken as a positional argument.
+id = [functionName ':arguments'];
+given = args(1:2:end);
+if mod(numel(args), 2) ~= 0 || ~all(cellfun(@(x) ischar(x) || (isstring(x) && isscalar(x)), given))
+    error(id, 'Options of %s are name-value pairs. Options: %s.', functionName, strjoin(names, ', '))
+end
+unknown = setdiff(cellfun(@char, given, 'UniformOutput', false), names);
+if ~isempty(unknown)
+    error(id, 'Unknown option of %s: %s. Options: %s.', functionName, strjoin(unknown, ', '), ...
+        strjoin(names, ', '))
 end
 end
