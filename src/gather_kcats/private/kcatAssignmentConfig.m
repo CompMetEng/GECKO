@@ -4,7 +4,7 @@ function config = kcatAssignmentConfig(params)
 % Reads [kcat_assignment] and [kcat_sources.*] of model_adapter.toml (or
 % params.kcat_assignment and params.kcat_sources of an adapter class), and
 % expands a preset into its stages. Without a preset or stages the preset
-% is gecko_median.
+% is brenda_ec_tree.
 %
 % Returns a struct with:
 % - preset: the preset name, or '' when stages are given;
@@ -31,7 +31,7 @@ end
 if hasStages
     config.stages = arrayfun(@readStage, a.stage(:)');
 else
-    preset = 'gecko_median';
+    preset = 'brenda_ec_tree';
     if hasPreset
         preset = char(a.preset);
     end
@@ -58,9 +58,13 @@ switch preset
     case 'gecko_median'
         stages = select(order, 4);
         sources.brenda = struct('aggregation', 'median');
+    case 'brenda_ec_tree'
+        stages = select({'custom', 'database_top', 'ec_tree', 'dlkcat'}, 1);
+        sources.brenda = struct('aggregation', 'median');
+        sources.ec_tree = struct('k', 5);
     otherwise
         error('kcatAssignment:config', 'Unknown kcat assignment preset "%s". Presets: %s.', ...
-            preset, 'gecko_classic, gecko_median')
+            preset, 'gecko_classic, gecko_median, brenda_ec_tree')
 end
 end
 

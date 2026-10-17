@@ -3,12 +3,13 @@ function report = updateKcatSources(model, varargin)
 %
 % Lists the kcat source files that [kcat_assignment] in model_adapter.toml
 % uses (see collectKcats), and gathers those that are missing or outdated
-% with kcatsFromBrenda, kcatsFromDLKcat and kcatsFromOKP:
+% with kcatsFromBrenda, kcatsFromECTree, kcatsFromDLKcat and kcatsFromOKP:
 %
 % - a file is outdated when its header records other settings than
-%   [kcat_sources.<name>] asks for (the preset sets these for brenda), or,
-%   for brenda, another BRENDA release than GECKO's BRENDA files;
-% - brenda is matched again; dlkcat reads data/DLKcat.tsv if it exists and
+%   [kcat_sources.<name>] asks for (presets set these for brenda and
+%   ec_tree), or, for brenda and ec_tree, another BRENDA release than the
+%   BRENDA files in use;
+% - brenda and ec_tree are made again; dlkcat reads data/DLKcat.tsv if it exists and
 %   runs DLKcat (Docker) otherwise; okp_<method> submits or fetches a job,
 %   and reports it as pending while the job runs;
 % - custom.tsv and other files it cannot gather are left as they are.
@@ -100,7 +101,7 @@ disp(report)
         if strcmp(name, 'custom')
             st = 'skipped'; nt = 'curated by hand';
             return
-        elseif ~any(strcmp(name, {'brenda','dlkcat'})) && ~startsWith(name, 'okp_')
+        elseif ~any(strcmp(name, {'brenda','ec_tree','dlkcat'})) && ~startsWith(name, 'okp_')
             st = 'skipped'; nt = 'not a source GECKO gathers';
             return
         end
@@ -121,8 +122,8 @@ disp(report)
                 return
             end
         end
-        if strcmp(name, 'brenda')
-            release = brendaRelease(modelAdapter);
+        if any(strcmp(name, {'brenda','ec_tree'}))
+            release = brendaRelease(modelAdapter, name);
             if isfield(meta, 'data') && ~isempty(release) && ~strcmp(meta.data, release)
                 st = 'outdated';
                 nt = sprintf('made from %s; GECKO has %s', meta.data, release);
@@ -139,6 +140,10 @@ try
         if isfield(wanted, 'aggregation'), args = [args, {'aggregation', wanted.aggregation}]; end
         if isfield(wanted, 'force_wildcard_level'), args = [args, {'forceWClvl', wanted.force_wildcard_level}]; end
         kcatsFromBrenda(model, args{:}, 'modelAdapter', modelAdapter);
+    elseif strcmp(name, 'ec_tree')
+        args = {};
+        if isfield(wanted, 'k'), args = {'k', double(wanted.k)}; end
+        kcatsFromECTree(model, args{:}, 'modelAdapter', modelAdapter);
     elseif strcmp(name, 'dlkcat')
         run = ~isfile(fullfile(modelAdapter.params.path, 'data', 'DLKcat.tsv'));
         if run
@@ -191,9 +196,11 @@ elseif islogical(v)
 end
 end
 
-function release = brendaRelease(modelAdapter)
+function release = brendaRelease(modelAdapter, name)
+% The release line of the BRENDA file a source is made from.
 release = '';
-fid = fopen(fullfile(modelAdapter.getBrendaDBFolder(), 'kcat.tsv'), 'r');
+files = struct('brenda', 'kcat.tsv', 'ec_tree', 'measurements.tsv');
+fid = fopen(fullfile(modelAdapter.getBrendaDBFolder(), files.(name)), 'r');
 if fid < 0
     return
 end

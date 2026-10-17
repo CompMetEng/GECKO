@@ -26,7 +26,8 @@ function filename = saveKcatSource(model, kcatList, name, varargin)
 %     kcat values as returned by kcatsFromBrenda, fuzzyKcatMatching,
 %     readDLKcatOutput, readOpenKineticsPredictorOutput or mergeKcats:
 %     fields rxns and kcats, optionally source, substrates, eccodes,
-%     wildcardLvl, origin, kcatSource and log10sd.
+%     wildcardLvl, origin, kcatSource, log10sd and detail (further
+%     key=value pairs for the detail column).
 % name : char
 %     name of the source; the file is <name>.tsv.
 %
@@ -91,6 +92,7 @@ if numel(kcats) ~= n
 end
 substrate = textColumn(kcatList, 'substrates', n);
 ecCode    = textColumn(kcatList, 'eccodes', n);
+extra     = textColumn(kcatList, 'detail', n);
 if isfield(kcatList, 'kcatSource')
     source = textColumn(kcatList, 'kcatSource', n);
 elseif isfield(kcatList, 'source')
@@ -118,9 +120,9 @@ if ~isempty(keep)
     originText = strings(numel(keep), 1);
     hasOrigin = ~isnan(origin(keep));
     originText(hasOrigin) = "origin=" + string(fix(origin(keep(hasOrigin))));
-    detail = wcText + "; " + originText;
-    detail(~hasWc) = originText(~hasWc);
-    detail(~hasOrigin) = wcText(~hasOrigin);
+    detail = join([wcText, originText, strtrim(clean(extra(keep)))], "; ", 2);
+    detail = regexprep(detail, '^(; )+|(; )+$', '');
+    detail = regexprep(detail, '(; ){2,}', '; ');
     rows(:, 1) = clean(baseRxns(idx(keep)));
     rows(:, 2) = clean(enzymeSets(idx(keep)));
     rows(:, 3) = clean(substrate(keep));

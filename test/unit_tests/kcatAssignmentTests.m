@@ -37,6 +37,7 @@ function testCollectKcatsLeavesModel_tc0080(testCase)
     % collectKcats decides without changing the model; a missing source is
     % reported; custom.tsv decides first.
     [base, adapter, project] = buildProject();
+    adapter.params.kcat_assignment = struct('preset', 'gecko_median');
     kcatsFromBrenda(base, 'modelAdapter', adapter);
     [decisions, report, decided] = collectKcats(base, 'modelAdapter', adapter, 'writeReport', false);
     verifyEqual(testCase, base.ec.kcat, zeros(numel(base.ec.rxns), 1))
@@ -99,11 +100,11 @@ function testUpdateKcatSources_tc0082(testCase)
     verifyEqual(testCase, report.status{2}, 'outdated')
 end
 
-function testDefaultPresetIsGeckoMedian_tc0083(testCase)
-    % Without [kcat_assignment] the preset is gecko_median: the BRENDA median,
-    % and BRENDA matches beyond origin 4 rank below DLKcat.
+function testGeckoMedianPreset_tc0083(testCase)
+    % gecko_median: the BRENDA median, and BRENDA matches beyond origin 4
+    % rank below DLKcat.
     [base, adapter] = buildProject();
-    verifyFalse(testCase, isfield(adapter.params, 'kcat_assignment'))
+    adapter.params.kcat_assignment = struct('preset', 'gecko_median');
     fuzzy = kcatsFromBrenda(base, 'aggregation', 'median', 'modelAdapter', adapter);
     dlkcat = kcatsFromDLKcat(base, 'modelAdapter', adapter);
     merged = mergeKcats({fuzzy, dlkcat}, {'database_top','dlkcat','database_bottom'}, 'topOriginLimit', 4);
