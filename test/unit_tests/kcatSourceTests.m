@@ -28,7 +28,7 @@ function testSaveLoadRoundTrip_tc0071(testCase)
     folder = tempname;
     file = saveKcatSource(full, list, 'brenda', 'folder', folder, ...
         'parameters', struct('aggregation','max'), 'data', 'BRENDA release test');
-    [records, meta] = readKcatSource(file);
+    [records, meta] = rowsOf(full, file);
     verifyEqual(testCase, meta.source, 'brenda')
     verifyEqual(testCase, meta.kind, 'gathered')
     verifyEqual(testCase, meta.data, 'BRENDA release test')
@@ -59,7 +59,7 @@ function testFullFileOnLightModel_tc0072(testCase)
     [loaded, report] = loadKcatSource(light, file);
     verifyEmpty(testCase, report.unmatched)
     [baseL, enzL] = getEcRxnKeys(light);
-    [records] = readKcatSource(file);
+    records = rowsOf(light, file);
     for r = 1:numel(records.kcat)
         hit = strcmp(baseL, records.rxn{r}) & strcmp(enzL, records.enzymes{r});
         verifyEqual(testCase, sort(loaded.rxns(loaded.line == records.line(r))), sort(light.ec.rxns(hit)))
@@ -106,7 +106,7 @@ function testKcatsFromBrendaAndDLKcat_tc0074(testCase)
     copyfile(fullfile(adapter.params.path, 'data'), fullfile(project, 'data'));
     adapter.params.path = project;
     list = kcatsFromBrenda(full, 'aggregation', 'median', 'modelAdapter', adapter);
-    [records, meta] = readKcatSource(fullfile(project, 'data', 'kcats', 'brenda.tsv'));
+    [records, meta] = rowsOf(full, fullfile(project, 'data', 'kcats', 'brenda.tsv'));
     verifyEqual(testCase, meta.generator(1:15), 'kcatsFromBrenda')
     verifyEqual(testCase, meta.parameters, '{"aggregation":"median","force_wildcard_level":0}')
     verifyEqual(testCase, meta.data, 'BRENDA release test-fixture')
@@ -121,7 +121,7 @@ function testKcatsFromBrendaAndDLKcat_tc0074(testCase)
     end
     fclose(fid);
     kcatsFromDLKcat(full, 'modelAdapter', adapter);
-    [records, meta] = readKcatSource(fullfile(project, 'data', 'kcats', 'dlkcat.tsv'));
+    [records, meta] = rowsOf(full, fullfile(project, 'data', 'kcats', 'dlkcat.tsv'));
     verifyEqual(testCase, meta.source, 'dlkcat')
     verifyEqual(testCase, sort(records.kcat), [3.25; 12.5])
     verifyEqual(testCase, unique(records.source), {'DLKcat'})
@@ -144,7 +144,7 @@ function testKcatsFromOKPStored_tc0075(testCase)
     writeLines(fullfile(data, 'OKP_job.txt'), {'jobId: abc123', 'method: CataPro'});
     [list, done] = kcatsFromOKP(full, 'method', "CataPro", 'useStored', true, 'modelAdapter', adapter);
     verifyTrue(testCase, done)
-    [records, meta] = readKcatSource(fullfile(data, 'kcats', 'okp_catapro.tsv'));
+    [records, meta] = rowsOf(full, fullfile(data, 'kcats', 'okp_catapro.tsv'));
     verifyEqual(testCase, meta.data, 'OKP job abc123')
     verifyEqual(testCase, numel(records.kcat), sum(list.kcats > 0))
     verifyEqual(testCase, unique(records.source), {'OKP-CataPro'})
@@ -193,7 +193,7 @@ function testGuardsNumbersAndJson_tc0078(testCase)
     file = saveKcatSource(full, list, "numbers", 'modelAdapter', adapter, 'parameters', ...
         struct('z', 1, 'a', struct('y', ['caf' char(233)], 'b', true), 'n', NaN, ...
         'f', 1/3, 'g', 1e-7, 'h', 1e15, 'k', 1e20, 'l', {{5}}, 's', 'tab	quote"'));
-    [records, meta] = readKcatSource(file);
+    [records, meta] = rowsOf(full, file);
     verifyTrue(testCase, all(isfinite(records.kcat) & records.kcat > 0))
     % The same text as geckopy's test_parameters_json_matches_gecko.
     verifyEqual(testCase, meta.parameters, ['{"a":{"b":true,"y":"caf' char(233) '"},"f":0.3333333333333333,' ...
@@ -208,7 +208,7 @@ function testGuardsNumbersAndJson_tc0078(testCase)
         'R3	P4	m1	2	b	', 'R3	P4	m1	2	a	wc=1', 'R3	P4		5	a	', 'R2_REV	P3	m2	1	a	'});
     l2 = loadKcatSource(full, fullfile(folder, 'unsorted.tsv'));
     file = saveKcatSource(full, l2, 'sorted', 'modelAdapter', adapter);
-    records = readKcatSource(file);
+    records = rowsOf(full, file);
     verifyEqual(testCase, records.rxn', {'R2_REV','R3','R3','R3'})
     verifyEqual(testCase, records.substrate', {'m2','','m1','m1'})
     verifyEqual(testCase, records.source', {'a','a','a','b'})
@@ -238,7 +238,8 @@ function testSharedFixture_tc0077(testCase)
     % a quoted header line and field, comments and blank lines between
     % rows, a row of tabs, a decimal comma, a negative kcat.
     file = fullfile(findGECKOroot, 'test', 'unit_tests', 'ecTestGEM', 'data', 'kcatSourceFixture.tsv');
-    [records, meta] = readKcatSource(file);
+    [full] = buildKcatModels();
+    [records, meta] = rowsOf(full, file);
     verifyEqual(testCase, meta.source, 'fixture')
     verifyEqual(testCase, meta.parameters, '{"aggregation":"median"}')
     verifyEqual(testCase, meta.kind, 'curated')
@@ -248,7 +249,6 @@ function testSharedFixture_tc0077(testCase)
     verifyEqual(testCase, records.kcat', [12.5 1e-05 NaN 7 3 -1 4])
     verifyEqual(testCase, records.log10_sd(1), 0.3)
 
-    [full] = buildKcatModels();
     [loaded, report] = loadKcatSource(full, file);
     verifyEqual(testCase, loaded.rxns(loaded.line == 7), {'R2_EXP_1'})
     verifyEqual(testCase, sort(loaded.rxns(loaded.line == 12)), {'R2_REV_EXP_1';'R2_REV_EXP_2'})
@@ -259,7 +259,14 @@ function testSharedFixture_tc0077(testCase)
     % A row with more filled fields than columns is an error.
     bad = [tempname '.tsv'];
     writeLines(bad, {'rxn	kcat	source', 'R2	1	brenda	extra'});
-    verifyError(testCase, @() readKcatSource(bad), 'readKcatSource:fields')
+    verifyError(testCase, @() loadKcatSource(full, bad), 'loadKcatSource:fields')
+end
+
+function [records, header] = rowsOf(model, file)
+    % The rows and header of a kcat source file, as loadKcatSource reads them.
+    [~, report] = loadKcatSource(model, file);
+    records = report.records;
+    header = report.header;
 end
 
 function writeLines(file, lines)

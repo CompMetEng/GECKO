@@ -17,7 +17,6 @@ gather_kcats/assignKcatValues.m	tc0011 - we did not test all possible parameteri
 gather_kcats/writeDLKcatInput.m	partly by tc0011
 gather_kcats/getEcRxnKeys.m	tc0070, tc0076	
 gather_kcats/saveKcatSource.m	tc0071, tc0073, tc0076, tc0078	
-gather_kcats/readKcatSource.m	tc0071, tc0077	
 gather_kcats/loadKcatSource.m	tc0071, tc0072, tc0073, tc0076, tc0077, tc0078	
 gather_kcats/kcatsFromBrenda.m	tc0074, tc0078	
 gather_kcats/kcatsFromDLKcat.m	tc0074, tc0078 - reads an existing DLKcat output; running DLKcat needs Docker	
