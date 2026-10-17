@@ -6,35 +6,35 @@ You can contribute in 2 main ways: by creating issues, and by sending pull reque
 
 ### Reporting issues
 
-[Report an issue](https://github.com/SysBioChalmers/GECKO/issues) if you note any of the following:
+[Report an issue](https://github.com/CompMetEng/GECKO/issues) if you note any of the following:
 
 * Missing feature you would like GECKO to have.
 * Bug/weird simulation results.
 * Lacking documentation.
 * Any type of feedback.
 
-If you are unsure about the issue, consider asking first in the [GitHub Discussions page](https://github.com/SysBioChalmers/GECKO/discussions).
+If you are unsure about the issue, consider asking first in the [GitHub Discussions page](https://github.com/CompMetEng/GECKO/discussions).
 
 When creating the issue, please make sure:
 
-* You tested your code (if any) with all of GECKO's [requirements](https://github.com/SysBioChalmers/GECKO).
+* You tested your code (if any) with all of GECKO's [requirements](https://github.com/CompMetEng/GECKO).
 * You did your analysis in the `main` branch of the repository.
 * You provide any necessary files/links needed for understanding the issue.
 * You checked that a similar issue does not exist already
 
-Feel free to also comment on any of the [open issues](https://github.com/SysBioChalmers/GECKO/issues). When doing so, please comply with our [code of conduct](https://github.com/SysBioChalmers/GECKO/blob/main/.github/CODE_OF_CONDUCT.md).
+Feel free to also comment on any of the [open issues](https://github.com/CompMetEng/GECKO/issues). When doing so, please comply with our [code of conduct](https://github.com/CompMetEng/GECKO/blob/develop/.github/CODE_OF_CONDUCT.md).
 
 Finally, if you like GECKO please remember to 'star' our Github page (click on the star at top right corner), that way we also have an idea of who is using GECKO!
 
 ### Contributing to GECKO
 
-Do you want to contribute to GECKO with some additions or improvements? Consider starting by raising an issue and assign it to yourself to describe what you want to achieve. This way, we reduce the risk of duplicated efforts and you may also get suggestions on how to best proceed, e.g. there may be half-finished work in some branch that you could start with. Also, feel free to browse our [open issues](https://github.com/SysBioChalmers/GECKO/issues): Anything tagged with "help wanted" is open to whoever wants to implement it!
+Do you want to contribute to GECKO with some additions or improvements? Consider starting by raising an issue and assign it to yourself to describe what you want to achieve. This way, we reduce the risk of duplicated efforts and you may also get suggestions on how to best proceed, e.g. there may be half-finished work in some branch that you could start with. Also, feel free to browse our [open issues](https://github.com/CompMetEng/GECKO/issues): Anything tagged with "help wanted" is open to whoever wants to implement it!
 
 Here's how to set up GECKO for local development to contribute smaller features or changes that you can implement yourself:
 
-1. First of all, make sure that you have all [requirements](https://github.com/SysBioChalmers/GECKO) for running GECKO.
+1. First of all, make sure that you have all [requirements](https://github.com/CompMetEng/GECKO) for running GECKO.
 
-2. [Fork the GECKO repository](https://github.com/SysBioChalmers/GECKO/fork) on GitHub.
+2. [Fork the GECKO repository](https://github.com/CompMetEng/GECKO/fork) on GitHub.
 
 3. Clone your fork locally:
     ```
@@ -63,7 +63,7 @@ Here's how to set up GECKO for local development to contribute smaller features 
     ```
     [See below](#semantic-commits) for recommendations on how to name your commits. In case of larger updates, you can of course make several commits on a single contribution. However, if you need to do too many commits, consider if your contribution could be instead split into separate PRs (making it easier for reviewing later).
 
-8. Submit a PR through the GitHub website (https://help.github.com/articles/creating-a-pull-request-from-a-fork/) to the `develop` branch of the original SysBioChalmers repo (not your fork). We recommend ticking the box "Allow edits from maintainers" if you wish for us to be able to contribute directly to your branch (speeding-up the reviewing process).
+8. Submit a PR through the GitHub website (https://help.github.com/articles/creating-a-pull-request-from-a-fork/) to the `develop` branch of the original CompMetEng repository (not your fork). We recommend ticking the box "Allow edits from maintainers" if you wish for us to be able to contribute directly to your branch (speeding-up the reviewing process).
 
 Note that steps 3, 4, 5 and 7 can be done, if you prefer, with any git client, such as [Github Desktop](https://desktop.github.com/).
 
@@ -95,7 +95,7 @@ Please use concise descriptive commit messages. Ideally, use [semantic commit me
 * `refactor`: see [code refactoring](https://en.wikipedia.org/wiki/Code_refactoring).
 * `style`: minor format changes to functions or data.
 
-More examples [here](https://github.com/SysBioChalmers/GECKO/commits/master). A more detailed explanation or comments is encouraged to be left in the commit description.
+More examples [here](https://github.com/CompMetEng/GECKO/commits/develop). A more detailed explanation or comments is encouraged to be left in the commit description.
 
 ## Development team guidelines
 
@@ -108,13 +108,13 @@ Changes to the source code _may not_ be directly committed to the `main` or `dev
 * Skip step 2 of the contribution process.
 * In step 3 of the contribution process, clone directly the original repo:
   ```
-  git clone https://github.com/SysBioChalmers/GECKO.git
+  git clone https://github.com/CompMetEng/GECKO.git
   ```
 
 Follow all other steps in the same way. Also, when creating your pull request (or after you have created it):
 
 * Choose 1 or more members of the team (ideally with knowledge on the pull request) as reviewers. Note that the person making the pull request and the reviewer _cannot_ be the same person.
-* Assign appropriate [labels](https://github.com/SysBioChalmers/GECKO/issues/labels).
+* Assign appropriate [labels](https://github.com/CompMetEng/GECKO/issues/labels).
 
 ### Reviewing pull requests
 
@@ -124,7 +124,7 @@ Every pull request must be approved by at least one reviewer before it can be me
 * **Documentation:** The reasoning for each modification should be provided, as documentation or as a comment in the pull request.
 * **Reproducibility:** If there are any added scripts, make sure that if you run them, they achieve the desired purpose.
 * **Style:** Ensure that changes to the codebase have a compliant style, and new datasets (if any) are straight-forward to understand.
-* When commenting in the review, please comply with our [code of conduct](https://github.com/SysBioChalmers/GECKO/blob/main/.github/CODE_OF_CONDUCT.md).
+* When commenting in the review, please comply with our [code of conduct](https://github.com/CompMetEng/GECKO/blob/develop/.github/CODE_OF_CONDUCT.md).
 * Avoid vague comments and try to be as explicit as possible (e.g.: _"Please include X here"_ instead of _"X could be included here"_).
 * As much as possible, try to keep the review process in the pull request discussion, and not in separate private emails.
 
@@ -133,8 +133,8 @@ Every pull request must be approved by at least one reviewer before it can be me
 This section is meant for the administrator of this repo. The main duties of the administrator are:
 
 * To keep the repository clean and organized, i.e. avoid redundancy in functions and/or data, and keep coherency in naming of files.
-* To help in the reviewing process of external pull requests by assigning reviewers and [labels](https://github.com/SysBioChalmers/GECKO/issues/labels), if applicable.
-* To keep [issues](https://github.com/SysBioChalmers/GECKO/issues) with the proper labels, and to close issues once they are fixed in the `main` branch.
+* To help in the reviewing process of external pull requests by assigning reviewers and [labels](https://github.com/CompMetEng/GECKO/issues/labels), if applicable.
+* To keep [issues](https://github.com/CompMetEng/GECKO/issues) with the proper labels, and to close issues once they are fixed in the `main` branch.
 * In cases of disagreement between contributors, to decide how to resolve the issue.
 * To merge open pull requests into `develop` regularly (see [below](#merging-contributions)).
 * To generate new releases of the model regularly (see [below](#releasing-a-new-version)).
@@ -146,7 +146,7 @@ The following points should be considered when merging branches to `develop`:
 * Make sure the branch gets accepted by at least one developer with writing access.
 * Wait at least a day before merging, to allow other developers to inspect the pull request.
 * To simplify the git history, use "Squash and merge" in pull requests to `develop` (but **never** use this option when merging to `main`, see also below).
-* As soon as the branch is merged, confirm that `develop` is still possible to merge to `main` (this can be checked [here](https://github.com/SysBioChalmers/GECKO/compare/develop)). If conflicts appear, fix the conflict _locally_ as soon as possible in `develop` and then push it (note, **DO NOT** pull any other changes from `main` to `develop`, just the single file that is creating the conflict).
+* As soon as the branch is merged, confirm that `develop` is still possible to merge to `main` (this can be checked [here](https://github.com/CompMetEng/GECKO/compare/develop)). If conflicts appear, fix the conflict _locally_ as soon as possible in `develop` and then push it (note, **DO NOT** pull any other changes from `main` to `develop`, just the single file that is creating the conflict).
 
 ### Releasing a new version
 
@@ -168,11 +168,11 @@ When releasing, please follow these steps:
 
 1. Create a pull request from `develop` to `main`:
    - Specify the intended version in the title, e.g. `GECKO 3.0.1`
-   - Indicating all new features/fixes/etc. and referencing every previous pull request included (examples [here](https://github.com/SysBioChalmers/GECKO/releases)).
-   - If any [issue](https://github.com/SysBioChalmers/GECKO/issues) gets solved in the release, write in the pull request description "Closes #X", where "X" is the issue number. That way the issue will be automatically closed after merge.
+   - Indicating all new features/fixes/etc. and referencing every previous pull request included (examples [here](https://github.com/CompMetEng/GECKO/releases)).
+   - If any [issue](https://github.com/CompMetEng/GECKO/issues) gets solved in the release, write in the pull request description "Closes #X", where "X" is the issue number. That way the issue will be automatically closed after merge.
 2. Wait at least a day for at least one approval. The GitHub Actions must also pass successfully.
 3. Merge the pull request from `develop` to `main` with the option "Create a merge commit", **not** "Squash and merge".
-4. Edit the `version.txt` in the `main` branch directly [link](https://github.com/SysBioChalmers/GECKO/edit/main/version.txt) to refer to the new version number. Commit the change directly to the `main` branch.
-5. Make the [new release](https://github.com/SysBioChalmers/GECKO/releases/new) at GitHub:
+4. Edit the `version.txt` in the `main` branch directly [link](https://github.com/CompMetEng/GECKO/edit/main/version.txt) to refer to the new version number. Commit the change directly to the `main` branch.
+5. Make the [new release](https://github.com/CompMetEng/GECKO/releases/new) at GitHub:
    - Define a new tag with the version, prefixed by `v`: e.g. `v3.0.1`.
    - Copy the description from the corresponding PR from step 1.
