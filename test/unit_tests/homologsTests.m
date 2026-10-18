@@ -14,21 +14,26 @@ function testKcatsFromHomologs_tc0095(testCase)
     [model, adapter, project] = buildProject();
     kcatList = kcatsFromHomologs(model, 'modelAdapter', adapter);
     verifyEqual(testCase, kcatList.rxns, {'R3'})
-    expected = 10 ^ ((1.0 * log10(20) + 0.8 * 2) / 1.8);
-    verifyEqual(testCase, kcatList.kcats, expected, 'RelTol', 1e-9)
-    verifyEqual(testCase, kcatList.detail, {'identity=1.00; n=2'})
+    % h1 is the same protein (100% identity): its median alone, 20 /s.
+    verifyEqual(testCase, kcatList.kcats, 20, 'RelTol', 1e-12)
+    verifyEqual(testCase, kcatList.detail, {'identity=1.000; n=1'})
     verifyEqual(testCase, kcatList.substrates, {'m1'})
     [~, loaded] = loadKcatSource(model, fullfile(project, 'data', 'kcats', 'homologs.tsv'));
     verifyEqual(testCase, loaded.header.parameters, '{"coverage":0.8,"k":10,"min_identity":0.4}')
     verifyEqual(testCase, loaded.header.data, 'BRENDA release test')
     verifyEqual(testCase, loaded.records.rxn, {'R3'})
-    % With only the closest homolog: the exact copy, median of 10 and 40.
-    one = kcatsFromHomologs(model, 'k', 1, 'save', false, 'modelAdapter', adapter);
-    verifyEqual(testCase, one.kcats, 20, 'RelTol', 1e-12)
-    verifyEqual(testCase, one.detail, {'identity=1.00; n=1'})
-    % Above 90% identity only h1 is found.
+    % Without h1, the homologs below 95% identity are averaged by identity:
+    % h2 (80%) alone.
+    seqs = fullfile(project, 'data', 'sequences.fasta');
+    lines = strsplit(strtrim(fileread(seqs)), newline);
+    keep = ~ismember(1:numel(lines), [1 2]); % the >h1 header and its sequence
+    fid = fopen(seqs, 'w'); fprintf(fid, '%s\n', lines{keep}); fclose(fid);
+    rest = kcatsFromHomologs(model, 'save', false, 'modelAdapter', adapter);
+    verifyEqual(testCase, rest.kcats, 100, 'RelTol', 1e-12)
+    verifyEqual(testCase, rest.detail, {'identity=0.800; n=1'})
+    % Above 90% identity nothing is left.
     high = kcatsFromHomologs(model, 'minIdentity', 0.9, 'save', false, 'modelAdapter', adapter);
-    verifyEqual(testCase, high.kcats, 20, 'RelTol', 1e-12)
+    verifyEmpty(testCase, high.rxns)
 end
 
 function testSubstrateMatching_tc0096(testCase)

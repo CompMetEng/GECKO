@@ -41,6 +41,22 @@ function testEcTreeOkpPreset_tc0089(testCase)
     verifyEqual(testCase, decisions.stage{i}, '2')
 end
 
+function testExactHomologDominates_tc0098(testCase)
+    % EC tree 10 /s (ec4:3-5: bias 0.1, variance 1) and a homolog at 100%
+    % identity measured at 100 /s (exact: bias 0, variance 0.01):
+    % (0.9 * 1 + 2 * 100) / 101. geckopy's test_exact_homolog_dominates
+    % has the same numbers.
+    [model, adapter, rxns] = buildProject('ec_tree_homologs');
+    tree = struct('source', 'ec_tree', 'rxns', {rxns(1)}, 'kcats', 10, 'detail', {{'n=4; depth=4'}});
+    saveKcatSource(model, tree, 'ec_tree', 'modelAdapter', adapter);
+    hom = struct('source', 'homologs', 'rxns', {rxns(1)}, 'kcats', 100, 'substrates', {{'m1'}}, ...
+        'detail', {{'identity=1.000; n=1'}});
+    saveKcatSource(model, hom, 'homologs', 'modelAdapter', adapter);
+    decisions = collectKcats(model, 'modelAdapter', adapter, 'writeReport', false);
+    i = find(strcmp(decisions.ecRxn, rxns{1}));
+    verifyEqual(testCase, decisions.kcat(i), 10 ^ ((0.9 + 200) / 101), 'RelTol', 1e-12)
+end
+
 function testCombineErrors_tc0090(testCase)
     % An OKP method without combination parameters, and an unknown method.
     [model, adapter, rxns] = buildProject('okp');
@@ -73,7 +89,8 @@ function [model, adapter, rxns] = buildProject(preset)
     fprintf(fid, ['# Combination parameters for tests\n# measurement_sd: 0.5\n# min_variance: 0.01\n' ...
         '# interval_scale ec_tree+okp: 2\n# interval_scale okp: 1\nsource\tbin\tbias\tvariance\tn\n' ...
         'ec_tree\tec4:3-5\t0.1\t1\t50\nec_tree\tec3\t0\t4\t50\nokp_catapro\t<40\t0.2\t2\t50\n' ...
-        'okp_catapro\t>80\t0\t0.5\t50\nokp_unikp\t40-60\t-0.3\t1\t50\n']);
+        'okp_catapro\t>80\t0\t0.5\t50\nokp_unikp\t40-60\t-0.3\t1\t50\n' ...
+        'homologs\t90\t0\t1\t50\nhomologs\texact\t0\t0.01\t0\n']);
     fclose(fid);
     model = makeEcModel(getGeckoTestModel(), false, adapter);
     model = getECfromGEM(model);

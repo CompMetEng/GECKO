@@ -7,7 +7,9 @@ function kcatList = kcatsFromHomologs(model, varargin)
 % identity, 80% coverage of both sequences). Each homolog measured on the
 % same substrate (same InChIKey, without the protonation flag) contributes
 % the median of its measurements; the estimate is the mean of the k most
-% identical such homologs, weighted by identity. For an enzyme complex the
+% identical such homologs, weighted by identity. Homologs at 95% identity or
+% more are measurements of (nearly) the same protein: when there are any,
+% the estimate is the median of those alone. For an enzyme complex the
 % estimate is the median over its subunits. Model metabolites are matched to
 % InChIKeys through substrates.tsv of the BRENDA files: their ChEBI
 % annotations, then MetaNetX annotations (model.metMiriams), then their
@@ -44,7 +46,7 @@ function kcatList = kcatsFromHomologs(model, varargin)
 % kcatList : struct
 %     the kcat values, with fields source, rxns, substrates, kcats and
 %     detail (the identity of the nearest homolog, identity, and the number
-%     of homologs averaged, n).
+%     of homologs used, n).
 %
 % Examples
 % --------
@@ -103,19 +105,24 @@ if ~isempty(seqs)
     for u = 1:numel(up)
         parts = strsplit(up{u}, '|');
         rows = find(strcmp(hits.query, parts{1}));
-        found = [];
+        found = zeros(0, 2);
         for r = rows(:)'
             mk = [hits.target{r} '|' parts{2}];
             if isKey(med, mk)
                 found(end+1, :) = [hits.identity(r), med(mk)]; %#ok<AGROW>
-                if size(found, 1) == p.k
-                    break
-                end
             end
         end
-        if ~isempty(found)
+        if isempty(found)
+            continue
+        end
+        exact = found(found(:, 1) >= 0.95, 2);
+        best(u) = found(1, 1);
+        if ~isempty(exact)
+            est(u) = median(exact);
+            nHom(u) = numel(exact);
+        else
+            found = found(1:min(p.k, end), :);
             est(u) = sum(found(:, 1) .* found(:, 2)) / sum(found(:, 1));
-            best(u) = found(1, 1);
             nHom(u) = size(found, 1);
         end
     end
@@ -132,7 +139,7 @@ if ~isempty(seqs)
         kcatList.rxns{end+1, 1} = model.ec.rxns{rxnIdx(first)};
         kcatList.substrates{end+1, 1} = model.metNames{metIdx(first)};
         kcatList.kcats(end+1, 1) = 10 ^ median(est(members));
-        kcatList.detail{end+1, 1} = sprintf('identity=%.2f; n=%d', best(members(b)), nHom(members(b)));
+        kcatList.detail{end+1, 1} = sprintf('identity=%.3f; n=%d', best(members(b)), nHom(members(b)));
     end
 end
 

@@ -447,7 +447,9 @@ if strcmp(source, 'ec_tree')
     end
 elseif strcmp(source, 'homologs')
     t = regexp(detail, 'identity=([\d.]+)', 'tokens', 'once');
-    if ~isempty(t)
+    if ~isempty(t) && str2double(t{1}) >= 0.95
+        b = 'exact'; % the same protein: an assumed bin, see kcatCombineParams.tsv
+    elseif ~isempty(t)
         labels = {'40', '50', '60', '70', '80', '90'};
         b = labels{find([str2double(t{1}) <= [0.5 0.6 0.7 0.8 0.9], true], 1)};
     end
