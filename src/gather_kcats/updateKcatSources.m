@@ -181,7 +181,7 @@ if isfield(wanted, 'method')
     return
 end
 known = {'CataPro','CatPred','CatRange','DLKcat','EITLEM','KinForm-H','KinForm-L', ...
-    'OmniESI','OmniESI-O2DENet','TurNuP','UniKP'};
+    'OmniESI','OmniESI-O2DENet','TurNup','UniKP'};
 tags = cellfun(@(m) ['okp_' lower(regexprep(m, '[^A-Za-z0-9]+', '_'))], known, 'UniformOutput', false);
 hit = strcmp(tags, name);
 if ~any(hit)

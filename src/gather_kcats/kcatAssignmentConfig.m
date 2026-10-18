@@ -67,8 +67,11 @@ if isfield(params, 'kcat_sources') && isstruct(params.kcat_sources)
 end
 % The okp group: the OKP methods of [kcat_sources.okp] methods.
 known = {'CataPro','CatPred','CatRange','DLKcat','EITLEM','KinForm-H','KinForm-L', ...
-    'OmniESI','OmniESI-O2DENet','TurNuP','UniKP'};
-config.okpMethods = known(~strcmp(known, 'CatRange')); % CatRange has no combination parameters
+    'OmniESI','OmniESI-O2DENet','TurNup','UniKP'};
+% The default: methods that read enzyme-substrate pairs and have combination
+% parameters (CatRange predicts classes; CatPred and TurNup read whole
+% reactions, which kcatsFromOKP does not submit).
+config.okpMethods = known(~ismember(known, {'CatRange', 'CatPred', 'TurNup'}));
 if isfield(config.sources, 'okp') && isfield(config.sources.okp, 'methods') && ~isempty(config.sources.okp.methods)
     config.okpMethods = cellstr(config.sources.okp.methods);
     config.okpMethods = config.okpMethods(:)';

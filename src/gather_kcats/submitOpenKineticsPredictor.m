@@ -8,7 +8,7 @@ function jobId = submitOpenKineticsPredictor(model, varargin)
 % pick it up later.
 %
 % Predictors available via OKP: CataPro, CatPred, CatRange, DLKcat, EITLEM,
-% KinForm-H, KinForm-L, OmniESI, OmniESI-O2DENet, TurNuP, UniKP (see GET
+% KinForm-H, KinForm-L, OmniESI, OmniESI-O2DENet, TurNup, UniKP (see GET
 % /api/v1/methods/). CatRange predicts a class of kcat values;
 % readOpenKineticsPredictorOutput uses its geometric midpoint.
 %
