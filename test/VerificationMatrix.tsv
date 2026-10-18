@@ -28,6 +28,8 @@ gather_kcats/kcatAssignmentConfig.m	tc0079, tc0081, tc0083, tc0087, tc0088, tc00
 gather_kcats/loadBrendaMeasurements.m	tc0085	
 gather_kcats/ecTreeEstimate.m	tc0084	
 gather_kcats/kcatsFromECTree.m	tc0086, tc0087	
+gather_kcats/kcatsFromHomologs.m	tc0095, tc0096	
+gather_kcats/extractEnzymeSubstratePairs.m	tc0096, tc0015	
 gather_kcats/convertCustomKcats.m	tc0091, tc0092, tc0094	
 change_model/upgradeEcModel.m	tc0093, tc0094	
 utilities/upgradeGECKOproject.m	tc0094	

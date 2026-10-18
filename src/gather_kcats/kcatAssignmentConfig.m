@@ -106,8 +106,13 @@ switch preset
         stages = [stage('select', [own, {'ec_tree'}], 1), stage('combine', {'okp'}, 4)];
         sources.brenda = struct('aggregation', 'median');
         sources.ec_tree = struct('k', 5);
+    case 'ec_tree_homologs'
+        stages = [stage('select', own, 1), stage('combine', {'ec_tree', 'homologs'}, 4), ...
+            stage('combine', {'okp'}, 4)];
+        sources.brenda = struct('aggregation', 'median');
+        sources.ec_tree = struct('k', 5);
     case 'ec_tree_okp'
-        stages = [stage('select', own, 1), stage('combine', {'ec_tree', 'okp'}, 4), ...
+        stages = [stage('select', own, 1), stage('combine', {'ec_tree', 'homologs', 'okp'}, 4), ...
             stage('combine', {'okp'}, 4)];
         sources.brenda = struct('aggregation', 'median');
         sources.ec_tree = struct('k', 5);
@@ -121,7 +126,7 @@ switch preset
         sources.brenda = struct('aggregation', 'max');
     otherwise
         error('kcatAssignment:config', 'Unknown kcat assignment preset "%s". Presets: %s.', ...
-            preset, 'brenda_ec_tree, ec_tree_okp, okp, gecko_median, gecko_classic')
+            preset, 'brenda_ec_tree, ec_tree_homologs, ec_tree_okp, okp, gecko_median, gecko_classic')
 end
 end
 

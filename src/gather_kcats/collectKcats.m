@@ -9,7 +9,7 @@ function [decisions, report, ecModel] = collectKcats(model, varargin)
 % The order is a preset or a list of stages:
 %
 %     [kcat_assignment]
-%     preset = "brenda_ec_tree"    # the default; or ec_tree_okp, okp,
+%     preset = "brenda_ec_tree"    # the default; or ec_tree_homologs, ec_tree_okp, okp,
 %                                  # gecko_median, gecko_classic
 %     isozymes = true              # fill from isozymes after the stages
 %     standard = true              # standard kcat for the rest
@@ -44,8 +44,12 @@ function [decisions, report, ecModel] = collectKcats(model, varargin)
 %   measurements of the organism on the reaction's substrate (origin 1,
 %   without EC wildcards), the EC tree (kcatsFromECTree); then the OKP
 %   methods combined for the reactions left (without an EC number).
+% - ec_tree_homologs: custom kcats, the organism's own BRENDA value; then
+%   the EC tree and homologs (kcatsFromHomologs) combined; then the OKP
+%   methods combined.
 % - ec_tree_okp: custom kcats, the organism's own BRENDA value; then the EC
-%   tree and the OKP methods combined; then the OKP methods combined.
+%   tree, homologs and the OKP methods combined; then the OKP methods
+%   combined.
 % - okp: custom kcats; then the OKP methods combined.
 % - gecko_median: custom kcats, the BRENDA median of matches without EC
 %   wildcards from the organism or other organisms, with or without the
