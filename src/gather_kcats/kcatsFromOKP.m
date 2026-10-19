@@ -28,7 +28,7 @@ function [kcatList, done] = kcatsFromOKP(model, varargin)
 % --------------------
 % method : char
 %     OKP method, e.g. 'CataPro', 'CatPred', 'CatRange', 'DLKcat',
-%     'EITLEM', 'KinForm-H', 'KinForm-L', 'OmniESI', 'TurNuP', 'UniKP'
+%     'EITLEM', 'KinForm-H', 'KinForm-L', 'OmniESI', 'TurNup', 'UniKP'
 %     (default: params.okp.method of the model adapter, or 'CataPro').
 % wait : logical
 %     wait until the job is done (default false).
@@ -93,6 +93,10 @@ if isempty(method)
         method = 'CataPro';
     end
 end
+if any(strcmp(method, {'CatPred', 'TurNup'}))
+    error('kcatsFromOKP:method', ['%s reads whole reactions (its substrate set, and products ' ...
+        'for TurNup); kcatsFromOKP submits enzyme-substrate pairs only.'], method)
+end
 tag = lower(regexprep(method, '[^A-Za-z0-9]+', '_'));
 dataDir = fullfile(params.path, 'data');
 jobFile = fullfile(dataDir, ['OKP_job_' tag '.txt']);
@@ -155,6 +159,11 @@ if p.save
     parameters = struct('method', method);
     if isfield(job, 'ecRxns')
         parameters.ec_rxns = str2double(job.ecRxns);
+    end
+    if isfield(kcatList, 'similarity')
+        kcatList.detail = repmat({''}, numel(kcatList.rxns), 1);
+        has = ~isnan(kcatList.similarity);
+        kcatList.detail(has) = cellstr("similarity=" + string(kcatList.similarity(has)));
     end
     saveKcatSource(model, kcatList, name, 'modelAdapter', modelAdapter, ...
         'generator', 'kcatsFromOKP', 'parameters', parameters, 'data', ['OKP job ' job.jobId]);

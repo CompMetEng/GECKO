@@ -68,8 +68,8 @@ kcatDir = fullfile(params.path, 'data', 'kcats');
 
 names = {};
 for s = 1:numel(config.stages)
-    for t = 1:numel(config.stages(s).sources)
-        token = config.stages(s).sources{t};
+    for t = 1:numel(config.stages(s).files)
+        token = config.stages(s).files{t};
         if startsWith(token, 'database_')
             token = 'brenda';
         end
@@ -101,7 +101,7 @@ disp(report)
         if strcmp(name, 'custom')
             st = 'skipped'; nt = 'curated by hand';
             return
-        elseif ~any(strcmp(name, {'brenda','ec_tree','dlkcat'})) && ~startsWith(name, 'okp_')
+        elseif ~any(strcmp(name, {'brenda','ec_tree','homologs','dlkcat'})) && ~startsWith(name, 'okp_')
             st = 'skipped'; nt = 'not a source GECKO gathers';
             return
         end
@@ -122,7 +122,7 @@ disp(report)
                 return
             end
         end
-        if any(strcmp(name, {'brenda','ec_tree'}))
+        if any(strcmp(name, {'brenda','ec_tree','homologs'}))
             release = brendaRelease(modelAdapter, name);
             if isfield(meta, 'data') && ~isempty(release) && ~strcmp(meta.data, release)
                 st = 'outdated';
@@ -144,6 +144,12 @@ try
         args = {};
         if isfield(wanted, 'k'), args = {'k', double(wanted.k)}; end
         kcatsFromECTree(model, args{:}, 'modelAdapter', modelAdapter);
+    elseif strcmp(name, 'homologs')
+        args = {};
+        if isfield(wanted, 'k'), args = [args, {'k', double(wanted.k)}]; end
+        if isfield(wanted, 'min_identity'), args = [args, {'minIdentity', double(wanted.min_identity)}]; end
+        if isfield(wanted, 'coverage'), args = [args, {'coverage', double(wanted.coverage)}]; end
+        kcatsFromHomologs(model, args{:}, 'modelAdapter', modelAdapter);
     elseif strcmp(name, 'dlkcat')
         run = ~isfile(fullfile(modelAdapter.params.path, 'data', 'DLKcat.tsv'));
         if run
@@ -175,7 +181,7 @@ if isfield(wanted, 'method')
     return
 end
 known = {'CataPro','CatPred','CatRange','DLKcat','EITLEM','KinForm-H','KinForm-L', ...
-    'OmniESI','OmniESI-O2DENet','TurNuP','UniKP'};
+    'OmniESI','OmniESI-O2DENet','TurNup','UniKP'};
 tags = cellfun(@(m) ['okp_' lower(regexprep(m, '[^A-Za-z0-9]+', '_'))], known, 'UniformOutput', false);
 hit = strcmp(tags, name);
 if ~any(hit)
@@ -199,7 +205,7 @@ end
 function release = brendaRelease(modelAdapter, name)
 % The release line of the BRENDA file a source is made from.
 release = '';
-files = struct('brenda', 'kcat.tsv', 'ec_tree', 'measurements.tsv');
+files = struct('brenda', 'kcat.tsv', 'ec_tree', 'measurements.tsv', 'homologs', 'measurements.tsv');
 fid = fopen(fullfile(modelAdapter.getBrendaDBFolder(), files.(name)), 'r');
 if fid < 0
     return

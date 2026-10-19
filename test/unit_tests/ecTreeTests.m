@@ -28,11 +28,17 @@ function testEcTreeWorkedExample_tc0084(testCase)
 end
 
 function testBundledMeasurements_tc0085(testCase)
-    m = loadBrendaMeasurements('folder', fullfile(findGECKOroot, 'databases'));
+    m = loadBrendaMeasurements('folder', fetchBrendaAsset());
     verifyTrue(testCase, startsWith(m.release, 'BRENDA release '))
     verifyGreaterThan(testCase, numel(m.ec), 50000)
     verifyTrue(testCase, all(m.kcat > 0))
     verifyFalse(testCase, any(contains(m.ec, '-')))
+    % A file that is not gzipped in the release, and a second call that
+    % reuses the downloads.
+    folder = fetchBrendaAsset({'kcatCombineParams.tsv'});
+    verifyTrue(testCase, isfile(fullfile(folder, 'kcatCombineParams.tsv')))
+    verifyEqual(testCase, fetchBrendaAsset(), folder)
+    verifyError(testCase, @() fetchBrendaAsset({'other.tsv'}), 'fetchBrendaAsset:file')
 end
 
 function testKcatsFromECTreeWritesFile_tc0086(testCase)
@@ -55,12 +61,13 @@ end
 
 function testBrendaEcTreePreset_tc0087(testCase)
     % The default preset: custom.tsv, then BRENDA at origin 1, then the EC
-    % tree, then DLKcat.
+    % tree; then the OKP methods combined.
     [model, adapter, project] = buildProject();
     verifyFalse(testCase, isfield(adapter.params, 'kcat_assignment'))
     writeMeasurements(fullfile(project, 'data', 'measurements.tsv'), measurementsFor(model));
     report = updateKcatSources(model, 'dryRun', true, 'modelAdapter', adapter);
-    verifyEqual(testCase, report.source', {'custom','brenda','ec_tree','dlkcat'})
+    verifyEqual(testCase, report.source(1:3)', {'custom','brenda','ec_tree'})
+    verifyTrue(testCase, all(startsWith(report.source(4:end), 'okp_')))
     verifyEqual(testCase, report.status{3}, 'missing')
     fuzzy = kcatsFromBrenda(model, 'aggregation', 'median', 'modelAdapter', adapter);
     kcatsFromECTree(model, 'modelAdapter', adapter);
@@ -70,7 +77,7 @@ function testBrendaEcTreePreset_tc0087(testCase)
     stage1 = strcmp(decisions.stage, '1');
     fromBrenda = stage1 & startsWith(decisions.source, 'brenda');
     verifyTrue(testCase, all(ismember(decisions.ecRxn(fromBrenda), origin1)))
-    verifyTrue(testCase, all(ismember(decisions.source(stage1 & ~fromBrenda), {'custom','ec_tree','DLKcat'})))
+    verifyTrue(testCase, all(ismember(decisions.source(stage1 & ~fromBrenda), {'custom','ec_tree'})))
     verifyTrue(testCase, any(strcmp(decisions.source, 'ec_tree')))
     % Made from the adapter's measurement table with k = 5, as the preset
     % asks: current. Another k makes it outdated.

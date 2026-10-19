@@ -106,20 +106,27 @@ custom = 0.1
 
 # How kcats are assigned from the kcat source files in data/kcats (see
 # collectKcats and assignKcats): a preset, or [[kcat_assignment.stage]]
-# tables instead. brenda_ec_tree orders custom kcats, the BRENDA median of
-# measurements of the organism on the reaction's substrate, the EC tree
-# (the EC's median kcat, leaning on its EC class when it has few
-# measurements), then DLKcat for reactions without an EC number.
-# gecko_median and gecko_classic order BRENDA's fuzzy matches and DLKcat,
-# with the BRENDA median and maximum.
+# tables instead.
+# - brenda_ec_tree: custom kcats, the BRENDA median of measurements of the
+#   organism on the reaction's substrate, the EC tree (the EC's median kcat,
+#   leaning on its EC class when it has few measurements); then the
+#   OpenKineticsPredictor (OKP) methods combined for reactions without an
+#   EC number.
+# - ec_tree_okp: custom kcats, the organism's own BRENDA value, then the EC
+#   tree and the OKP methods combined.
+# - okp: custom kcats, then the OKP methods combined.
+# - gecko_median and gecko_classic: BRENDA's fuzzy matches and DLKcat, with
+#   the BRENDA median and maximum.
 [kcat_assignment]
 preset = "brenda_ec_tree"
 isozymes = true
 standard = true
 
-# Settings per kcat source, used by updateKcatSources, for example:
-# [kcat_sources.okp_catapro]
-# method = "CataPro"
+# Settings per kcat source, used by updateKcatSources, for example the OKP
+# methods the presets combine (default: all methods with combination
+# parameters):
+# [kcat_sources.okp]
+# methods = ["CataPro", "KinForm-H", "UniKP"]
 
 # Read by GECKO only. Names of MATLAB functions, for instance in the code
 # folder, used during kcat tuning: one that constrains the ecModel to

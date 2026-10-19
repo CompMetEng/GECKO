@@ -197,6 +197,23 @@ kcatList_DLKcat = kcatsFromDLKcat(ecModel);
 % collectKcats gives the same decisions without changing ecModel.
 [ecModel, kcatDecisions] = assignKcats(ecModel);
 
+% Choosing a kcat strategy. This tutorial reproduces the published
+% ecYeastGEM with gecko_classic. For a new ecModel, the preset in
+% model_adapter.toml chooses how kcats are found:
+% - brenda_ec_tree (the default): the organism's own BRENDA value, else
+%   the median of the EC number's measurements (kcatsFromECTree); the
+%   OpenKineticsPredictor (OKP) methods combined for reactions without an
+%   EC number.
+% - ec_tree_okp: the EC tree and the OKP methods combined for every
+%   reaction, weighted by how reliable each is.
+% - okp: the OKP methods combined only, for when the model's EC numbers are
+%   not trusted.
+% Custom kcats (data/kcats/custom.tsv) come first in every preset. Compare
+% presets with collectKcats before choosing; kcatAssignmentConfig shows what
+% a preset does. An old data/customKcats.tsv becomes data/kcats/custom.tsv
+% with convertCustomKcats(ecModel), and upgradeGECKOproject(projectPath)
+% lists all steps from a GECKO 3 project to this layout.
+
 % About STEP 30: the standard kcat (getStandardKcat) is assigned to
 % reactions without gene assocation. These reactions are identified as
 % those without a corresponding entry in ecModel.grRules. The following reactions are exempted:

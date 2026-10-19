@@ -8,21 +8,17 @@
 
 `DLKcatIgnoreMets.tsv` is a table of small metabolites/ions that `writeDLKcatInput` filters out as DLKcat does not predict kcat values for such substrates. This can either be in this folder (and a pull request to the GitHub repository will make this more widely available to other users), or by keeping a copy of this file in the `data` subfolder of the model adapter folder.
 
-### k<sub>cat</sub> values from BRENDA
+### BRENDA
 
-`kcat.tsv` collates kcat values per organism, reaction and substrate, as gathered from the BRENDA database. Both a per-triple maximum (`kcat_max`) and median (`kcat_median`) are recorded. Which one is used is set by `params.kcatAggregation` on the model adapter, or per call with `fuzzyKcatMatching(model,'kcatAggregation','median')`; the default is `max`. Produced by the `geckopy brenda-refresh` CLI in the [geckopy](https://github.com/CompMetEng/geckopy) Python package, which maintains the actively updated BRENDA-parsing tooling for both toolboxes; `mw.tsv` and `sa.tsv` below come from the same tool and share its `#`-prefixed release-version header line.
+GECKO does not ship BRENDA data. `fetchBrendaAsset` downloads the files of the [toolbox-assets](https://github.com/CompMetEng/toolbox-assets) release `brenda-2026.1-1` ([BRENDA](https://www.brenda-enzymes.org) 2026.1, CC BY 4.0) on first use into `databases/brenda-2026.1-1`, checked against the manifest checksums. geckopy uses the same release. A project can use its own BRENDA files instead, in `data/brenda`, written by the `geckopy brenda-refresh` CLI of [geckopy](https://github.com/CompMetEng/geckopy).
 
-### Molecular weights
+- `kcat.tsv`: kcat values per organism, reaction and substrate. Both a per-triple maximum (`kcat_max`) and median (`kcat_median`) are recorded. Which one is used is set by `params.kcatAggregation` on the model adapter, or per call with `fuzzyKcatMatching(model,'kcatAggregation','median')`; the default is `max`.
+- `sa.tsv`: specific activities per organism, reaction and substrate, with a maximum (`sa_max`) and median (`sa_median`); `loadBRENDAdata` uses `sa_max`.
+- `mw.tsv`: molecular weights per organism and reaction (without explicitly referring to a protein identifier).
+- `measurements.tsv`: one row per wild-type k<sub>cat</sub> measurement with an EC number: EC number, substrate (name and InChIKey), organism, UniProt accession and sequence id, k<sub>cat</sub> (1/s; the geometric midpoint of a range), temperature, pH and PubMed id. Values more than four orders of magnitude below their EC class, and clusters of values below 0.01 /s that sit three orders of magnitude under the other values of their EC number, are left out as unit errors. `kcatsFromECTree` reads it (see `loadBrendaMeasurements`).
+- `sequences.fasta`, `substrates.tsv` and `kcatCombineParams.tsv`: the sequences and substrates of the measurements, and the parameters of the `combine` stage.
 
-`mw.tsv` is a collation of molecular weights per organism and reaction (without explicitly referring to a protein identifier), as gathered from the BRENDA database.
-
-### Specific activities from BRENDA
-
-`sa.tsv` collates specific activities per organism, reaction and substrate, as gathered from the BRENDA database. Like `kcat.tsv`, both a maximum (`sa_max`) and median (`sa_median`) are recorded; `loadBRENDAdata` currently uses `sa_max` only.
-
-### BRENDA measurements
-
-`measurements.tsv` holds one row per wild-type k<sub>cat</sub> measurement in [BRENDA](https://www.brenda-enzymes.org) with an EC number: EC number, substrate (name and InChIKey), organism, UniProt accession and sequence id, k<sub>cat</sub> (1/s; the geometric midpoint of a range), temperature, pH and PubMed id. Values more than four orders of magnitude below their EC class, and clusters of values below 0.01 /s that sit three orders of magnitude under the other values of their EC number, are left out as unit errors. `kcatsFromECTree` reads it (see `loadBrendaMeasurements`); geckopy ships the same file. The first line gives the BRENDA release.
+Each file starts with a `#` line naming the BRENDA release.
 
 ### Taxonomic tree
 

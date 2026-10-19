@@ -43,6 +43,8 @@ function kcatList = readOpenKineticsPredictorOutput(model, varargin)
 % - genes : gene identifiers, matching model.ec.genes.
 % - substrates : substrate names, matching model.metNames.
 % - kcats : kcat values in /sec.
+% - similarity : the enzyme's highest sequence similarity to the method's
+%   training data, in percent (NaN without the similarity column)
 % - kcatSource : per-entry source as reported by OKP, prefixed with 'OKP-'
 %   (e.g. 'OKP-CatPred', 'OKP-BRENDA', 'OKP-Sabio-RK', 'OKP-UniProt').
 %
@@ -96,8 +98,22 @@ if size(raw,2) < 5
     error('OKP output file does not have the expected 5 columns (kcat, Source kcat, Extra Info kcat, Protein Sequence, Substrate): %s', outFile)
 end
 
-% Drop header row
+% Drop header row; the 'max similarity to <method> training data' column,
+% when present, gives the similarity.
+header = cellfun(@(h) char(string(h)), raw(1,:), 'UniformOutput', false);
+simCol = find(startsWith(header, 'max similarity to'), 1);
 raw = raw(2:end, :);
+similarity = nan(size(raw, 1), 1);
+if ~isempty(simCol)
+    for i = 1:size(raw, 1)
+        v = raw{i, simCol};
+        if isnumeric(v) && ~isempty(v)
+            similarity(i) = v;
+        elseif ischar(v) || isstring(v)
+            similarity(i) = str2double(v);
+        end
+    end
+end
 
 kcatsCol      = raw(:,1);
 sourceKcatCol = raw(:,2);
@@ -127,6 +143,7 @@ kcats         = kcats(valid);
 sequences     = sequences(valid);
 smiles        = smiles(valid);
 sourceKcatCol = sourceKcatCol(valid);
+similarity    = similarity(valid);
 
 if isempty(kcats)
     error('OKP file does not contain any numeric kcat values. Run the job at https://predictor.openkinetics.org/ first.')
@@ -154,6 +171,7 @@ genesOut      = cell(0,1);
 substratesOut = cell(0,1);
 kcatsOut      = zeros(0,1);
 sourceOut     = cell(0,1);
+similarityOut = zeros(0,1);
 unmatched     = 0;
 
 for i = 1:numel(sequences)
@@ -212,6 +230,7 @@ for i = 1:numel(sequences)
         substratesOut{end+1,1} = subName;
         kcatsOut(end+1,1)      = kcats(i);
         sourceOut{end+1,1}     = sourceKcatCol{i};
+        similarityOut(end+1,1) = similarity(i);
     end
 end
 
@@ -238,6 +257,7 @@ kcatList.genes      = genesOut;
 kcatList.substrates = substratesOut;
 kcatList.kcats      = kcatsOut;
 kcatList.kcatSource = kcatSource;
+kcatList.similarity = similarityOut;
 end
 
 function c = normalizeCellStrings(c)
