@@ -7,6 +7,10 @@ function saveEcModel(ecModel,varargin)
 % simulations like FBA etc., but this model cannot be loaded back into
 % MATLAB for applying further GECKO functions, as model.ec is lost).
 %
+% A YAML file records its ecModel format (gecko_format, see loadEcModel)
+% and the GECKO release that wrote it (generator) in its metaData, in
+% place of the geckopy_version that earlier geckopy releases wrote.
+%
 % The ecModel is saved to the ecModel-specific models/ subfolder. For
 % saving to other locations, writeYAMLmodel or exportModel are more
 % suitable.
@@ -14,7 +18,7 @@ function saveEcModel(ecModel,varargin)
 % Parameters
 % ----------
 % ecModel : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 %
 % Name-Value Arguments
 % --------------------
@@ -82,6 +86,22 @@ switch filename(end-3:end)
         fclose('all');
         delete('backup.xml');
     otherwise % Assume YAML
+        % The ecModel format the file follows (as project_format in
+        % model_adapter.toml) and the release that wrote it.
+        ecModel.annotation.gecko_format = '4';
+        ecModel.annotation.generator = ['GECKO ' geckoVersion()];
+        if isfield(ecModel.annotation, 'geckopy_version')
+            ecModel.annotation = rmfield(ecModel.annotation, 'geckopy_version');
+        end
         writeYAMLmodel(ecModel,filename);
+end
+end
+
+function v = geckoVersion()
+file = fullfile(findGECKOroot, 'version.txt');
+if isfile(file)
+    v = strtrim(fileread(file));
+else
+    v = 'unknown';
 end
 end

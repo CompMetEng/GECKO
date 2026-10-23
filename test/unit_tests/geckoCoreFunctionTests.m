@@ -240,6 +240,9 @@ function testsaveECModel_tc0009(testCase)
     saveEcModel(ecModel, [], adapter);
     loadedEcModel = loadEcModel([],adapter);
     delete(fullfile(adapter.params.path,'models','ecModel.yml'));
+    verifyEqual(testCase, loadedEcModel.annotation.gecko_format, '4')
+    verifyTrue(testCase, startsWith(loadedEcModel.annotation.generator, 'GECKO '))
+    loadedEcModel.annotation = rmfield(loadedEcModel.annotation, {'gecko_format', 'generator'});
     verifyEqual(testCase, ecModel, loadedEcModel)
 
     % Test loading of conventional GEM

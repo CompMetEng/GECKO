@@ -162,12 +162,23 @@ for k = 1:numel(models)
     if ~contains(fileread(file), 'prot_pool')
         continue
     end
-    model = readYAMLmodel(file);
+    try
+        model = readYAMLmodel(file);
+    catch err
+        add('saved ecModel', 'failed', sprintf('%s: %s', relative(file, projectPath), err.message));
+        continue
+    end
+    if isfield(model.annotation, 'gecko_format') && str2double(model.annotation.gecko_format) > 4
+        add('saved ecModel', 'failed', sprintf('%s: ecModel format %s is newer than this GECKO', ...
+            relative(file, projectPath), model.annotation.gecko_format));
+        continue
+    end
     [model, changed] = upgradeEcModel(model);
     if isempty(changed)
         continue
     end
     if apply
+        model.annotation.generator = ['GECKO ' geckoVersion()];
         keepOriginal(file);
         writeYAMLmodel(model, file);
     end
@@ -285,5 +296,14 @@ unknown = setdiff(cellfun(@char, given, 'UniformOutput', false), names);
 if ~isempty(unknown)
     error(id, 'Unknown option of %s: %s. Options: %s.', functionName, strjoin(unknown, ', '), ...
         strjoin(names, ', '))
+end
+end
+
+function v = geckoVersion()
+file = fullfile(findGECKOroot, 'version.txt');
+if isfile(file)
+    v = strtrim(fileread(file));
+else
+    v = 'unknown';
 end
 end
