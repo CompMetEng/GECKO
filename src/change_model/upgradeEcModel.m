@@ -10,6 +10,8 @@ function [model, changed] = upgradeEcModel(model)
 % objective coefficient change sign. Reactions already forward are left as
 % they are, so calling it again changes nothing. Flux values of the model
 % (fluxes of usage reactions and the pool exchange) change sign with it.
+% The ecModel format (annotation.gecko_format, see saveEcModel) becomes 4
+% when it is missing or lower.
 % geckopy has the same (upgrade_ec_model).
 %
 % Parameters
@@ -26,7 +28,7 @@ function [model, changed] = upgradeEcModel(model)
 %
 % Examples
 % --------
-%     ecModel = upgradeEcModel(loadEcModel('ecYeastGEM_GECKO3.yml'));
+%     ecModel = upgradeEcModel(readYAMLmodel('ecYeastGEM_GECKO3.yml'));
 %
 % See also
 % --------
@@ -36,6 +38,10 @@ pool = find(strcmp(model.mets, 'prot_pool'));
 changed = {};
 if isempty(pool)
     return
+end
+if ~isfield(model, 'annotation') || ~isfield(model.annotation, 'gecko_format') ...
+        || str2double(model.annotation.gecko_format) < 4
+    model.annotation.gecko_format = '4';
 end
 usage = find(startsWith(model.rxns, 'usage_prot_'));
 reverse = usage(full(model.S(pool, usage)) > 0);

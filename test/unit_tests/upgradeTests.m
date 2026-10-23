@@ -90,11 +90,41 @@ function testUpgradeGECKOproject_tc0094(testCase)
     saved = readYAMLmodel(fullfile(project, 'models', 'ecModel.yml'));
     [~, changed] = upgradeEcModel(saved);
     verifyEmpty(testCase, changed)
+    verifyEqual(testCase, saved.annotation.gecko_format, '4')
+    verifyTrue(testCase, startsWith(saved.annotation.generator, 'GECKO '))
     params = loadAdapterParams(fullfile(project, 'model_adapter.toml'));
     verifyEqual(testCase, params.projectFormat, 4)
 
     again = upgradeGECKOproject(project);
     verifyTrue(testCase, all(ismember(again.status, {'by hand'})))
+end
+
+function testEcModelFormat_tc0099(testCase)
+    % saveEcModel records the format and the release; loadEcModel upgrades
+    % a GECKO 3 file without them and refuses a newer format.
+    [model, adapter, project] = buildProject();
+    testCase.addTeardown(@() rmdir(project, 's'));
+    mkdir(fullfile(project, 'models'));
+    saveEcModel(model, 'ecModel.yml', adapter);
+    text = fileread(fullfile(project, 'models', 'ecModel.yml'));
+    verifyNotEmpty(testCase, regexp(text, '- gecko_format: "4"', 'once'))
+    verifyNotEmpty(testCase, regexp(text, '- generator: GECKO \S+', 'once'))
+    loaded = verifyWarningFree(testCase, @() loadEcModel('ecModel.yml', adapter));
+    verifyEqual(testCase, loaded.S, model.S)
+
+    writeYAMLmodel(gecko3(model), fullfile(project, 'models', 'gecko3.yml'));
+    up = verifyWarning(testCase, @() loadEcModel('gecko3.yml', adapter), 'loadEcModel:upgraded');
+    verifyEqual(testCase, up.S, model.S)
+    verifyEqual(testCase, [up.lb up.ub], [model.lb model.ub])
+    verifyEqual(testCase, up.annotation.gecko_format, '4')
+
+    writeLines(fullfile(project, 'models', 'newer.yml'), ...
+        strsplit(strrep(text, '- gecko_format: "4"', '- gecko_format: "5"'), newline));
+    verifyError(testCase, @() loadEcModel('newer.yml', adapter), 'loadEcModel:format')
+    newer = readYAMLmodel(fullfile(project, 'models', 'newer.yml'));
+    verifyEqual(testCase, getfield(upgradeEcModel(newer), 'annotation', 'gecko_format'), '5')
+    report = upgradeGECKOproject(project);
+    verifyEqual(testCase, report.status(contains(report.note, 'newer.yml')), {'failed'})
 end
 
 function old = gecko3(model)
