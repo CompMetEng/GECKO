@@ -3,7 +3,9 @@ function fseof = ecFSEOF(model,prodTargetRxn,csRxn,varargin)
 %
 % Runs Flux-Scanning with Enforced Objective Function (FSEOF) for a
 % specified production target, to identify reaction and gene targets for
-% metabolic engineering.
+% metabolic engineering. Reactions are classified as targets with the same
+% rule as RAVEN's FSEOF: the correlation between the absolute flux of a
+% reaction and the enforced production flux.
 %
 % Parameters
 % ----------
@@ -28,6 +30,10 @@ function fseof = ecFSEOF(model,prodTargetRxn,csRxn,varargin)
 %     modelAdapter, e.g. output/ecFSEOF_rxns.tsv).
 % modelAdapter : ModelAdapter
 %     a loaded model adapter (default: the current default model adapter).
+% corrThreshold : double
+%     minimum absolute Pearson correlation between the absolute flux of a
+%     reaction and the enforced production flux for the reaction to be a
+%     target (default 0.9).
 %
 % Returns
 % -------
@@ -40,25 +46,36 @@ function fseof = ecFSEOF(model,prodTargetRxn,csRxn,varargin)
 %
 % - alpha : target production used for enforced objective limits (from minimum to maximum production).
 % - v_matrix : fluxes for each target reaction predicted and each alpha.
-% - rxnTargets : a list with all reactions with fluxes that change consistently as target production increases. Contains ID, name, slope, gene rule, and equation.
-% - transportTargets : a list with all transport reactions with fluxes that change consistently as target production increases. Contains ID, name, slope, gene rule, and equation.
-% - geneTargets : a list with all selected targets that increase production. Contains gene, shortName, slope, action, and essentiality.
+% - rxnTargets : a list with all reactions whose absolute flux is correlated with the enforced production, with an absolute correlation of at least corrThreshold. Contains ID, name, slope, gene rule, and equation. The slope is the absolute slope of the regression of the absolute flux on the enforced production flux. The list is ordered by the product of slope and correlation, highest first.
+% - transportTargets : the same for transport reactions.
+% - geneTargets : a list with all genes of the targets. Contains gene, shortName, slope, action, and essentiality.
+%
+% Only reactions with a gene rule are considered, and not those that are
+% assigned to the standard enzyme. The enforced production reaction is
+% included when it has a gene rule, as its flux follows the enforced
+% production by definition. The reactions that draw enzyme usage
+% (usage_prot_*) take part in the classification and are not reported.
+% A reaction is over expressed (OE) when its flux increases with production,
+% knocked out (KO) when it decreases and is at most 1e-8 at the last step,
+% and knocked down (KD) when it decreases otherwise.
 %
 % Examples
 % --------
 %     % optional arguments may be given positionally or as name-value pairs:
-%     fseof = ecFSEOF(model,prodTargetRxn,csRxn,nSteps,outputFile,filePath,modelAdapter);
+%     fseof = ecFSEOF(model,prodTargetRxn,csRxn,nSteps,outputFile,filePath,modelAdapter,corrThreshold);
 %     fseof = ecFSEOF(model,prodTargetRxn,csRxn,'nSteps',32);
 
 p = parseGECKOargs(varargin, { ...
     'nSteps',       16; ...
     'outputFile',   false; ...
     'filePath',     []; ...
-    'modelAdapter', []});
+    'modelAdapter', []; ...
+    'corrThreshold',0.9});
 nSteps       = p.nSteps;
 outputFile   = p.outputFile;
 filePath     = p.filePath;
-modelAdapter = p.modelAdapter;
+modelAdapter  = p.modelAdapter;
+corrThreshold = p.corrThreshold;
 
 if isempty(modelAdapter)
     modelAdapter = ModelAdapterManager.getDefault();
@@ -133,65 +150,57 @@ target_rxns    = model.rxns(withGR);
 v_matrix       = v_matrix(withGR,:);
 rxnGeneM       = model.rxnGeneMat(withGR,:);
 
-% Filter out rxns that are always zero
-zero_flux   = ~all(abs(v_matrix(:,1:nSteps))==0,2);
-target_rxns = target_rxns(zero_flux,:);
-v_matrix    = v_matrix(zero_flux,:);
-rxnGeneM    = rxnGeneM(zero_flux,:);
-
-% Identify those rxns that always increase or decrease, and calculate the
-% slope as the difference in the flux when enforce objetive target 
-% production is set to 90%% of the maximum teorethical yield 
-% << v_matrix(i,nSteps-1) >> and the flux when the enforce objetive target
-% production is set to the minimum << v_matrix(i,1) >> for the reaction i, 
-% divided by maxTarget-maxTarget/nSteps-1.
+% Classify the reactions as in RAVEN's FSEOF. Slope and correlation are taken
+% on the absolute flux against the enforced production flux, so a reversible
+% reaction running backwards counts by its magnitude. A reaction is a target
+% when some absolute flux exceeds 1e-10, the standard deviation of its
+% absolute flux is above 0 and the absolute Pearson correlation reaches
+% corrThreshold. It is suggested for over expression (OE) when the slope is
+% positive, for knock out (KO) when the slope is negative and the absolute
+% flux at the last step is at most 1e-8, and for knock down (KD) for any
+% other negative slope.
+absV        = abs(v_matrix);
 slope_rxns  = zeros(size(target_rxns));
-targets     = logical(size(target_rxns));
+corr_rxns   = zeros(size(target_rxns));
 target_type = cell(size(target_rxns));
-for i = 1:length(target_rxns)
-    if issorted(abs(v_matrix(i,1:nSteps)),'strictascend')
-        % Those reactions that always increase while enforcing target
-        % production are suggested for Over Expression
-        targets(i) = true;
-        slope_rxns(i)  = abs(v_matrix(i,nSteps-1)-v_matrix(i,1))/abs(maxTarget-maxTarget/nSteps-1);
-        target_type(i) = {'OE'};
-    elseif issorted(abs(v_matrix(i,1:nSteps)),'strictdescend')
-        % Those reactions that always decrease while enforcing target
-        % production are suggested for KnockDown or KnockOut. KO are those
-        % reactions which have zero flux when enforcing target production 
-        % to 90%% of the maximum theoretical yield. 
-        targets(i) = true;
-        slope_rxns(i)  = abs(v_matrix(i,nSteps-1)-v_matrix(i,1))/abs(maxTarget-maxTarget/nSteps-1);
-        if v_matrix(i,nSteps) == 0
-            target_type(i) = {'KO'};
-        else
-            target_type(i) = {'KD'};
+targets     = false(size(target_rxns));
+if numel(alpha) > 1 && std(alpha) > 0
+    for i = 1:length(target_rxns)
+        track = absV(i,:);
+        if any(track > 1e-10) && std(track) > 0
+            fit = polyfit(alpha,track,1);
+            r   = corrcoef(alpha,track);
+            if abs(r(1,2)) >= corrThreshold && fit(1) ~= 0
+                targets(i)     = true;
+                slope_rxns(i)  = abs(fit(1));
+                corr_rxns(i)   = abs(r(1,2));
+                if fit(1) > 0
+                    target_type(i) = {'OE'};
+                elseif track(end) <= 1e-8
+                    target_type(i) = {'KO'};
+                else
+                    target_type(i) = {'KD'};
+                end
+            end
         end
     end
 end
 
-% Only keep those reaction that shows an increase or decrease pattern.
+% Only keep those reactions that are classified as a target
 target_rxns = target_rxns(targets);
 v_matrix    = v_matrix(targets,:);
 rxnGeneM    = rxnGeneM(targets,:);
 slope_rxns  = slope_rxns(targets);
+corr_rxns   = corr_rxns(targets);
 target_type = target_type(targets);
 
-% Order from highest to lowest slope
-[~,order]   = sort(slope_rxns,'descend');
+% Order from highest to lowest score, the product of slope and correlation
+[~,order]   = sort(slope_rxns .* corr_rxns,'descend');
 target_rxns = target_rxns(order);
 v_matrix    = v_matrix(order,:);
 rxnGeneM    = rxnGeneM(order,:);
 slope_rxns  = slope_rxns(order);
 target_type = target_type(order);
-
-% Filter out reactions with slope < quantile
-non_zero_slope  = slope_rxns > quantile(slope_rxns,0.75);
-target_rxns     = target_rxns(non_zero_slope);
-v_matrix        = v_matrix(non_zero_slope,:);
-rxnGeneM        = rxnGeneM(non_zero_slope,:);
-slope_rxns      = slope_rxns(non_zero_slope);
-target_type     = target_type(non_zero_slope);
 
 % Create gene list of those connected to the remaining rxns
 genes             = model.genes(sum(rxnGeneM,1) > 0);

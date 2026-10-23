@@ -2192,3 +2192,40 @@ function testGECKOInstallerIsOlderVersion_tc0059(testCase)
     verifyFalse(testCase, older('4.0.0', '4.0.0b1'))
     verifyFalse(testCase, older('4.0.0b1', '4.0.0b2'))
 end
+
+function testEcFSEOFSelectsTargetsByCorrelation_tc0099(testCase)
+    % Verifies ecFSEOF classifies a reaction as a target when the absolute
+    % flux correlates with the enforced production flux (default
+    % corrThreshold 0.9), as RAVEN's FSEOF does, and does not cut the list to
+    % the top quartile by slope. With R3 enforced, the flux of R5 falls as
+    % the shared enzyme pool goes to R3, and R3 itself follows the enforced
+    % flux; both are targets, the ones without a gene rule are not.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    model = getGeckoTestModel();
+    model.geneShortNames = model.genes;
+    ecModel = makeEcModel(model, false, adapter);
+    ecModel = getECfromGEM(ecModel);
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R2_EXP_1')) = 50;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R2_EXP_2')) = 10;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R2_REV_EXP_1')) = 50;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R2_REV_EXP_2')) = 10;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R3')) = 20;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R5')) = 100;
+    ecModel.ec.source(:) = {'manual'};
+    ecModel = applyKcatConstraints(ecModel);
+    ecModel = setProtPoolSize(ecModel, [], [], [], adapter);
+    adapter.params.bioRxn = 'R5';
+
+    fseof = ecFSEOF(ecModel, 'R3', 'S1', 'nSteps', 6, 'modelAdapter', adapter);
+    targets = sort([fseof.rxnTargets(:,1); fseof.transportTargets(:,1)]);
+    verifyEqual(testCase, targets, {'R3';'R5'})
+    verifyEqual(testCase, numel(fseof.alpha), 6)
+
+    % The slope column is the absolute regression slope, highest score first
+    verifyTrue(testCase, all(cell2mat(fseof.rxnTargets(:,3)) > 0))
+
+    % The default corrThreshold is 0.9
+    sameAsDefault = ecFSEOF(ecModel, 'R3', 'S1', 'nSteps', 6, 'modelAdapter', adapter, 'corrThreshold', 0.9);
+    verifyEqual(testCase, sameAsDefault.rxnTargets, fseof.rxnTargets)
+end
