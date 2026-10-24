@@ -226,10 +226,11 @@ if ~geckoLight
 else
     %Different strategy for GECKO light: Each reaction can exist multiple times in 
     %ec.rxns and similar fields - one time per isozyme. The number of copies is
-    %the number of ORs in the GPR + 1
-    numOrs = count(model.grRules(rxnWithGene), ' or ');
-    cpys = numOrs + 1;
-    prevNumRxns = length(numOrs);
+    %the number of AND-clauses of the GPR in disjunctive normal form, so
+    %'G1 and (G2 or G3)' gives the isozymes {G1,G2} and {G1,G3}.
+    isozymes = cellfun(@gprToDnf, model.grRules(rxnWithGene), 'UniformOutput', false);
+    cpys = cellfun(@numel, isozymes);
+    prevNumRxns = numel(isozymes);
     cpyIndices = repelem(rxnWithGene, cpys).'; %.' only matter when number of rxns is 1
     %loop through and add a prefix with an isozyme index to the rxns
     %we just give a fixed-length number as prefix, and assume that 999 is enough
@@ -362,51 +363,18 @@ if ~geckoLight
     for r=1:numel(rxnWithGene)
         rxnGenes   = model.genes(find(model.rxnGeneMat(rxnWithGene(r),:)));
         [~,locEnz] = ismember(rxnGenes,ec.genes); % Could also parse directly from rxnGeneMat, but some genes might be missing from Uniprot DB
-        if locEnz ~= 0
-            ec.rxnEnzMat(r,locEnz) = 1; %Assume 1 copy per subunit or enzyme, can be modified later
-        end
+        locEnz = locEnz(locEnz ~= 0); % Subunits missing from the databases are left out; the others still couple the reaction
+        ec.rxnEnzMat(r,locEnz) = 1; %Assume 1 copy per subunit or enzyme, can be modified later
     end
 else
     %For light models, we need to split up all GPRs
     ec.rxnEnzMat = zeros(numel(ec.rxns),numel(ec.genes)); % Non-zeros will indicate the number of subunits
     nextIndex = 1;
-    %For full model generation, the GPRs are controlled in expandModel, but 
-    %here we need to make an explicit format check
-    indexes2check = findPotentialErrors(model.grRules,model);
-    if ~isempty(indexes2check) 
-        printOrange('Run standardizeGrRules(model) for a more detailed warning.\n');
-        printOrange('For Human-GEM, these reactions can be corrected using simplifyGrRules.\n');
-    end
-    
     for i=1:prevNumRxns
-        %ind is the index in the model, not to confuse with the index in the ec struct (i),
-        %which only contains reactions with GPRs.
-        ind = rxnWithGene(i); 
-        %Get rid of all '(' and ')' since I'm not looking at complex stuff
-        %anyways
-        geneString=model.grRules{ind};
-        geneString=strrep(geneString,'(','');
-        geneString=strrep(geneString,')','');
-        geneString=strrep(geneString,' or ',';');
-        
-        if (numOrs(i) == 0)
-            geneNames = {geneString};
-        else
-            %Split the string into gene names
-            geneNames=regexp(geneString,';','split');
-        end
-        
-        %Now loop through the isozymes and set the rxnGeneMat
-        for j = 1:length(geneNames)
-            %Find the gene in the gene list If ' and ' relationship, first
-            %split the genes
-            fnd = strfind(geneNames{j},' and ');
-            if ~isempty(fnd)
-                andGenes=regexp(geneNames{j},' and ','split');
-                ec.rxnEnzMat(nextIndex,ismember(ec.genes,andGenes)) = 1; %should be subunit stoichoimetry
-            else
-                ec.rxnEnzMat(nextIndex,ismember(ec.genes,geneNames(j)))=1;%should be subunit stoichoimetry
-            end
+        %Each isozyme is one AND-clause of the GPR and gets its own row of
+        %ec.rxnEnzMat, in the order of the copies of the reaction in ec.rxns.
+        for j = 1:numel(isozymes{i})
+            ec.rxnEnzMat(nextIndex,ismember(ec.genes,isozymes{i}{j})) = 1;%should be subunit stoichoimetry
             nextIndex = nextIndex + 1;
         end
     end
@@ -485,23 +453,55 @@ model.ec=ec;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Function that gets the model field grRules and returns the indexes of the
-%rules in which the pattern ") and (" is present.
-%Copied from standardizeGrRules
-% TODO: Make this an accessible function in a separate file in RAVEN and remove this
-%implementation.
-function indexes2check = findPotentialErrors(grRules,model)
-indxs_l       = find(~cellfun(@isempty,strfind(grRules,') and (')));
-indxs_l_L     = find(~cellfun(@isempty,strfind(grRules,') and')));
-indxs_l_R     = find(~cellfun(@isempty,strfind(grRules,'and (')));
-indexes2check = vertcat(indxs_l,indxs_l_L,indxs_l_R);
-indexes2check = unique(indexes2check);
+%Function that expands a gene rule into disjunctive normal form: a cell array
+%with one cell per isozyme, each holding the gene ids that are ANDed in it.
+%Gene ids are whole words, so an id that contains 'or' or 'and' is kept
+%intact. An empty rule gives an empty cell array.
+function dnf = gprToDnf(rule)
+tokens = regexp(rule,'\(|\)|[^\s()]+','match');
+if isempty(tokens)
+    dnf = {};
+    return
+end
+[dnf,pos] = parseOr(tokens,1,rule);
+if pos <= numel(tokens)
+    error('Cannot parse the gene rule "%s"',rule)
+end
+end
 
-if ~isempty(indexes2check)
-    textToPrint = 'WARNING: Potentially problematic ") AND (" in the grRules for reaction(s):\n';
-    for i=1:numel(indexes2check)
-        textToPrint=[textToPrint '\t' model.rxns{indexes2check(i)} '\n'];
+function [dnf,pos] = parseOr(tokens,pos,rule)
+[dnf,pos] = parseAnd(tokens,pos,rule);
+while pos <= numel(tokens) && strcmp(tokens{pos},'or')
+    [rhs,pos] = parseAnd(tokens,pos+1,rule);
+    dnf = [dnf,rhs];
+end
+end
+
+function [dnf,pos] = parseAnd(tokens,pos,rule)
+[dnf,pos] = parseAtom(tokens,pos,rule);
+while pos <= numel(tokens) && strcmp(tokens{pos},'and')
+    [rhs,pos] = parseAtom(tokens,pos+1,rule);
+    product = cell(1,0);
+    for a = 1:numel(dnf)
+        for b = 1:numel(rhs)
+            product{end+1} = [dnf{a},rhs{b}]; %#ok<AGROW>
+        end
     end
-    printOrange(textToPrint);
+    dnf = product;
+end
+end
+
+function [dnf,pos] = parseAtom(tokens,pos,rule)
+if pos > numel(tokens) || any(strcmp(tokens{pos},{')','and','or'}))
+    error('Cannot parse the gene rule "%s"',rule)
+elseif strcmp(tokens{pos},'(')
+    [dnf,pos] = parseOr(tokens,pos+1,rule);
+    if pos > numel(tokens) || ~strcmp(tokens{pos},')')
+        error('Cannot parse the gene rule "%s"',rule)
+    end
+    pos = pos + 1;
+else
+    dnf = {tokens(pos)};
+    pos = pos + 1;
 end
 end

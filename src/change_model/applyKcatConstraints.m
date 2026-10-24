@@ -135,12 +135,13 @@ else %GECKO light formulation, where prot_pool represents all usages
         % summed per reaction), and divide by their kcat, to get a vector
         % of MW/kcat values.
         MWkcat = (model.ec.rxnEnzMat(ecIdx,:) * model.ec.mw) ./ model.ec.kcat(ecIdx);
-        % If kcat was zero, MWkcat is Inf. If no enzyme info was found,
-        % MWkcat is NaN. Drop those isozymes *before* selecting the
-        % cheapest one: correcting them to zero and including them in the
-        % min() below would let an isozyme with no kcat assigned always
-        % win over a real kcat on another isozyme of the same reaction.
-        validKcat = ~isinf(MWkcat) & ~isnan(MWkcat);
+        % If kcat was zero, MWkcat is Inf (or NaN without enzymes). An
+        % isozyme row without any enzyme has MWkcat zero. Drop those
+        % isozymes *before* selecting the cheapest one: including them in
+        % the min() below would let an isozyme with no kcat or no enzyme
+        % always win over a real kcat on another isozyme of the same reaction.
+        hasEnzyme = full(sum(model.ec.rxnEnzMat(ecIdx,:) ~= 0,2)) > 0;
+        validKcat = ~isinf(MWkcat) & ~isnan(MWkcat) & hasEnzyme;
         if any(validKcat)
             % Select the lowest MW/kcat (= most efficient), and convert to /hour
             model.S(prot_pool_idx, hasEc(i)) = -min(MWkcat(validKcat)/3600);
