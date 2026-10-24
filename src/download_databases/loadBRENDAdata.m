@@ -85,11 +85,11 @@ previousEC = []; EC_indexes = [];
 
 %build an index on MW{1} to speed things up a bit
 %first just extract the genus (i.e. the first part of the name)
-MWECNum = upper(unique(MW{1}));
+MWECNum = unique(upper(MW{1}));
 MWECNumIndices = cell(length(MWECNum),1);
 MWECNumHashMap = containers.Map(MWECNum,1:length(MWECNum));
 for i = 1:length(MW{1})
-    matchInd = cell2mat(values(MWECNumHashMap, MW{1}(i)));
+    matchInd = cell2mat(values(MWECNumHashMap, upper(MW{1}(i))));
     MWECNumIndices{matchInd} = [MWECNumIndices{matchInd};i];
 end
 

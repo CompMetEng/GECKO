@@ -21,6 +21,8 @@ function [model, rxnIdx] = assignKcatValues(model,kcatList,varargin)
 %     - genes : gene identifiers, matching model.ec.genes.
 %     - substrates : substrate names, matching model.metNames.
 %     - kcats : predicted kcat value in /sec.
+%     - kcatSource : optional, the source of each entry; entries with a zero
+%       kcat are discarded together with their source.
 %
 % Name-Value Arguments
 % --------------------
@@ -77,6 +79,9 @@ end
 removeZero                      = kcatList.kcats == 0;
 kcatList.kcats(removeZero)      = [];
 kcatList.rxns(removeZero)       = [];
+if isfield(kcatList,'kcatSource')
+    kcatList.kcatSource(removeZero) = [];
+end
 
 % Map to model.ec.rxns
 [sanityCheck,idxInModel] = ismember(kcatList.rxns,model.ec.rxns);

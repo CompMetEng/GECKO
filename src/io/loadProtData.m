@@ -143,16 +143,16 @@ if filterData
         end
         % Filter by RSD
         remData = (std(condAbund,0,2,'omitnan')./mean(condAbund,2,'omitnan'))>maxRSD;
-        condAbund(remData) = nan;
+        condAbund(remData,:) = nan;
         % Add stdevs
         condAbund = mean(condAbund,2,'omitnan')+(addStdevs*std(condAbund,0,2,'omitnan'));
         % Filter by minVal
         remData = mean(condAbund,2,'omitnan')<minVal;
         condAbund(remData) = nan;
-        % Remove bottom 5%
+        % Remove the lowest cutLowest percent
         numData  = find(~isnan(condAbund));
         [~,sortData] = sort(condAbund);
-        lowCutoff = floor(numel(numData)*0.05);
+        lowCutoff = floor(numel(numData)*cutLowest/100);
         condAbund(sortData(1:lowCutoff)) = nan;
         % Combine conditions
         filtAbund(:,i) = condAbund;
