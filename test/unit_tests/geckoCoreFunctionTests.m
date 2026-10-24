@@ -2193,7 +2193,7 @@ function testGECKOInstallerIsOlderVersion_tc0059(testCase)
     verifyFalse(testCase, older('4.0.0b1', '4.0.0b2'))
 end
 
-function testEcFSEOFSelectsTargetsByCorrelation_tc0099(testCase)
+function testEcFSEOFSelectsTargetsByCorrelation_tc0100(testCase)
     % Verifies ecFSEOF classifies a reaction as a target when the absolute
     % flux correlates with the enforced production flux (default
     % corrThreshold 0.9), as RAVEN's FSEOF does, and does not cut the list to

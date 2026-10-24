@@ -1,10 +1,10 @@
 Function/File (in src)	Verification	Comments
 BrendaParser/*	Not explicitly tested - The code has existed for a long time	
-change_model/applyComplexData.m	tc0003, tc0004	
-change_model/applyKcatConstraints.m	tc0011	
+change_model/applyComplexData.m	tc0003, tc0004, tc0103	
+change_model/applyKcatConstraints.m	tc0011, tc0215	
 change_model/findMetSmiles.m	tc0012	
 change_model/getComplexData.m	tc0003, tc0004 - File download not covered by test cases but is tested manually and works.	
-change_model/makeEcModel.m	tc0001, tc0002	
+change_model/makeEcModel.m	tc0001, tc0002, tc0210, tc0212	
 change_model/setProtPoolSize.m	tc0005	
 change_model/getKcatAcrossIsoenzymes.m	tc0011	
 change_model/applyCustomKcats.m		
@@ -13,7 +13,7 @@ gather_kcats/getStandardKcat.m
 gather_kcats/mergeDlkcatAndFuzzyKcats.m	tc0011	
 gather_kcats/readDLKcatOutput.m	tcm0001, tcm0002 - The test doesn't really check the function, only that some output is read	
 gather_kcats/runDLKcat.m	tcm0001, tcm0002 - The test doesn't really check the function, only that we get something
-gather_kcats/assignKcatValues.m	tc0011 - we did not test all possible parameterizations here
+gather_kcats/assignKcatValues.m	tc0011 - we did not test all possible parameterizations here; also tc0104
 gather_kcats/writeDLKcatInput.m	partly by tc0011
 gather_kcats/getEcRxnKeys.m	tc0070, tc0076	
 gather_kcats/saveKcatSource.m	tc0071, tc0073, tc0076, tc0078	
@@ -32,6 +32,11 @@ gather_kcats/kcatsFromHomologs.m	tc0095, tc0096
 gather_kcats/extractEnzymeSubstratePairs.m	tc0096, tc0015	
 gather_kcats/convertCustomKcats.m	tc0091, tc0092, tc0094	
 change_model/upgradeEcModel.m	tc0093, tc0094, tc0099	
+io/loadProtData.m	tc0101, tc0102	
+change_model/addNewRxnsToEC.m	tc0211	
+change_model/mapRxnsToConv.m	tc0213	
+flux_analysis/ecFVA.m	tc0214	
+flux_analysis/ecFSEOF.m	tc0100	
 utilities/upgradeGECKOproject.m	tc0094, tc0099	
 gather_kcats/readOpenKineticsPredictorOutput.m	tc0030, tc0069	
 gather_kcats/reviewKcatAssignment.m	Has only been tested by running it manually, not tested by test cases
@@ -41,7 +46,7 @@ get_enzyme_data/findECInDB.m	Called from getECfromDatabase - tested when that fu
 get_enzyme_data/getECfromDatabase.m	tc0007 - does not test download of the databases - this is tested in the manual workflows for Yeast-GEM and Human-GEM	
 get_enzyme_data/getECfromGEM.m	tc0006	
 get_enzyme_data/getECstring.m	Called from findECInDB - tested when that function is tested.	
-download_databases/loadBRENDAdata.m	Called from fuzzyKcatMatching - tested when that function is tested.
+download_databases/loadBRENDAdata.m	Called from fuzzyKcatMatching - tested when that function is tested; also tc0105
 download_databases/fetchBrendaAsset.m	tc0085	
 download_databases/loadDatabases.m	Called from getECfromDatabase - tested when that function is tested.
 kcat_tuning/evotune/*	Has only been tested by running it manually, not tested by test cases
