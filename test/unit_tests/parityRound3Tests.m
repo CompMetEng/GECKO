@@ -37,33 +37,31 @@ function testApplyKcatConstraintsAllZeroLightIsUnchanged_tc0250light(testCase)
 end
 
 function testSensitivityTuningStopsOnGrowthBelowTolerance_tc0251(testCase)
-    % R3 limits growth and its enzyme P4 is ignored, so tuning only raises
-    % R5. Growth stops rising once R3 alone limits it: the loop ends on the
-    % first iteration whose growth gain is below 1e-9, instead of raising
-    % the kcat of R5 until growth is exactly unchanged.
-    adapter = getAdapter();
-    model = loadConventionalGEM('modelAdapter', adapter);
-    for id = {'R2', 'R4'}
-        idx = strcmp(model.rxns, id{1});
-        model.lb(idx) = 0; model.ub(idx) = 0;
-    end
-    ecModel = makeEcModel(model, false, adapter);
-    ecModel = getECfromGEM(ecModel);
-    kcats = struct('R3', 0.05, 'R5', 200);
-    for id = fieldnames(kcats)'
-        j = strcmp(ecModel.ec.rxns, id{1});
-        ecModel.ec.kcat(j) = kcats.(id{1});
-        ecModel.ec.source{j} = 'manual';
-    end
-    ecModel = applyKcatConstraints(ecModel);
-    ecModel = setProtPoolSize(ecModel, [], [], [], adapter);
-    tuneAdapter = adapter;
-    tuneAdapter.params.bioRxn = 'R5';
+    % The solver reports a growth of 1 in the first iteration and 1 + 5e-10 in
+    % the second: the gain is below 1e-9, so the loop stops after the second
+    % iteration (3 solves with the one before the loop). An exact-equality
+    % loop would go on until two growths are identical (4 solves).
+    [ecModel, tuneAdapter] = tuningModel();
+    cleanup = shadowSolveLP('growth', [1 1 1+5e-10]); %#ok<NASGU>
     tunedModel = sensitivityTuning(ecModel, 'desiredGrowthRate', 50, ...
         'modelAdapter', tuneAdapter, 'protToIgnore', {'P4'}, 'verbose', false);
+    verifyEqual(testCase, getappdata(0, 'gecko_test_solvelp_count'), 3)
     r5 = tunedModel.ec.kcat(strcmp(tunedModel.ec.rxns, 'R5'));
     verifyGreaterThan(testCase, r5, 200)
-    verifyLessThan(testCase, r5, 1e12)
+end
+
+function testSensitivityTuningEndsWhenTheLPBecomesInfeasible_tc0254(testCase)
+    % The third solve (the second iteration) has no solution: RAVEN returns
+    % an empty objective value. The loop ends with a warning and returns
+    % what was tuned in the first iteration.
+    [ecModel, tuneAdapter] = tuningModel();
+    cleanup = shadowSolveLP('infeasibleFrom', 3); %#ok<NASGU>
+    out = evalc(['tunedModel = sensitivityTuning(ecModel, ''desiredGrowthRate'', 50, ' ...
+        '''modelAdapter'', tuneAdapter, ''protToIgnore'', {''P4''}, ''verbose'', false);']);
+    verifyTrue(testCase, contains(out, 'no feasible solution'))
+    verifyEqual(testCase, getappdata(0, 'gecko_test_solvelp_count'), 3)
+    r5 = tunedModel.ec.kcat(strcmp(tunedModel.ec.rxns, 'R5'));
+    verifyGreaterThan(testCase, r5, 200)
 end
 
 function testSensitivityTuningStopsWhenNothingCarriesFlux_tc0253(testCase)
@@ -109,6 +107,85 @@ function testGetKcatAcrossIsozymesUsesPositiveSiblingsOnly_tc0252(testCase)
     j = strcmp(out.ec.rxns, 'R2_EXP_1');
     verifyEqual(testCase, out.ec.kcat(j), 6)
     verifyEqual(testCase, out.ec.source{j}, 'isozymes')
+    % a NaN sibling next to a positive one is left out of the mean: three
+    % isozymes of R2 with kcats 0, NaN and 6 give 6 to the first
+    ecModel.ec.kcat(:) = 0;
+    ecModel.ec.rxns{strcmp(ecModel.ec.rxns, 'R3')} = 'R2_EXP_3';
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns, 'R2_EXP_2')) = NaN;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns, 'R2_EXP_3')) = 6;
+    out = getKcatAcrossIsozymes(ecModel);
+    j = strcmp(out.ec.rxns, 'R2_EXP_1');
+    verifyEqual(testCase, out.ec.kcat(j), 6)
+    verifyEqual(testCase, out.ec.source{j}, 'isozymes')
+    verifyTrue(testCase, isnan(out.ec.kcat(strcmp(out.ec.rxns, 'R2_EXP_2'))))
+end
+
+function [ecModel, tuneAdapter] = tuningModel()
+% R3 limits growth, its enzyme P4 is ignored by the tests, so tuning raises R5.
+adapter = getAdapter();
+model = loadConventionalGEM('modelAdapter', adapter);
+for id = {'R2', 'R4'}
+    idx = strcmp(model.rxns, id{1});
+    model.lb(idx) = 0; model.ub(idx) = 0;
+end
+ecModel = makeEcModel(model, false, adapter);
+ecModel = getECfromGEM(ecModel);
+kcats = struct('R3', 0.05, 'R5', 200);
+for id = fieldnames(kcats)'
+    j = strcmp(ecModel.ec.rxns, id{1});
+    ecModel.ec.kcat(j) = kcats.(id{1});
+    ecModel.ec.source{j} = 'manual';
+end
+ecModel = applyKcatConstraints(ecModel);
+ecModel = setProtPoolSize(ecModel, [], [], [], adapter);
+tuneAdapter = adapter;
+tuneAdapter.params.bioRxn = 'R5';
+end
+
+function cleanup = shadowSolveLP(mode, values)
+% Puts a solveLP on the path that calls RAVEN's and then reports the growth
+% of solve number n as values(min(n, end)) ('growth'), or no solution from
+% solve number values on ('infeasibleFrom'). The number of solves is kept in
+% the root appdata gecko_test_solvelp_count. The path is restored when the
+% returned object is cleared.
+setappdata(0, 'gecko_test_solvelp_real', @solveLP);
+setappdata(0, 'gecko_test_solvelp_count', 0);
+setappdata(0, 'gecko_test_solvelp_mode', mode);
+setappdata(0, 'gecko_test_solvelp_values', values);
+stubDir = tempname;
+mkdir(stubDir);
+fid = fopen(fullfile(stubDir, 'solveLP.m'), 'w');
+fprintf(fid, '%s\n', ...
+    'function [res,hs] = solveLP(varargin)', ...
+    'n = getappdata(0,''gecko_test_solvelp_count'') + 1;', ...
+    'setappdata(0,''gecko_test_solvelp_count'',n);', ...
+    'real = getappdata(0,''gecko_test_solvelp_real'');', ...
+    'mode = getappdata(0,''gecko_test_solvelp_mode'');', ...
+    'values = getappdata(0,''gecko_test_solvelp_values'');', ...
+    '[res,hs] = real(varargin{:});', ...
+    'switch mode', ...
+    '    case ''growth''', ...
+    '        res.f = values(min(n,numel(values)));', ...
+    '    case ''infeasibleFrom''', ...
+    '        if n >= values', ...
+    '            res.f = [];', ...
+    '            res.x = [];', ...
+    '        end', ...
+    'end', ...
+    'end');
+fclose(fid);
+addpath(stubDir, '-begin');
+cleanup = onCleanup(@() removeShadow(stubDir));
+end
+
+function removeShadow(stubDir)
+rmpath(stubDir);
+rmdir(stubDir, 's');
+for name = {'real', 'mode', 'values'}
+    if isappdata(0, ['gecko_test_solvelp_' name{1}])
+        rmappdata(0, ['gecko_test_solvelp_' name{1}]);
+    end
+end
 end
 
 function adapter = getAdapter()

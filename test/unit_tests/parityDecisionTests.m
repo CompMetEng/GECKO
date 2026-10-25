@@ -41,6 +41,18 @@ function testFindECInDBSingleGeneDropsWildcardParent_tc0242(testCase)
     verifyEqual(testCase, EC, '1.1.1.-;2.2.2.2')
 end
 
+function testFindECInDBSingleGeneShortCodesAndTrailingSpace_tc0243(testCase)
+    % A code with fewer than four levels is neither the wildcard parent nor
+    % the child of a four-level code, and a trailing space leaves no empty code.
+    geneHashMap = containers.Map({'G1'}, {1});
+    geneIndex = {1};
+    DBMW = 10000;
+    EC = findECInDB({'G1'}, {'1.1.1 1.1.1.4'}, DBMW, geneIndex, geneHashMap);
+    verifyEqual(testCase, EC, '1.1.1;1.1.1.4')
+    EC = findECInDB({'G1'}, {'1.1.1.4 '}, DBMW, geneIndex, geneHashMap);
+    verifyEqual(testCase, EC, '1.1.1.4')
+end
+
 function [fuzzy, dlkcat] = originFiveLists()
     fuzzy.rxns        = {'R1'};
     fuzzy.kcats       = 5;

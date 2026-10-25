@@ -43,7 +43,7 @@ gather_kcats/reviewKcatAssignment.m	Has only been tested by running it manually,
 gather_kcats/ecStatsFromBrenda.m	Not verified against real BRENDA data in this environment -- see its own TODO comment
 gather_kcats/mergeKcats.m	tc0240	
 get_enzyme_data/calculateMW.m	Not explicitly tested - The code has existed for a long time	
-get_enzyme_data/findECInDB.m	Called from getECfromDatabase - tested when that function is tested; also tc0242	
+get_enzyme_data/findECInDB.m	Called from getECfromDatabase - tested when that function is tested; also tc0242, tc0243	
 get_enzyme_data/getECfromDatabase.m	tc0007 - does not test download of the databases - this is tested in the manual workflows for Yeast-GEM and Human-GEM	
 get_enzyme_data/getECfromGEM.m	tc0006	
 get_enzyme_data/getECstring.m	Called from findECInDB - tested when that function is tested.	
@@ -53,7 +53,7 @@ download_databases/loadDatabases.m	Called from getECfromDatabase - tested when t
 kcat_tuning/evotune/*	Has only been tested by running it manually, not tested by test cases
 kcat_tuning/fillCarbonNum.m	tc0055 (deprecated-alias check only, not a real usage test)
 kcat_tuning/findTopLimitations.m	Not explicitly tested - The code has existed for a long time
-kcat_tuning/sensitivityTuning.m	tcm0001, tc0251, tc0253
+kcat_tuning/sensitivityTuning.m	tcm0001, tc0251, tc0253, tc0254
 kcat_tuning/sigmaFitter.m	Not explicitly tested - The code has existed for a long time
 kcat_tuning/topUsedEnzymes.m	Not explicitly tested - The code has existed for a long time	Not sure this works anymore - written for the old model structure?
 kcat_tuning/truncateValues.m	Not explicitly tested - The code has existed for a long time

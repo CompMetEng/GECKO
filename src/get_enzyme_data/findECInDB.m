@@ -4,12 +4,14 @@ function [EC,conflicts] = findECInDB(gene_set, DBecNum, DBMW, geneIndex, geneHas
 % For each gene, finds its matching database entries and takes the EC number
 % of the lightest-weight matching protein when a single EC number applies to
 % that gene; genes with several distinct EC numbers among their matches are
-% also reported as conflicts (the first match is still used for EC). A
-% wildcard code such as "1.1.1.-" is dropped when a more specific code of
-% the same prefix ("1.1.1.4") is present. When gene_set has more than one
-% gene (an enzyme complex), the numbers found for each gene are combined by
-% intersection where they share a match (wildcards such as "-" are
-% accounted for), otherwise by union.
+% also reported as conflicts (the first match is still used for EC). For a
+% single gene, a wildcard code such as "1.1.1.-" is dropped when a more
+% specific code of the same prefix ("1.1.1.4") is present; only codes with
+% four levels take part, and empty codes are removed. When gene_set has more
+% than one gene (an enzyme complex), the numbers found for each gene are
+% combined by intersection where they share a match (wildcards such as "-"
+% are accounted for), otherwise by union, and the combined set is not
+% cleaned of a wildcard next to a specific code.
 %
 % Parameters
 % ----------
@@ -105,9 +107,9 @@ for j = 2:length(EC_set)
     end
 end
 %A single gene keeps no wildcard code next to a more specific code of the
-%same prefix (e.g. 'EC1.1.1.-' next to 'EC1.1.1.4'), as in a complex:
+%same prefix (e.g. 'EC1.1.1.-' next to 'EC1.1.1.4'):
 if isscalar(EC_set)
-    int_EC = compare_wild(int_EC);
+    int_EC = dropWildcardParents(int_EC);
 end
 %Use the intersection found, if any. If not, use the union: 
 if isempty(int_EC)
@@ -151,6 +153,57 @@ end
 %'EC1.1.1.1' and 'EC1.1.1.-'), both independently pair-match the same
 %new_EC entry above and the loop appends the resolved code twice; dedupe.
 int_EC = unique(int_EC,'stable');
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function int_EC = dropWildcardParents(EC)
+%Removes empty codes and every code that is a wildcard parent of another
+%code in the cell array (e.g. 'EC1.2.3.-' when 'EC1.2.3.4' is present). Only
+%codes with four levels are compared, so 'EC1.1.1' is neither a parent nor a
+%child of 'EC1.1.1.4'. Equal codes collapse to the first.
+EC = EC(~cellfun(@isempty,EC) & ~strcmp(EC,'EC'));
+keep = true(1,numel(EC));
+for i = 1:numel(EC)
+    if ~keep(i)
+        continue;
+    end
+    for j = i+1:numel(EC)
+        if ~keep(j)
+            continue;
+        end
+        iInJ = subsumes(EC{i},EC{j});
+        jInI = subsumes(EC{j},EC{i});
+        if iInJ && jInI
+            keep(j) = false;
+        elseif iInJ
+            keep(i) = false;
+            break;
+        elseif jInI
+            keep(j) = false;
+        end
+    end
+end
+int_EC = EC(keep);
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function tf = subsumes(general,specific)
+%True if the code general is equal to or a wildcard parent of the code
+%specific; both carry the "EC" prefix and need four levels.
+general  = strsplit(extractAfter(general,2),'.');
+specific = strsplit(extractAfter(specific,2),'.');
+tf = false;
+if numel(general) ~= 4 || numel(specific) ~= 4
+    return;
+end
+for k = 1:4
+    if strcmp(general{k},'-')
+        tf = true;
+        return;
+    end
+    if strcmp(specific{k},'-') || ~strcmp(general{k},specific{k})
+        return;
+    end
+end
+tf = true;
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function int_EC = compare_wild(EC)

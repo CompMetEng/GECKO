@@ -99,6 +99,10 @@ if ~m.ec.geckoLight
     iteration = 1;
     while true
         [res,hs] = solveLP(m,0,[],hs); %skip parsimonius, only takes time
+        if isempty(res.f)
+            printOrange('WARNING: The model has no feasible solution with the increased kcats, tuning stops.\n');
+            break;
+        end
         if ~isnan(lastGrowth) && res.f <= lastGrowth + growthStallTol
             printOrange('WARNING: No growth increase from increased kcats - check if the constraints on the uptake reactions are too tight.\n');
             break;
@@ -154,6 +158,10 @@ else
     iteration = 1;
     while true
         res = solveLP(m,0); %skip parsimonius, only takes time
+        if isempty(res.f)
+            printOrange('WARNING: The model has no feasible solution with the increased kcats, tuning stops.\n');
+            break;
+        end
         if ~isnan(lastGrowth) && res.f <= lastGrowth + growthStallTol
             printOrange('No growth increase from increased kcats - check if the constraints on the uptake reactions are too tight.\n');
             break;
