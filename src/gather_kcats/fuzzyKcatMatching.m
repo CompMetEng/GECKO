@@ -222,10 +222,7 @@ for i = 1:length(EcIndexIndices)
 end
 
 %Apply force wildcard level
-while forceWClvl > 0
-    eccodes=regexprep(eccodes,'(.)*(\.\d+)(\.-)*$','$1\.-$3');
-    forceWClvl = forceWClvl - 1;
-end
+eccodes = forceWildcards(eccodes,forceWClvl);
 
 PB = progressReport(mM, 'Gathering kcat values by fuzzy matching to BRENDA database');
 %Main loop:
@@ -256,6 +253,36 @@ kcatList.origin      = NaN(numel(model.ec.rxns(ecRxns)),1);
 origin = [kcatInfo.info.org_s kcatInfo.info.rest_s kcatInfo.info.org_ns kcatInfo.info.rest_ns kcatInfo.info.org_sa kcatInfo.info.rest_sa];
 for i=1:6
     kcatList.origin(find(origin(:,i))) = i;
+end
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Replaces the rightmost level of each EC code that is not a wildcard yet with
+%a wildcard, forceWClvl times, so that level 4 gives -.-.-.- . The codes of one
+%entry are separated by ';'. A code that does not have four levels is kept.
+function eccodes = forceWildcards(eccodes,forceWClvl)
+if forceWClvl <= 0
+    return
+end
+for i = 1:numel(eccodes)
+    if isempty(eccodes{i})
+        continue
+    end
+    codes = strsplit(eccodes{i},';');
+    for j = 1:numel(codes)
+        parts = strsplit(codes{j},'.');
+        if numel(parts) ~= 4
+            continue
+        end
+        for k = 1:forceWClvl
+            last = find(~strcmp(parts,'-'),1,'last');
+            if isempty(last)
+                break
+            end
+            parts{last} = '-';
+        end
+        codes{j} = strjoin(parts,'.');
+    end
+    eccodes{i} = strjoin(codes,';');
 end
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -140,7 +140,7 @@ else
     % present in the model.
     genesInRules = strjoin(convertCharArray(newRxns.grRules));
     genesInRules = regexp(genesInRules,'[^\s()]+','match'); % Gene ids and the words 'and' and 'or', without spaces and brackets
-    genesInRules = genesInRules(~ismember(genesInRules,{'and','or'}));  % Only the gene ids
+    genesInRules = genesInRules(~ismember(lower(genesInRules),{'and','or'}));  % Only the gene ids
     genesInRules = setdiff(unique(genesInRules),model.genes); % Only keep new genes
 
     % If there is any gene which is not present, as to be pass as
@@ -250,8 +250,8 @@ else
         model.ec.eccodes(end+1) = {''};
 
         % Get rules
-        genes = newRxns.grRules(rxnIdx);
-        genes = strtrim(erase(split(genes,'and'), {'(' ')'}));
+        genes = regexp(newRxns.grRules{rxnIdx},'[^\s()]+','match'); % Gene ids and the word 'and', without spaces and brackets
+        genes = genes(~ismember(lower(genes),{'and','or'}));
         [~,enzIdx] = ismember(genes, model.ec.genes);
 
         % Update the enzyme rxns matrix
@@ -269,6 +269,8 @@ end
 %intact. An empty rule gives an empty cell array.
 function dnf = gprToDnf(rule)
 tokens = regexp(rule,'\(|\)|[^\s()]+','match');
+isOperator = strcmpi(tokens,'and') | strcmpi(tokens,'or');
+tokens(isOperator) = lower(tokens(isOperator)); % Operators are case insensitive
 if isempty(tokens)
     dnf = {};
     return

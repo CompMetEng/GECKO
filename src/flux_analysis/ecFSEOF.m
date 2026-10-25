@@ -202,6 +202,15 @@ rxnGeneM    = rxnGeneM(order,:);
 slope_rxns  = slope_rxns(order);
 target_type = target_type(order);
 
+% Exclude enzyme usage reactions: they are not reported, and they would otherwise
+% enter the gene slopes and the choice of the action per gene
+notUsage    = ~startsWith(target_rxns,'usage_prot_');
+target_rxns = target_rxns(notUsage);
+v_matrix    = v_matrix(notUsage,:);
+rxnGeneM    = rxnGeneM(notUsage,:);
+slope_rxns  = slope_rxns(notUsage);
+target_type = target_type(notUsage);
+
 % Create gene list of those connected to the remaining rxns
 genes             = model.genes(sum(rxnGeneM,1) > 0);
 slope_genes       = zeros(size(genes));
@@ -264,20 +273,22 @@ essentiality      = essentiality(order,:);
 % Report values used to enforce objective target production
 fseof.alpha = alpha;
 
-% Exclude enzyme usage reactions
-toKeep = ~startsWith(target_rxns,'usage_prot_');
-rxnIdx = getIndexes(model,target_rxns(toKeep),'rxns');
+rxnIdx = getIndexes(model,target_rxns,'rxns');
 
 % Report the fluxes at each alpha
-fseof.v_matrix = array2table(v_matrix(toKeep,:), ...
+fseof.v_matrix = array2table(v_matrix, ...
     'VariableNames', string(alpha), 'RowNames', model.rxns(rxnIdx));
 
 % Report reaction targets
 fseof.rxnTargets(:,1) = model.rxns(rxnIdx);
 fseof.rxnTargets(:,2) = model.rxnNames(rxnIdx);
-fseof.rxnTargets(:,3) = num2cell(slope_rxns(toKeep));
+fseof.rxnTargets(:,3) = num2cell(slope_rxns);
 fseof.rxnTargets(:,4) = model.grRules(rxnIdx);
-fseof.rxnTargets(:,5) = constructEquations(model,rxnIdx);
+if isempty(rxnIdx)
+    fseof.rxnTargets(:,5) = cell(0,1); % constructEquations would give all reactions
+else
+    fseof.rxnTargets(:,5) = constructEquations(model,rxnIdx);
+end
 
 % Identify transport reactions; defined as reactions involving (at least) 
 % one metabolite name in more than one compartment. 

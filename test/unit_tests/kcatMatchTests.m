@@ -98,6 +98,19 @@ function testFuzzyKcatMatchingEmptySubsetSelectsNone_tc0226(testCase)
         'modelAdapter', adapter), 'kcatsFromBrenda:emptySubset')
 end
 
+function testFuzzyKcatMatchingForceWildcardEscalatesFromTheRight_tc0231(testCase)
+    % forceWClvl replaces the rightmost level that is not a wildcard yet, for
+    % every EC number of a reaction, also a provisional one: level 4 gives
+    % -.-.-.- and level 1 gives a wildcard at the last level.
+    [ecModel, fuzzyAdapter] = fuzzyModel(testCase, {'1.1.1.1\tm1\ttestus testus\t7\t7\t1\t*\n'});
+    ecModel.ec.eccodes{strcmp(ecModel.ec.rxns, 'R2_EXP_1')} = '1.1.1.1;3.5.1.n3';
+    sel = ismember(ecModel.ec.rxns,{'R2_EXP_1'});
+    kcatList = fuzzyKcatMatching(ecModel, 'ecRxns', sel, 'modelAdapter', fuzzyAdapter, 'forceWClvl', 1);
+    verifyEqual(testCase, kcatList.eccodes, {'1.1.1.-;3.5.1.-'})
+    kcatList = fuzzyKcatMatching(ecModel, 'ecRxns', sel, 'modelAdapter', fuzzyAdapter, 'forceWClvl', 4);
+    verifyEqual(testCase, kcatList.eccodes, {'-.-.-.-;-.-.-.-'})
+end
+
 function testApplyCustomKcatsSkipsABlankKcat_tc0227(testCase)
     % An entry without a kcat leaves the reaction as it is.
     [ecModel, adapter] = customModel();

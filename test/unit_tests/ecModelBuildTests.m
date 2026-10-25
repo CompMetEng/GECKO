@@ -92,6 +92,65 @@ function testApplyKcatConstraintsLightSkipsIsozymeWithoutEnzymes_tc0215(testCase
 end
 
 
+function testAddNewRxnsToECGeneIdsContainingAnd_tc0232(testCase)
+    % Gene ids that contain 'and' (Sand1, andA, GandH) are whole words: the
+    % new reaction is coupled to exactly the enzymes of the genes in its rule.
+    adapter = getAdapter();
+    model = getGeckoTestModel();
+    ecModel = makeEcModel(model, false, adapter);
+
+    newRxns.rxns      = {'RNEWB'};
+    newRxns.rxnNames  = {'RNEWB'};
+    newRxns.equations = {'m1[c] => e2[e]'};
+    newRxns.grRules   = {'Sand1 and (andA or GandH)'};
+    newEnzymes.enzymes = {'ENEWA';'ENEWB';'ENEWC'};
+    newEnzymes.genes   = {'Sand1';'andA';'GandH'};
+    newEnzymes.mw      = [15000;16000;17000];
+
+    ecModel = addNewRxnsToEC(ecModel, newRxns, newEnzymes, adapter);
+    verifyEqual(testCase, sort(coupledGenes(ecModel, 'RNEWB_EXP_1')), {'Sand1';'andA'})
+    verifyEqual(testCase, sort(coupledGenes(ecModel, 'RNEWB_EXP_2')), {'GandH';'Sand1'})
+end
+
+function testLightGeneRuleOperatorsAreCaseInsensitive_tc0233(testCase)
+    % 'AND' and 'OR' are operators like 'and' and 'or'.
+    adapter = getAdapter();
+    model = getGeckoTestModel();
+    model.grRules{strcmp(model.rxns, 'R2')} = 'G1 AND (G2 OR G3)';
+    ecModel = makeEcModel(model, true, adapter);
+    verifyEqual(testCase, sort(coupledGenes(ecModel, '001_R2')), {'G1';'G2'})
+    verifyEqual(testCase, sort(coupledGenes(ecModel, '002_R2')), {'G1';'G3'})
+end
+
+function testLightReactionWithEmptyRuleKeepsOneRow_tc0234(testCase)
+    % A reaction that has gene entries but an empty gene rule keeps one row
+    % in ec.rxns, without enzymes.
+    adapter = getAdapter();
+    model = getGeckoTestModel();
+    model.grRules{strcmp(model.rxns, 'R2')} = '';
+    ecModel = makeEcModel(model, true, adapter);
+    row = strcmp(ecModel.ec.rxns, '001_R2');
+    verifyEqual(testCase, sum(row), 1)
+    verifyEmpty(testCase, coupledGenes(ecModel, '001_R2'))
+end
+
+function testApplyKcatConstraintsLightSkipsNonPositiveKcat_tc0235(testCase)
+    % A negative kcat is not a usable kcat: the cost of R2 is the one of the
+    % isozyme with a positive kcat.
+    adapter = getAdapter();
+    model = getGeckoTestModel();
+    lecModel = makeEcModel(model, true, adapter);
+    lecModel.ec.kcat(:) = 10;
+    first  = strcmp(lecModel.ec.rxns, '001_R2');
+    second = strcmp(lecModel.ec.rxns, '002_R2');
+    lecModel.ec.kcat(first) = -5;
+    lecModel = applyKcatConstraints(lecModel);
+    expected = -(lecModel.ec.rxnEnzMat(second,:) * lecModel.ec.mw) / 10 / 3600;
+    actual = full(lecModel.S(strcmp(lecModel.mets, 'prot_pool'), strcmp(lecModel.rxns, 'R2')));
+    verifyGreaterThan(testCase, abs(expected), 0)
+    verifyEqual(testCase, actual, expected, 'AbsTol', 1e-10)
+end
+
 function adapter = getAdapter()
 geckoPath = findGECKOroot;
 adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));

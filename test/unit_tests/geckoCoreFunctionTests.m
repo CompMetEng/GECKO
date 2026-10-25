@@ -2226,4 +2226,40 @@ function testEcFSEOFSelectsTargetsByCorrelation_tc0100(testCase)
     % The default corrThreshold is 0.9
     sameAsDefault = ecFSEOF(ecModel, 'R3', 'S1', 'nSteps', 6, 'modelAdapter', adapter, 'corrThreshold', 0.9);
     verifyEqual(testCase, sameAsDefault.rxnTargets, fseof.rxnTargets)
+
+    % The correlation of a reaction cannot exceed 1: a threshold above 1 gives no targets
+    none = ecFSEOF(ecModel, 'R3', 'S1', 'nSteps', 6, 'modelAdapter', adapter, 'corrThreshold', 1.5);
+    verifyEmpty(testCase, none.rxnTargets)
+    verifyEmpty(testCase, none.transportTargets)
+    verifyEmpty(testCase, none.geneTargets)
+end
+
+function testEcFSEOFGeneTargetsComeFromReportedReactions_tc0236(testCase)
+    % The usage reactions of the enzymes are not reported, and they do not enter
+    % the gene targets either: the slope of a gene whose rule is the only gene of
+    % a reported reaction is the slope of that reaction.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    model = getGeckoTestModel();
+    model.geneShortNames = model.genes;
+    ecModel = makeEcModel(model, false, adapter);
+    ecModel = getECfromGEM(ecModel);
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R2_EXP_1')) = 50;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R2_EXP_2')) = 10;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R2_REV_EXP_1')) = 50;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R2_REV_EXP_2')) = 10;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R3')) = 20;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R5')) = 100;
+    ecModel.ec.source(:) = {'manual'};
+    ecModel = applyKcatConstraints(ecModel);
+    ecModel = setProtPoolSize(ecModel, [], [], [], adapter);
+    adapter.params.bioRxn = 'R5';
+
+    fseof = ecFSEOF(ecModel, 'R3', 'S1', 'nSteps', 6, 'modelAdapter', adapter);
+    verifyNotEmpty(testCase, fseof.geneTargets)
+    for i = 1:size(fseof.geneTargets,1)
+        rxnRow = strcmp(fseof.rxnTargets(:,4), fseof.geneTargets{i,1});
+        verifyEqual(testCase, sum(rxnRow), 1)
+        verifyEqual(testCase, fseof.geneTargets{i,3}, fseof.rxnTargets{rxnRow,3}, 'AbsTol', 1e-9)
+    end
 end

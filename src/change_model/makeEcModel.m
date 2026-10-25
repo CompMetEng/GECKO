@@ -229,6 +229,8 @@ else
     %the number of AND-clauses of the GPR in disjunctive normal form, so
     %'G1 and (G2 or G3)' gives the isozymes {G1,G2} and {G1,G3}.
     isozymes = cellfun(@gprToDnf, model.grRules(rxnWithGene), 'UniformOutput', false);
+    % A reaction with gene entries but an empty rule keeps one isozyme without enzymes
+    isozymes(cellfun(@isempty,isozymes)) = {{cell(1,0)}};
     cpys = cellfun(@numel, isozymes);
     prevNumRxns = numel(isozymes);
     cpyIndices = repelem(rxnWithGene, cpys).'; %.' only matter when number of rxns is 1
@@ -459,6 +461,8 @@ end
 %intact. An empty rule gives an empty cell array.
 function dnf = gprToDnf(rule)
 tokens = regexp(rule,'\(|\)|[^\s()]+','match');
+isOperator = strcmpi(tokens,'and') | strcmpi(tokens,'or');
+tokens(isOperator) = lower(tokens(isOperator)); % Operators are case insensitive
 if isempty(tokens)
     dnf = {};
     return

@@ -140,8 +140,12 @@ else %GECKO light formulation, where prot_pool represents all usages
         % isozymes *before* selecting the cheapest one: including them in
         % the min() below would let an isozyme with no kcat or no enzyme
         % always win over a real kcat on another isozyme of the same reaction.
+        % A row with a kcat that is not positive or an enzyme mass that is not
+        % positive has no usable cost either.
         hasEnzyme = full(sum(model.ec.rxnEnzMat(ecIdx,:) ~= 0,2)) > 0;
-        validKcat = ~isinf(MWkcat) & ~isnan(MWkcat) & hasEnzyme;
+        enzMass   = full(model.ec.rxnEnzMat(ecIdx,:) * model.ec.mw);
+        validKcat = ~isinf(MWkcat) & ~isnan(MWkcat) & hasEnzyme & ...
+            model.ec.kcat(ecIdx) > 0 & enzMass > 0;
         if any(validKcat)
             % Select the lowest MW/kcat (= most efficient), and convert to /hour
             model.S(prot_pool_idx, hasEc(i)) = -min(MWkcat(validKcat)/3600);
