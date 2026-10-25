@@ -117,6 +117,10 @@ if ~m.ec.geckoLight
         drawFluxes(drawRxns) = res.x(drawRxns);
         % Remove from the list user defined proteins
         drawFluxes(idxToIgnore) = 0;
+        if ~any(drawFluxes > 0)
+            printOrange('WARNING: No protein usage reaction carries flux, tuning cannot continue.\n');
+            break;
+        end
         [~,sel]              = max(drawFluxes); % since bounds 0 to 1000
         %Now get the metabolite
         metSel               = m.S(:,sel) > 0; % positive coeff (forward usage)
@@ -166,6 +170,10 @@ else
         %find the highest protein usage flux
         protPoolStoich  = m.S(strcmp(m.mets, 'prot_pool'),:).';
         protPoolStoich(idxToIgnore) = 0;
+        if ~any(res.x .* protPoolStoich < 0)
+            printOrange('WARNING: No reaction draws on the protein pool, tuning cannot continue.\n');
+            break;
+        end
         [~,sel]         = min(res.x .* protPoolStoich); %max consumption
         kcatList        = [kcatList, sel];
         rxn             = m.rxns(sel.');

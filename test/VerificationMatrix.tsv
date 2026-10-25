@@ -53,7 +53,7 @@ download_databases/loadDatabases.m	Called from getECfromDatabase - tested when t
 kcat_tuning/evotune/*	Has only been tested by running it manually, not tested by test cases
 kcat_tuning/fillCarbonNum.m	tc0055 (deprecated-alias check only, not a real usage test)
 kcat_tuning/findTopLimitations.m	Not explicitly tested - The code has existed for a long time
-kcat_tuning/sensitivityTuning.m	tcm0001, tc0251
+kcat_tuning/sensitivityTuning.m	tcm0001, tc0251, tc0253
 kcat_tuning/sigmaFitter.m	Not explicitly tested - The code has existed for a long time
 kcat_tuning/topUsedEnzymes.m	Not explicitly tested - The code has existed for a long time	Not sure this works anymore - written for the old model structure?
 kcat_tuning/truncateValues.m	Not explicitly tested - The code has existed for a long time

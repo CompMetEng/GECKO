@@ -66,6 +66,29 @@ function testSensitivityTuningStopsOnGrowthBelowTolerance_tc0251(testCase)
     verifyLessThan(testCase, r5, 1e12)
 end
 
+function testSensitivityTuningStopsWhenNothingCarriesFlux_tc0253(testCase)
+    % R5, the growth reaction, is blocked: growth is 0 from the start and no
+    % usage reaction carries flux. The loop ends with a warning instead of
+    % tuning an arbitrary reaction or failing, and no kcat changes.
+    adapter = getAdapter();
+    model = loadConventionalGEM('modelAdapter', adapter);
+    for id = {'R2', 'R4', 'R5'}
+        idx = strcmp(model.rxns, id{1});
+        model.lb(idx) = 0; model.ub(idx) = 0;
+    end
+    ecModel = makeEcModel(model, false, adapter);
+    ecModel = getECfromGEM(ecModel);
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns, 'R3')) = 0.05;
+    ecModel = applyKcatConstraints(ecModel);
+    ecModel = setProtPoolSize(ecModel, [], [], [], adapter);
+    tuneAdapter = adapter;
+    tuneAdapter.params.bioRxn = 'R5';
+    [tunedModel, tunedKcats] = sensitivityTuning(ecModel, 'desiredGrowthRate', 50, ...
+        'modelAdapter', tuneAdapter, 'verbose', false);
+    verifyEqual(testCase, tunedModel.ec.kcat, ecModel.ec.kcat)
+    verifyEmpty(testCase, tunedKcats.rxns)
+end
+
 function testGetKcatAcrossIsozymesUsesPositiveSiblingsOnly_tc0252(testCase)
     % Only isozymes with a kcat above 0 enter the mean: a negative or NaN
     % sibling does not fill a kcat of 0.
