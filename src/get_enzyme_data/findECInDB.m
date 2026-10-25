@@ -4,10 +4,12 @@ function [EC,conflicts] = findECInDB(gene_set, DBecNum, DBMW, geneIndex, geneHas
 % For each gene, finds its matching database entries and takes the EC number
 % of the lightest-weight matching protein when a single EC number applies to
 % that gene; genes with several distinct EC numbers among their matches are
-% also reported as conflicts (the first match is still used for EC). When
-% gene_set has more than one gene (an enzyme complex), the numbers found for
-% each gene are combined by intersection where they share a match (wildcards
-% such as "-" are accounted for), otherwise by union.
+% also reported as conflicts (the first match is still used for EC). A
+% wildcard code such as "1.1.1.-" is dropped when a more specific code of
+% the same prefix ("1.1.1.4") is present. When gene_set has more than one
+% gene (an enzyme complex), the numbers found for each gene are combined by
+% intersection where they share a match (wildcards such as "-" are
+% accounted for), otherwise by union.
 %
 % Parameters
 % ----------
@@ -101,6 +103,11 @@ for j = 2:length(EC_set)
         uni_EC = compare_wild([uni_EC other_EC]);
         int_EC = intersection(int_EC,other_EC);
     end
+end
+%A single gene keeps no wildcard code next to a more specific code of the
+%same prefix (e.g. 'EC1.1.1.-' next to 'EC1.1.1.4'), as in a complex:
+if isscalar(EC_set)
+    int_EC = compare_wild(int_EC);
 end
 %Use the intersection found, if any. If not, use the union: 
 if isempty(int_EC)
