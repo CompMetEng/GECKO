@@ -30,7 +30,8 @@ function kcatList = fuzzyKcatMatching(model, varargin)
 % modelAdapter : ModelAdapter
 %     a loaded model adapter (default: the current default model adapter).
 % forceWClvl : double
-%     force a minimum wildcard level (default 0).
+%     number of extra levels, from the right, replaced by a wildcard (on top
+%     of any wildcard already in the code; default 0).
 %
 % Returns
 % -------
@@ -309,7 +310,12 @@ for k = 1:length(EC)
             wc_num(k) = sum(EC{k}=='-');
         else
             wild_num = sum(EC{k}=='-');
-            if wild_num >= 4
+            if numel(strsplit(EC{k},'.')) ~= 4
+                %An EC code without four levels (for example '1.1.1') cannot be
+                %escalated level by level: stop with the no-match values, as
+                %geckopy does.
+                success = true;
+            elseif wild_num >= 4
                 %Already fully wildcarded ('-.-.-.-') and still no match --
                 %stop here instead of computing dot_pos(4-wild_num) with
                 %wild_num==4, an out-of-range index. kcat(k)/origin(k) keep

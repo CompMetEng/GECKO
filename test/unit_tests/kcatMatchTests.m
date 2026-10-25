@@ -109,6 +109,29 @@ function testFuzzyKcatMatchingForceWildcardEscalatesFromTheRight_tc0231(testCase
     verifyEqual(testCase, kcatList.eccodes, {'1.1.1.-;3.5.1.-'})
     kcatList = fuzzyKcatMatching(ecModel, 'ecRxns', sel, 'modelAdapter', fuzzyAdapter, 'forceWClvl', 4);
     verifyEqual(testCase, kcatList.eccodes, {'-.-.-.-;-.-.-.-'})
+
+    % A code with a trailing wildcard escalates from the last level that is not
+    % a wildcard yet, and a level above the number of levels left stops at -.-.-.-
+    ecModel.ec.eccodes{strcmp(ecModel.ec.rxns, 'R2_EXP_1')} = '1.1.-.-;3.5.1.n3';
+    kcatList = fuzzyKcatMatching(ecModel, 'ecRxns', sel, 'modelAdapter', fuzzyAdapter, 'forceWClvl', 1);
+    verifyEqual(testCase, kcatList.eccodes, {'1.-.-.-;3.5.1.-'})
+    kcatList = fuzzyKcatMatching(ecModel, 'ecRxns', sel, 'modelAdapter', fuzzyAdapter, 'forceWClvl', 6);
+    verifyEqual(testCase, kcatList.eccodes, {'-.-.-.-;-.-.-.-'})
+end
+
+function testFuzzyKcatMatchingEcCodeWithoutFourLevels_tc0239(testCase)
+    % An EC code without four levels is not escalated level by level: it is
+    % left as it is by forceWClvl and, when BRENDA has no match, ends with the
+    % no-match values instead of an error.
+    [ecModel, fuzzyAdapter] = fuzzyModel(testCase, {'1.1.1.1\tm1\ttestus testus\t7\t7\t1\t*\n'});
+    ecModel.ec.eccodes{strcmp(ecModel.ec.rxns, 'R2_EXP_1')} = '9.9.9';
+    sel = ismember(ecModel.ec.rxns,{'R2_EXP_1'});
+    kcatList = fuzzyKcatMatching(ecModel, 'ecRxns', sel, 'modelAdapter', fuzzyAdapter);
+    verifyEqual(testCase, kcatList.eccodes, {'9.9.9'})
+    verifyEqual(testCase, kcatList.kcats, 0)
+    kcatList = fuzzyKcatMatching(ecModel, 'ecRxns', sel, 'modelAdapter', fuzzyAdapter, 'forceWClvl', 1);
+    verifyEqual(testCase, kcatList.eccodes, {'9.9.9'})
+    verifyEqual(testCase, kcatList.kcats, 0)
 end
 
 function testApplyCustomKcatsSkipsABlankKcat_tc0227(testCase)

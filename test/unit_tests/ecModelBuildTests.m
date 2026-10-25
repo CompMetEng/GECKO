@@ -112,6 +112,30 @@ function testAddNewRxnsToECGeneIdsContainingAnd_tc0232(testCase)
     verifyEqual(testCase, sort(coupledGenes(ecModel, 'RNEWB_EXP_2')), {'GandH';'Sand1'})
 end
 
+function testAddNewRxnsToECUpperCaseOperators_tc0237(testCase)
+    % 'AND' and 'OR' are operators like 'and' and 'or', also in a rule with a
+    % single clause and on a reversible reaction, where the rule is copied as
+    % it is to the reverse reaction.
+    adapter = getAdapter();
+    model = getGeckoTestModel();
+    ecModel = makeEcModel(model, false, adapter);
+
+    newRxns.rxns      = {'RNEWC';'RNEWD'};
+    newRxns.rxnNames  = {'RNEWC';'RNEWD'};
+    newRxns.equations = {'m1[c] <=> e2[e]';'m1[c] => e2[e]'};
+    newRxns.grRules   = {'Sand1 AND andA';'Sand1 OR andA'};
+    newEnzymes.enzymes = {'ENEWA';'ENEWB'};
+    newEnzymes.genes   = {'Sand1';'andA'};
+    newEnzymes.mw      = [15000;16000];
+
+    ecModel = addNewRxnsToEC(ecModel, newRxns, newEnzymes, adapter);
+    verifyEqual(testCase, ecModel.grRules(strcmp(ecModel.rxns, 'RNEWC')), {'Sand1 and andA'})
+    verifyEqual(testCase, sort(coupledGenes(ecModel, 'RNEWC')), {'Sand1';'andA'})
+    verifyEqual(testCase, sort(coupledGenes(ecModel, 'RNEWC_REV')), {'Sand1';'andA'})
+    verifyEqual(testCase, coupledGenes(ecModel, 'RNEWD_EXP_1'), {'Sand1'})
+    verifyEqual(testCase, coupledGenes(ecModel, 'RNEWD_EXP_2'), {'andA'})
+end
+
 function testLightGeneRuleOperatorsAreCaseInsensitive_tc0233(testCase)
     % 'AND' and 'OR' are operators like 'and' and 'or'.
     adapter = getAdapter();
@@ -146,6 +170,25 @@ function testApplyKcatConstraintsLightSkipsNonPositiveKcat_tc0235(testCase)
     lecModel.ec.kcat(first) = -5;
     lecModel = applyKcatConstraints(lecModel);
     expected = -(lecModel.ec.rxnEnzMat(second,:) * lecModel.ec.mw) / 10 / 3600;
+    actual = full(lecModel.S(strcmp(lecModel.mets, 'prot_pool'), strcmp(lecModel.rxns, 'R2')));
+    verifyGreaterThan(testCase, abs(expected), 0)
+    verifyEqual(testCase, actual, expected, 'AbsTol', 1e-10)
+end
+
+function testApplyKcatConstraintsLightSkipsEnzymeWithoutMass_tc0238(testCase)
+    % An isozyme whose enzymes have no mass gives a cost of 0, which is not a
+    % usable cost: the cost of R2 is the one of the isozyme with a mass.
+    adapter = getAdapter();
+    model = getGeckoTestModel();
+    lecModel = makeEcModel(model, true, adapter);
+    lecModel.ec.kcat(:) = 10;
+    first  = strcmp(lecModel.ec.rxns, '001_R2');
+    second = strcmp(lecModel.ec.rxns, '002_R2');
+    onlyFirst = find(full(lecModel.ec.rxnEnzMat(first,:)) > 0 & full(lecModel.ec.rxnEnzMat(second,:)) == 0);
+    verifyNotEmpty(testCase, onlyFirst)
+    lecModel.ec.mw(onlyFirst) = 0;
+    lecModel = applyKcatConstraints(lecModel);
+    expected = -full(lecModel.ec.rxnEnzMat(second,:) * lecModel.ec.mw) / 10 / 3600;
     actual = full(lecModel.S(strcmp(lecModel.mets, 'prot_pool'), strcmp(lecModel.rxns, 'R2')));
     verifyGreaterThan(testCase, abs(expected), 0)
     verifyEqual(testCase, actual, expected, 'AbsTol', 1e-10)

@@ -136,9 +136,15 @@ else
 
     % 3. Add new reactions
 
+    % The operators of a gene rule are case insensitive: write them in lower
+    % case, as the rest of the function and RAVEN's addRxns expect. Gene ids
+    % that contain the letters (Sand1, andA, ORF1) are left as they are.
+    newRxns.grRules = regexprep(convertCharArray(newRxns.grRules), ...
+        '(?<![^\s()])(and|or)(?![^\s()])', '${lower($0)}', 'ignorecase');
+
     % Before add the reactions validate that all the genes in grRules are
     % present in the model.
-    genesInRules = strjoin(convertCharArray(newRxns.grRules));
+    genesInRules = strjoin(newRxns.grRules);
     genesInRules = regexp(genesInRules,'[^\s()]+','match'); % Gene ids and the words 'and' and 'or', without spaces and brackets
     genesInRules = genesInRules(~ismember(lower(genesInRules),{'and','or'}));  % Only the gene ids
     genesInRules = setdiff(unique(genesInRules),model.genes); % Only keep new genes

@@ -19,7 +19,8 @@ function kcatList = kcatsFromBrenda(model, varargin)
 %     'max' or 'median' (default: params.kcatAggregation of the model
 %     adapter, or 'max').
 % forceWClvl : double
-%     force a minimum wildcard level in the EC numbers (default 0).
+%     number of extra levels, from the right, replaced by a wildcard in the
+%     EC numbers (on top of any wildcard already in the code; default 0).
 % ecRxns : logical or double
 %     for which model.ec.rxns kcats are gathered (default: all). A logical
 %     vector or indices of model.ec.rxns, see fuzzyKcatMatching; [] selects
