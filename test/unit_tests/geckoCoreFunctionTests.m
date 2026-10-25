@@ -1270,28 +1270,26 @@ end
 
 function testFuzzyKcatMatchingWildcardExhaustionDoesNotCrash_tc0033(testCase)
     % Verifies that when an EC code has no BRENDA match at any wildcard
-    % level, including the fully wildcarded '-.-.-.-', fuzzyKcatMatching's
-    % escalation loop terminates cleanly and reports "no match" (kcat 0,
-    % origin NaN) instead of erroring.
+    % level, including the fully wildcarded '-.-.-.-' (which matches every
+    % EC number in BRENDA), fuzzyKcatMatching's escalation loop terminates
+    % cleanly and reports "no match" (kcat 0, origin NaN) instead of
+    % erroring. The fixture BRENDA kcat table has no rows, so nothing can match.
     geckoPath = findGECKOroot;
     adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
     model = getGeckoTestModel();
     ecModel = makeEcModel(model, false, adapter);
     ecModel = getECfromGEM(ecModel);
-    % An EC class unrelated, at every wildcard level, to anything in the
-    % fixture BRENDA file below.
     ecModel.ec.eccodes{strcmp(ecModel.ec.rxns, 'R2_EXP_1')} = '9.9.9.9';
 
     scratchDir = fullfile(tempname);
     brendaDir = fullfile(scratchDir, 'data');
     mkdir(brendaDir);
     cleanupDir = onCleanup(@() rmdir(scratchDir, 's'));
-    % Deliberately unrelated to '9.9.9.9' at every wildcard level, so the
-    % escalation loop runs out of levels without ever matching.
+    % No rows at all, so the escalation loop runs out of levels without
+    % ever matching.
     fid = fopen(fullfile(brendaDir, 'kcat.tsv'), 'w');
     fprintf(fid, '# BRENDA release test-fixture - kcat in 1/s\n');
     fprintf(fid, 'ec_code\tsubstrate\torganism\tkcat_max\tkcat_median\tn\treferences\n');
-    fprintf(fid, '5.5.5.5\tm1\ttestus testus\t42\t42\t1\t*\n');
     fclose(fid);
     fid = fopen(fullfile(brendaDir, 'mw.tsv'), 'w');
     fprintf(fid, '# BRENDA release test-fixture - molecular weight in g/mol\n');

@@ -7,8 +7,8 @@ change_model/getComplexData.m	tc0003, tc0004 - File download not covered by test
 change_model/makeEcModel.m	tc0001, tc0002, tc0210, tc0212	
 change_model/setProtPoolSize.m	tc0005	
 change_model/getKcatAcrossIsoenzymes.m	tc0011	
-change_model/applyCustomKcats.m		
-gather_kcats/fuzzyKcatMatching.m	tc0010	
+change_model/applyCustomKcats.m	tc0227, tc0228, tc0229, tc0230	
+gather_kcats/fuzzyKcatMatching.m	tc0010, tc0223, tc0224, tc0225, tc0226	
 gather_kcats/getStandardKcat.m		
 gather_kcats/mergeDlkcatAndFuzzyKcats.m	tc0011	
 gather_kcats/readDLKcatOutput.m	tcm0001, tcm0002 - The test doesn't really check the function, only that some output is read	
@@ -18,7 +18,7 @@ gather_kcats/writeDLKcatInput.m	partly by tc0011
 gather_kcats/getEcRxnKeys.m	tc0070, tc0076	
 gather_kcats/saveKcatSource.m	tc0071, tc0073, tc0076, tc0078	
 gather_kcats/loadKcatSource.m	tc0071, tc0072, tc0073, tc0076, tc0077, tc0078	
-gather_kcats/kcatsFromBrenda.m	tc0074, tc0078	
+gather_kcats/kcatsFromBrenda.m	tc0074, tc0078, tc0226	
 gather_kcats/kcatsFromDLKcat.m	tc0074, tc0078 - reads an existing DLKcat output; running DLKcat needs Docker	
 gather_kcats/kcatsFromOKP.m	tc0075 - reads a stored result; submitting needs the OKP service	
 gather_kcats/collectKcats.m	tc0079, tc0080, tc0081, tc0083, tc0087, tc0088, tc0089, tc0090, tc0098	
@@ -46,7 +46,7 @@ get_enzyme_data/findECInDB.m	Called from getECfromDatabase - tested when that fu
 get_enzyme_data/getECfromDatabase.m	tc0007 - does not test download of the databases - this is tested in the manual workflows for Yeast-GEM and Human-GEM	
 get_enzyme_data/getECfromGEM.m	tc0006	
 get_enzyme_data/getECstring.m	Called from findECInDB - tested when that function is tested.	
-download_databases/loadBRENDAdata.m	Called from fuzzyKcatMatching - tested when that function is tested; also tc0105
+download_databases/loadBRENDAdata.m	Called from fuzzyKcatMatching - tested when that function is tested; also tc0105, tc0220, tc0221, tc0222
 download_databases/fetchBrendaAsset.m	tc0085	
 download_databases/loadDatabases.m	Called from getECfromDatabase - tested when that function is tested.
 kcat_tuning/evotune/*	Has only been tested by running it manually, not tested by test cases
