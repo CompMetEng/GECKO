@@ -53,6 +53,42 @@ function testFindECInDBSingleGeneShortCodesAndTrailingSpace_tc0243(testCase)
     verifyEqual(testCase, EC, '1.1.1.4')
 end
 
+function testFindECInDBComplexDropsWildcardParent_tc0244(testCase)
+    % The shared EC set of an enzyme complex loses a wildcard code next to a
+    % specific code of its prefix, as the set of a single gene does.
+    DBMW = [10000; 20000; 30000];
+    geneHashMap = containers.Map({'G1','G2','G3'}, {1,2,3});
+    geneIndex = {1; 2; 3};
+    EC = findECInDB({'G1','G2'}, {'1.1.1.4 1.1.1.-'; '1.1.1.4 1.1.1.-'; ''}, DBMW, geneIndex, geneHashMap);
+    verifyEqual(testCase, EC, '1.1.1.4')
+    % A wildcard that only the union carries is dropped too
+    EC = findECInDB({'G1','G2','G3'}, {'1.1.1.4'; '1.1.1.- 2.2.2.2'; '5.5.5.5'}, DBMW, geneIndex, geneHashMap);
+    verifyEqual(testCase, EC, '1.1.1.4;2.2.2.2;5.5.5.5')
+    % A wildcard shared by every gene stays, as nothing more specific exists
+    EC = findECInDB({'G1','G2'}, {'1.1.1.-'; '1.1.1.-'; ''}, DBMW, geneIndex, geneHashMap);
+    verifyEqual(testCase, EC, '1.1.1.-')
+end
+
+function testFindECInDBGeneWithoutECIsLeftOut_tc0245(testCase)
+    % A gene without an EC number does not change the codes of the others:
+    % the complex is treated as the genes that have codes, in either order.
+    DBMW = [10000; 20000];
+    geneHashMap = containers.Map({'G1','G2'}, {1,2});
+    geneIndex = {1; 2};
+    EC = findECInDB({'G1','G2'}, {'1.1.1.4 1.1.1.-'; ''}, DBMW, geneIndex, geneHashMap);
+    verifyEqual(testCase, EC, '1.1.1.4')
+    EC = findECInDB({'G1','G2'}, {''; '1.1.1.4 1.1.1.-'}, DBMW, geneIndex, geneHashMap);
+    verifyEqual(testCase, EC, '1.1.1.4')
+    % No gene has a code
+    EC = findECInDB({'G1','G2'}, {''; ''}, DBMW, geneIndex, geneHashMap);
+    verifyEqual(testCase, EC, '')
+    % A gene missing from the database is left out as well
+    geneHashMap = containers.Map({'G2'}, {2});
+    geneIndex = {[]; 2};
+    EC = findECInDB({'G1','G2'}, {''; '1.1.1.4 1.1.1.-'}, DBMW, geneIndex, geneHashMap);
+    verifyEqual(testCase, EC, '1.1.1.4')
+end
+
 function [fuzzy, dlkcat] = originFiveLists()
     fuzzy.rxns        = {'R1'};
     fuzzy.kcats       = 5;

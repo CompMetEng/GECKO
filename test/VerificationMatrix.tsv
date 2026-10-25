@@ -43,7 +43,7 @@ gather_kcats/reviewKcatAssignment.m	Has only been tested by running it manually,
 gather_kcats/ecStatsFromBrenda.m	Not verified against real BRENDA data in this environment -- see its own TODO comment
 gather_kcats/mergeKcats.m	tc0240	
 get_enzyme_data/calculateMW.m	Not explicitly tested - The code has existed for a long time	
-get_enzyme_data/findECInDB.m	Called from getECfromDatabase - tested when that function is tested; also tc0242, tc0243	
+get_enzyme_data/findECInDB.m	Called from getECfromDatabase - tested when that function is tested; also tc0242, tc0243, tc0244, tc0245	
 get_enzyme_data/getECfromDatabase.m	tc0007 - does not test download of the databases - this is tested in the manual workflows for Yeast-GEM and Human-GEM	
 get_enzyme_data/getECfromGEM.m	tc0006	
 get_enzyme_data/getECstring.m	Called from findECInDB - tested when that function is tested.	

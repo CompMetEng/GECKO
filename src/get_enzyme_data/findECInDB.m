@@ -4,14 +4,14 @@ function [EC,conflicts] = findECInDB(gene_set, DBecNum, DBMW, geneIndex, geneHas
 % For each gene, finds its matching database entries and takes the EC number
 % of the lightest-weight matching protein when a single EC number applies to
 % that gene; genes with several distinct EC numbers among their matches are
-% also reported as conflicts (the first match is still used for EC). For a
-% single gene, a wildcard code such as "1.1.1.-" is dropped when a more
-% specific code of the same prefix ("1.1.1.4") is present; only codes with
-% four levels take part, and empty codes are removed. When gene_set has more
-% than one gene (an enzyme complex), the numbers found for each gene are
-% combined by intersection where they share a match (wildcards such as "-"
-% are accounted for), otherwise by union, and the combined set is not
-% cleaned of a wildcard next to a specific code.
+% also reported as conflicts (the first match is still used for EC). Genes
+% without an EC number are left out. When gene_set has more than one gene
+% (an enzyme complex), the numbers found for each gene are combined by
+% intersection where they share a match (a wildcard such as "1.1.1.-" matches
+% the specific codes of its prefix), otherwise by union. The EC set of every
+% gene set, one gene or a complex, is cleaned of a wildcard code such as
+% "1.1.1.-" when a more specific code of the same prefix ("1.1.1.4") is
+% present; only codes with four levels take part, and empty codes are removed.
 %
 % Parameters
 % ----------
@@ -92,30 +92,33 @@ for j = 1:length(gene_set)
     end
 end
 
-%EC: Find union and intersection between all units (only applies for
-%complexes, i.e. length(EC_set) > 1):
-uni_EC = strsplit(EC_set{1},' ');
-int_EC = uni_EC;
-for j = 2:length(EC_set)
-    other_EC = strsplit(EC_set{j},' ');
-    if isempty(uni_EC)
-        uni_EC = other_EC;
-        int_EC = other_EC;
-    elseif ~isempty(other_EC)
-        uni_EC = compare_wild([uni_EC other_EC]);
-        int_EC = intersection(int_EC,other_EC);
-    end
+%EC: Split the codes of each gene, leave out the genes without any, and
+%combine the rest (union and intersection only apply for complexes, i.e. more
+%than one gene with codes):
+tokens = cell(size(EC_set));
+for j = 1:length(EC_set)
+    codes     = strsplit(EC_set{j},' ');
+    tokens{j} = codes(~cellfun(@isempty,codes));
 end
-%A single gene keeps no wildcard code next to a more specific code of the
-%same prefix (e.g. 'EC1.1.1.-' next to 'EC1.1.1.4'):
-if isscalar(EC_set)
-    int_EC = dropWildcardParents(int_EC);
-end
-%Use the intersection found, if any. If not, use the union: 
-if isempty(int_EC)
-    EC_set = uni_EC;
+tokens = tokens(~cellfun(@isempty,tokens));
+if isempty(tokens)
+    EC_set = {};
+elseif isscalar(tokens)
+    EC_set = dropWildcardParents(tokens{1});
 else
-    EC_set = int_EC;
+    uni_EC = tokens{1};
+    int_EC = tokens{1};
+    for j = 2:length(tokens)
+        uni_EC = dropWildcardParents([uni_EC tokens{j}]);
+        int_EC = wildcardIntersection(int_EC,tokens{j});
+    end
+    %Use the intersection found, if any. If not, use the union:
+    if isempty(int_EC)
+        EC_set = uni_EC;
+    else
+        EC_set = int_EC;
+    end
+    EC_set = dropWildcardParents(EC_set);
 end
 
 %Add new codes as new possible isozymes and remove the initial "EC" text:
@@ -127,7 +130,11 @@ for i = 1:length(EC_set)
 end
 
 %EC_set = cellfun(@(x) extractAfter(x,2),EC_set,'UniformOutput',false);%remove 2 first chars
-EC    = strjoin(EC_set,';');
+if isempty(EC_set)
+    EC = '';
+else
+    EC = strjoin(EC_set,';');
+end
 
 
 %Delete repeated Uniprots (and the corresponding ECs):
@@ -136,23 +143,21 @@ EC    = strjoin(EC_set,';');
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function int_EC = intersection(prev_EC,new_EC)
+function int_EC = wildcardIntersection(prev_EC,new_EC)
 %Finds the common elements between two cell arrays, if any. Also considers
 %wildcards (e.g. if 'EC1.1.1.1' is in one array and 'EC1.1.1.-' is in the
-%other one, then 'EC1.1.1.1' is added to the intersection).
+%other one, then 'EC1.1.1.1' is added to the intersection). A pair adds its
+%code only when one code of the pair is the wildcard parent of the other, or
+%the two are equal four-level codes.
 int_EC = {};
 for i = 1:length(prev_EC)
     for j = 1:length(new_EC)
-        new_int = compare_wild({prev_EC{i} new_EC{j}});
-        if length(new_int) == 1
-            int_EC = [int_EC new_int];
+        survivors = dropWildcardParents({prev_EC{i} new_EC{j}});
+        if length(survivors) == 1
+            int_EC = [int_EC survivors];
         end
     end
 end
-%When prev_EC carries both a code and its own wildcard parent (e.g.
-%'EC1.1.1.1' and 'EC1.1.1.-'), both independently pair-match the same
-%new_EC entry above and the loop appends the resolved code twice; dedupe.
-int_EC = unique(int_EC,'stable');
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function int_EC = dropWildcardParents(EC)
@@ -204,41 +209,4 @@ for k = 1:4
     end
 end
 tf = true;
-end
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function int_EC = compare_wild(EC)
-%Goes through a cell array of EC numbers, and erases any repetitions,
-%considering also wildcards (e.g. will erase 'EC1.2.3.-' if 'EC1.2.3.4' is
-%already present).
-
-%Trim all EC numbers of wild cards (e.g. 'EC1.2.-.-' -> 'EC1.2.'):
-EC_trimmed = EC;
-for i = 1:length(EC)
-    %Add a final dot for avoiding issues (e.g. 'EC1.1.1.1' & 'EC1.1.1.12'):
-    ECi = [EC{i} '.'];
-    pos = strfind(ECi,'-');
-    if ~isempty(pos)
-        ECi = ECi(1:pos(1)-1);
-    end
-    EC_trimmed{i} = ECi;
-end
-
-%Compare all EC numbers between them to find if 1 fits in the other:
-non_repeated = true(1,length(EC));
-for i = 1:length(EC)-1
-    for j = i+1:length(EC)
-        ECi = EC_trimmed{i};
-        ECj = EC_trimmed{j};
-        %If ECj fits in ECi then ECj can be disregarded:
-        if strfind(ECi,ECj)
-            non_repeated(j) = false;
-        %Else, if ECi fits in ECj then ECi can be disregarded:
-        elseif strfind(ECj,ECi)
-            non_repeated(i) = false;
-        end
-    end
-end
-
-int_EC = EC(non_repeated);
-
 end
