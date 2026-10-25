@@ -3,7 +3,9 @@ function model = applyKcatConstraints(model,varargin)
 %
 % Existing enzyme constraints are first removed (unless updateRxns is
 % provided), and new constraints are defined based on the content of
-% model.ec.kcat.
+% model.ec.kcat. When every kcat is 0, the existing constraints of a full
+% ecModel are removed and no new ones are written; a light ecModel is
+% returned unchanged.
 %
 % Parameters
 % ----------
@@ -66,8 +68,13 @@ if ~isfield(model,'ec')
            ' not a valid GECKO3 ecModel. First run makeEcModel(model).'])
 end
 if all(model.ec.kcat==0)
-    printOrange('WARNING: No kcat values are provided in model.ec.kcat, model remains unchanged.\n');
-    return
+    if model.ec.geckoLight
+        printOrange('WARNING: No kcat values are provided in model.ec.kcat, model remains unchanged.\n');
+        return
+    end
+    % In a full model the existing enzyme constraints of the selected
+    % reactions are still cleared below, and no new ones are written.
+    printOrange('WARNING: No kcat values are provided in model.ec.kcat, existing enzyme constraints are cleared and no new ones are written.\n');
 end
 
 %Clear existing incorporation of enzyme usage
