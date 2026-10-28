@@ -120,6 +120,51 @@ function testGetKcatAcrossIsozymesUsesPositiveSiblingsOnly_tc0252(testCase)
     verifyTrue(testCase, isnan(out.ec.kcat(strcmp(out.ec.rxns, 'R2_EXP_2'))))
 end
 
+function testSigmaFitterReturnsStartOfGrowthPlateau_tc0255(testCase)
+% The growth target is above what the uptake-limited model reaches, so growth
+% is flat from sigma 0.06 on. GLPK returns the plateau growth with rounding
+% noise (49.999999999999986 at sigma 0.06, 50 at sigma 1). The fitted sigma is
+% the start of the plateau, 0.06, whatever the noise, and the same on Gurobi.
+previous = getpref('RAVEN', 'solver', 'glpk');
+restore = onCleanup(@() setRavenSolver(previous)); %#ok<NASGU>
+setRavenSolver('glpk');
+sigmaGlpk = plateauSigma();
+verifyEqual(testCase, sigmaGlpk, 0.06, 'AbsTol', 1e-12)
+hasGurobi = false;
+if exist('gurobi', 'file')
+    try
+        setRavenSolver('gurobi');
+        hasGurobi = true;
+    catch
+    end
+end
+assumeTrue(testCase, hasGurobi, 'Gurobi is not available')
+verifyEqual(testCase, plateauSigma(), sigmaGlpk, 'AbsTol', 1e-12)
+end
+
+function sigma = plateauSigma()
+adapter = getAdapter();
+model = loadConventionalGEM('modelAdapter', adapter);
+model.lb(strcmp(model.rxns, 'S1')) = -50;
+for id = {'R2', 'R4'}
+    idx = strcmp(model.rxns, id{1});
+    model.lb(idx) = 0; model.ub(idx) = 0;
+end
+ecModel = makeEcModel(model, false, adapter);
+ecModel = getECfromGEM(ecModel);
+kcats = struct('R3', 5, 'R5', 200);
+for id = fieldnames(kcats)'
+    j = strcmp(ecModel.ec.rxns, id{1});
+    ecModel.ec.kcat(j) = kcats.(id{1});
+    ecModel.ec.source{j} = 'manual';
+end
+ecModel.c = double(strcmp(ecModel.rxns, 'R5'));
+ecModel = applyKcatConstraints(ecModel);
+ecModel = setProtPoolSize(ecModel, [], [], [], adapter);
+[~, sigma] = sigmaFitter(ecModel, 'growthRate', 100, 'Ptot', 0.5, 'f', 4, ...
+    'makePlot', false, 'modelAdapter', adapter);
+end
+
 function [ecModel, tuneAdapter] = tuningModel()
 % R3 limits growth, its enzyme P4 is ignored by the tests, so tuning raises R5.
 adapter = getAdapter();
