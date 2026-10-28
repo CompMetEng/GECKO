@@ -19,9 +19,12 @@ function kcatList = kcatsFromBrenda(model, varargin)
 %     'max' or 'median' (default: params.kcatAggregation of the model
 %     adapter, or 'max').
 % forceWClvl : double
-%     force a minimum wildcard level in the EC numbers (default 0).
-% ecRxns : logical
-%     for which model.ec.rxns kcats are gathered (default: all).
+%     number of extra levels, from the right, replaced by a wildcard in the
+%     EC numbers (on top of any wildcard already in the code; default 0).
+% ecRxns : logical or double
+%     for which model.ec.rxns kcats are gathered (default: all). A logical
+%     vector or indices of model.ec.rxns, see fuzzyKcatMatching; [] selects
+%     all reactions and any other empty selection is an error.
 % save : logical
 %     write the source file (default true).
 % saveAs : char
@@ -60,6 +63,10 @@ if isempty(modelAdapter)
     end
 end
 aggregation = resolveKcatAggregation(p.aggregation, modelAdapter);
+if isSubset(p.ecRxns) && countSelected(p.ecRxns) == 0
+    error('kcatsFromBrenda:emptySubset', ...
+        'ecRxns selects no reactions; leave it out to gather for all reactions.');
+end
 if p.save
     file = fullfile(modelAdapter.params.path, 'data', 'kcats', [char(p.saveAs) '.tsv']);
     warnSubset(p.ecRxns, numel(model.ec.rxns), file);
@@ -70,8 +77,8 @@ kcatList = fuzzyKcatMatching(model, 'ecRxns', p.ecRxns, 'modelAdapter', modelAda
 
 if p.save
     parameters = struct('aggregation', aggregation, 'force_wildcard_level', p.forceWClvl);
-    if ~isempty(p.ecRxns)
-        parameters.ec_rxns = countRxns(p.ecRxns);
+    if isSubset(p.ecRxns)
+        parameters.ec_rxns = numel(kcatList.rxns);
     end
     saveKcatSource(model, kcatList, p.saveAs, 'modelAdapter', modelAdapter, ...
         'generator', 'kcatsFromBrenda', 'parameters', parameters, ...
@@ -96,6 +103,19 @@ if ~isempty(tok)
 end
 end
 
+function tf = isSubset(ecRxns)
+% [] selects all reactions; any other value selects the reactions it names.
+tf = ~(isnumeric(ecRxns) && isequal(size(ecRxns),[0 0]));
+end
+
+function n = countSelected(ecRxns)
+if islogical(ecRxns)
+    n = sum(ecRxns);
+else
+    n = numel(ecRxns);
+end
+end
+
 function n = countRxns(ecRxns)
 if islogical(ecRxns)
     n = sum(ecRxns);
@@ -106,7 +126,7 @@ end
 
 function warnSubset(ecRxns, nRxns, file)
 % A subset written under the default name replaces the full file.
-if ~isempty(ecRxns) && countRxns(ecRxns) < nRxns && isfile(file)
+if isSubset(ecRxns) && countRxns(ecRxns) < nRxns && isfile(file)
     printOrange(sprintf(['%s is replaced by kcats for %d reactions only. Give saveAs ' ...
         'to keep it.\n'], file, countRxns(ecRxns)));
 end

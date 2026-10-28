@@ -3,7 +3,8 @@ function [model, tunedKcats] = sensitivityTuning(model, varargin)
 %
 % Iteratively increases the kcat of whichever enzyme currently limits growth
 % the most, until the model reaches the desired growth rate, updating the
-% tuned values in model.ec.kcat.
+% tuned values in model.ec.kcat. The loop also stops, with a warning, when an
+% iteration raises growth by less than 1e-9.
 %
 % Parameters
 % ----------
@@ -87,7 +88,10 @@ m.c = double(strcmp(m.rxns, params.bioRxn));% Make sure that growth is maximized
 if isempty(res.x)
     error('FBA of input model gives no valid result. Reduce protein pool constraint with setProtPoolSize and/or check if exchange constraints are correctly defined.')
 end
-lastGrowth = 0;
+% The loop stops when growth rises by less than growthStallTol over the
+% previous iteration (the first iteration has nothing to compare with).
+lastGrowth = NaN;
+growthStallTol = 1e-9;
 if ~m.ec.geckoLight
     %for the full model, we first find the draw reaction with the most flux
     drawRxns = startsWith(m.rxns, 'usage_prot_');
@@ -95,7 +99,11 @@ if ~m.ec.geckoLight
     iteration = 1;
     while true
         [res,hs] = solveLP(m,0,[],hs); %skip parsimonius, only takes time
-        if (lastGrowth == res.f)
+        if isempty(res.f)
+            printOrange('WARNING: The model has no feasible solution with the increased kcats, tuning stops.\n');
+            break;
+        end
+        if ~isnan(lastGrowth) && res.f <= lastGrowth + growthStallTol
             printOrange('WARNING: No growth increase from increased kcats - check if the constraints on the uptake reactions are too tight.\n');
             break;
         end
@@ -113,6 +121,10 @@ if ~m.ec.geckoLight
         drawFluxes(drawRxns) = res.x(drawRxns);
         % Remove from the list user defined proteins
         drawFluxes(idxToIgnore) = 0;
+        if ~any(drawFluxes > 0)
+            printOrange('WARNING: No protein usage reaction carries flux, tuning cannot continue.\n');
+            break;
+        end
         [~,sel]              = max(drawFluxes); % since bounds 0 to 1000
         %Now get the metabolite
         metSel               = m.S(:,sel) > 0; % positive coeff (forward usage)
@@ -146,7 +158,11 @@ else
     iteration = 1;
     while true
         res = solveLP(m,0); %skip parsimonius, only takes time
-        if (lastGrowth == res.f)
+        if isempty(res.f)
+            printOrange('WARNING: The model has no feasible solution with the increased kcats, tuning stops.\n');
+            break;
+        end
+        if ~isnan(lastGrowth) && res.f <= lastGrowth + growthStallTol
             printOrange('No growth increase from increased kcats - check if the constraints on the uptake reactions are too tight.\n');
             break;
         end
@@ -162,6 +178,10 @@ else
         %find the highest protein usage flux
         protPoolStoich  = m.S(strcmp(m.mets, 'prot_pool'),:).';
         protPoolStoich(idxToIgnore) = 0;
+        if ~any(res.x .* protPoolStoich < 0)
+            printOrange('WARNING: No reaction draws on the protein pool, tuning cannot continue.\n');
+            break;
+        end
         [~,sel]         = min(res.x .* protPoolStoich); %max consumption
         kcatList        = [kcatList, sel];
         rxn             = m.rxns(sel.');

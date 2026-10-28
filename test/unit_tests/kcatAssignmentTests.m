@@ -14,7 +14,8 @@ function testAssignKcatsReproducesChain_tc0079(testCase)
     adapter.params.kcat_assignment = struct('preset', 'gecko_classic');
     fuzzy = fuzzyKcatMatching(base, [], adapter);
     dlkcat = readDLKcatOutput(base, 'modelAdapter', adapter);
-    merged = mergeKcats({fuzzy, dlkcat}, {'database_top','dlkcat','database_bottom'});
+    % gecko_classic ranks the specific-activity matches (origin 5 and 6) above DLKcat
+    merged = mergeKcats({fuzzy, dlkcat}, {'database_top','dlkcat','database_bottom'}, 'topOriginLimit', 6);
     A = assignKcatValues(base, merged);
     A = applyCustomKcats(A, 'modelAdapter', adapter);
     A = getKcatAcrossIsozymes(A);

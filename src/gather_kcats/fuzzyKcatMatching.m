@@ -18,14 +18,20 @@ function kcatList = fuzzyKcatMatching(model, varargin)
 %
 % Name-Value Arguments
 % --------------------
-% ecRxns : logical
+% ecRxns : logical or double
 %     for which reactions (from model.ec.rxns) kcat values should be found,
-%     provided as logical vector with same length as model.ec.rxns
-%     (default: all reactions).
+%     provided as a logical vector with the same length as model.ec.rxns
+%     (the reactions are returned in model order), or as indices into
+%     model.ec.rxns (the reactions are returned in the order given, and an
+%     index given twice is returned twice). The literal [] selects all
+%     reactions, which is the default; any other empty selection, such as
+%     find(mask) without true entries, selects none and returns an empty
+%     kcatList.
 % modelAdapter : ModelAdapter
 %     a loaded model adapter (default: the current default model adapter).
 % forceWClvl : double
-%     force a minimum wildcard level (default 0).
+%     number of extra levels, from the right, replaced by a wildcard (on top
+%     of any wildcard already in the code; default 0).
 %
 % Returns
 % -------
@@ -43,7 +49,8 @@ function kcatList = fuzzyKcatMatching(model, varargin)
 % - kcats : proposed kcat value in /sec.
 % - eccodes : as used to query BRENDA.
 % - wildcardLvl : which level of EC wild-card was necessary to find a match
-%   (0: w.x.y.z; 1: w.x.y.-; 2: w.x.-.-; 3: w.-.-.-).
+%   (0: w.x.y.z; 1: w.x.y.-; 2: w.x.-.-; 3: w.-.-.-; 4: -.-.-.-, which
+%   matches every EC number in BRENDA).
 % - origin : which level of specificity was necessary to find a match
 %   (1: correct organism, correct substrate, kcat; 2: any organism, correct
 %   substrate, kcat; 3: correct organism, any substrate, kcat; 4: any
@@ -52,7 +59,9 @@ function kcatList = fuzzyKcatMatching(model, varargin)
 %   1, 2, 3, 5, 4, 6: a specific activity from the correct organism is
 %   preferred over a kcat from any organism with any substrate. When a
 %   reaction has multiple EC numbers, the EC with the fewest wildcards and
-%   the earliest-tried level is selected, and among those the highest kcat.
+%   the earliest-tried level is selected, and among those the highest kcat
+%   (the first one when several EC numbers share it); the wildcardLvl and
+%   origin are those of the selected EC.
 %
 % If a wildcard is used, origin levels 1 and 2 are ignored. The last digits
 % in the E.C. number indicate the substrate specificity, so if this should
@@ -93,14 +102,19 @@ modelAdapter    = p.modelAdapter;
 forceWClvl      = p.forceWClvl;
 kcatAggregation = p.kcatAggregation;
 
-if isempty(ecRxns)
-    ecRxns = true(numel(model.ec.rxns),1);
-elseif isnumeric(ecRxns)
-    ecRxnsVec = false(numel(model.ec.rxns),1);
-    ecRxnsVec(ecRxns) = true;
-    ecRxns = ecRxnsVec;
+% Get indices: [] selects all reactions, a logical vector the true entries (in
+% model order) and indices are used as given (order and repeats kept).
+if isnumeric(ecRxns) && isequal(size(ecRxns),[0 0])
+    ecRxns = (1:numel(model.ec.rxns)).';
+elseif islogical(ecRxns)
+    ecRxns = find(ecRxns(:));
+else
+    ecRxns = ecRxns(:);
+    if any(ecRxns < 1 | ecRxns > numel(model.ec.rxns) | ecRxns ~= round(ecRxns))
+        error('fuzzyKcatMatching:invalidEcRxns', ...
+            'ecRxns must hold indices of model.ec.rxns.');
+    end
 end
-ecRxns=find(ecRxns); % Get indices instead of logical
 
 if isempty(modelAdapter)
     modelAdapter = ModelAdapterManager.getDefault();
@@ -118,6 +132,17 @@ if ~isfield(model.ec,'eccodes')
     error('No EC codes defined in model.ec.eccodes. First run getECfromGEM() and/or getECfromDatabase().')
 end
 eccodes      = model.ec.eccodes(ecRxns);
+if isempty(ecRxns)
+    %No reactions selected: nothing to match, and BRENDA is not read
+    kcatList.source      = 'brenda';
+    kcatList.rxns        = cell(0,1);
+    kcatList.substrates  = cell(0,1);
+    kcatList.kcats       = zeros(0,1);
+    kcatList.eccodes     = cell(0,1);
+    kcatList.wildcardLvl = NaN(0,1);
+    kcatList.origin      = NaN(0,1);
+    return
+end
 substrates   = cell(numel(ecRxns),1);
 substrCoeffs = cell(numel(ecRxns),1);
 
@@ -198,10 +223,7 @@ for i = 1:length(EcIndexIndices)
 end
 
 %Apply force wildcard level
-while forceWClvl > 0
-    eccodes=regexprep(eccodes,'(.)*(\.\d+)(\.-)*$','$1\.-$3');
-    forceWClvl = forceWClvl - 1;
-end
+eccodes = forceWildcards(eccodes,forceWClvl);
 
 PB = progressReport(mM, 'Gathering kcat values by fuzzy matching to BRENDA database');
 %Main loop:
@@ -235,6 +257,36 @@ for i=1:6
 end
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Replaces the rightmost level of each EC code that is not a wildcard yet with
+%a wildcard, forceWClvl times, so that level 4 gives -.-.-.- . The codes of one
+%entry are separated by ';'. A code that does not have four levels is kept.
+function eccodes = forceWildcards(eccodes,forceWClvl)
+if forceWClvl <= 0
+    return
+end
+for i = 1:numel(eccodes)
+    if isempty(eccodes{i})
+        continue
+    end
+    codes = strsplit(eccodes{i},';');
+    for j = 1:numel(codes)
+        parts = strsplit(codes{j},'.');
+        if numel(parts) ~= 4
+            continue
+        end
+        for k = 1:forceWClvl
+            last = find(~strcmp(parts,'-'),1,'last');
+            if isempty(last)
+                break
+            end
+            parts{last} = '-';
+        end
+        codes{j} = strjoin(parts,'.');
+    end
+    eccodes{i} = strjoin(codes,';');
+end
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [kcat,dir,tot] =iterativeMatch(EC,subs,substrCoeff,i,KCATcell,dir,tot,...
     name,phylDist,org_index,SAcell,ECIndexIds,EcIndexIndices,kcatAggregation)
 %Will iteratively try to match the EC number to some registry in BRENDA,
@@ -258,12 +310,20 @@ for k = 1:length(EC)
             wc_num(k) = sum(EC{k}=='-');
         else
             wild_num = sum(EC{k}=='-');
-            if wild_num >= 4
+            if numel(strsplit(EC{k},'.')) ~= 4
+                %An EC code without four levels (for example '1.1.1') cannot be
+                %escalated level by level: stop with the no-match values, as
+                %geckopy does.
+                success = true;
+            elseif wild_num >= 4
                 %Already fully wildcarded ('-.-.-.-') and still no match --
                 %stop here instead of computing dot_pos(4-wild_num) with
                 %wild_num==4, an out-of-range index. kcat(k)/origin(k) keep
                 %their zero-initialised "no match" values.
                 success = true;
+            elseif wild_num == 3
+                %Last escalation: '-.-.-.-' matches every EC number in BRENDA
+                EC{k} = '-.-.-.-';
             else
                 dot_pos  = [2 strfind(EC{k},'.')];
                 wc_text  = '-.-.-.-';
@@ -284,11 +344,14 @@ if sum(origin) > 0
     %(higher) wildcard count back in whenever it happens to share best_origin,
     %defeating the wildcard-count filter entirely.
     best_pos    = best_pos & (origin == best_origin);
-    max_pos    = find(kcat == max(kcat(best_pos)));
-    wc_num     = wc_num(max_pos(1));
-    origin     = origin(max_pos(1));
-    matches    = matches(max_pos(1));
-    kcat       = kcat(max_pos(1));
+    %Highest kcat among those, the first one if several share it
+    best_idx   = find(best_pos);
+    [~,j]      = max(kcat(best_idx));
+    max_pos    = best_idx(j);
+    wc_num     = wc_num(max_pos);
+    origin     = origin(max_pos);
+    matches    = matches(max_pos);
+    kcat       = kcat(max_pos);
 
     %Update dir and tot:
     dir.org_s(i)   = matches*(origin == 1);
@@ -465,6 +528,8 @@ if wild
         for j = 1:length(X)
             EC_indexes = [EC_indexes,EcIndexIndices{X(j)}];
         end
+    elseif isempty(EC) %Not optimized, fully wildcarded: every entry matches
+        EC_indexes = 1:length(EC_cell);
     else %Not optimized
         for j=1:length(EC_cell)
             if strfind(EC_cell{j},EC)==1

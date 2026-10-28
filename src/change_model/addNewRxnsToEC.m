@@ -35,7 +35,7 @@ function [model, rxnsAdded, enzAdded] = addNewRxnsToEC(model, newRxns, varargin)
 % - rxns : cell array with unique strings that identifies each reaction.
 % - rxnNames : cell array with the names of each reaction.
 % - equations : cell array with equation strings. Decimal coefficients are expressed as "1.2". Reversibility is indicated by "<=>" or "=>".
-% - grRules : cell array with the gene-reaction relationship for each reaction. For example "(A and B) or (C)" means that the reaction could be catalyzed by a complex between A & B or by C on its own. All the genes have to be present in model.genes. Add genes with addGenesRaven before calling this function if needed (opt, default '').
+% - grRules : cell array with the gene-reaction relationship for each reaction. For example "(A and B) or (C)" means that the reaction could be catalyzed by a complex between A & B or by C on its own. A rule with brackets is split into its isozymes in disjunctive normal form, so "A and (B or C)" is the two isozymes "A and B" and "A and C". All the genes have to be present in model.genes. Add genes with addGenesRaven before calling this function if needed (opt, default '').
 %
 % The newEnzymes structure has the following fields:
 %
@@ -136,11 +136,17 @@ else
 
     % 3. Add new reactions
 
+    % The operators of a gene rule are case insensitive: write them in lower
+    % case, as the rest of the function and RAVEN's addRxns expect. Gene ids
+    % that contain the letters (Sand1, andA, ORF1) are left as they are.
+    newRxns.grRules = regexprep(convertCharArray(newRxns.grRules), ...
+        '(?<![^\s()])(and|or)(?![^\s()])', '${lower($0)}', 'ignorecase');
+
     % Before add the reactions validate that all the genes in grRules are
     % present in the model.
-    genesInRules = strjoin(convertCharArray(newRxns.grRules));
-    genesInRules = regexp(genesInRules,' |)|(|and|or','split'); % Remove all grRule punctuation
-    genesInRules = genesInRules(~cellfun(@isempty,genesInRules));  % Remove spaces and empty genes
+    genesInRules = strjoin(newRxns.grRules);
+    genesInRules = regexp(genesInRules,'[^\s()]+','match'); % Gene ids and the words 'and' and 'or', without spaces and brackets
+    genesInRules = genesInRules(~ismember(lower(genesInRules),{'and','or'}));  % Only the gene ids
     genesInRules = setdiff(unique(genesInRules),model.genes); % Only keep new genes
 
     % If there is any gene which is not present, as to be pass as
@@ -168,13 +174,14 @@ else
     end
 
     % Get reactions to separate isozymes
-    toSplit = find(cellfun(@(x) contains(x,'or'),newRxns.grRules));
+    isozymes = cellfun(@gprToDnf, newRxns.grRules, 'UniformOutput', false);
+    toSplit = find(cellfun(@numel,isozymes) > 1);
     if ~isempty(toSplit)
         splitRxns = {}; splitRxnNames = {}; splitEquations = {}; splitGrRules = {};
         for i=1:numel(toSplit)
             idx = toSplit(i);
-            newRules = split(newRxns.grRules(idx),'or');
-            newRules = strtrim(erase(newRules, {'(' ')'}));
+            % One reaction per AND-clause of the gene rule in disjunctive normal form
+            newRules = cellfun(@(x) strjoin(x,' and '), isozymes{idx}, 'UniformOutput', false);
 
             for j=1:numel(newRules)
                 splitRxns{end+1} = [newRxns.rxns{idx} '_EXP_' num2str(j)];
@@ -249,8 +256,8 @@ else
         model.ec.eccodes(end+1) = {''};
 
         % Get rules
-        genes = newRxns.grRules(rxnIdx);
-        genes = strtrim(erase(split(genes,'and'), {'(' ')'}));
+        genes = regexp(newRxns.grRules{rxnIdx},'[^\s()]+','match'); % Gene ids and the word 'and', without spaces and brackets
+        genes = genes(~ismember(lower(genes),{'and','or'}));
         [~,enzIdx] = ismember(genes, model.ec.genes);
 
         % Update the enzyme rxns matrix
@@ -258,5 +265,61 @@ else
     end
     
     rxnsAdded = newRxns.rxns(:);
+end
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Function that expands a gene rule into disjunctive normal form: a cell array
+%with one cell per isozyme, each holding the gene ids that are ANDed in it.
+%Gene ids are whole words, so an id that contains 'or' or 'and' is kept
+%intact. An empty rule gives an empty cell array.
+function dnf = gprToDnf(rule)
+tokens = regexp(rule,'\(|\)|[^\s()]+','match');
+isOperator = strcmpi(tokens,'and') | strcmpi(tokens,'or');
+tokens(isOperator) = lower(tokens(isOperator)); % Operators are case insensitive
+if isempty(tokens)
+    dnf = {};
+    return
+end
+[dnf,pos] = parseOr(tokens,1,rule);
+if pos <= numel(tokens)
+    error('Cannot parse the gene rule "%s"',rule)
+end
+end
+
+function [dnf,pos] = parseOr(tokens,pos,rule)
+[dnf,pos] = parseAnd(tokens,pos,rule);
+while pos <= numel(tokens) && strcmp(tokens{pos},'or')
+    [rhs,pos] = parseAnd(tokens,pos+1,rule);
+    dnf = [dnf,rhs];
+end
+end
+
+function [dnf,pos] = parseAnd(tokens,pos,rule)
+[dnf,pos] = parseAtom(tokens,pos,rule);
+while pos <= numel(tokens) && strcmp(tokens{pos},'and')
+    [rhs,pos] = parseAtom(tokens,pos+1,rule);
+    product = cell(1,0);
+    for a = 1:numel(dnf)
+        for b = 1:numel(rhs)
+            product{end+1} = [dnf{a},rhs{b}]; %#ok<AGROW>
+        end
+    end
+    dnf = product;
+end
+end
+
+function [dnf,pos] = parseAtom(tokens,pos,rule)
+if pos > numel(tokens) || any(strcmp(tokens{pos},{')','and','or'}))
+    error('Cannot parse the gene rule "%s"',rule)
+elseif strcmp(tokens{pos},'(')
+    [dnf,pos] = parseOr(tokens,pos+1,rule);
+    if pos > numel(tokens) || ~strcmp(tokens{pos},')')
+        error('Cannot parse the gene rule "%s"',rule)
+    end
+    pos = pos + 1;
+else
+    dnf = {tokens(pos)};
+    pos = pos + 1;
 end
 end

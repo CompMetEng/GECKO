@@ -37,6 +37,9 @@ function [model, foundComplex, proposedComplex] = applyComplexData(model, vararg
 %
 % Notes
 % -----
+% The subunit stoichiometry is assigned per protein ID: the proteins of a
+% complex need not be listed in the order of model.ec.enzymes.
+%
 % foundComplex and proposedComplex share the following columns: rxn
 % (reaction identifier), complexID and name (Complex Portal identifiers),
 % genes (gene names of the complex subunits), protID_model (matched protein
@@ -154,8 +157,11 @@ for i = 1:numel(rxnNames)
         foundComplex{foundComplexCount,7} = complexData(complexMatch).stochiometry;
 
         % Apply in rxnEnzMat
+        % The stoichiometry is taken per protein ID, as the proteins of the
+        % complex need not be listed in the order of model.ec.enzymes
         [~, modelProtsIdx] = ismember(modelProts, model.ec.enzymes);
-        model.ec.rxnEnzMat(i,modelProtsIdx) = complexData(complexMatch).stochiometry;
+        [~, complexPos] = ismember(modelProts, complexData(complexMatch).protID);
+        model.ec.rxnEnzMat(i,modelProtsIdx) = complexData(complexMatch).stochiometry(complexPos);
     
     elseif modComplexUnits > 1 % Only suggest potential complex if grRule > 1 protein
         moreUnitsInData = find(percMatch == 1 & totalMatch > 1);

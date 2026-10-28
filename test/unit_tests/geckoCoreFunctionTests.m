@@ -1270,28 +1270,26 @@ end
 
 function testFuzzyKcatMatchingWildcardExhaustionDoesNotCrash_tc0033(testCase)
     % Verifies that when an EC code has no BRENDA match at any wildcard
-    % level, including the fully wildcarded '-.-.-.-', fuzzyKcatMatching's
-    % escalation loop terminates cleanly and reports "no match" (kcat 0,
-    % origin NaN) instead of erroring.
+    % level, including the fully wildcarded '-.-.-.-' (which matches every
+    % EC number in BRENDA), fuzzyKcatMatching's escalation loop terminates
+    % cleanly and reports "no match" (kcat 0, origin NaN) instead of
+    % erroring. The fixture BRENDA kcat table has no rows, so nothing can match.
     geckoPath = findGECKOroot;
     adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
     model = getGeckoTestModel();
     ecModel = makeEcModel(model, false, adapter);
     ecModel = getECfromGEM(ecModel);
-    % An EC class unrelated, at every wildcard level, to anything in the
-    % fixture BRENDA file below.
     ecModel.ec.eccodes{strcmp(ecModel.ec.rxns, 'R2_EXP_1')} = '9.9.9.9';
 
     scratchDir = fullfile(tempname);
     brendaDir = fullfile(scratchDir, 'data');
     mkdir(brendaDir);
     cleanupDir = onCleanup(@() rmdir(scratchDir, 's'));
-    % Deliberately unrelated to '9.9.9.9' at every wildcard level, so the
-    % escalation loop runs out of levels without ever matching.
+    % No rows at all, so the escalation loop runs out of levels without
+    % ever matching.
     fid = fopen(fullfile(brendaDir, 'kcat.tsv'), 'w');
     fprintf(fid, '# BRENDA release test-fixture - kcat in 1/s\n');
     fprintf(fid, 'ec_code\tsubstrate\torganism\tkcat_max\tkcat_median\tn\treferences\n');
-    fprintf(fid, '5.5.5.5\tm1\ttestus testus\t42\t42\t1\t*\n');
     fclose(fid);
     fid = fopen(fullfile(brendaDir, 'mw.tsv'), 'w');
     fprintf(fid, '# BRENDA release test-fixture - molecular weight in g/mol\n');
@@ -2191,4 +2189,77 @@ function testGECKOInstallerIsOlderVersion_tc0059(testCase)
     verifyFalse(testCase, older('3.2.6', '3.2.6'))
     verifyFalse(testCase, older('4.0.0', '4.0.0b1'))
     verifyFalse(testCase, older('4.0.0b1', '4.0.0b2'))
+end
+
+function testEcFSEOFSelectsTargetsByCorrelation_tc0100(testCase)
+    % Verifies ecFSEOF classifies a reaction as a target when the absolute
+    % flux correlates with the enforced production flux (default
+    % corrThreshold 0.9), as RAVEN's FSEOF does, and does not cut the list to
+    % the top quartile by slope. With R3 enforced, the flux of R5 falls as
+    % the shared enzyme pool goes to R3, and R3 itself follows the enforced
+    % flux; both are targets, the ones without a gene rule are not.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    model = getGeckoTestModel();
+    model.geneShortNames = model.genes;
+    ecModel = makeEcModel(model, false, adapter);
+    ecModel = getECfromGEM(ecModel);
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R2_EXP_1')) = 50;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R2_EXP_2')) = 10;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R2_REV_EXP_1')) = 50;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R2_REV_EXP_2')) = 10;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R3')) = 20;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R5')) = 100;
+    ecModel.ec.source(:) = {'manual'};
+    ecModel = applyKcatConstraints(ecModel);
+    ecModel = setProtPoolSize(ecModel, [], [], [], adapter);
+    adapter.params.bioRxn = 'R5';
+
+    fseof = ecFSEOF(ecModel, 'R3', 'S1', 'nSteps', 6, 'modelAdapter', adapter);
+    targets = sort([fseof.rxnTargets(:,1); fseof.transportTargets(:,1)]);
+    verifyEqual(testCase, targets, {'R3';'R5'})
+    verifyEqual(testCase, numel(fseof.alpha), 6)
+
+    % The slope column is the absolute regression slope, highest score first
+    verifyTrue(testCase, all(cell2mat(fseof.rxnTargets(:,3)) > 0))
+
+    % The default corrThreshold is 0.9
+    sameAsDefault = ecFSEOF(ecModel, 'R3', 'S1', 'nSteps', 6, 'modelAdapter', adapter, 'corrThreshold', 0.9);
+    verifyEqual(testCase, sameAsDefault.rxnTargets, fseof.rxnTargets)
+
+    % The correlation of a reaction cannot exceed 1: a threshold above 1 gives no targets
+    none = ecFSEOF(ecModel, 'R3', 'S1', 'nSteps', 6, 'modelAdapter', adapter, 'corrThreshold', 1.5);
+    verifyEmpty(testCase, none.rxnTargets)
+    verifyEmpty(testCase, none.transportTargets)
+    verifyEmpty(testCase, none.geneTargets)
+end
+
+function testEcFSEOFGeneTargetsComeFromReportedReactions_tc0236(testCase)
+    % The usage reactions of the enzymes are not reported, and they do not enter
+    % the gene targets either: the slope of a gene whose rule is the only gene of
+    % a reported reaction is the slope of that reaction.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    model = getGeckoTestModel();
+    model.geneShortNames = model.genes;
+    ecModel = makeEcModel(model, false, adapter);
+    ecModel = getECfromGEM(ecModel);
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R2_EXP_1')) = 50;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R2_EXP_2')) = 10;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R2_REV_EXP_1')) = 50;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R2_REV_EXP_2')) = 10;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R3')) = 20;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R5')) = 100;
+    ecModel.ec.source(:) = {'manual'};
+    ecModel = applyKcatConstraints(ecModel);
+    ecModel = setProtPoolSize(ecModel, [], [], [], adapter);
+    adapter.params.bioRxn = 'R5';
+
+    fseof = ecFSEOF(ecModel, 'R3', 'S1', 'nSteps', 6, 'modelAdapter', adapter);
+    verifyNotEmpty(testCase, fseof.geneTargets)
+    for i = 1:size(fseof.geneTargets,1)
+        rxnRow = strcmp(fseof.rxnTargets(:,4), fseof.geneTargets{i,1});
+        verifyEqual(testCase, sum(rxnRow), 1)
+        verifyEqual(testCase, fseof.geneTargets{i,3}, fseof.rxnTargets{rxnRow,3}, 'AbsTol', 1e-9)
+    end
 end
