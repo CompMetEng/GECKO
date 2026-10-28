@@ -89,6 +89,19 @@ function testFindECInDBGeneWithoutECIsLeftOut_tc0245(testCase)
     verifyEqual(testCase, EC, '1.1.1.4')
 end
 
+function testFindECInDBSplitsCodesOnSemicolons_tc0246(testCase)
+    % A database cell joins codes with white space, with '; ' or with ';' alone;
+    % each is read as separate codes.
+    DBMW = 10000;
+    geneHashMap = containers.Map({'G1'}, {1});
+    geneIndex = {1};
+    cells = {'1.1.1.1 2.2.2.2', '1.1.1.1; 2.2.2.2;', '1.1.1.1;2.2.2.2', ' 1.1.1.1;;2.2.2.2 '};
+    for i = 1:numel(cells)
+        EC = findECInDB({'G1'}, cells(i), DBMW, geneIndex, geneHashMap);
+        verifyEqual(testCase, EC, '1.1.1.1;2.2.2.2')
+    end
+end
+
 function [fuzzy, dlkcat] = originFiveLists()
     fuzzy.rxns        = {'R1'};
     fuzzy.kcats       = 5;
