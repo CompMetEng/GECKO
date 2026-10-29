@@ -7,9 +7,10 @@ change_model/getComplexData.m	tc0003, tc0004 - File download not covered by test
 change_model/makeEcModel.m	tc0001, tc0002, tc0210, tc0212, tc0233, tc0234	
 change_model/setProtPoolSize.m	tc0005	
 change_model/getKcatAcrossIsoenzymes.m	tc0011, tc0252	
+change_model/getSubsetEcModel.m	tc0258, tc0259	
 change_model/applyCustomKcats.m	tc0227, tc0228, tc0229, tc0230	
 gather_kcats/fuzzyKcatMatching.m	tc0010, tc0223, tc0224, tc0225, tc0226, tc0231, tc0239	
-gather_kcats/getStandardKcat.m		
+gather_kcats/getStandardKcat.m	tc0256, tc0257	
 gather_kcats/mergeDlkcatAndFuzzyKcats.m	tc0011; tc0241	
 gather_kcats/readDLKcatOutput.m	tcm0001, tcm0002 - The test doesn't really check the function, only that some output is read	
 gather_kcats/runDLKcat.m	tcm0001, tcm0002 - The test doesn't really check the function, only that we get something

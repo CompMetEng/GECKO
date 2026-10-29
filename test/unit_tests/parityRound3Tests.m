@@ -142,6 +142,83 @@ assumeTrue(testCase, hasGurobi, 'Gurobi is not available')
 verifyEqual(testCase, plateauSigma(), sigmaGlpk, 'AbsTol', 1e-12)
 end
 
+function testGetStandardKcatSubSystemNamesIgnoreCase_tc0256(testCase)
+% R3 is in 'Alpha', R5 in 'alpha', the entries of R2 in 'Beta'. The names
+% 'Alpha' and 'alpha' are one subSystem, so R6 ('ALPHA') gets the median of
+% R3 and R5 (5) and not the model-wide median (100).
+[ecModel, adapter] = standardKcatModel(struct('R5', 'alpha', 'R2', 'Beta', 'R6', 'ALPHA'));
+ecModel = getStandardKcat(ecModel, 'modelAdapter', adapter, 'threshold', 2);
+verifyEqual(testCase, ecModel.ec.kcat(strcmp(ecModel.ec.rxns, 'R6')), 5)
+end
+
+function testGetStandardKcatReactionWithoutSubSystem_tc0257(testCase)
+% R7 has an empty subSystem while the other reactions have one: it gets the
+% model-wide median kcat (100), R6 the one of its subSystem 'Alpha' (5).
+[ecModel, adapter] = standardKcatModel(struct('R2', 'Beta', 'R7', ''));
+ecModel = getStandardKcat(ecModel, 'modelAdapter', adapter, 'threshold', 2);
+verifyEqual(testCase, ecModel.ec.kcat(strcmp(ecModel.ec.rxns, 'R7')), 100)
+verifyEqual(testCase, ecModel.ec.kcat(strcmp(ecModel.ec.rxns, 'R6')), 5)
+end
+
+function testGetSubsetEcModelKeepsEverythingForTheFullModel_tc0258(testCase)
+% The context model is the conventional model, so no gene is removed and the
+% ecModel is returned as it is, for the full and the light ecModel. The
+% reaction identifiers of the light ecModel have a prefix; they are matched
+% by the reaction they stand for, so they are not all removed.
+adapter = getAdapter();
+model = loadConventionalGEM('modelAdapter', adapter);
+for light = [false true]
+    bigEcModel = makeEcModel(model, light, adapter);
+    smallEcModel = getSubsetEcModel(bigEcModel, model);
+    verifyEqual(testCase, smallEcModel, bigEcModel)
+    verifyNotEmpty(testCase, smallEcModel.ec.rxns)
+end
+end
+
+function testGetSubsetEcModelLightDropsEcEntriesOfRemovedRxns_tc0259(testCase)
+% The context model lacks R2: the light ecModel loses the entry 001_R2 of
+% its ec structure and keeps the others.
+adapter = getAdapter();
+model = loadConventionalGEM('modelAdapter', adapter);
+small = removeReactions(model, {'R2'}, 'removeUnusedMets', true, 'removeUnusedGenes', true);
+bigEcModel = makeEcModel(model, true, adapter);
+smallEcModel = getSubsetEcModel(bigEcModel, small);
+verifyFalse(testCase, ismember('001_R2', smallEcModel.ec.rxns))
+verifyTrue(testCase, all(ismember({'001_R3', '001_R5'}, smallEcModel.ec.rxns)))
+verifyEqual(testCase, size(smallEcModel.ec.rxnEnzMat, 1), numel(smallEcModel.ec.rxns))
+end
+
+function [ecModel, adapter] = standardKcatModel(subSystems)
+% ecTestGEM with R6 and R7 added (no genes) and the subSystems given as a
+% struct of reaction id to name (an empty name is no subSystem); reactions
+% not listed are in 'Alpha'. The kcats
+% are R3 2, R5 8, the entries of R2 100.
+adapter = getAdapter();
+model = loadConventionalGEM('modelAdapter', adapter);
+rxnsToAdd.rxns      = {'R6'; 'R7'};
+rxnsToAdd.equations = {'m1[c] => m2[c]'; 'm1[c] => m2[c]'};
+rxnsToAdd.grRules   = {''; ''};
+model = addRxns(model, rxnsToAdd, 3);
+model.subSystems = cell(numel(model.rxns), 1);
+for i = 1:numel(model.rxns)
+    name = 'Alpha';
+    if isfield(subSystems, model.rxns{i})
+        name = subSystems.(model.rxns{i});
+    end
+    if isempty(name)
+        model.subSystems{i} = {};
+    else
+        model.subSystems{i} = {name};
+    end
+end
+ecModel = makeEcModel(model, false, adapter);
+ecModel = getECfromGEM(ecModel);
+ecModel.ec.kcat(:) = 100;
+ecModel.ec.kcat(strcmp(ecModel.ec.rxns, 'R3')) = 2;
+ecModel.ec.kcat(strcmp(ecModel.ec.rxns, 'R5')) = 8;
+ecModel.ec.source(:) = {'manual'};
+end
+
 function sigma = plateauSigma()
 adapter = getAdapter();
 model = loadConventionalGEM('modelAdapter', adapter);
