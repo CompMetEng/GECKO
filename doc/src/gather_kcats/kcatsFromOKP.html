@@ -1,0 +1,369 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of kcatsFromOKP</title>
+  <meta name="keywords" content="kcatsFromOKP">
+  <meta name="description" content="kcatsFromOKP  Gather kcats from OpenKineticsPredictor and keep them as a source file.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">gather_kcats</a> &gt; kcatsFromOKP.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/gather_kcats&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>kcatsFromOKP
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>kcatsFromOKP  Gather kcats from OpenKineticsPredictor and keep them as a source file.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function [kcatList, done] = kcatsFromOKP(model, varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> kcatsFromOKP  Gather kcats from OpenKineticsPredictor and keep them as a source file.
+
+ Predicts kcats with one OpenKineticsPredictor (OKP) method and writes
+ them to data/kcats/okp_&lt;method&gt;.tsv in the project folder (see
+ saveKcatSource). OKP is a web service with a job queue, so this function
+ can be called repeatedly:
+
+ - without a job for this method, it submits one
+   (submitOpenKineticsPredictor);
+ - with a job, it fetches the result (fetchOpenKineticsPredictor). When
+   the job is done the file is written; otherwise it reports the job's
+   status and writes nothing.
+
+ Each method keeps its own job in data/OKP_job_&lt;method&gt;.txt and its own
+ result in data/OKP_output_&lt;method&gt;.csv, so jobs of several methods can
+ run at the same time. The job file records which job the stored result
+ came from; useStored only uses a result of the current job. An API key
+ is needed (see resolveOkpApiKey).
+
+ Parameters
+ ----------
+ model : struct
+     an ecModel in GECKO 3 format (with ecModel.ec structure), with
+     metabolite SMILES (findMetSmiles) and protein sequences.
+
+ Name-Value Arguments
+ --------------------
+ method : char
+     OKP method, e.g. 'CataPro', 'CatPred', 'CatRange', 'DLKcat',
+     'EITLEM', 'KinForm-H', 'KinForm-L', 'OmniESI', 'TurNup', 'UniKP'
+     (default: params.okp.method of the model adapter, or 'CataPro').
+ wait : logical
+     wait until the job is done (default false).
+ resubmit : logical
+     submit a new job even if one exists for this method; its earlier
+     result is removed (default false).
+ useStored : logical
+     read the stored result of this method's job, without contacting OKP
+     (default false).
+ ecRxns : logical
+     for which model.ec.rxns kcats are predicted (default: all). Only
+     used when a job is submitted.
+ save : logical
+     write the source file (default true).
+ saveAs : char
+     name of the source file, without .tsv (default 'okp_&lt;method&gt;', in
+     lower case, with other characters than letters and digits as '_').
+ modelAdapter : ModelAdapter
+     a loaded model adapter (default: the current default model adapter).
+
+ Returns
+ -------
+ kcatList : struct
+     the kcat values, as returned by readOpenKineticsPredictorOutput;
+     empty while the job is not done.
+ done : logical
+     whether the result was available.
+
+ Examples
+ --------
+     kcatsFromOKP(ecModel, 'method', 'CataPro');          % submits
+     kcatsFromOKP(ecModel, 'method', 'CataPro');          % later: fetches and writes
+     kcatsFromOKP(ecModel, 'method', 'UniKP', 'wait', true);
+
+ See also
+ --------
+ <a href="submitOpenKineticsPredictor.html" class="code" title="function jobId = submitOpenKineticsPredictor(model, varargin)">submitOpenKineticsPredictor</a>, <a href="fetchOpenKineticsPredictor.html" class="code" title="function [done, kcatList] = fetchOpenKineticsPredictor(model, varargin)">fetchOpenKineticsPredictor</a>, <a href="kcatsFromBrenda.html" class="code" title="function kcatList = kcatsFromBrenda(model, varargin)">kcatsFromBrenda</a>, <a href="saveKcatSource.html" class="code" title="function filename = saveKcatSource(model, kcatList, name, varargin)">saveKcatSource</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="fetchOpenKineticsPredictor.html" class="code" title="function [done, kcatList] = fetchOpenKineticsPredictor(model, varargin)">fetchOpenKineticsPredictor</a>	fetchOpenKineticsPredictor  Fetch and parse an OpenKineticsPredictor job.</li><li><a href="readOpenKineticsPredictorOutput.html" class="code" title="function kcatList = readOpenKineticsPredictorOutput(model, varargin)">readOpenKineticsPredictorOutput</a>	readOpenKineticsPredictorOutput  Read OpenKineticsPredictor output to kcatList.</li><li><a href="saveKcatSource.html" class="code" title="function filename = saveKcatSource(model, kcatList, name, varargin)">saveKcatSource</a>	saveKcatSource  Write a kcatList to a kcat source file of the project.</li><li><a href="submitOpenKineticsPredictor.html" class="code" title="function jobId = submitOpenKineticsPredictor(model, varargin)">submitOpenKineticsPredictor</a>	submitOpenKineticsPredictor  Submit a kcat prediction job to OpenKineticsPredictor.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="updateKcatSources.html" class="code" title="function report = updateKcatSources(model, varargin)">updateKcatSources</a>	updateKcatSources  Gather the kcat sources that the configuration needs.</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function adoptSharedResult(model, modelAdapter, dataDir, method, jobFile, outFile)</a></li><li><a href="#_sub2" class="code">function job = readJobFile(file)</a></li><li><a href="#_sub3" class="code">function writeJobFile(file, job)</a></li><li><a href="#_sub4" class="code">function n = countRxns(ecRxns)</a></li><li><a href="#_sub5" class="code">function warnSubset(ecRxns, nRxns, file)</a></li><li><a href="#_sub6" class="code">function checkOptions(args, names, functionName)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [kcatList, done] = kcatsFromOKP(model, varargin)</a>
+0002 <span class="comment">% kcatsFromOKP  Gather kcats from OpenKineticsPredictor and keep them as a source file.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Predicts kcats with one OpenKineticsPredictor (OKP) method and writes</span>
+0005 <span class="comment">% them to data/kcats/okp_&lt;method&gt;.tsv in the project folder (see</span>
+0006 <span class="comment">% saveKcatSource). OKP is a web service with a job queue, so this function</span>
+0007 <span class="comment">% can be called repeatedly:</span>
+0008 <span class="comment">%</span>
+0009 <span class="comment">% - without a job for this method, it submits one</span>
+0010 <span class="comment">%   (submitOpenKineticsPredictor);</span>
+0011 <span class="comment">% - with a job, it fetches the result (fetchOpenKineticsPredictor). When</span>
+0012 <span class="comment">%   the job is done the file is written; otherwise it reports the job's</span>
+0013 <span class="comment">%   status and writes nothing.</span>
+0014 <span class="comment">%</span>
+0015 <span class="comment">% Each method keeps its own job in data/OKP_job_&lt;method&gt;.txt and its own</span>
+0016 <span class="comment">% result in data/OKP_output_&lt;method&gt;.csv, so jobs of several methods can</span>
+0017 <span class="comment">% run at the same time. The job file records which job the stored result</span>
+0018 <span class="comment">% came from; useStored only uses a result of the current job. An API key</span>
+0019 <span class="comment">% is needed (see resolveOkpApiKey).</span>
+0020 <span class="comment">%</span>
+0021 <span class="comment">% Parameters</span>
+0022 <span class="comment">% ----------</span>
+0023 <span class="comment">% model : struct</span>
+0024 <span class="comment">%     an ecModel in GECKO 3 format (with ecModel.ec structure), with</span>
+0025 <span class="comment">%     metabolite SMILES (findMetSmiles) and protein sequences.</span>
+0026 <span class="comment">%</span>
+0027 <span class="comment">% Name-Value Arguments</span>
+0028 <span class="comment">% --------------------</span>
+0029 <span class="comment">% method : char</span>
+0030 <span class="comment">%     OKP method, e.g. 'CataPro', 'CatPred', 'CatRange', 'DLKcat',</span>
+0031 <span class="comment">%     'EITLEM', 'KinForm-H', 'KinForm-L', 'OmniESI', 'TurNup', 'UniKP'</span>
+0032 <span class="comment">%     (default: params.okp.method of the model adapter, or 'CataPro').</span>
+0033 <span class="comment">% wait : logical</span>
+0034 <span class="comment">%     wait until the job is done (default false).</span>
+0035 <span class="comment">% resubmit : logical</span>
+0036 <span class="comment">%     submit a new job even if one exists for this method; its earlier</span>
+0037 <span class="comment">%     result is removed (default false).</span>
+0038 <span class="comment">% useStored : logical</span>
+0039 <span class="comment">%     read the stored result of this method's job, without contacting OKP</span>
+0040 <span class="comment">%     (default false).</span>
+0041 <span class="comment">% ecRxns : logical</span>
+0042 <span class="comment">%     for which model.ec.rxns kcats are predicted (default: all). Only</span>
+0043 <span class="comment">%     used when a job is submitted.</span>
+0044 <span class="comment">% save : logical</span>
+0045 <span class="comment">%     write the source file (default true).</span>
+0046 <span class="comment">% saveAs : char</span>
+0047 <span class="comment">%     name of the source file, without .tsv (default 'okp_&lt;method&gt;', in</span>
+0048 <span class="comment">%     lower case, with other characters than letters and digits as '_').</span>
+0049 <span class="comment">% modelAdapter : ModelAdapter</span>
+0050 <span class="comment">%     a loaded model adapter (default: the current default model adapter).</span>
+0051 <span class="comment">%</span>
+0052 <span class="comment">% Returns</span>
+0053 <span class="comment">% -------</span>
+0054 <span class="comment">% kcatList : struct</span>
+0055 <span class="comment">%     the kcat values, as returned by readOpenKineticsPredictorOutput;</span>
+0056 <span class="comment">%     empty while the job is not done.</span>
+0057 <span class="comment">% done : logical</span>
+0058 <span class="comment">%     whether the result was available.</span>
+0059 <span class="comment">%</span>
+0060 <span class="comment">% Examples</span>
+0061 <span class="comment">% --------</span>
+0062 <span class="comment">%     kcatsFromOKP(ecModel, 'method', 'CataPro');          % submits</span>
+0063 <span class="comment">%     kcatsFromOKP(ecModel, 'method', 'CataPro');          % later: fetches and writes</span>
+0064 <span class="comment">%     kcatsFromOKP(ecModel, 'method', 'UniKP', 'wait', true);</span>
+0065 <span class="comment">%</span>
+0066 <span class="comment">% See also</span>
+0067 <span class="comment">% --------</span>
+0068 <span class="comment">% submitOpenKineticsPredictor, fetchOpenKineticsPredictor, kcatsFromBrenda, saveKcatSource</span>
+0069 
+0070 <a href="#_sub6" class="code" title="subfunction checkOptions(args, names, functionName)">checkOptions</a>(varargin, {<span class="string">'method'</span>,<span class="string">'wait'</span>,<span class="string">'resubmit'</span>,<span class="string">'useStored'</span>,<span class="string">'ecRxns'</span>,<span class="string">'save'</span>,<span class="string">'saveAs'</span>,<span class="string">'modelAdapter'</span>}, <span class="string">'kcatsFromOKP'</span>);
+0071 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0072     <span class="string">'method'</span>,       []; <span class="keyword">...</span>
+0073     <span class="string">'wait'</span>,         false; <span class="keyword">...</span>
+0074     <span class="string">'resubmit'</span>,     false; <span class="keyword">...</span>
+0075     <span class="string">'useStored'</span>,    false; <span class="keyword">...</span>
+0076     <span class="string">'ecRxns'</span>,       []; <span class="keyword">...</span>
+0077     <span class="string">'save'</span>,         true; <span class="keyword">...</span>
+0078     <span class="string">'saveAs'</span>,       []; <span class="keyword">...</span>
+0079     <span class="string">'modelAdapter'</span>, []});
+0080 modelAdapter = p.modelAdapter;
+0081 <span class="keyword">if</span> isempty(modelAdapter)
+0082     modelAdapter = ModelAdapterManager.getDefault();
+0083     <span class="keyword">if</span> isempty(modelAdapter)
+0084         error(<span class="string">'Either send in a modelAdapter or set the default model adapter in the ModelAdapterManager.'</span>)
+0085     <span class="keyword">end</span>
+0086 <span class="keyword">end</span>
+0087 params = modelAdapter.params;
+0088 method = char(p.method);
+0089 <span class="keyword">if</span> isempty(method)
+0090     <span class="keyword">if</span> isfield(params, <span class="string">'okp'</span>) &amp;&amp; isfield(params.okp, <span class="string">'method'</span>) &amp;&amp; ~isempty(params.okp.method)
+0091         method = char(params.okp.method);
+0092     <span class="keyword">else</span>
+0093         method = <span class="string">'CataPro'</span>;
+0094     <span class="keyword">end</span>
+0095 <span class="keyword">end</span>
+0096 <span class="keyword">if</span> any(strcmp(method, {<span class="string">'CatPred'</span>, <span class="string">'TurNup'</span>}))
+0097     error(<span class="string">'kcatsFromOKP:method'</span>, [<span class="string">'%s reads whole reactions (its substrate set, and products '</span> <span class="keyword">...</span>
+0098         <span class="string">'for TurNup); kcatsFromOKP submits enzyme-substrate pairs only.'</span>], method)
+0099 <span class="keyword">end</span>
+0100 tag = lower(regexprep(method, <span class="string">'[^A-Za-z0-9]+'</span>, <span class="string">'_'</span>));
+0101 dataDir = fullfile(params.path, <span class="string">'data'</span>);
+0102 jobFile = fullfile(dataDir, [<span class="string">'OKP_job_'</span> tag <span class="string">'.txt'</span>]);
+0103 outFile = fullfile(dataDir, [<span class="string">'OKP_output_'</span> tag <span class="string">'.csv'</span>]);
+0104 name = char(p.saveAs);
+0105 <span class="keyword">if</span> isempty(name)
+0106     name = [<span class="string">'okp_'</span> tag];
+0107 <span class="keyword">end</span>
+0108 job = <a href="#_sub2" class="code" title="subfunction job = readJobFile(file)">readJobFile</a>(jobFile);
+0109 submitting = ~p.useStored &amp;&amp; (p.resubmit || ~isfield(job, <span class="string">'jobId'</span>));
+0110 <span class="keyword">if</span> ~isempty(p.ecRxns) &amp;&amp; ~submitting
+0111     error(<span class="string">'kcatsFromOKP:ecRxns'</span>, [<span class="string">'ecRxns selects the reactions of a new job, but this call '</span> <span class="keyword">...</span>
+0112         <span class="string">'submits none (a job for %s exists; use ''resubmit'', true for a new one).'</span>], method)
+0113 <span class="keyword">end</span>
+0114 <span class="keyword">if</span> p.save
+0115     file = fullfile(modelAdapter.params.path, <span class="string">'data'</span>, <span class="string">'kcats'</span>, [char(name) <span class="string">'.tsv'</span>]);
+0116     <span class="keyword">if</span> submitting
+0117         <a href="#_sub5" class="code" title="subfunction warnSubset(ecRxns, nRxns, file)">warnSubset</a>(p.ecRxns, numel(model.ec.rxns), file);
+0118     <span class="keyword">end</span>
+0119 <span class="keyword">end</span>
+0120 
+0121 <span class="keyword">if</span> p.useStored
+0122     <span class="keyword">if</span> ~isfield(job, <span class="string">'jobId'</span>)
+0123         <a href="#_sub1" class="code" title="subfunction adoptSharedResult(model, modelAdapter, dataDir, method, jobFile, outFile)">adoptSharedResult</a>(model, modelAdapter, dataDir, method, jobFile, outFile);
+0124         job = <a href="#_sub2" class="code" title="subfunction job = readJobFile(file)">readJobFile</a>(jobFile);
+0125     <span class="keyword">end</span>
+0126     <span class="keyword">if</span> ~isfile(outFile) || ~isfield(job, <span class="string">'resultOf'</span>) || ~strcmp(job.resultOf, job.jobId)
+0127         error(<span class="string">'kcatsFromOKP:noStored'</span>, [<span class="string">'No stored result of the current %s job (%s). Call '</span> <span class="keyword">...</span>
+0128             <span class="string">'kcatsFromOKP without ''useStored'' to fetch it.'</span>], method, jobFile)
+0129     <span class="keyword">end</span>
+0130     kcatList = <a href="readOpenKineticsPredictorOutput.html" class="code" title="function kcatList = readOpenKineticsPredictorOutput(model, varargin)">readOpenKineticsPredictorOutput</a>(model, <span class="string">'outFile'</span>, outFile, <span class="string">'modelAdapter'</span>, modelAdapter);
+0131     done = true;
+0132 <span class="keyword">else</span>
+0133     <span class="keyword">if</span> submitting
+0134         <span class="keyword">if</span> isfile(outFile)
+0135             delete(outFile);
+0136         <span class="keyword">end</span>
+0137         jobId = <a href="submitOpenKineticsPredictor.html" class="code" title="function jobId = submitOpenKineticsPredictor(model, varargin)">submitOpenKineticsPredictor</a>(model, <span class="string">'method'</span>, method, <span class="string">'ecRxns'</span>, p.ecRxns, <span class="keyword">...</span>
+0138             <span class="string">'overwrite'</span>, true, <span class="string">'modelAdapter'</span>, modelAdapter);
+0139         job = struct(<span class="string">'jobId'</span>, jobId, <span class="string">'method'</span>, method, <span class="string">'submittedAt'</span>, <span class="keyword">...</span>
+0140             char(datetime(<span class="string">'now'</span>, <span class="string">'TimeZone'</span>, <span class="string">'UTC'</span>, <span class="string">'Format'</span>, <span class="string">'yyyy-MM-dd''T''HH:mm:ss''Z'''</span>)));
+0141         <span class="keyword">if</span> ~isempty(p.ecRxns)
+0142             job.ecRxns = sprintf(<span class="string">'%d'</span>, <a href="#_sub4" class="code" title="subfunction n = countRxns(ecRxns)">countRxns</a>(p.ecRxns));
+0143         <span class="keyword">end</span>
+0144         <a href="#_sub3" class="code" title="subfunction writeJobFile(file, job)">writeJobFile</a>(jobFile, job);
+0145     <span class="keyword">end</span>
+0146     [done, kcatList] = <a href="fetchOpenKineticsPredictor.html" class="code" title="function [done, kcatList] = fetchOpenKineticsPredictor(model, varargin)">fetchOpenKineticsPredictor</a>(model, <span class="string">'jobId'</span>, job.jobId, <span class="string">'wait'</span>, p.wait, <span class="keyword">...</span>
+0147         <span class="string">'outFile'</span>, outFile, <span class="string">'modelAdapter'</span>, modelAdapter);
+0148     <span class="keyword">if</span> done
+0149         job.resultOf = job.jobId;
+0150         <a href="#_sub3" class="code" title="subfunction writeJobFile(file, job)">writeJobFile</a>(jobFile, job);
+0151     <span class="keyword">end</span>
+0152 <span class="keyword">end</span>
+0153 
+0154 <span class="keyword">if</span> ~done
+0155     fprintf(<span class="string">'Call kcatsFromOKP(model, ''method'', ''%s'') again later to collect the result.\n'</span>, method);
+0156     <span class="keyword">return</span>
+0157 <span class="keyword">end</span>
+0158 <span class="keyword">if</span> p.save
+0159     parameters = struct(<span class="string">'method'</span>, method);
+0160     <span class="keyword">if</span> isfield(job, <span class="string">'ecRxns'</span>)
+0161         parameters.ec_rxns = str2double(job.ecRxns);
+0162     <span class="keyword">end</span>
+0163     <span class="keyword">if</span> isfield(kcatList, <span class="string">'similarity'</span>)
+0164         kcatList.detail = repmat({<span class="string">''</span>}, numel(kcatList.rxns), 1);
+0165         has = ~isnan(kcatList.similarity);
+0166         kcatList.detail(has) = cellstr(&quot;similarity=&quot; + string(kcatList.similarity(has)));
+0167     <span class="keyword">end</span>
+0168     <a href="saveKcatSource.html" class="code" title="function filename = saveKcatSource(model, kcatList, name, varargin)">saveKcatSource</a>(model, kcatList, name, <span class="string">'modelAdapter'</span>, modelAdapter, <span class="keyword">...</span>
+0169         <span class="string">'generator'</span>, <span class="string">'kcatsFromOKP'</span>, <span class="string">'parameters'</span>, parameters, <span class="string">'data'</span>, [<span class="string">'OKP job '</span> job.jobId]);
+0170     fprintf(<span class="string">'OKP (%s) kcats for %d reactions written to %s\n'</span>, method, <span class="keyword">...</span>
+0171         numel(unique(kcatList.rxns(kcatList.kcats &gt; 0))), file);
+0172 <span class="keyword">end</span>
+0173 <span class="keyword">end</span>
+0174 
+0175 <a name="_sub1" href="#_subfunctions" class="code">function adoptSharedResult(model, modelAdapter, dataDir, method, jobFile, outFile)</a>
+0176 <span class="comment">% A result that fetchOpenKineticsPredictor stored by itself, in</span>
+0177 <span class="comment">% data/OKP_output.csv with data/OKP_job.txt, is taken over for this method</span>
+0178 <span class="comment">% only when its job is for this method and its predictions are labelled</span>
+0179 <span class="comment">% with this method.</span>
+0180 shared = fullfile(dataDir, <span class="string">'OKP_output.csv'</span>);
+0181 sharedJob = <a href="#_sub2" class="code" title="subfunction job = readJobFile(file)">readJobFile</a>(fullfile(dataDir, <span class="string">'OKP_job.txt'</span>));
+0182 ok = isfile(shared) &amp;&amp; isfield(sharedJob, <span class="string">'jobId'</span>) &amp;&amp; isfield(sharedJob, <span class="string">'method'</span>) &amp;&amp; <span class="keyword">...</span>
+0183     strcmpi(sharedJob.method, method);
+0184 <span class="keyword">if</span> ok
+0185     list = <a href="readOpenKineticsPredictorOutput.html" class="code" title="function kcatList = readOpenKineticsPredictorOutput(model, varargin)">readOpenKineticsPredictorOutput</a>(model, <span class="string">'outFile'</span>, shared, <span class="string">'modelAdapter'</span>, modelAdapter);
+0186     predicted = list.kcatSource(startsWith(list.kcatSource, <span class="string">'OKP-'</span>) &amp; <span class="keyword">...</span>
+0187         ~ismember(lower(list.kcatSource), {<span class="string">'okp-brenda'</span>,<span class="string">'okp-sabio-rk'</span>,<span class="string">'okp-uniprot'</span>}));
+0188     ok = ~isempty(predicted) &amp;&amp; all(strcmpi(predicted, [<span class="string">'OKP-'</span> method]));
+0189 <span class="keyword">end</span>
+0190 <span class="keyword">if</span> ~ok
+0191     error(<span class="string">'kcatsFromOKP:noStored'</span>, [<span class="string">'No stored OKP result for %s (%s). Call kcatsFromOKP '</span> <span class="keyword">...</span>
+0192         <span class="string">'without ''useStored'' to submit or fetch a job.'</span>], method, outFile)
+0193 <span class="keyword">end</span>
+0194 copyfile(shared, outFile);
+0195 sharedJob.method = method;
+0196 sharedJob.resultOf = sharedJob.jobId;
+0197 <a href="#_sub3" class="code" title="subfunction writeJobFile(file, job)">writeJobFile</a>(jobFile, sharedJob);
+0198 <span class="keyword">end</span>
+0199 
+0200 <a name="_sub2" href="#_subfunctions" class="code">function job = readJobFile(file)</a>
+0201 <span class="comment">% Fields of an OKP job file ('key: value' per line), as a struct.</span>
+0202 job = struct();
+0203 <span class="keyword">if</span> ~isfile(file)
+0204     <span class="keyword">return</span>
+0205 <span class="keyword">end</span>
+0206 lines = strsplit(fileread(file), newline);
+0207 <span class="keyword">for</span> i = 1:numel(lines)
+0208     tok = regexp(lines{i}, <span class="string">'^([A-Za-z]\w*):\s*(.*?)\s*$'</span>, <span class="string">'tokens'</span>, <span class="string">'once'</span>);
+0209     <span class="keyword">if</span> ~isempty(tok)
+0210         job.(tok{1}) = tok{2};
+0211     <span class="keyword">end</span>
+0212 <span class="keyword">end</span>
+0213 <span class="keyword">end</span>
+0214 
+0215 <a name="_sub3" href="#_subfunctions" class="code">function writeJobFile(file, job)</a>
+0216 fid = fopen(file, <span class="string">'w'</span>);
+0217 <span class="keyword">for</span> f = {<span class="string">'jobId'</span>,<span class="string">'method'</span>,<span class="string">'submittedAt'</span>,<span class="string">'ecRxns'</span>,<span class="string">'resultOf'</span>}
+0218     <span class="keyword">if</span> isfield(job, f{1})
+0219         fprintf(fid, <span class="string">'%s: %s\n'</span>, f{1}, job.(f{1}));
+0220     <span class="keyword">end</span>
+0221 <span class="keyword">end</span>
+0222 fclose(fid);
+0223 <span class="keyword">end</span>
+0224 
+0225 <a name="_sub4" href="#_subfunctions" class="code">function n = countRxns(ecRxns)</a>
+0226 <span class="keyword">if</span> islogical(ecRxns)
+0227     n = sum(ecRxns);
+0228 <span class="keyword">else</span>
+0229     n = numel(unique(ecRxns));
+0230 <span class="keyword">end</span>
+0231 <span class="keyword">end</span>
+0232 
+0233 <a name="_sub5" href="#_subfunctions" class="code">function warnSubset(ecRxns, nRxns, file)</a>
+0234 <span class="comment">% A subset written under the default name replaces the full file.</span>
+0235 <span class="keyword">if</span> ~isempty(ecRxns) &amp;&amp; <a href="#_sub4" class="code" title="subfunction n = countRxns(ecRxns)">countRxns</a>(ecRxns) &lt; nRxns &amp;&amp; isfile(file)
+0236     printOrange(sprintf([<span class="string">'%s is replaced by kcats for %d reactions only. Give saveAs '</span> <span class="keyword">...</span>
+0237         <span class="string">'to keep it.\n'</span>], file, <a href="#_sub4" class="code" title="subfunction n = countRxns(ecRxns)">countRxns</a>(ecRxns)));
+0238 <span class="keyword">end</span>
+0239 <span class="keyword">end</span>
+0240 
+0241 <a name="_sub6" href="#_subfunctions" class="code">function checkOptions(args, names, functionName)</a>
+0242 <span class="comment">% Options are name-value pairs with known names, so a misspelled option is</span>
+0243 <span class="comment">% an error instead of being taken as a positional argument.</span>
+0244 id = [functionName <span class="string">':arguments'</span>];
+0245 given = args(1:2:end);
+0246 <span class="keyword">if</span> mod(numel(args), 2) ~= 0 || ~all(cellfun(@(x) ischar(x) || (isstring(x) &amp;&amp; isscalar(x)), given))
+0247     error(id, <span class="string">'Options of %s are name-value pairs. Options: %s.'</span>, functionName, strjoin(names, <span class="string">', '</span>))
+0248 <span class="keyword">end</span>
+0249 unknown = setdiff(cellfun(@char, given, <span class="string">'UniformOutput'</span>, false), names);
+0250 <span class="keyword">if</span> ~isempty(unknown)
+0251     error(id, <span class="string">'Unknown option of %s: %s. Options: %s.'</span>, functionName, strjoin(unknown, <span class="string">', '</span>), <span class="keyword">...</span>
+0252         strjoin(names, <span class="string">', '</span>))
+0253 <span class="keyword">end</span>
+0254 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

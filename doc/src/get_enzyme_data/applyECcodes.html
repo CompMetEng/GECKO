@@ -1,0 +1,133 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of applyECcodes</title>
+  <meta name="keywords" content="applyECcodes">
+  <meta name="description" content="applyECcodes  Copy EC numbers from ecModel.ec.eccodes to ecModel.eccodes.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">get_enzyme_data</a> &gt; applyECcodes.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/get_enzyme_data&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>applyECcodes
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>applyECcodes  Copy EC numbers from ecModel.ec.eccodes to ecModel.eccodes.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function ecModel = applyECcodes(ecModel, varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> applyECcodes  Copy EC numbers from ecModel.ec.eccodes to ecModel.eccodes.
+
+ Copies the EC numbers stored in the ecModel.ec structure across to the
+ top-level ecModel.eccodes field.
+
+ Parameters
+ ----------
+ ecModel : struct
+     an ecModel in GECKO 3 format (with ecModel.ec structure).
+
+ Name-Value Arguments
+ --------------------
+ overwrite : logical
+     whether existing (non-empty) ecModel.eccodes entries should be
+     overwritten by a non-empty ecModel.ec.eccodes entry. Empty
+     ecModel.eccodes entries are always overwritten if possible (default
+     false). An empty ecModel.ec.eccodes source entry is never copied, so
+     it can never erase an existing annotation.
+
+ Returns
+ -------
+ ecModel : struct
+     ecModel with populated model.eccodes.
+
+ Examples
+ --------
+     % optional arguments may be given positionally or as name-value pairs:
+     ecModel = applyECcodes(ecModel, true);
+     ecModel = applyECcodes(ecModel, 'overwrite', true);</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function ecModel = applyECcodes(ecModel, varargin)</a>
+0002 <span class="comment">% applyECcodes  Copy EC numbers from ecModel.ec.eccodes to ecModel.eccodes.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Copies the EC numbers stored in the ecModel.ec structure across to the</span>
+0005 <span class="comment">% top-level ecModel.eccodes field.</span>
+0006 <span class="comment">%</span>
+0007 <span class="comment">% Parameters</span>
+0008 <span class="comment">% ----------</span>
+0009 <span class="comment">% ecModel : struct</span>
+0010 <span class="comment">%     an ecModel in GECKO 3 format (with ecModel.ec structure).</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Name-Value Arguments</span>
+0013 <span class="comment">% --------------------</span>
+0014 <span class="comment">% overwrite : logical</span>
+0015 <span class="comment">%     whether existing (non-empty) ecModel.eccodes entries should be</span>
+0016 <span class="comment">%     overwritten by a non-empty ecModel.ec.eccodes entry. Empty</span>
+0017 <span class="comment">%     ecModel.eccodes entries are always overwritten if possible (default</span>
+0018 <span class="comment">%     false). An empty ecModel.ec.eccodes source entry is never copied, so</span>
+0019 <span class="comment">%     it can never erase an existing annotation.</span>
+0020 <span class="comment">%</span>
+0021 <span class="comment">% Returns</span>
+0022 <span class="comment">% -------</span>
+0023 <span class="comment">% ecModel : struct</span>
+0024 <span class="comment">%     ecModel with populated model.eccodes.</span>
+0025 <span class="comment">%</span>
+0026 <span class="comment">% Examples</span>
+0027 <span class="comment">% --------</span>
+0028 <span class="comment">%     % optional arguments may be given positionally or as name-value pairs:</span>
+0029 <span class="comment">%     ecModel = applyECcodes(ecModel, true);</span>
+0030 <span class="comment">%     ecModel = applyECcodes(ecModel, 'overwrite', true);</span>
+0031 
+0032 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0033     <span class="string">'overwrite'</span>, false});
+0034 overwrite = p.overwrite;
+0035 
+0036 <span class="keyword">if</span> ~isfield(ecModel.ec,<span class="string">'eccodes'</span>)
+0037     error(<span class="string">'ecModel.ec.eccodes does not exist'</span>)
+0038 <span class="keyword">end</span>
+0039 
+0040 [a,b] = ismember(ecModel.rxns,ecModel.ec.rxns);
+0041 <span class="keyword">if</span> ~isfield(ecModel,<span class="string">'eccodes'</span>)
+0042     ecModel.eccodes = cell(numel(ecModel.rxns),1);
+0043 <span class="keyword">end</span>
+0044 
+0045 <span class="keyword">if</span> overwrite
+0046     <span class="comment">% Never overwrite an existing eccodes entry with an empty source: an</span>
+0047     <span class="comment">% unset ec.eccodes value means &quot;no info to copy&quot;, not &quot;clear the</span>
+0048     <span class="comment">% annotation&quot;.</span>
+0049     nonEmptySource = false(size(a));
+0050     nonEmptySource(a) = ~cellfun(@isempty, ecModel.ec.eccodes(b(a)));
+0051     a = a &amp; nonEmptySource;
+0052     ecModel.eccodes(a) = ecModel.ec.eccodes(b(a));
+0053 <span class="keyword">else</span> <span class="comment">% Only replace emptyEcCodes</span>
+0054     emptyEcCodes = cellfun(@isempty, ecModel.eccodes);
+0055     a = a &amp; emptyEcCodes;
+0056     ecModel.eccodes(a) = ecModel.ec.eccodes(b(a));
+0057 <span class="keyword">end</span>
+0058 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

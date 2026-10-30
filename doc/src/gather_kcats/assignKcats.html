@@ -1,0 +1,141 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of assignKcats</title>
+  <meta name="keywords" content="assignKcats">
+  <meta name="description" content="assignKcats  Assign kcats from the kcat source files and apply them.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">gather_kcats</a> &gt; assignKcats.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/gather_kcats&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>assignKcats
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>assignKcats  Assign kcats from the kcat source files and apply them.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function [model, decisions, report] = assignKcats(model, varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> assignKcats  Assign kcats from the kcat source files and apply them.
+
+ Decides one kcat per reaction from the kcat source files in data/kcats,
+ as [kcat_assignment] in model_adapter.toml sets (see collectKcats), writes
+ model.ec.kcat and model.ec.source, and applies the kcat constraints
+ (applyKcatConstraints). Any kcats the model had are replaced: the source
+ files are the input, and nothing in the model is written back to them.
+
+ Parameters
+ ----------
+ model : struct
+     an ecModel in GECKO 3 format (with ecModel.ec structure).
+
+ Name-Value Arguments
+ --------------------
+ modelAdapter : ModelAdapter
+     a loaded model adapter (default: the current default model adapter).
+ writeReport : logical
+     write the decisions to output/&lt;model id&gt;_kcatDecisions.tsv (default
+     true).
+
+ Returns
+ -------
+ model : struct
+     the ecModel with the assigned kcats applied.
+ decisions, report
+     as returned by collectKcats.
+
+ Examples
+ --------
+     updateKcatSources(ecModel);   % gather what the configuration needs
+     ecModel = assignKcats(ecModel);
+
+ See also
+ --------
+ <a href="collectKcats.html" class="code" title="function [decisions, report, ecModel] = collectKcats(model, varargin)">collectKcats</a>, <a href="updateKcatSources.html" class="code" title="function report = updateKcatSources(model, varargin)">updateKcatSources</a>, applyKcatConstraints</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="collectKcats.html" class="code" title="function [decisions, report, ecModel] = collectKcats(model, varargin)">collectKcats</a>	collectKcats  Decide one kcat per reaction from the kcat source files.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function checkOptions(args, names, functionName)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [model, decisions, report] = assignKcats(model, varargin)</a>
+0002 <span class="comment">% assignKcats  Assign kcats from the kcat source files and apply them.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Decides one kcat per reaction from the kcat source files in data/kcats,</span>
+0005 <span class="comment">% as [kcat_assignment] in model_adapter.toml sets (see collectKcats), writes</span>
+0006 <span class="comment">% model.ec.kcat and model.ec.source, and applies the kcat constraints</span>
+0007 <span class="comment">% (applyKcatConstraints). Any kcats the model had are replaced: the source</span>
+0008 <span class="comment">% files are the input, and nothing in the model is written back to them.</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% Parameters</span>
+0011 <span class="comment">% ----------</span>
+0012 <span class="comment">% model : struct</span>
+0013 <span class="comment">%     an ecModel in GECKO 3 format (with ecModel.ec structure).</span>
+0014 <span class="comment">%</span>
+0015 <span class="comment">% Name-Value Arguments</span>
+0016 <span class="comment">% --------------------</span>
+0017 <span class="comment">% modelAdapter : ModelAdapter</span>
+0018 <span class="comment">%     a loaded model adapter (default: the current default model adapter).</span>
+0019 <span class="comment">% writeReport : logical</span>
+0020 <span class="comment">%     write the decisions to output/&lt;model id&gt;_kcatDecisions.tsv (default</span>
+0021 <span class="comment">%     true).</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Returns</span>
+0024 <span class="comment">% -------</span>
+0025 <span class="comment">% model : struct</span>
+0026 <span class="comment">%     the ecModel with the assigned kcats applied.</span>
+0027 <span class="comment">% decisions, report</span>
+0028 <span class="comment">%     as returned by collectKcats.</span>
+0029 <span class="comment">%</span>
+0030 <span class="comment">% Examples</span>
+0031 <span class="comment">% --------</span>
+0032 <span class="comment">%     updateKcatSources(ecModel);   % gather what the configuration needs</span>
+0033 <span class="comment">%     ecModel = assignKcats(ecModel);</span>
+0034 <span class="comment">%</span>
+0035 <span class="comment">% See also</span>
+0036 <span class="comment">% --------</span>
+0037 <span class="comment">% collectKcats, updateKcatSources, applyKcatConstraints</span>
+0038 
+0039 <a href="#_sub1" class="code" title="subfunction checkOptions(args, names, functionName)">checkOptions</a>(varargin, {<span class="string">'modelAdapter'</span>,<span class="string">'writeReport'</span>}, <span class="string">'assignKcats'</span>);
+0040 [decisions, report, model] = <a href="collectKcats.html" class="code" title="function [decisions, report, ecModel] = collectKcats(model, varargin)">collectKcats</a>(model, varargin{:});
+0041 model = applyKcatConstraints(model);
+0042 <span class="keyword">end</span>
+0043 
+0044 <a name="_sub1" href="#_subfunctions" class="code">function checkOptions(args, names, functionName)</a>
+0045 <span class="comment">% Options are name-value pairs with known names, so a misspelled option is</span>
+0046 <span class="comment">% an error instead of being taken as a positional argument.</span>
+0047 id = [functionName <span class="string">':arguments'</span>];
+0048 given = args(1:2:end);
+0049 <span class="keyword">if</span> mod(numel(args), 2) ~= 0 || ~all(cellfun(@(x) ischar(x) || (isstring(x) &amp;&amp; isscalar(x)), given))
+0050     error(id, <span class="string">'Options of %s are name-value pairs. Options: %s.'</span>, functionName, strjoin(names, <span class="string">', '</span>))
+0051 <span class="keyword">end</span>
+0052 unknown = setdiff(cellfun(@char, given, <span class="string">'UniformOutput'</span>, false), names);
+0053 <span class="keyword">if</span> ~isempty(unknown)
+0054     error(id, <span class="string">'Unknown option of %s: %s. Options: %s.'</span>, functionName, strjoin(unknown, <span class="string">', '</span>), <span class="keyword">...</span>
+0055         strjoin(names, <span class="string">', '</span>))
+0056 <span class="keyword">end</span>
+0057 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

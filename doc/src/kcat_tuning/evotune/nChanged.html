@@ -1,0 +1,98 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of nChanged</title>
+  <meta name="keywords" content="nChanged">
+  <meta name="description" content="nChanged  How many kcats differ from their prior by more than relTol.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="../index.html">kcat_tuning</a> &gt; <a href="index.html">evotune</a> &gt; nChanged.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../../index.html"><img alt="<" border="0" src="../../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/kcat_tuning/evotune&nbsp;<img alt=">" border="0" src="../../../right.png"></a></td></tr></table>-->
+
+<h1>nChanged
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+<div class="box"><strong>nChanged  How many kcats differ from their prior by more than relTol.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+<div class="box"><strong>function n = nChanged(kcat,kcat0,varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> nChanged  How many kcats differ from their prior by more than relTol.
+
+ The 2% default matches the threshold MATLAB's own per-source
+ &quot;unchanged&quot; reporting has historically used.
+
+ Parameters
+ ----------
+ kcat, kcat0 : double
+     tuned and prior kcat vectors, same length.
+
+ Name-Value Arguments
+ --------------------
+ relTol : double
+     default 0.02.
+
+ Returns
+ -------
+ n : double
+     count of entries where abs(log(kcat./kcat0)) &gt; log1p(relTol).
+
+ See also
+ --------
+ <a href="tunePriorPenaltyWeight.html" class="code" title="function sweepTable = tunePriorPenaltyWeight(ecModel,varargin)">tunePriorPenaltyWeight</a>, <a href="parsimonyFrontier.html" class="code" title="function points = parsimonyFrontier(scoreFcn,kcat,kcat0,sigma0log,varargin)">parsimonyFrontier</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../../matlabicon.gif)">
+<li><a href="parsimonyFrontier.html" class="code" title="function points = parsimonyFrontier(scoreFcn,kcat,kcat0,sigma0log,varargin)">parsimonyFrontier</a>	parsimonyFrontier  Score kcat with progressively more of it reverted to</li><li><a href="tunePriorPenaltyWeight.html" class="code" title="function sweepTable = tunePriorPenaltyWeight(ecModel,varargin)">tunePriorPenaltyWeight</a>	tunePriorPenaltyWeight  Sweep priorPenaltyWeight and report the</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function n = nChanged(kcat,kcat0,varargin)</a>
+0002 <span class="comment">% nChanged  How many kcats differ from their prior by more than relTol.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% The 2% default matches the threshold MATLAB's own per-source</span>
+0005 <span class="comment">% &quot;unchanged&quot; reporting has historically used.</span>
+0006 <span class="comment">%</span>
+0007 <span class="comment">% Parameters</span>
+0008 <span class="comment">% ----------</span>
+0009 <span class="comment">% kcat, kcat0 : double</span>
+0010 <span class="comment">%     tuned and prior kcat vectors, same length.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Name-Value Arguments</span>
+0013 <span class="comment">% --------------------</span>
+0014 <span class="comment">% relTol : double</span>
+0015 <span class="comment">%     default 0.02.</span>
+0016 <span class="comment">%</span>
+0017 <span class="comment">% Returns</span>
+0018 <span class="comment">% -------</span>
+0019 <span class="comment">% n : double</span>
+0020 <span class="comment">%     count of entries where abs(log(kcat./kcat0)) &gt; log1p(relTol).</span>
+0021 <span class="comment">%</span>
+0022 <span class="comment">% See also</span>
+0023 <span class="comment">% --------</span>
+0024 <span class="comment">% tunePriorPenaltyWeight, parsimonyFrontier</span>
+0025 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0026     <span class="string">'relTol'</span>, 0.02});
+0027 relTol = p.relTol;
+0028 n = sum(abs(log(kcat(:) ./ kcat0(:))) &gt; log1p(relTol));
+0029 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

@@ -1,0 +1,409 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of readOpenKineticsPredictorOutput</title>
+  <meta name="keywords" content="readOpenKineticsPredictorOutput">
+  <meta name="description" content="readOpenKineticsPredictorOutput  Read OpenKineticsPredictor output to kcatList.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">gather_kcats</a> &gt; readOpenKineticsPredictorOutput.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/gather_kcats&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>readOpenKineticsPredictorOutput
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>readOpenKineticsPredictorOutput  Read OpenKineticsPredictor output to kcatList.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function kcatList = readOpenKineticsPredictorOutput(model, varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> readOpenKineticsPredictorOutput  Read OpenKineticsPredictor output to kcatList.
+
+ Reads the OpenKineticsPredictor output file (job-*-output.csv with columns:
+ kcat (1/s), Source kcat, Extra Info kcat, Protein Sequence, Substrate) and
+ constructs a kcatList structure, that can be used by assignKcatValues() to
+ populate the ecModel with kcat values.
+
+ CatRange predicts a class of kcat values, which OKP returns as its range
+ (for instance '10 to 100 s^-1'). It is read as the geometric midpoint of
+ the range, or half the upper bound for the class starting at 0.
+
+ The per-entry `Source kcat` column (e.g. 'Prediction from CatPred',
+ 'BRENDA', 'Sabio-RK', 'UniProt') is preserved in kcatList.kcatSource so
+ that assignKcatValues() records the actual provenance of each value.
+
+ Parameters
+ ----------
+ model : struct
+     an ecModel in GECKO 3 format (with ecModel.ec structure).
+
+ Name-Value Arguments
+ --------------------
+ outFile : char
+     name and path of the OpenKineticsPredictor output CSV. If omitted, a
+     file selection dialog is opened, starting in the data/ folder specified
+     by the modelAdapter.
+ modelAdapter : ModelAdapter
+     a loaded model adapter (default: the current default model adapter).
+
+ Returns
+ -------
+ kcatList : struct
+     structure array with list of kcat values from OpenKineticsPredictor,
+     with separate entries for each kcat value.
+
+ Notes
+ -----
+ The kcatList structure has the following fields:
+
+ - source : 'OpenKineticsPredictor'.
+ - rxns : reaction identifiers, matching model.ec.rxns.
+ - genes : gene identifiers, matching model.ec.genes.
+ - substrates : substrate names, matching model.metNames.
+ - kcats : kcat values in /sec.
+ - similarity : the enzyme's highest sequence similarity to the method's
+   training data, in percent (NaN without the similarity column)
+ - kcatSource : per-entry source as reported by OKP, prefixed with 'OKP-'
+   (e.g. 'OKP-CatPred', 'OKP-BRENDA', 'OKP-Sabio-RK', 'OKP-UniProt').
+
+ Examples
+ --------
+     % optional arguments may be given positionally or as name-value pairs:
+     kcatList = readOpenKineticsPredictorOutput(model);
+     kcatList = readOpenKineticsPredictorOutput(model, 'outFile', 'job-output.csv');
+
+ See also
+ --------
+ <a href="writeOpenKineticsPredictorInput.html" class="code" title="function writeOpenKineticsPredictorInput(model, varargin)">writeOpenKineticsPredictorInput</a>, <a href="assignKcatValues.html" class="code" title="function [model, rxnIdx] = assignKcatValues(model,kcatList,varargin)">assignKcatValues</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="fetchOpenKineticsPredictor.html" class="code" title="function [done, kcatList] = fetchOpenKineticsPredictor(model, varargin)">fetchOpenKineticsPredictor</a>	fetchOpenKineticsPredictor  Fetch and parse an OpenKineticsPredictor job.</li><li><a href="kcatsFromOKP.html" class="code" title="function [kcatList, done] = kcatsFromOKP(model, varargin)">kcatsFromOKP</a>	kcatsFromOKP  Gather kcats from OpenKineticsPredictor and keep them as a source file.</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function c = normalizeCellStrings(c)</a></li><li><a href="#_sub2" class="code">function kcat = kcatFromText(v)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function kcatList = readOpenKineticsPredictorOutput(model, varargin)</a>
+0002 <span class="comment">% readOpenKineticsPredictorOutput  Read OpenKineticsPredictor output to kcatList.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Reads the OpenKineticsPredictor output file (job-*-output.csv with columns:</span>
+0005 <span class="comment">% kcat (1/s), Source kcat, Extra Info kcat, Protein Sequence, Substrate) and</span>
+0006 <span class="comment">% constructs a kcatList structure, that can be used by assignKcatValues() to</span>
+0007 <span class="comment">% populate the ecModel with kcat values.</span>
+0008 <span class="comment">%</span>
+0009 <span class="comment">% CatRange predicts a class of kcat values, which OKP returns as its range</span>
+0010 <span class="comment">% (for instance '10 to 100 s^-1'). It is read as the geometric midpoint of</span>
+0011 <span class="comment">% the range, or half the upper bound for the class starting at 0.</span>
+0012 <span class="comment">%</span>
+0013 <span class="comment">% The per-entry `Source kcat` column (e.g. 'Prediction from CatPred',</span>
+0014 <span class="comment">% 'BRENDA', 'Sabio-RK', 'UniProt') is preserved in kcatList.kcatSource so</span>
+0015 <span class="comment">% that assignKcatValues() records the actual provenance of each value.</span>
+0016 <span class="comment">%</span>
+0017 <span class="comment">% Parameters</span>
+0018 <span class="comment">% ----------</span>
+0019 <span class="comment">% model : struct</span>
+0020 <span class="comment">%     an ecModel in GECKO 3 format (with ecModel.ec structure).</span>
+0021 <span class="comment">%</span>
+0022 <span class="comment">% Name-Value Arguments</span>
+0023 <span class="comment">% --------------------</span>
+0024 <span class="comment">% outFile : char</span>
+0025 <span class="comment">%     name and path of the OpenKineticsPredictor output CSV. If omitted, a</span>
+0026 <span class="comment">%     file selection dialog is opened, starting in the data/ folder specified</span>
+0027 <span class="comment">%     by the modelAdapter.</span>
+0028 <span class="comment">% modelAdapter : ModelAdapter</span>
+0029 <span class="comment">%     a loaded model adapter (default: the current default model adapter).</span>
+0030 <span class="comment">%</span>
+0031 <span class="comment">% Returns</span>
+0032 <span class="comment">% -------</span>
+0033 <span class="comment">% kcatList : struct</span>
+0034 <span class="comment">%     structure array with list of kcat values from OpenKineticsPredictor,</span>
+0035 <span class="comment">%     with separate entries for each kcat value.</span>
+0036 <span class="comment">%</span>
+0037 <span class="comment">% Notes</span>
+0038 <span class="comment">% -----</span>
+0039 <span class="comment">% The kcatList structure has the following fields:</span>
+0040 <span class="comment">%</span>
+0041 <span class="comment">% - source : 'OpenKineticsPredictor'.</span>
+0042 <span class="comment">% - rxns : reaction identifiers, matching model.ec.rxns.</span>
+0043 <span class="comment">% - genes : gene identifiers, matching model.ec.genes.</span>
+0044 <span class="comment">% - substrates : substrate names, matching model.metNames.</span>
+0045 <span class="comment">% - kcats : kcat values in /sec.</span>
+0046 <span class="comment">% - similarity : the enzyme's highest sequence similarity to the method's</span>
+0047 <span class="comment">%   training data, in percent (NaN without the similarity column)</span>
+0048 <span class="comment">% - kcatSource : per-entry source as reported by OKP, prefixed with 'OKP-'</span>
+0049 <span class="comment">%   (e.g. 'OKP-CatPred', 'OKP-BRENDA', 'OKP-Sabio-RK', 'OKP-UniProt').</span>
+0050 <span class="comment">%</span>
+0051 <span class="comment">% Examples</span>
+0052 <span class="comment">% --------</span>
+0053 <span class="comment">%     % optional arguments may be given positionally or as name-value pairs:</span>
+0054 <span class="comment">%     kcatList = readOpenKineticsPredictorOutput(model);</span>
+0055 <span class="comment">%     kcatList = readOpenKineticsPredictorOutput(model, 'outFile', 'job-output.csv');</span>
+0056 <span class="comment">%</span>
+0057 <span class="comment">% See also</span>
+0058 <span class="comment">% --------</span>
+0059 <span class="comment">% writeOpenKineticsPredictorInput, assignKcatValues</span>
+0060 
+0061 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0062     <span class="string">'outFile'</span>,      []; <span class="keyword">...</span>
+0063     <span class="string">'modelAdapter'</span>, []});
+0064 outFile      = p.outFile;
+0065 modelAdapter = p.modelAdapter;
+0066 
+0067 <span class="keyword">if</span> isempty(modelAdapter)
+0068     modelAdapter = ModelAdapterManager.getDefault();
+0069     <span class="keyword">if</span> isempty(modelAdapter)
+0070         error(<span class="string">'Either send in a modelAdapter or set the default model adapter in the ModelAdapterManager.'</span>)
+0071     <span class="keyword">end</span>
+0072 <span class="keyword">end</span>
+0073 params = modelAdapter.params;
+0074 
+0075 <span class="keyword">if</span> isempty(outFile)
+0076     startDir = fullfile(params.path,<span class="string">'data'</span>);
+0077     <span class="keyword">if</span> ~exist(startDir,<span class="string">'dir'</span>)
+0078         startDir = params.path;
+0079     <span class="keyword">end</span>
+0080     [fName, fPath] = uigetfile({<span class="string">'*.csv'</span>,<span class="string">'OpenKineticsPredictor output (*.csv)'</span>; <span class="keyword">...</span>
+0081                                 <span class="string">'*.*'</span>,<span class="string">'All files (*.*)'</span>}, <span class="keyword">...</span>
+0082                                <span class="string">'Select OpenKineticsPredictor output file'</span>, <span class="keyword">...</span>
+0083                                fullfile(startDir, filesep));
+0084     <span class="keyword">if</span> isequal(fName,0)
+0085         error(<span class="string">'No file selected.'</span>)
+0086     <span class="keyword">end</span>
+0087     outFile = fullfile(fPath, fName);
+0088 <span class="keyword">end</span>
+0089 
+0090 <span class="comment">%% Read OKP output file using readcell to correctly handle quoted fields</span>
+0091 <span class="comment">% that may contain commas in the 'Extra Info kcat' column.</span>
+0092 <span class="keyword">if</span> ~exist(outFile,<span class="string">'file'</span>)
+0093     error(<span class="string">'Cannot find file: %s'</span>, outFile)
+0094 <span class="keyword">end</span>
+0095 raw = readcell(outFile, <span class="string">'Delimiter'</span>, <span class="string">','</span>, <span class="string">'TextType'</span>, <span class="string">'char'</span>);
+0096 
+0097 <span class="keyword">if</span> size(raw,2) &lt; 5
+0098     error(<span class="string">'OKP output file does not have the expected 5 columns (kcat, Source kcat, Extra Info kcat, Protein Sequence, Substrate): %s'</span>, outFile)
+0099 <span class="keyword">end</span>
+0100 
+0101 <span class="comment">% Drop header row; the 'max similarity to &lt;method&gt; training data' column,</span>
+0102 <span class="comment">% when present, gives the similarity.</span>
+0103 header = cellfun(@(h) char(string(h)), raw(1,:), <span class="string">'UniformOutput'</span>, false);
+0104 simCol = find(startsWith(header, <span class="string">'max similarity to'</span>), 1);
+0105 raw = raw(2:<span class="keyword">end</span>, :);
+0106 similarity = nan(size(raw, 1), 1);
+0107 <span class="keyword">if</span> ~isempty(simCol)
+0108     <span class="keyword">for</span> i = 1:size(raw, 1)
+0109         v = raw{i, simCol};
+0110         <span class="keyword">if</span> isnumeric(v) &amp;&amp; ~isempty(v)
+0111             similarity(i) = v;
+0112         <span class="keyword">elseif</span> ischar(v) || isstring(v)
+0113             similarity(i) = str2double(v);
+0114         <span class="keyword">end</span>
+0115     <span class="keyword">end</span>
+0116 <span class="keyword">end</span>
+0117 
+0118 kcatsCol      = raw(:,1);
+0119 sourceKcatCol = raw(:,2);
+0120 sequences     = raw(:,4);
+0121 smiles        = raw(:,5);
+0122 
+0123 <span class="comment">% Normalize types: readcell returns doubles for numeric cells, char for</span>
+0124 <span class="comment">% strings, and `missing` for empty fields.</span>
+0125 kcats = nan(size(kcatsCol));
+0126 <span class="keyword">for</span> i = 1:numel(kcatsCol)
+0127     v = kcatsCol{i};
+0128     <span class="keyword">if</span> isnumeric(v)
+0129         kcats(i) = v;
+0130     <span class="keyword">elseif</span> ischar(v) || isstring(v)
+0131         kcats(i) = <a href="#_sub2" class="code" title="subfunction kcat = kcatFromText(v)">kcatFromText</a>(char(v));
+0132     <span class="keyword">end</span>
+0133 <span class="keyword">end</span>
+0134 
+0135 sourceKcatCol = <a href="#_sub1" class="code" title="subfunction c = normalizeCellStrings(c)">normalizeCellStrings</a>(sourceKcatCol);
+0136 sequences     = <a href="#_sub1" class="code" title="subfunction c = normalizeCellStrings(c)">normalizeCellStrings</a>(sequences);
+0137 smiles        = <a href="#_sub1" class="code" title="subfunction c = normalizeCellStrings(c)">normalizeCellStrings</a>(smiles);
+0138 
+0139 <span class="comment">%% Filter out entries with no numeric kcat value (NaN). Zero values are</span>
+0140 <span class="comment">% retained here and filtered downstream by assignKcatValues.</span>
+0141 valid = ~isnan(kcats);
+0142 kcats         = kcats(valid);
+0143 sequences     = sequences(valid);
+0144 smiles        = smiles(valid);
+0145 sourceKcatCol = sourceKcatCol(valid);
+0146 similarity    = similarity(valid);
+0147 
+0148 <span class="keyword">if</span> isempty(kcats)
+0149     error(<span class="string">'OKP file does not contain any numeric kcat values. Run the job at https://predictor.openkinetics.org/ first.'</span>)
+0150 <span class="keyword">end</span>
+0151 
+0152 <span class="keyword">if</span> ~isfield(model,<span class="string">'metSmiles'</span>)
+0153     error(<span class="string">'model.metSmiles is required to map SMILES back to metabolites.'</span>)
+0154 <span class="keyword">end</span>
+0155 
+0156 <span class="comment">%% Build ec.rxns -&gt; model.rxns index mapping (inverse of the mapping done</span>
+0157 <span class="comment">%  in writeOpenKineticsPredictorInput)</span>
+0158 <span class="keyword">if</span> model.ec.geckoLight
+0159     origRxns = extractAfter(model.ec.rxns, 4);
+0160 <span class="keyword">else</span>
+0161     origRxns = model.ec.rxns;
+0162 <span class="keyword">end</span>
+0163 [foundEcRxn, ecRxnToModelRxn] = ismember(origRxns, model.rxns);
+0164 <span class="keyword">if</span> ~all(foundEcRxn)
+0165     error(<span class="string">'Not all entries in model.ec.rxns could be matched to model.rxns.'</span>)
+0166 <span class="keyword">end</span>
+0167 
+0168 <span class="comment">%% Resolve each row to matching ec.rxns indices</span>
+0169 rxnsOut       = cell(0,1);
+0170 genesOut      = cell(0,1);
+0171 substratesOut = cell(0,1);
+0172 kcatsOut      = zeros(0,1);
+0173 sourceOut     = cell(0,1);
+0174 similarityOut = zeros(0,1);
+0175 unmatched     = 0;
+0176 
+0177 <span class="keyword">for</span> i = 1:numel(sequences)
+0178     <span class="comment">% Map protein sequence -&gt; ec.genes indices (columns of rxnEnzMat)</span>
+0179     proteinIdxs = find(strcmp(model.ec.sequence, sequences{i}));
+0180     <span class="comment">% Map SMILES -&gt; metabolite indices (rows of model.S)</span>
+0181     metIdxs = find(strcmp(model.metSmiles, smiles{i}));
+0182 
+0183     <span class="keyword">if</span> isempty(proteinIdxs) || isempty(metIdxs)
+0184         unmatched = unmatched + 1;
+0185         <span class="keyword">continue</span>
+0186     <span class="keyword">end</span>
+0187 
+0188     <span class="comment">% model.rxns columns where any of these mets are substrates (S &lt; 0)</span>
+0189     modelRxnsUsingSub = any(model.S(metIdxs, :) &lt; 0, 1);
+0190 
+0191     <span class="comment">% Lift to ec.rxns: does the underlying model.rxn consume this metabolite?</span>
+0192     ecRxnUsesSub = modelRxnsUsingSub(ecRxnToModelRxn).';
+0193 
+0194     <span class="comment">% ec.rxns catalyzed by any of these protein(s)</span>
+0195     ecRxnCatalyzed = any(model.ec.rxnEnzMat(:, proteinIdxs) ~= 0, 2);
+0196 
+0197     candidateEcRxns = find(ecRxnUsesSub &amp; ecRxnCatalyzed);
+0198 
+0199     <span class="keyword">if</span> isempty(candidateEcRxns)
+0200         unmatched = unmatched + 1;
+0201         <span class="keyword">continue</span>
+0202     <span class="keyword">end</span>
+0203 
+0204     <span class="keyword">for</span> k = 1:numel(candidateEcRxns)
+0205         ecIdx = candidateEcRxns(k);
+0206 
+0207         <span class="comment">% Pick the gene whose protein both matches this sequence and</span>
+0208         <span class="comment">% catalyzes this ec.rxn</span>
+0209         catalysts       = find(model.ec.rxnEnzMat(ecIdx, :) ~= 0);
+0210         matchingProtein = intersect(proteinIdxs, catalysts, <span class="string">'stable'</span>);
+0211         <span class="keyword">if</span> ~isempty(matchingProtein)
+0212             geneName = model.ec.genes{matchingProtein(1)};
+0213         <span class="keyword">else</span>
+0214             geneName = <span class="string">''</span>;
+0215         <span class="keyword">end</span>
+0216 
+0217         <span class="comment">% Pick a metabolite name whose SMILES matches and that is a</span>
+0218         <span class="comment">% substrate of the underlying model.rxn</span>
+0219         origRxnIdx       = ecRxnToModelRxn(ecIdx);
+0220         metIsSub         = model.S(metIdxs, origRxnIdx) &lt; 0;
+0221         substrateMetIdxs = metIdxs(metIsSub);
+0222         <span class="keyword">if</span> ~isempty(substrateMetIdxs)
+0223             subName = model.metNames{substrateMetIdxs(1)};
+0224         <span class="keyword">else</span>
+0225             subName = <span class="string">''</span>;
+0226         <span class="keyword">end</span>
+0227 
+0228         rxnsOut{end+1,1}       = model.ec.rxns{ecIdx};
+0229         genesOut{end+1,1}      = geneName;
+0230         substratesOut{end+1,1} = subName;
+0231         kcatsOut(end+1,1)      = kcats(i);
+0232         sourceOut{end+1,1}     = sourceKcatCol{i};
+0233         similarityOut(end+1,1) = similarity(i);
+0234     <span class="keyword">end</span>
+0235 <span class="keyword">end</span>
+0236 
+0237 <span class="keyword">if</span> unmatched &gt; 0
+0238     warning(<span class="string">'%d of %d OKP entries could not be matched to an ec.rxn (protein sequence and/or SMILES not found in model, or no enzyme+substrate pair matches).'</span>, <span class="keyword">...</span>
+0239         unmatched, numel(sequences));
+0240 <span class="keyword">end</span>
+0241 
+0242 <span class="keyword">if</span> isempty(rxnsOut)
+0243     error(<span class="string">'No OKP entries could be mapped to model.ec.rxns.'</span>)
+0244 <span class="keyword">end</span>
+0245 
+0246 <span class="comment">%% Build per-entry source labels</span>
+0247 <span class="comment">% Strip leading 'Prediction from ' to keep labels compact, then prefix all</span>
+0248 <span class="comment">% with 'OKP-' so the overall pipeline stage is still identifiable in</span>
+0249 <span class="comment">% model.ec.source.</span>
+0250 kcatSource = regexprep(sourceOut, <span class="string">'^Prediction from\s+'</span>, <span class="string">''</span>);
+0251 kcatSource = strcat(<span class="string">'OKP-'</span>, kcatSource);
+0252 
+0253 <span class="comment">%% Make kcatList structure</span>
+0254 kcatList.source     = <span class="string">'OpenKineticsPredictor'</span>;
+0255 kcatList.rxns       = rxnsOut;
+0256 kcatList.genes      = genesOut;
+0257 kcatList.substrates = substratesOut;
+0258 kcatList.kcats      = kcatsOut;
+0259 kcatList.kcatSource = kcatSource;
+0260 kcatList.similarity = similarityOut;
+0261 <span class="keyword">end</span>
+0262 
+0263 <a name="_sub1" href="#_subfunctions" class="code">function c = normalizeCellStrings(c)</a>
+0264 <span class="comment">% Convert each cell entry to a char row vector; missing/empty -&gt; ''.</span>
+0265 <span class="keyword">for</span> i = 1:numel(c)
+0266     v = c{i};
+0267     <span class="keyword">if</span> ismissing(v)
+0268         c{i} = <span class="string">''</span>;
+0269     <span class="keyword">elseif</span> isstring(v)
+0270         c{i} = char(v);
+0271     <span class="keyword">elseif</span> isnumeric(v)
+0272         <span class="keyword">if</span> isnan(v)
+0273             c{i} = <span class="string">''</span>;
+0274         <span class="keyword">else</span>
+0275             c{i} = num2str(v);
+0276         <span class="keyword">end</span>
+0277     <span class="keyword">elseif</span> ~ischar(v)
+0278         c{i} = char(string(v));
+0279     <span class="keyword">end</span>
+0280 <span class="keyword">end</span>
+0281 <span class="keyword">end</span>
+0282 
+0283 <a name="_sub2" href="#_subfunctions" class="code">function kcat = kcatFromText(v)</a>
+0284 <span class="comment">% A number, or a CatRange class range '&lt;low&gt; to &lt;high&gt; s^-1' as its</span>
+0285 <span class="comment">% geometric midpoint (half the upper bound when the class starts at 0).</span>
+0286 kcat = str2double(v);
+0287 <span class="keyword">if</span> ~isnan(kcat)
+0288     <span class="keyword">return</span>
+0289 <span class="keyword">end</span>
+0290 bounds = regexp(strtrim(v), <span class="string">'^([0-9.eE+-]+)\s+to\s+([0-9.eE+-]+)(\s*s\^-1)?$'</span>, <span class="string">'tokens'</span>, <span class="string">'once'</span>);
+0291 <span class="keyword">if</span> isempty(bounds)
+0292     <span class="keyword">return</span>
+0293 <span class="keyword">end</span>
+0294 low = str2double(bounds{1});
+0295 high = str2double(bounds{2});
+0296 <span class="keyword">if</span> isnan(low) || isnan(high)
+0297     <span class="keyword">return</span>
+0298 <span class="keyword">elseif</span> low &gt; 0
+0299     kcat = sqrt(low * high);
+0300 <span class="keyword">else</span>
+0301     kcat = high / 2;
+0302 <span class="keyword">end</span>
+0303 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

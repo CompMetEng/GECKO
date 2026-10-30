@@ -1,0 +1,498 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of saveKcatSource</title>
+  <meta name="keywords" content="saveKcatSource">
+  <meta name="description" content="saveKcatSource  Write a kcatList to a kcat source file of the project.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">gather_kcats</a> &gt; saveKcatSource.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/gather_kcats&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>saveKcatSource
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>saveKcatSource  Write a kcatList to a kcat source file of the project.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function filename = saveKcatSource(model, kcatList, name, varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> saveKcatSource  Write a kcatList to a kcat source file of the project.
+
+ Writes the kcat values of kcatList to data/kcats/&lt;name&gt;.tsv in the
+ project folder, the file that loadKcatSource reads back. Rows are keyed
+ by their conventional reaction and enzyme set (see getEcRxnKeys), not
+ by model.ec.rxns, so the file stays valid when the ecModel is rebuilt.
+ kcatsFromBrenda, kcatsFromDLKcat and kcatsFromOKP write these files for
+ their sources; use this function for a kcatList made in another way.
+
+ The file is UTF-8 text. It starts with '#' header lines (source,
+ generator, parameters, data, kind, created), then a tab-separated table
+ with the columns rxn, enzymes, substrate, kcat, log10_sd, source,
+ detail, ec_code and note, sorted by all columns from rxn onwards.
+ Left out are:
+ - rows whose kcat is not a positive finite number (0 means no value
+   was found);
+ - rows of model.ec reactions without enzymes, which have no enzyme
+   constraint and could not be told apart from their isozymes.
+
+ Parameters
+ ----------
+ model : struct
+     the ecModel the kcatList refers to.
+ kcatList : struct
+     kcat values as returned by kcatsFromBrenda, fuzzyKcatMatching,
+     readDLKcatOutput, readOpenKineticsPredictorOutput or mergeKcats:
+     fields rxns and kcats, optionally source, substrates, eccodes,
+     wildcardLvl, origin, kcatSource, log10sd and detail (further
+     key=value pairs for the detail column).
+ name : char
+     name of the source; the file is &lt;name&gt;.tsv.
+
+ Name-Value Arguments
+ --------------------
+ modelAdapter : ModelAdapter
+     a loaded model adapter (default: the current default model adapter).
+ folder : char
+     folder to write to (default: data/kcats in the project folder).
+ generator : char
+     what produced the values (default: 'saveKcatSource').
+ parameters : struct
+     settings used to produce the values, written as compact JSON with
+     sorted keys (default: none).
+ data : char
+     version of the data the values come from, e.g. a BRENDA release
+     (default: empty).
+ kind : char
+     'gathered' (default) or 'curated'.
+
+ A file whose header says 'kind: curated' or 'source: custom', or named
+ custom.tsv, is never written.
+
+ Returns
+ -------
+ filename : char
+     the file written.
+
+ Examples
+ --------
+     kcatList = fuzzyKcatMatching(ecModel);
+     saveKcatSource(ecModel, kcatList, 'mybrenda');
+
+ See also
+ --------
+ <a href="kcatsFromBrenda.html" class="code" title="function kcatList = kcatsFromBrenda(model, varargin)">kcatsFromBrenda</a>, <a href="loadKcatSource.html" class="code" title="function [kcatList, report] = loadKcatSource(model, name, varargin)">loadKcatSource</a>, <a href="getEcRxnKeys.html" class="code" title="function [baseRxns, enzymeSets] = getEcRxnKeys(model)">getEcRxnKeys</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="getEcRxnKeys.html" class="code" title="function [baseRxns, enzymeSets] = getEcRxnKeys(model)">getEcRxnKeys</a>	getEcRxnKeys  Build-independent keys of the model.ec reactions.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="kcatsFromBrenda.html" class="code" title="function kcatList = kcatsFromBrenda(model, varargin)">kcatsFromBrenda</a>	kcatsFromBrenda  Gather kcats from BRENDA and keep them as a source file.</li><li><a href="kcatsFromDLKcat.html" class="code" title="function kcatList = kcatsFromDLKcat(model, varargin)">kcatsFromDLKcat</a>	kcatsFromDLKcat  Gather kcats from DLKcat and keep them as a source file.</li><li><a href="kcatsFromECTree.html" class="code" title="function kcatList = kcatsFromECTree(model, varargin)">kcatsFromECTree</a>	kcatsFromECTree  Estimate kcats from the EC tree and keep them as a source file.</li><li><a href="kcatsFromHomologs.html" class="code" title="function kcatList = kcatsFromHomologs(model, varargin)">kcatsFromHomologs</a>	kcatsFromHomologs  Estimate kcats from measured homologs and keep them as a source file.</li><li><a href="kcatsFromOKP.html" class="code" title="function [kcatList, done] = kcatsFromOKP(model, varargin)">kcatsFromOKP</a>	kcatsFromOKP  Gather kcats from OpenKineticsPredictor and keep them as a source file.</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function col = textColumn(s, field, n)</a></li><li><a href="#_sub2" class="code">function col = numColumn(s, field, n)</a></li><li><a href="#_sub3" class="code">function t = formatNumbers(x)</a></li><li><a href="#_sub4" class="code">function t = cleanText(t)</a></li><li><a href="#_sub5" class="code">function v = geckoVersion()</a></li><li><a href="#_sub6" class="code">function filename = kcatSourceFile(name, folder, modelAdapter)</a></li><li><a href="#_sub7" class="code">function meta = readHeaderLines(filename)</a></li><li><a href="#_sub8" class="code">function j = kcatSourceJson(v)</a></li><li><a href="#_sub9" class="code">function s = jsonString(s)</a></li><li><a href="#_sub10" class="code">function t = formatKcatNumber(x)</a></li><li><a href="#_sub11" class="code">function [key, value] = parseHeaderLine(line)</a></li><li><a href="#_sub12" class="code">function t = unquoteField(t)</a></li><li><a href="#_sub13" class="code">function checkOptions(args, names, functionName)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function filename = saveKcatSource(model, kcatList, name, varargin)</a>
+0002 <span class="comment">% saveKcatSource  Write a kcatList to a kcat source file of the project.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Writes the kcat values of kcatList to data/kcats/&lt;name&gt;.tsv in the</span>
+0005 <span class="comment">% project folder, the file that loadKcatSource reads back. Rows are keyed</span>
+0006 <span class="comment">% by their conventional reaction and enzyme set (see getEcRxnKeys), not</span>
+0007 <span class="comment">% by model.ec.rxns, so the file stays valid when the ecModel is rebuilt.</span>
+0008 <span class="comment">% kcatsFromBrenda, kcatsFromDLKcat and kcatsFromOKP write these files for</span>
+0009 <span class="comment">% their sources; use this function for a kcatList made in another way.</span>
+0010 <span class="comment">%</span>
+0011 <span class="comment">% The file is UTF-8 text. It starts with '#' header lines (source,</span>
+0012 <span class="comment">% generator, parameters, data, kind, created), then a tab-separated table</span>
+0013 <span class="comment">% with the columns rxn, enzymes, substrate, kcat, log10_sd, source,</span>
+0014 <span class="comment">% detail, ec_code and note, sorted by all columns from rxn onwards.</span>
+0015 <span class="comment">% Left out are:</span>
+0016 <span class="comment">% - rows whose kcat is not a positive finite number (0 means no value</span>
+0017 <span class="comment">%   was found);</span>
+0018 <span class="comment">% - rows of model.ec reactions without enzymes, which have no enzyme</span>
+0019 <span class="comment">%   constraint and could not be told apart from their isozymes.</span>
+0020 <span class="comment">%</span>
+0021 <span class="comment">% Parameters</span>
+0022 <span class="comment">% ----------</span>
+0023 <span class="comment">% model : struct</span>
+0024 <span class="comment">%     the ecModel the kcatList refers to.</span>
+0025 <span class="comment">% kcatList : struct</span>
+0026 <span class="comment">%     kcat values as returned by kcatsFromBrenda, fuzzyKcatMatching,</span>
+0027 <span class="comment">%     readDLKcatOutput, readOpenKineticsPredictorOutput or mergeKcats:</span>
+0028 <span class="comment">%     fields rxns and kcats, optionally source, substrates, eccodes,</span>
+0029 <span class="comment">%     wildcardLvl, origin, kcatSource, log10sd and detail (further</span>
+0030 <span class="comment">%     key=value pairs for the detail column).</span>
+0031 <span class="comment">% name : char</span>
+0032 <span class="comment">%     name of the source; the file is &lt;name&gt;.tsv.</span>
+0033 <span class="comment">%</span>
+0034 <span class="comment">% Name-Value Arguments</span>
+0035 <span class="comment">% --------------------</span>
+0036 <span class="comment">% modelAdapter : ModelAdapter</span>
+0037 <span class="comment">%     a loaded model adapter (default: the current default model adapter).</span>
+0038 <span class="comment">% folder : char</span>
+0039 <span class="comment">%     folder to write to (default: data/kcats in the project folder).</span>
+0040 <span class="comment">% generator : char</span>
+0041 <span class="comment">%     what produced the values (default: 'saveKcatSource').</span>
+0042 <span class="comment">% parameters : struct</span>
+0043 <span class="comment">%     settings used to produce the values, written as compact JSON with</span>
+0044 <span class="comment">%     sorted keys (default: none).</span>
+0045 <span class="comment">% data : char</span>
+0046 <span class="comment">%     version of the data the values come from, e.g. a BRENDA release</span>
+0047 <span class="comment">%     (default: empty).</span>
+0048 <span class="comment">% kind : char</span>
+0049 <span class="comment">%     'gathered' (default) or 'curated'.</span>
+0050 <span class="comment">%</span>
+0051 <span class="comment">% A file whose header says 'kind: curated' or 'source: custom', or named</span>
+0052 <span class="comment">% custom.tsv, is never written.</span>
+0053 <span class="comment">%</span>
+0054 <span class="comment">% Returns</span>
+0055 <span class="comment">% -------</span>
+0056 <span class="comment">% filename : char</span>
+0057 <span class="comment">%     the file written.</span>
+0058 <span class="comment">%</span>
+0059 <span class="comment">% Examples</span>
+0060 <span class="comment">% --------</span>
+0061 <span class="comment">%     kcatList = fuzzyKcatMatching(ecModel);</span>
+0062 <span class="comment">%     saveKcatSource(ecModel, kcatList, 'mybrenda');</span>
+0063 <span class="comment">%</span>
+0064 <span class="comment">% See also</span>
+0065 <span class="comment">% --------</span>
+0066 <span class="comment">% kcatsFromBrenda, loadKcatSource, getEcRxnKeys</span>
+0067 
+0068 names = {<span class="string">'modelAdapter'</span>,<span class="string">'folder'</span>,<span class="string">'generator'</span>,<span class="string">'parameters'</span>,<span class="string">'data'</span>,<span class="string">'kind'</span>};
+0069 <a href="#_sub13" class="code" title="subfunction checkOptions(args, names, functionName)">checkOptions</a>(varargin, names, <span class="string">'saveKcatSource'</span>);
+0070 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0071     <span class="string">'modelAdapter'</span>, []; <span class="keyword">...</span>
+0072     <span class="string">'folder'</span>,       []; <span class="keyword">...</span>
+0073     <span class="string">'generator'</span>,    <span class="string">'saveKcatSource'</span>; <span class="keyword">...</span>
+0074     <span class="string">'parameters'</span>,   struct(); <span class="keyword">...</span>
+0075     <span class="string">'data'</span>,         <span class="string">''</span>; <span class="keyword">...</span>
+0076     <span class="string">'kind'</span>,         <span class="string">'gathered'</span>});
+0077 kind = validatestring(p.kind, {<span class="string">'gathered'</span>,<span class="string">'curated'</span>});
+0078 name = char(name);
+0079 filename = <a href="#_sub6" class="code" title="subfunction filename = kcatSourceFile(name, folder, modelAdapter)">kcatSourceFile</a>(name, p.folder, p.modelAdapter);
+0080 
+0081 [baseRxns, enzymeSets] = <a href="getEcRxnKeys.html" class="code" title="function [baseRxns, enzymeSets] = getEcRxnKeys(model)">getEcRxnKeys</a>(model);
+0082 [found, idx] = ismember(kcatList.rxns(:), model.ec.rxns);
+0083 <span class="keyword">if</span> ~all(found)
+0084     error(<span class="string">'saveKcatSource:unknownRxns'</span>, <span class="string">'%s'</span>, ravenList( <span class="keyword">...</span>
+0085         <span class="string">'These kcatList reactions are not in model.ec.rxns:'</span>, kcatList.rxns(~found), false));
+0086 <span class="keyword">end</span>
+0087 
+0088 n = numel(kcatList.rxns);
+0089 kcats = double(kcatList.kcats(:));
+0090 <span class="keyword">if</span> numel(kcats) ~= n
+0091     error(<span class="string">'saveKcatSource:fields'</span>, <span class="string">'kcatList.kcats and kcatList.rxns differ in length.'</span>)
+0092 <span class="keyword">end</span>
+0093 substrate = <a href="#_sub1" class="code" title="subfunction col = textColumn(s, field, n)">textColumn</a>(kcatList, <span class="string">'substrates'</span>, n);
+0094 ecCode    = <a href="#_sub1" class="code" title="subfunction col = textColumn(s, field, n)">textColumn</a>(kcatList, <span class="string">'eccodes'</span>, n);
+0095 extra     = <a href="#_sub1" class="code" title="subfunction col = textColumn(s, field, n)">textColumn</a>(kcatList, <span class="string">'detail'</span>, n);
+0096 <span class="keyword">if</span> isfield(kcatList, <span class="string">'kcatSource'</span>)
+0097     source = <a href="#_sub1" class="code" title="subfunction col = textColumn(s, field, n)">textColumn</a>(kcatList, <span class="string">'kcatSource'</span>, n);
+0098 <span class="keyword">elseif</span> isfield(kcatList, <span class="string">'source'</span>)
+0099     source = repmat({char(kcatList.source)}, n, 1);
+0100 <span class="keyword">else</span>
+0101     source = repmat({name}, n, 1);
+0102 <span class="keyword">end</span>
+0103 wc     = <a href="#_sub2" class="code" title="subfunction col = numColumn(s, field, n)">numColumn</a>(kcatList, <span class="string">'wildcardLvl'</span>, n);
+0104 origin = <a href="#_sub2" class="code" title="subfunction col = numColumn(s, field, n)">numColumn</a>(kcatList, <span class="string">'origin'</span>, n);
+0105 sd     = <a href="#_sub2" class="code" title="subfunction col = numColumn(s, field, n)">numColumn</a>(kcatList, <span class="string">'log10sd'</span>, n);
+0106 
+0107 keep = kcats &gt; 0 &amp; isfinite(kcats);
+0108 noEnzymes = keep &amp; cellfun(@isempty, enzymeSets(idx));
+0109 <span class="keyword">if</span> any(noEnzymes)
+0110     fprintf(<span class="string">'%d kcats of reactions without enzymes are not written to %s.\n'</span>, sum(noEnzymes), filename);
+0111 <span class="keyword">end</span>
+0112 keep = find(keep &amp; ~noEnzymes);
+0113 
+0114 clean = @(c) regexprep(string(c(:)), <span class="string">'[\t\r\n]'</span>, <span class="string">' '</span>);
+0115 rows = strings(numel(keep), 9);
+0116 <span class="keyword">if</span> ~isempty(keep)
+0117     wcText = strings(numel(keep), 1);
+0118     hasWc = ~isnan(wc(keep));
+0119     wcText(hasWc) = &quot;wc=&quot; + string(fix(wc(keep(hasWc))));
+0120     originText = strings(numel(keep), 1);
+0121     hasOrigin = ~isnan(origin(keep));
+0122     originText(hasOrigin) = &quot;origin=&quot; + string(fix(origin(keep(hasOrigin))));
+0123     detail = join([wcText, originText, strtrim(clean(extra(keep)))], &quot;; &quot;, 2);
+0124     detail = regexprep(detail, <span class="string">'^(; )+|(; )+$'</span>, <span class="string">''</span>);
+0125     detail = regexprep(detail, <span class="string">'(; ){2,}'</span>, <span class="string">'; '</span>);
+0126     rows(:, 1) = clean(baseRxns(idx(keep)));
+0127     rows(:, 2) = clean(enzymeSets(idx(keep)));
+0128     rows(:, 3) = clean(substrate(keep));
+0129     rows(:, 4) = <a href="#_sub3" class="code" title="subfunction t = formatNumbers(x)">formatNumbers</a>(kcats(keep));
+0130     rows(:, 5) = <a href="#_sub3" class="code" title="subfunction t = formatNumbers(x)">formatNumbers</a>(sd(keep));
+0131     rows(:, 6) = clean(source(keep));
+0132     rows(:, 7) = detail;
+0133     rows(:, 8) = clean(ecCode(keep));
+0134     <span class="comment">% Sorted by the columns in this order, as geckopy sorts tuples: one key</span>
+0135     <span class="comment">% per row, the fields joined by a character below any in the text.</span>
+0136     [~, order] = sort(join(rows(:, [1 2 3 6 4 5 7 8 9]), char(1), 2));
+0137     rows = rows(order, :);
+0138 <span class="keyword">end</span>
+0139 
+0140 folder = fileparts(filename);
+0141 <span class="keyword">if</span> ~isfolder(folder)
+0142     mkdir(folder);
+0143 <span class="keyword">end</span>
+0144 fid = fopen(filename, <span class="string">'w'</span>, <span class="string">'n'</span>, <span class="string">'UTF-8'</span>);
+0145 <span class="keyword">if</span> fid &lt; 0
+0146     error(<span class="string">'saveKcatSource:write'</span>, <span class="string">'Cannot write %s'</span>, filename)
+0147 <span class="keyword">end</span>
+0148 cleanup = onCleanup(@() fclose(fid));
+0149 fprintf(fid, <span class="string">'# source: %s\n'</span>, name);
+0150 fprintf(fid, <span class="string">'# generator: %s (GECKO %s)\n'</span>, <a href="#_sub4" class="code" title="subfunction t = cleanText(t)">cleanText</a>(p.generator), <a href="#_sub5" class="code" title="subfunction v = geckoVersion()">geckoVersion</a>());
+0151 fprintf(fid, <span class="string">'# parameters: %s\n'</span>, <a href="#_sub8" class="code" title="subfunction j = kcatSourceJson(v)">kcatSourceJson</a>(p.parameters));
+0152 fprintf(fid, <span class="string">'# data: %s\n'</span>, <a href="#_sub4" class="code" title="subfunction t = cleanText(t)">cleanText</a>(p.data));
+0153 fprintf(fid, <span class="string">'# kind: %s\n'</span>, kind);
+0154 fprintf(fid, <span class="string">'# created: %s\n'</span>, char(datetime(<span class="string">'now'</span>, <span class="string">'TimeZone'</span>, <span class="string">'UTC'</span>, <span class="string">'Format'</span>, <span class="string">'yyyy-MM-dd''T''HH:mm:ss''Z'''</span>)));
+0155 fprintf(fid, <span class="string">'rxn\tenzymes\tsubstrate\tkcat\tlog10_sd\tsource\tdetail\tec_code\tnote\n'</span>);
+0156 <span class="keyword">if</span> ~isempty(rows)
+0157     fprintf(fid, <span class="string">'%s\n'</span>, join(rows, sprintf(<span class="string">'\t'</span>), 2));
+0158 <span class="keyword">end</span>
+0159 <span class="keyword">end</span>
+0160 
+0161 <a name="_sub1" href="#_subfunctions" class="code">function col = textColumn(s, field, n)</a>
+0162 <span class="comment">% A kcatList field as an n x 1 cell of char; a cell of several entries</span>
+0163 <span class="comment">% (e.g. all substrates of a reaction) is joined by '; '.</span>
+0164 col = repmat({<span class="string">''</span>}, n, 1);
+0165 <span class="keyword">if</span> ~isfield(s, field) || isempty(s.(field))
+0166     <span class="keyword">return</span>
+0167 <span class="keyword">end</span>
+0168 v = s.(field);
+0169 <span class="keyword">if</span> ischar(v) || isstring(v)
+0170     v = cellstr(v);
+0171 <span class="keyword">end</span>
+0172 <span class="keyword">if</span> numel(v) ~= n
+0173     error(<span class="string">'saveKcatSource:fields'</span>, <span class="string">'kcatList.%s and kcatList.rxns differ in length.'</span>, field)
+0174 <span class="keyword">end</span>
+0175 <span class="keyword">for</span> i = 1:n
+0176     e = v{i};
+0177     <span class="keyword">if</span> iscell(e)
+0178         e = strjoin(cellfun(@char, e(:)', <span class="string">'UniformOutput'</span>, false), <span class="string">'; '</span>);
+0179     <span class="keyword">elseif</span> isstring(e)
+0180         e = char(e);
+0181     <span class="keyword">elseif</span> ~ischar(e)
+0182         e = <span class="string">''</span>;
+0183     <span class="keyword">end</span>
+0184     col{i} = e;
+0185 <span class="keyword">end</span>
+0186 <span class="keyword">end</span>
+0187 
+0188 <a name="_sub2" href="#_subfunctions" class="code">function col = numColumn(s, field, n)</a>
+0189 col = nan(n, 1);
+0190 <span class="keyword">if</span> isfield(s, field) &amp;&amp; ~isempty(s.(field))
+0191     <span class="keyword">if</span> numel(s.(field)) ~= n
+0192         error(<span class="string">'saveKcatSource:fields'</span>, <span class="string">'kcatList.%s and kcatList.rxns differ in length.'</span>, field)
+0193     <span class="keyword">end</span>
+0194     col = double(s.(field)(:));
+0195 <span class="keyword">end</span>
+0196 <span class="keyword">end</span>
+0197 
+0198 <a name="_sub3" href="#_subfunctions" class="code">function t = formatNumbers(x)</a>
+0199 <span class="comment">% formatKcatNumber for a vector, in a few vectorized passes.</span>
+0200 x = x(:);
+0201 t = strings(numel(x), 1);
+0202 whole = isfinite(x) &amp; x == round(x) &amp; abs(x) &lt; 1e15;
+0203 t(whole) = compose(<span class="string">'%d'</span>, x(whole));
+0204 t(isinf(x) &amp; x &gt; 0) = &quot;Inf&quot;;
+0205 t(isinf(x) &amp; x &lt; 0) = &quot;-Inf&quot;;
+0206 open = find(isfinite(x) &amp; ~whole);
+0207 <span class="keyword">for</span> digits = 1:17
+0208     <span class="keyword">if</span> isempty(open)
+0209         <span class="keyword">break</span>
+0210     <span class="keyword">end</span>
+0211     candidate = compose(sprintf(<span class="string">'%%.%dg'</span>, digits), x(open));
+0212     hit = str2double(candidate) == x(open);
+0213     t(open(hit)) = candidate(hit);
+0214     open = open(~hit);
+0215 <span class="keyword">end</span>
+0216 <span class="keyword">end</span>
+0217 
+0218 <a name="_sub4" href="#_subfunctions" class="code">function t = cleanText(t)</a>
+0219 t = regexprep(char(t), <span class="string">'[\t\r\n]'</span>, <span class="string">' '</span>);
+0220 <span class="keyword">end</span>
+0221 
+0222 <a name="_sub5" href="#_subfunctions" class="code">function v = geckoVersion()</a>
+0223 v = <span class="string">''</span>;
+0224 file = fullfile(findGECKOroot, <span class="string">'version.txt'</span>);
+0225 <span class="keyword">if</span> isfile(file)
+0226     v = strtrim(fileread(file));
+0227 <span class="keyword">end</span>
+0228 <span class="keyword">end</span>
+0229 
+0230 <a name="_sub6" href="#_subfunctions" class="code">function filename = kcatSourceFile(name, folder, modelAdapter)</a>
+0231 name = char(name);
+0232 <span class="keyword">if</span> isempty(regexp(name, <span class="string">'^[A-Za-z0-9_.-]+$'</span>, <span class="string">'once'</span>))
+0233     error(<span class="string">'saveKcatSource:invalidName'</span>, <span class="keyword">...</span>
+0234         <span class="string">'The source name &quot;%s&quot; may only contain letters, digits, ''_'', ''-'' and ''.''.'</span>, name)
+0235 <span class="keyword">end</span>
+0236 <span class="keyword">if</span> isempty(folder)
+0237     <span class="keyword">if</span> isempty(modelAdapter)
+0238         modelAdapter = ModelAdapterManager.getDefault();
+0239         <span class="keyword">if</span> isempty(modelAdapter)
+0240             error(<span class="string">'Either send in a modelAdapter or set the default model adapter in the ModelAdapterManager.'</span>)
+0241         <span class="keyword">end</span>
+0242     <span class="keyword">end</span>
+0243     folder = fullfile(modelAdapter.params.path, <span class="string">'data'</span>, <span class="string">'kcats'</span>);
+0244 <span class="keyword">end</span>
+0245 filename = fullfile(char(folder), [name <span class="string">'.tsv'</span>]);
+0246 <span class="keyword">if</span> strcmpi(name, <span class="string">'custom'</span>)
+0247     error(<span class="string">'saveKcatSource:curated'</span>, [<span class="string">'custom.tsv holds curated kcats and is not '</span> <span class="keyword">...</span>
+0248         <span class="string">'written by GECKO; edit it by hand.'</span>])
+0249 <span class="keyword">end</span>
+0250 <span class="keyword">if</span> isfile(filename)
+0251     meta = <a href="#_sub7" class="code" title="subfunction meta = readHeaderLines(filename)">readHeaderLines</a>(filename);
+0252     <span class="keyword">if</span> (isfield(meta, <span class="string">'kind'</span>) &amp;&amp; strcmpi(meta.kind, <span class="string">'curated'</span>)) || <span class="keyword">...</span>
+0253             (isfield(meta, <span class="string">'source'</span>) &amp;&amp; strcmpi(meta.source, <span class="string">'custom'</span>))
+0254         error(<span class="string">'saveKcatSource:curated'</span>, <span class="string">'%s is curated by hand and is not overwritten.'</span>, filename)
+0255     <span class="keyword">end</span>
+0256 <span class="keyword">end</span>
+0257 <span class="keyword">end</span>
+0258 
+0259 <a name="_sub7" href="#_subfunctions" class="code">function meta = readHeaderLines(filename)</a>
+0260 <span class="comment">% Only the header lines at the top, so that a damaged table does not stop</span>
+0261 <span class="comment">% a gathered file from being written again.</span>
+0262 meta = struct();
+0263 fid = fopen(filename, <span class="string">'r'</span>, <span class="string">'n'</span>, <span class="string">'UTF-8'</span>);
+0264 <span class="keyword">if</span> fid &lt; 0
+0265     <span class="keyword">return</span>
+0266 <span class="keyword">end</span>
+0267 cleanup = onCleanup(@() fclose(fid));
+0268 line = fgetl(fid);
+0269 <span class="keyword">if</span> ischar(line)
+0270     line = regexprep(line, [<span class="string">'^'</span> char(65279)], <span class="string">''</span>);
+0271 <span class="keyword">end</span>
+0272 <span class="keyword">while</span> ischar(line) &amp;&amp; (isempty(strtrim(line)) || startsWith(<a href="#_sub12" class="code" title="subfunction t = unquoteField(t)">unquoteField</a>(line), <span class="string">'#'</span>))
+0273     [key, value] = <a href="#_sub11" class="code" title="subfunction [key, value] = parseHeaderLine(line)">parseHeaderLine</a>(line);
+0274     <span class="keyword">if</span> ~isempty(key)
+0275         meta.(key) = value;
+0276     <span class="keyword">end</span>
+0277     line = fgetl(fid);
+0278 <span class="keyword">end</span>
+0279 <span class="keyword">end</span>
+0280 
+0281 <a name="_sub8" href="#_subfunctions" class="code">function j = kcatSourceJson(v)</a>
+0282 <span class="keyword">if</span> isstruct(v) &amp;&amp; isscalar(v)
+0283     f = sort(fieldnames(v));
+0284     parts = cell(1, numel(f));
+0285     <span class="keyword">for</span> k = 1:numel(f)
+0286         parts{k} = [<a href="#_sub9" class="code" title="subfunction s = jsonString(s)">jsonString</a>(f{k}) <span class="string">':'</span> <a href="#_sub8" class="code" title="subfunction j = kcatSourceJson(v)">kcatSourceJson</a>(v.(f{k}))];
+0287     <span class="keyword">end</span>
+0288     j = [<span class="string">'{'</span> strjoin(parts, <span class="string">','</span>) <span class="string">'}'</span>];
+0289 <span class="keyword">elseif</span> ischar(v) || (isstring(v) &amp;&amp; isscalar(v))
+0290     j = <a href="#_sub9" class="code" title="subfunction s = jsonString(s)">jsonString</a>(char(v));
+0291 <span class="keyword">elseif</span> iscell(v)
+0292     j = [<span class="string">'['</span> strjoin(cellfun(@<a href="#_sub8" class="code" title="subfunction j = kcatSourceJson(v)">kcatSourceJson</a>, v(:)', <span class="string">'UniformOutput'</span>, false), <span class="string">','</span>) <span class="string">']'</span>];
+0293 <span class="keyword">elseif</span> (isnumeric(v) || islogical(v)) &amp;&amp; numel(v) ~= 1
+0294     j = [<span class="string">'['</span> strjoin(arrayfun(@<a href="#_sub8" class="code" title="subfunction j = kcatSourceJson(v)">kcatSourceJson</a>, v(:)', <span class="string">'UniformOutput'</span>, false), <span class="string">','</span>) <span class="string">']'</span>];
+0295 <span class="keyword">elseif</span> islogical(v)
+0296     j = <span class="string">'false'</span>;
+0297     <span class="keyword">if</span> v
+0298         j = <span class="string">'true'</span>;
+0299     <span class="keyword">end</span>
+0300 <span class="keyword">elseif</span> isnumeric(v)
+0301     <span class="keyword">if</span> ~isfinite(v)
+0302         j = <span class="string">'null'</span>;
+0303     <span class="keyword">else</span>
+0304         j = <a href="#_sub10" class="code" title="subfunction t = formatKcatNumber(x)">formatKcatNumber</a>(double(v));
+0305     <span class="keyword">end</span>
+0306 <span class="keyword">elseif</span> isempty(v)
+0307     j = <span class="string">'null'</span>;
+0308 <span class="keyword">else</span>
+0309     error(<span class="string">'kcatSourceJson:type'</span>, <span class="string">'Parameters of class %s cannot be written.'</span>, class(v))
+0310 <span class="keyword">end</span>
+0311 <span class="keyword">end</span>
+0312 
+0313 <a name="_sub9" href="#_subfunctions" class="code">function s = jsonString(s)</a>
+0314 <span class="comment">% JSON escapes, as Python's json.dumps(ensure_ascii=False).</span>
+0315 out = <span class="string">''</span>;
+0316 <span class="keyword">for</span> c = s
+0317     <span class="keyword">switch</span> c
+0318         <span class="keyword">case</span> <span class="string">'&quot;'</span>, out = [out <span class="string">'\&quot;'</span>]; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0319         <span class="keyword">case</span> <span class="string">'\'</span>, out = [out <span class="string">'\\'</span>]; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0320         <span class="keyword">case</span> char(8), out = [out <span class="string">'\b'</span>]; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0321         <span class="keyword">case</span> char(9), out = [out <span class="string">'\t'</span>]; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0322         <span class="keyword">case</span> char(10), out = [out <span class="string">'\n'</span>]; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0323         <span class="keyword">case</span> char(12), out = [out <span class="string">'\f'</span>]; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0324         <span class="keyword">case</span> char(13), out = [out <span class="string">'\r'</span>]; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0325         <span class="keyword">otherwise</span>
+0326             <span class="keyword">if</span> double(c) &lt; 32
+0327                 out = [out sprintf(<span class="string">'\\u%04x'</span>, double(c))]; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0328             <span class="keyword">else</span>
+0329                 out = [out c]; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0330             <span class="keyword">end</span>
+0331     <span class="keyword">end</span>
+0332 <span class="keyword">end</span>
+0333 s = [<span class="string">'&quot;'</span> out <span class="string">'&quot;'</span>];
+0334 <span class="keyword">end</span>
+0335 
+0336 <a name="_sub10" href="#_subfunctions" class="code">function t = formatKcatNumber(x)</a>
+0337 <span class="keyword">if</span> isnan(x)
+0338     t = <span class="string">''</span>;
+0339 <span class="keyword">elseif</span> isinf(x)
+0340     t = <span class="string">'Inf'</span>;
+0341     <span class="keyword">if</span> x &lt; 0
+0342         t = <span class="string">'-Inf'</span>;
+0343     <span class="keyword">end</span>
+0344 <span class="keyword">elseif</span> x == round(x) &amp;&amp; abs(x) &lt; 1e15
+0345     t = sprintf(<span class="string">'%d'</span>, x);
+0346 <span class="keyword">else</span>
+0347     <span class="keyword">for</span> digits = 1:17
+0348         t = sprintf(<span class="string">'%.*g'</span>, digits, x);
+0349         <span class="keyword">if</span> str2double(t) == x
+0350             <span class="keyword">break</span>
+0351         <span class="keyword">end</span>
+0352     <span class="keyword">end</span>
+0353 <span class="keyword">end</span>
+0354 <span class="keyword">end</span>
+0355 
+0356 <a name="_sub11" href="#_subfunctions" class="code">function [key, value] = parseHeaderLine(line)</a>
+0357 key = <span class="string">''</span>; value = <span class="string">''</span>;
+0358 tok = regexp(<a href="#_sub12" class="code" title="subfunction t = unquoteField(t)">unquoteField</a>(line), <span class="string">'^\s*#\s*([A-Za-z][A-Za-z0-9_]{0,62})\s*:\s?(.*)$'</span>, <span class="string">'tokens'</span>, <span class="string">'once'</span>);
+0359 <span class="keyword">if</span> ~isempty(tok)
+0360     key = lower(tok{1});
+0361     value = strtrim(tok{2});
+0362 <span class="keyword">end</span>
+0363 <span class="keyword">end</span>
+0364 
+0365 <a name="_sub12" href="#_subfunctions" class="code">function t = unquoteField(t)</a>
+0366 t = strtrim(t);
+0367 <span class="keyword">if</span> numel(t) &gt;= 2 &amp;&amp; t(1) == <span class="string">'&quot;'</span> &amp;&amp; t(end) == <span class="string">'&quot;'</span>
+0368     t = strtrim(strrep(t(2:end-1), <span class="string">'&quot;&quot;'</span>, <span class="string">'&quot;'</span>));
+0369 <span class="keyword">end</span>
+0370 <span class="keyword">end</span>
+0371 
+0372 <a name="_sub13" href="#_subfunctions" class="code">function checkOptions(args, names, functionName)</a>
+0373 <span class="comment">% Options are name-value pairs with known names, so a misspelled option is</span>
+0374 <span class="comment">% an error instead of being taken as a positional argument.</span>
+0375 id = [functionName <span class="string">':arguments'</span>];
+0376 given = args(1:2:end);
+0377 <span class="keyword">if</span> mod(numel(args), 2) ~= 0 || ~all(cellfun(@(x) ischar(x) || (isstring(x) &amp;&amp; isscalar(x)), given))
+0378     error(id, <span class="string">'Options of %s are name-value pairs. Options: %s.'</span>, functionName, strjoin(names, <span class="string">', '</span>))
+0379 <span class="keyword">end</span>
+0380 unknown = setdiff(cellfun(@char, given, <span class="string">'UniformOutput'</span>, false), names);
+0381 <span class="keyword">if</span> ~isempty(unknown)
+0382     error(id, <span class="string">'Unknown option of %s: %s. Options: %s.'</span>, functionName, strjoin(unknown, <span class="string">', '</span>), <span class="keyword">...</span>
+0383         strjoin(names, <span class="string">', '</span>))
+0384 <span class="keyword">end</span>
+0385 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

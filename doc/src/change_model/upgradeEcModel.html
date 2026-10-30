@@ -1,0 +1,143 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of upgradeEcModel</title>
+  <meta name="keywords" content="upgradeEcModel">
+  <meta name="description" content="upgradeEcModel  Bring an ecModel made with GECKO 3 to the GECKO 4 format.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">change_model</a> &gt; upgradeEcModel.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/change_model&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>upgradeEcModel
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>upgradeEcModel  Bring an ecModel made with GECKO 3 to the GECKO 4 format.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function [model, changed] = upgradeEcModel(model) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> upgradeEcModel  Bring an ecModel made with GECKO 3 to the GECKO 4 format.
+
+ GECKO 3 defined the protein usage reactions (usage_prot_&lt;id&gt;, prot_&lt;id&gt;
+ -&gt; prot_pool) and the protein pool exchange (prot_pool_exchange,
+ prot_pool -&gt;) in the reverse direction, used with negative flux. GECKO 4
+ defines them forward (prot_pool -&gt; prot_&lt;id&gt;, -&gt; prot_pool), so that an
+ enzyme's usage is the positive flux of its usage reaction. This turns
+ each reaction that is still reverse: its column of S, its bounds and its
+ objective coefficient change sign. Reactions already forward are left as
+ they are, so calling it again changes nothing. Flux values of the model
+ (fluxes of usage reactions and the pool exchange) change sign with it.
+ The ecModel format (annotation.gecko_format, see saveEcModel) becomes 4
+ when it is missing or lower.
+ geckopy has the same (upgrade_ec_model).
+
+ Parameters
+ ----------
+ model : struct
+     an ecModel.
+
+ Returns
+ -------
+ model : struct
+     the ecModel in the GECKO 4 format.
+ changed : cell
+     the reactions that were turned.
+
+ Examples
+ --------
+     ecModel = upgradeEcModel(readYAMLmodel('ecYeastGEM_GECKO3.yml'));
+
+ See also
+ --------
+ upgradeGECKOproject, <a href="makeEcModel.html" class="code" title="function [model, noUniprot] = makeEcModel(model, varargin)">makeEcModel</a>, <a href="setProtPoolSize.html" class="code" title="function model = setProtPoolSize(model, varargin)">setProtPoolSize</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [model, changed] = upgradeEcModel(model)</a>
+0002 <span class="comment">% upgradeEcModel  Bring an ecModel made with GECKO 3 to the GECKO 4 format.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% GECKO 3 defined the protein usage reactions (usage_prot_&lt;id&gt;, prot_&lt;id&gt;</span>
+0005 <span class="comment">% -&gt; prot_pool) and the protein pool exchange (prot_pool_exchange,</span>
+0006 <span class="comment">% prot_pool -&gt;) in the reverse direction, used with negative flux. GECKO 4</span>
+0007 <span class="comment">% defines them forward (prot_pool -&gt; prot_&lt;id&gt;, -&gt; prot_pool), so that an</span>
+0008 <span class="comment">% enzyme's usage is the positive flux of its usage reaction. This turns</span>
+0009 <span class="comment">% each reaction that is still reverse: its column of S, its bounds and its</span>
+0010 <span class="comment">% objective coefficient change sign. Reactions already forward are left as</span>
+0011 <span class="comment">% they are, so calling it again changes nothing. Flux values of the model</span>
+0012 <span class="comment">% (fluxes of usage reactions and the pool exchange) change sign with it.</span>
+0013 <span class="comment">% The ecModel format (annotation.gecko_format, see saveEcModel) becomes 4</span>
+0014 <span class="comment">% when it is missing or lower.</span>
+0015 <span class="comment">% geckopy has the same (upgrade_ec_model).</span>
+0016 <span class="comment">%</span>
+0017 <span class="comment">% Parameters</span>
+0018 <span class="comment">% ----------</span>
+0019 <span class="comment">% model : struct</span>
+0020 <span class="comment">%     an ecModel.</span>
+0021 <span class="comment">%</span>
+0022 <span class="comment">% Returns</span>
+0023 <span class="comment">% -------</span>
+0024 <span class="comment">% model : struct</span>
+0025 <span class="comment">%     the ecModel in the GECKO 4 format.</span>
+0026 <span class="comment">% changed : cell</span>
+0027 <span class="comment">%     the reactions that were turned.</span>
+0028 <span class="comment">%</span>
+0029 <span class="comment">% Examples</span>
+0030 <span class="comment">% --------</span>
+0031 <span class="comment">%     ecModel = upgradeEcModel(readYAMLmodel('ecYeastGEM_GECKO3.yml'));</span>
+0032 <span class="comment">%</span>
+0033 <span class="comment">% See also</span>
+0034 <span class="comment">% --------</span>
+0035 <span class="comment">% upgradeGECKOproject, makeEcModel, setProtPoolSize</span>
+0036 
+0037 pool = find(strcmp(model.mets, <span class="string">'prot_pool'</span>));
+0038 changed = {};
+0039 <span class="keyword">if</span> isempty(pool)
+0040     <span class="keyword">return</span>
+0041 <span class="keyword">end</span>
+0042 <span class="keyword">if</span> ~isfield(model, <span class="string">'annotation'</span>) || ~isfield(model.annotation, <span class="string">'gecko_format'</span>) <span class="keyword">...</span>
+0043         || str2double(model.annotation.gecko_format) &lt; 4
+0044     model.annotation.gecko_format = <span class="string">'4'</span>;
+0045 <span class="keyword">end</span>
+0046 usage = find(startsWith(model.rxns, <span class="string">'usage_prot_'</span>));
+0047 reverse = usage(full(model.S(pool, usage)) &gt; 0);
+0048 exchange = find(strcmp(model.rxns, <span class="string">'prot_pool_exchange'</span>));
+0049 <span class="keyword">if</span> ~isempty(exchange) &amp;&amp; full(model.S(pool, exchange)) &lt; 0
+0050     reverse(end+1, 1) = exchange;
+0051 <span class="keyword">end</span>
+0052 <span class="keyword">if</span> isempty(reverse)
+0053     <span class="keyword">return</span>
+0054 <span class="keyword">end</span>
+0055 model.S(:, reverse) = -model.S(:, reverse);
+0056 lb = model.lb(reverse);
+0057 model.lb(reverse) = -model.ub(reverse);
+0058 model.ub(reverse) = -lb;
+0059 <span class="keyword">if</span> isfield(model, <span class="string">'c'</span>)
+0060     model.c(reverse) = -model.c(reverse);
+0061 <span class="keyword">end</span>
+0062 changed = model.rxns(reverse);
+0063 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

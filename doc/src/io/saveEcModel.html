@@ -1,0 +1,194 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of saveEcModel</title>
+  <meta name="keywords" content="saveEcModel">
+  <meta name="description" content="saveEcModel  Save an ecModel in YAML and/or SBML format.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">io</a> &gt; saveEcModel.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/io&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>saveEcModel
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>saveEcModel  Save an ecModel in YAML and/or SBML format.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function saveEcModel(ecModel,varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> saveEcModel  Save an ecModel in YAML and/or SBML format.
+
+ Saves the ecModel in either YAML format (= default and preferred, as all
+ ecModel content is reserved) and/or SBML format (= more widely compatible
+ with other constraint-based modelling tools, can be used for running
+ simulations like FBA etc., but this model cannot be loaded back into
+ MATLAB for applying further GECKO functions, as model.ec is lost).
+
+ A YAML file records its ecModel format (gecko_format, see loadEcModel)
+ and the GECKO release that wrote it (generator) in its metaData, in
+ place of the geckopy_version that earlier geckopy releases wrote.
+
+ The ecModel is saved to the ecModel-specific models/ subfolder. For
+ saving to other locations, writeYAMLmodel or exportModel are more
+ suitable.
+
+ Parameters
+ ----------
+ ecModel : struct
+     an ecModel (with ecModel.ec structure).
+
+ Name-Value Arguments
+ --------------------
+ filename : char
+     ending with either .yml or .xml, specifying if the ecModel should be
+     saved in YAML or SBML file format. If no file extension is given, the
+     ecModel will be saved in YAML format. If no filename is given,
+     'ecModel.yml' is used.
+ modelAdapter : ModelAdapter
+     a loaded model adapter, from where the model folder is read (default:
+     the current default model adapter).
+
+ Examples
+ --------
+     % optional arguments may be given positionally or as name-value pairs:
+     saveEcModel(ecModel,filename,modelAdapter);
+     saveEcModel(ecModel,'filename',filename);
+
+ See also
+ --------
+ <a href="loadEcModel.html" class="code" title="function model = loadEcModel(varargin)">loadEcModel</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function v = geckoVersion()</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function saveEcModel(ecModel,varargin)</a>
+0002 <span class="comment">% saveEcModel  Save an ecModel in YAML and/or SBML format.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Saves the ecModel in either YAML format (= default and preferred, as all</span>
+0005 <span class="comment">% ecModel content is reserved) and/or SBML format (= more widely compatible</span>
+0006 <span class="comment">% with other constraint-based modelling tools, can be used for running</span>
+0007 <span class="comment">% simulations like FBA etc., but this model cannot be loaded back into</span>
+0008 <span class="comment">% MATLAB for applying further GECKO functions, as model.ec is lost).</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% A YAML file records its ecModel format (gecko_format, see loadEcModel)</span>
+0011 <span class="comment">% and the GECKO release that wrote it (generator) in its metaData, in</span>
+0012 <span class="comment">% place of the geckopy_version that earlier geckopy releases wrote.</span>
+0013 <span class="comment">%</span>
+0014 <span class="comment">% The ecModel is saved to the ecModel-specific models/ subfolder. For</span>
+0015 <span class="comment">% saving to other locations, writeYAMLmodel or exportModel are more</span>
+0016 <span class="comment">% suitable.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% Parameters</span>
+0019 <span class="comment">% ----------</span>
+0020 <span class="comment">% ecModel : struct</span>
+0021 <span class="comment">%     an ecModel (with ecModel.ec structure).</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Name-Value Arguments</span>
+0024 <span class="comment">% --------------------</span>
+0025 <span class="comment">% filename : char</span>
+0026 <span class="comment">%     ending with either .yml or .xml, specifying if the ecModel should be</span>
+0027 <span class="comment">%     saved in YAML or SBML file format. If no file extension is given, the</span>
+0028 <span class="comment">%     ecModel will be saved in YAML format. If no filename is given,</span>
+0029 <span class="comment">%     'ecModel.yml' is used.</span>
+0030 <span class="comment">% modelAdapter : ModelAdapter</span>
+0031 <span class="comment">%     a loaded model adapter, from where the model folder is read (default:</span>
+0032 <span class="comment">%     the current default model adapter).</span>
+0033 <span class="comment">%</span>
+0034 <span class="comment">% Examples</span>
+0035 <span class="comment">% --------</span>
+0036 <span class="comment">%     % optional arguments may be given positionally or as name-value pairs:</span>
+0037 <span class="comment">%     saveEcModel(ecModel,filename,modelAdapter);</span>
+0038 <span class="comment">%     saveEcModel(ecModel,'filename',filename);</span>
+0039 <span class="comment">%</span>
+0040 <span class="comment">% See also</span>
+0041 <span class="comment">% --------</span>
+0042 <span class="comment">% loadEcModel</span>
+0043 
+0044 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0045     <span class="string">'filename'</span>,     []; <span class="keyword">...</span>
+0046     <span class="string">'modelAdapter'</span>, []});
+0047 filename     = p.filename;
+0048 modelAdapter = p.modelAdapter;
+0049 
+0050 <span class="keyword">if</span> isempty(modelAdapter)
+0051     modelAdapter = ModelAdapterManager.getDefault();
+0052     <span class="keyword">if</span> isempty(modelAdapter)
+0053         error(<span class="string">'Either send in a modelAdapter or set the default model adapter in the ModelAdapterManager.'</span>)
+0054     <span class="keyword">end</span>
+0055 <span class="keyword">end</span>
+0056 params = modelAdapter.getParameters();
+0057 <span class="keyword">if</span> isempty(filename)
+0058     filename = <span class="string">'ecModel'</span>;
+0059 <span class="keyword">end</span>
+0060 filename = fullfile(params.path,<span class="string">'models'</span>,filename);
+0061 
+0062 <span class="keyword">switch</span> filename(end-3:end)
+0063     <span class="keyword">case</span> {<span class="string">'.xml'</span>,<span class="string">'sbml'</span>}
+0064         exportModel(ecModel, filename);
+0065         <span class="comment">%Convert notation &quot;e-005&quot; to &quot;e-05 &quot; in stoich. coeffs. to avoid</span>
+0066         <span class="comment">%inconsistencies between Windows and MAC:</span>
+0067         copyfile(filename,<span class="string">'backup.xml'</span>)
+0068         fin  = fopen(<span class="string">'backup.xml'</span>, <span class="string">'r'</span>);
+0069         fout = fopen(filename, <span class="string">'w'</span>);
+0070         still_reading = true;
+0071         <span class="keyword">while</span> still_reading
+0072             inline = fgets(fin);
+0073             <span class="keyword">if</span> ~ischar(inline)
+0074                 still_reading = false;
+0075             <span class="keyword">else</span>
+0076                 <span class="keyword">if</span> ~isempty(regexp(inline,<span class="string">'-00[0-9]'</span>,<span class="string">'once'</span>))
+0077                     inline = strrep(inline,<span class="string">'-00'</span>,<span class="string">'-0'</span>);
+0078                 <span class="keyword">elseif</span> ~isempty(regexp(inline,<span class="string">'-01[0-9]'</span>,<span class="string">'once'</span>))
+0079                     inline = strrep(inline,<span class="string">'-01'</span>,<span class="string">'-1'</span>);
+0080                 <span class="keyword">end</span>
+0081                 fwrite(fout, inline);
+0082             <span class="keyword">end</span>
+0083         <span class="keyword">end</span>
+0084         fclose(<span class="string">'all'</span>);
+0085         delete(<span class="string">'backup.xml'</span>);
+0086     <span class="keyword">otherwise</span> <span class="comment">% Assume YAML</span>
+0087         <span class="comment">% The ecModel format the file follows (as project_format in</span>
+0088         <span class="comment">% model_adapter.toml) and the release that wrote it.</span>
+0089         ecModel.annotation.gecko_format = <span class="string">'4'</span>;
+0090         ecModel.annotation.generator = [<span class="string">'GECKO '</span> <a href="#_sub1" class="code" title="subfunction v = geckoVersion()">geckoVersion</a>()];
+0091         <span class="keyword">if</span> isfield(ecModel.annotation, <span class="string">'geckopy_version'</span>)
+0092             ecModel.annotation = rmfield(ecModel.annotation, <span class="string">'geckopy_version'</span>);
+0093         <span class="keyword">end</span>
+0094         writeYAMLmodel(ecModel,filename);
+0095 <span class="keyword">end</span>
+0096 <span class="keyword">end</span>
+0097 
+0098 <a name="_sub1" href="#_subfunctions" class="code">function v = geckoVersion()</a>
+0099 file = fullfile(findGECKOroot, <span class="string">'version.txt'</span>);
+0100 <span class="keyword">if</span> isfile(file)
+0101     v = strtrim(fileread(file));
+0102 <span class="keyword">else</span>
+0103     v = <span class="string">'unknown'</span>;
+0104 <span class="keyword">end</span>
+0105 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

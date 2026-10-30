@@ -1,0 +1,237 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of kcatsFromDLKcat</title>
+  <meta name="keywords" content="kcatsFromDLKcat">
+  <meta name="description" content="kcatsFromDLKcat  Gather kcats from DLKcat and keep them as a source file.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">gather_kcats</a> &gt; kcatsFromDLKcat.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/gather_kcats&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>kcatsFromDLKcat
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>kcatsFromDLKcat  Gather kcats from DLKcat and keep them as a source file.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function kcatList = kcatsFromDLKcat(model, varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> kcatsFromDLKcat  Gather kcats from DLKcat and keep them as a source file.
+
+ Predicts kcats with DLKcat and writes them to data/kcats/dlkcat.tsv in
+ the project folder (see saveKcatSource). With 'run', true it writes the
+ DLKcat input (writeDLKcatInput) and runs DLKcat through its Docker image
+ (runDLKcat), which needs Docker; otherwise it reads the output of an
+ earlier run (readDLKcatOutput). A run records how many reactions it
+ covered in data/DLKcat_run.txt, so that the source file says so also when
+ the output is read later.
+
+ Parameters
+ ----------
+ model : struct
+     an ecModel in GECKO 3 format (with ecModel.ec structure), with
+     metabolite SMILES (findMetSmiles) and protein sequences.
+
+ Name-Value Arguments
+ --------------------
+ run : logical
+     write the input and run DLKcat; false reads the existing output in
+     data/DLKcat.tsv (default false).
+ ecRxns : logical
+     for which model.ec.rxns DLKcat is run (default: all). Only used with
+     'run', true.
+ save : logical
+     write the source file (default true).
+ saveAs : char
+     name of the source file, without .tsv (default 'dlkcat').
+ modelAdapter : ModelAdapter
+     a loaded model adapter (default: the current default model adapter).
+
+ Returns
+ -------
+ kcatList : struct
+     the kcat values, as returned by readDLKcatOutput.
+
+ Examples
+ --------
+     kcatsFromDLKcat(ecModel, 'run', true);
+     kcatList = kcatsFromDLKcat(ecModel);
+
+ See also
+ --------
+ <a href="writeDLKcatInput.html" class="code" title="function writtenTable = writeDLKcatInput(model, varargin)">writeDLKcatInput</a>, <a href="runDLKcat.html" class="code" title="function runDLKcat(varargin)">runDLKcat</a>, <a href="readDLKcatOutput.html" class="code" title="function kcatList = readDLKcatOutput(model, varargin)">readDLKcatOutput</a>, <a href="kcatsFromBrenda.html" class="code" title="function kcatList = kcatsFromBrenda(model, varargin)">kcatsFromBrenda</a>, <a href="saveKcatSource.html" class="code" title="function filename = saveKcatSource(model, kcatList, name, varargin)">saveKcatSource</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="readDLKcatOutput.html" class="code" title="function kcatList = readDLKcatOutput(model, varargin)">readDLKcatOutput</a>	readDLKcatOutput  Read the DLKcat output file into a kcatList structure.</li><li><a href="runDLKcat.html" class="code" title="function runDLKcat(varargin)">runDLKcat</a>	runDLKcat  Run DLKcat to predict kcat values from a Docker image.</li><li><a href="saveKcatSource.html" class="code" title="function filename = saveKcatSource(model, kcatList, name, varargin)">saveKcatSource</a>	saveKcatSource  Write a kcatList to a kcat source file of the project.</li><li><a href="writeDLKcatInput.html" class="code" title="function writtenTable = writeDLKcatInput(model, varargin)">writeDLKcatInput</a>	writeDLKcatInput  Prepare and write the input file for DLKcat.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="updateKcatSources.html" class="code" title="function report = updateKcatSources(model, varargin)">updateKcatSources</a>	updateKcatSources  Gather the kcat sources that the configuration needs.</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function n = countRxns(ecRxns)</a></li><li><a href="#_sub2" class="code">function warnSubset(ecRxns, nRxns, file)</a></li><li><a href="#_sub3" class="code">function checkOptions(args, names, functionName)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function kcatList = kcatsFromDLKcat(model, varargin)</a>
+0002 <span class="comment">% kcatsFromDLKcat  Gather kcats from DLKcat and keep them as a source file.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Predicts kcats with DLKcat and writes them to data/kcats/dlkcat.tsv in</span>
+0005 <span class="comment">% the project folder (see saveKcatSource). With 'run', true it writes the</span>
+0006 <span class="comment">% DLKcat input (writeDLKcatInput) and runs DLKcat through its Docker image</span>
+0007 <span class="comment">% (runDLKcat), which needs Docker; otherwise it reads the output of an</span>
+0008 <span class="comment">% earlier run (readDLKcatOutput). A run records how many reactions it</span>
+0009 <span class="comment">% covered in data/DLKcat_run.txt, so that the source file says so also when</span>
+0010 <span class="comment">% the output is read later.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Parameters</span>
+0013 <span class="comment">% ----------</span>
+0014 <span class="comment">% model : struct</span>
+0015 <span class="comment">%     an ecModel in GECKO 3 format (with ecModel.ec structure), with</span>
+0016 <span class="comment">%     metabolite SMILES (findMetSmiles) and protein sequences.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% Name-Value Arguments</span>
+0019 <span class="comment">% --------------------</span>
+0020 <span class="comment">% run : logical</span>
+0021 <span class="comment">%     write the input and run DLKcat; false reads the existing output in</span>
+0022 <span class="comment">%     data/DLKcat.tsv (default false).</span>
+0023 <span class="comment">% ecRxns : logical</span>
+0024 <span class="comment">%     for which model.ec.rxns DLKcat is run (default: all). Only used with</span>
+0025 <span class="comment">%     'run', true.</span>
+0026 <span class="comment">% save : logical</span>
+0027 <span class="comment">%     write the source file (default true).</span>
+0028 <span class="comment">% saveAs : char</span>
+0029 <span class="comment">%     name of the source file, without .tsv (default 'dlkcat').</span>
+0030 <span class="comment">% modelAdapter : ModelAdapter</span>
+0031 <span class="comment">%     a loaded model adapter (default: the current default model adapter).</span>
+0032 <span class="comment">%</span>
+0033 <span class="comment">% Returns</span>
+0034 <span class="comment">% -------</span>
+0035 <span class="comment">% kcatList : struct</span>
+0036 <span class="comment">%     the kcat values, as returned by readDLKcatOutput.</span>
+0037 <span class="comment">%</span>
+0038 <span class="comment">% Examples</span>
+0039 <span class="comment">% --------</span>
+0040 <span class="comment">%     kcatsFromDLKcat(ecModel, 'run', true);</span>
+0041 <span class="comment">%     kcatList = kcatsFromDLKcat(ecModel);</span>
+0042 <span class="comment">%</span>
+0043 <span class="comment">% See also</span>
+0044 <span class="comment">% --------</span>
+0045 <span class="comment">% writeDLKcatInput, runDLKcat, readDLKcatOutput, kcatsFromBrenda, saveKcatSource</span>
+0046 
+0047 <a href="#_sub3" class="code" title="subfunction checkOptions(args, names, functionName)">checkOptions</a>(varargin, {<span class="string">'run'</span>,<span class="string">'ecRxns'</span>,<span class="string">'save'</span>,<span class="string">'saveAs'</span>,<span class="string">'modelAdapter'</span>}, <span class="string">'kcatsFromDLKcat'</span>);
+0048 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0049     <span class="string">'run'</span>,          false; <span class="keyword">...</span>
+0050     <span class="string">'ecRxns'</span>,       []; <span class="keyword">...</span>
+0051     <span class="string">'save'</span>,         true; <span class="keyword">...</span>
+0052     <span class="string">'saveAs'</span>,       <span class="string">'dlkcat'</span>; <span class="keyword">...</span>
+0053     <span class="string">'modelAdapter'</span>, []});
+0054 modelAdapter = p.modelAdapter;
+0055 <span class="keyword">if</span> isempty(modelAdapter)
+0056     modelAdapter = ModelAdapterManager.getDefault();
+0057     <span class="keyword">if</span> isempty(modelAdapter)
+0058         error(<span class="string">'Either send in a modelAdapter or set the default model adapter in the ModelAdapterManager.'</span>)
+0059     <span class="keyword">end</span>
+0060 <span class="keyword">end</span>
+0061 <span class="keyword">if</span> ~p.run &amp;&amp; ~isempty(p.ecRxns)
+0062     error(<span class="string">'kcatsFromDLKcat:ecRxns'</span>, [<span class="string">'ecRxns selects the reactions DLKcat is run for, so '</span> <span class="keyword">...</span>
+0063         <span class="string">'it needs ''run'', true.'</span>])
+0064 <span class="keyword">end</span>
+0065 <span class="keyword">if</span> p.save
+0066     file = fullfile(modelAdapter.params.path, <span class="string">'data'</span>, <span class="string">'kcats'</span>, [char(p.saveAs) <span class="string">'.tsv'</span>]);
+0067     <span class="keyword">if</span> p.run
+0068         <a href="#_sub2" class="code" title="subfunction warnSubset(ecRxns, nRxns, file)">warnSubset</a>(p.ecRxns, numel(model.ec.rxns), file);
+0069     <span class="keyword">end</span>
+0070 <span class="keyword">end</span>
+0071 
+0072 runFile = fullfile(modelAdapter.params.path, <span class="string">'data'</span>, <span class="string">'DLKcat_run.txt'</span>);
+0073 <span class="keyword">if</span> p.run
+0074     <span class="comment">% As runDLKcat: on macOS, MATLAB started from the launcher may not</span>
+0075     <span class="comment">% have Docker on its path.</span>
+0076     <span class="keyword">if</span> ismac
+0077         setenv(<span class="string">'PATH'</span>, strcat(<span class="string">'/usr/local/bin'</span>, <span class="string">':'</span>, getenv(&quot;PATH&quot;)));
+0078     <span class="keyword">end</span>
+0079     [status, ~] = system(<span class="string">'docker --version'</span>);
+0080     <span class="keyword">if</span> status ~= 0
+0081         error(<span class="string">'kcatsFromDLKcat:noDocker'</span>, [<span class="string">'DLKcat runs in a Docker image, but Docker was '</span> <span class="keyword">...</span>
+0082             <span class="string">'not found. Install it from https://www.docker.com, or call kcatsFromDLKcat '</span> <span class="keyword">...</span>
+0083             <span class="string">'without ''run'' to read an earlier DLKcat output.'</span>])
+0084     <span class="keyword">end</span>
+0085     <a href="writeDLKcatInput.html" class="code" title="function writtenTable = writeDLKcatInput(model, varargin)">writeDLKcatInput</a>(model, <span class="string">'ecRxns'</span>, p.ecRxns, <span class="string">'modelAdapter'</span>, modelAdapter, <span class="string">'overwrite'</span>, true);
+0086     <a href="runDLKcat.html" class="code" title="function runDLKcat(varargin)">runDLKcat</a>(<span class="string">'modelAdapter'</span>, modelAdapter);
+0087     fid = fopen(runFile, <span class="string">'w'</span>);
+0088     <span class="keyword">if</span> ~isempty(p.ecRxns)
+0089         fprintf(fid, <span class="string">'ecRxns: %d\n'</span>, <a href="#_sub1" class="code" title="subfunction n = countRxns(ecRxns)">countRxns</a>(p.ecRxns));
+0090     <span class="keyword">end</span>
+0091     fclose(fid);
+0092 <span class="keyword">else</span>
+0093     outFile = fullfile(modelAdapter.params.path, <span class="string">'data'</span>, <span class="string">'DLKcat.tsv'</span>);
+0094     <span class="keyword">if</span> ~isfile(outFile)
+0095         error(<span class="string">'kcatsFromDLKcat:noOutput'</span>, [<span class="string">'No DLKcat output at %s. Run '</span> <span class="keyword">...</span>
+0096             <span class="string">'kcatsFromDLKcat(model, ''run'', true) first.'</span>], outFile)
+0097     <span class="keyword">end</span>
+0098 <span class="keyword">end</span>
+0099 kcatList = <a href="readDLKcatOutput.html" class="code" title="function kcatList = readDLKcatOutput(model, varargin)">readDLKcatOutput</a>(model, <span class="string">'modelAdapter'</span>, modelAdapter);
+0100 
+0101 <span class="keyword">if</span> p.save
+0102     parameters = struct(<span class="string">'run'</span>, logical(p.run));
+0103     <span class="keyword">if</span> isfile(runFile)
+0104         tok = regexp(fileread(runFile), <span class="string">'ecRxns:\s*(\d+)'</span>, <span class="string">'tokens'</span>, <span class="string">'once'</span>);
+0105         <span class="keyword">if</span> ~isempty(tok)
+0106             parameters.ec_rxns = str2double(tok{1});
+0107         <span class="keyword">end</span>
+0108     <span class="keyword">end</span>
+0109     <a href="saveKcatSource.html" class="code" title="function filename = saveKcatSource(model, kcatList, name, varargin)">saveKcatSource</a>(model, kcatList, p.saveAs, <span class="string">'modelAdapter'</span>, modelAdapter, <span class="keyword">...</span>
+0110         <span class="string">'generator'</span>, <span class="string">'kcatsFromDLKcat'</span>, <span class="string">'parameters'</span>, parameters);
+0111     fprintf(<span class="string">'DLKcat kcats for %d reactions written to %s\n'</span>, <span class="keyword">...</span>
+0112         numel(unique(kcatList.rxns(kcatList.kcats &gt; 0))), file);
+0113 <span class="keyword">end</span>
+0114 <span class="keyword">end</span>
+0115 
+0116 <a name="_sub1" href="#_subfunctions" class="code">function n = countRxns(ecRxns)</a>
+0117 <span class="keyword">if</span> islogical(ecRxns)
+0118     n = sum(ecRxns);
+0119 <span class="keyword">else</span>
+0120     n = numel(unique(ecRxns));
+0121 <span class="keyword">end</span>
+0122 <span class="keyword">end</span>
+0123 
+0124 <a name="_sub2" href="#_subfunctions" class="code">function warnSubset(ecRxns, nRxns, file)</a>
+0125 <span class="comment">% A subset written under the default name replaces the full file.</span>
+0126 <span class="keyword">if</span> ~isempty(ecRxns) &amp;&amp; <a href="#_sub1" class="code" title="subfunction n = countRxns(ecRxns)">countRxns</a>(ecRxns) &lt; nRxns &amp;&amp; isfile(file)
+0127     printOrange(sprintf([<span class="string">'%s is replaced by kcats for %d reactions only. Give saveAs '</span> <span class="keyword">...</span>
+0128         <span class="string">'to keep it.\n'</span>], file, <a href="#_sub1" class="code" title="subfunction n = countRxns(ecRxns)">countRxns</a>(ecRxns)));
+0129 <span class="keyword">end</span>
+0130 <span class="keyword">end</span>
+0131 
+0132 <a name="_sub3" href="#_subfunctions" class="code">function checkOptions(args, names, functionName)</a>
+0133 <span class="comment">% Options are name-value pairs with known names, so a misspelled option is</span>
+0134 <span class="comment">% an error instead of being taken as a positional argument.</span>
+0135 id = [functionName <span class="string">':arguments'</span>];
+0136 given = args(1:2:end);
+0137 <span class="keyword">if</span> mod(numel(args), 2) ~= 0 || ~all(cellfun(@(x) ischar(x) || (isstring(x) &amp;&amp; isscalar(x)), given))
+0138     error(id, <span class="string">'Options of %s are name-value pairs. Options: %s.'</span>, functionName, strjoin(names, <span class="string">', '</span>))
+0139 <span class="keyword">end</span>
+0140 unknown = setdiff(cellfun(@char, given, <span class="string">'UniformOutput'</span>, false), names);
+0141 <span class="keyword">if</span> ~isempty(unknown)
+0142     error(id, <span class="string">'Unknown option of %s: %s. Options: %s.'</span>, functionName, strjoin(unknown, <span class="string">', '</span>), <span class="keyword">...</span>
+0143         strjoin(names, <span class="string">', '</span>))
+0144 <span class="keyword">end</span>
+0145 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

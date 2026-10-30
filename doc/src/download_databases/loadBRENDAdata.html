@@ -1,0 +1,311 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of loadBRENDAdata</title>
+  <meta name="keywords" content="loadBRENDAdata">
+  <meta name="description" content="%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">download_databases</a> &gt; loadBRENDAdata.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/download_databases&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>loadBRENDAdata
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function [KCATcell, SAcell] = loadBRENDAdata(varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ loadBRENDAdata  Load kcat and specific activity data from BRENDA files.
+
+ Reads the BRENDA data files (kcat.tsv, sa.tsv and mw.tsv) from the BRENDA
+ database folder defined by the model adapter, and returns the kcat values
+ and specific activities (the latter converted to kcat values using the
+ molecular weights).
+
+ kcat.tsv and sa.tsv each carry both a max and a median aggregate per
+ (EC, substrate, organism) triple; kcatAggregation selects which of the
+ two is read. Each file starts with a `#`-prefixed release-version line
+ followed by a tab-delimited column header, both skipped on read.
+
+ Name-Value Arguments
+ --------------------
+ modelAdapter : ModelAdapter
+     a loaded model adapter (default: the current default model adapter).
+ kcatAggregation : char
+     which aggregate to read from kcat.tsv and sa.tsv, 'max' or
+     'median' (default: params.kcatAggregation from the model adapter,
+     or 'max' if the adapter does not set it). A triple's max is the
+     highest turnover reported for it; its median is the middle one.
+ filterOutlierKcats : logical
+     whether to drop a row whose kcat is implausibly low for its EC
+     (default: true). A row is dropped when its kcat is more than four
+     orders of magnitude below the median kcat of its EC. The reference
+     median of an EC is taken over the positive kcat values of the max and
+     median views of kcat.tsv and of the kcat values derived from sa.tsv
+     and mw.tsv, before any row is dropped, so it does not depend on
+     kcatAggregation. Wildcard ECs (containing '-') do not contribute to a
+     reference. The EC level widens from w.x.y.z to w.x.y, w.x and w while
+     fewer than five values are available. Set to false to keep every row.
+
+ Returns
+ -------
+ KCATcell : cell
+     kcat data extracted from BRENDA.
+ SAcell : cell
+     specific activity data extracted from BRENDA.
+
+ Examples
+ --------
+     % optional arguments may be given positionally or as name-value pairs:
+     [KCATcell, SAcell] = loadBRENDAdata();
+     [KCATcell, SAcell] = loadBRENDAdata('modelAdapter', adapter);
+     [KCATcell, SAcell] = loadBRENDAdata('kcatAggregation', 'median');
+     [KCATcell, SAcell] = loadBRENDAdata('filterOutlierKcats', false);
+
+ See also
+ --------
+ <a href="loadDatabases.html" class="code" title="function databases = loadDatabases(varargin)">loadDatabases</a>, getECfromDatabase</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="resolveKcatAggregation.html" class="code" title="function kcatAggregation = resolveKcatAggregation(kcatAggregation, modelAdapter)">resolveKcatAggregation</a>	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function data_cell = openDataFile(fileName,scalingFactor,formatSpec,valueCols)</a></li><li><a href="#_sub2" class="code">function outlier = isOutlier(ecs,vals,ecPool,valPool)</a></li><li><a href="#_sub3" class="code">function prefix = ecPrefix(ecs,level)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0002 <a name="_sub0" href="#_subfunctions" class="code">function [KCATcell, SAcell] = loadBRENDAdata(varargin)</a>
+0003 <span class="comment">% loadBRENDAdata  Load kcat and specific activity data from BRENDA files.</span>
+0004 <span class="comment">%</span>
+0005 <span class="comment">% Reads the BRENDA data files (kcat.tsv, sa.tsv and mw.tsv) from the BRENDA</span>
+0006 <span class="comment">% database folder defined by the model adapter, and returns the kcat values</span>
+0007 <span class="comment">% and specific activities (the latter converted to kcat values using the</span>
+0008 <span class="comment">% molecular weights).</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% kcat.tsv and sa.tsv each carry both a max and a median aggregate per</span>
+0011 <span class="comment">% (EC, substrate, organism) triple; kcatAggregation selects which of the</span>
+0012 <span class="comment">% two is read. Each file starts with a `#`-prefixed release-version line</span>
+0013 <span class="comment">% followed by a tab-delimited column header, both skipped on read.</span>
+0014 <span class="comment">%</span>
+0015 <span class="comment">% Name-Value Arguments</span>
+0016 <span class="comment">% --------------------</span>
+0017 <span class="comment">% modelAdapter : ModelAdapter</span>
+0018 <span class="comment">%     a loaded model adapter (default: the current default model adapter).</span>
+0019 <span class="comment">% kcatAggregation : char</span>
+0020 <span class="comment">%     which aggregate to read from kcat.tsv and sa.tsv, 'max' or</span>
+0021 <span class="comment">%     'median' (default: params.kcatAggregation from the model adapter,</span>
+0022 <span class="comment">%     or 'max' if the adapter does not set it). A triple's max is the</span>
+0023 <span class="comment">%     highest turnover reported for it; its median is the middle one.</span>
+0024 <span class="comment">% filterOutlierKcats : logical</span>
+0025 <span class="comment">%     whether to drop a row whose kcat is implausibly low for its EC</span>
+0026 <span class="comment">%     (default: true). A row is dropped when its kcat is more than four</span>
+0027 <span class="comment">%     orders of magnitude below the median kcat of its EC. The reference</span>
+0028 <span class="comment">%     median of an EC is taken over the positive kcat values of the max and</span>
+0029 <span class="comment">%     median views of kcat.tsv and of the kcat values derived from sa.tsv</span>
+0030 <span class="comment">%     and mw.tsv, before any row is dropped, so it does not depend on</span>
+0031 <span class="comment">%     kcatAggregation. Wildcard ECs (containing '-') do not contribute to a</span>
+0032 <span class="comment">%     reference. The EC level widens from w.x.y.z to w.x.y, w.x and w while</span>
+0033 <span class="comment">%     fewer than five values are available. Set to false to keep every row.</span>
+0034 <span class="comment">%</span>
+0035 <span class="comment">% Returns</span>
+0036 <span class="comment">% -------</span>
+0037 <span class="comment">% KCATcell : cell</span>
+0038 <span class="comment">%     kcat data extracted from BRENDA.</span>
+0039 <span class="comment">% SAcell : cell</span>
+0040 <span class="comment">%     specific activity data extracted from BRENDA.</span>
+0041 <span class="comment">%</span>
+0042 <span class="comment">% Examples</span>
+0043 <span class="comment">% --------</span>
+0044 <span class="comment">%     % optional arguments may be given positionally or as name-value pairs:</span>
+0045 <span class="comment">%     [KCATcell, SAcell] = loadBRENDAdata();</span>
+0046 <span class="comment">%     [KCATcell, SAcell] = loadBRENDAdata('modelAdapter', adapter);</span>
+0047 <span class="comment">%     [KCATcell, SAcell] = loadBRENDAdata('kcatAggregation', 'median');</span>
+0048 <span class="comment">%     [KCATcell, SAcell] = loadBRENDAdata('filterOutlierKcats', false);</span>
+0049 <span class="comment">%</span>
+0050 <span class="comment">% See also</span>
+0051 <span class="comment">% --------</span>
+0052 <span class="comment">% loadDatabases, getECfromDatabase</span>
+0053 
+0054 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0055     <span class="string">'modelAdapter'</span>,    [], @(x) assert(isempty(x) || isa(x,<span class="string">'ModelAdapter'</span>), <span class="keyword">...</span>
+0056                                 <span class="string">'loadBRENDAdata:invalidModelAdapter'</span>, <span class="keyword">...</span>
+0057                                 <span class="string">'modelAdapter must be a ModelAdapter.'</span>); <span class="keyword">...</span>
+0058     <span class="string">'kcatAggregation'</span>, [], @(x) assert(isempty(x) || any(strcmpi(x, <span class="keyword">...</span>
+0059                                 {<span class="string">'max'</span>,<span class="string">'median'</span>})), <span class="keyword">...</span>
+0060                                 <span class="string">'loadBRENDAdata:invalidKcatAggregation'</span>, <span class="keyword">...</span>
+0061                                 <span class="string">'kcatAggregation must be ''max'' or ''median''.'</span>); <span class="keyword">...</span>
+0062     <span class="string">'filterOutlierKcats'</span>, true, @(x) assert((islogical(x) || isnumeric(x)) &amp;&amp; <span class="keyword">...</span>
+0063                                 isscalar(x), <span class="keyword">...</span>
+0064                                 <span class="string">'loadBRENDAdata:invalidFilterOutlierKcats'</span>, <span class="keyword">...</span>
+0065                                 <span class="string">'filterOutlierKcats must be a logical scalar.'</span>)});
+0066 modelAdapter       = p.modelAdapter;
+0067 kcatAggregation    = p.kcatAggregation;
+0068 filterOutlierKcats = logical(p.filterOutlierKcats);
+0069 
+0070 <span class="keyword">if</span> isempty(modelAdapter)
+0071     modelAdapter = ModelAdapterManager.getDefault();
+0072     <span class="keyword">if</span> isempty(modelAdapter)
+0073         error(<span class="string">'Either send in a modelAdapter or set the default model adapter in the ModelAdapterManager.'</span>)
+0074     <span class="keyword">end</span>
+0075 <span class="keyword">end</span>
+0076 
+0077 kcatAggregation = <a href="resolveKcatAggregation.html" class="code" title="function kcatAggregation = resolveKcatAggregation(kcatAggregation, modelAdapter)">resolveKcatAggregation</a>(kcatAggregation, modelAdapter);
+0078 <span class="comment">%Column 4 holds the per-triple maximum and column 5 the median; both are</span>
+0079 <span class="comment">%read, so that the outlier filter can use the max and the median views.</span>
+0080 valueCol = 4 + strcmpi(kcatAggregation,<span class="string">'median'</span>);
+0081 
+0082 basePath      = modelAdapter.getBrendaDBFolder();
+0083 KCAT_file      = fullfile(basePath,<span class="string">'kcat.tsv'</span>);
+0084 SA_file        = fullfile(basePath,<span class="string">'sa.tsv'</span>);
+0085 MW_file        = fullfile(basePath,<span class="string">'mw.tsv'</span>);
+0086 
+0087 <span class="comment">%Extract BRENDA DATA from files information. kcat.tsv/sa.tsv are seven</span>
+0088 <span class="comment">%columns (ec_code, substrate, organism, value_max, value_median, n,</span>
+0089 <span class="comment">%references); the data cells hold ec_code, substrate, organism, the max and</span>
+0090 <span class="comment">%the median. mw.tsv is six columns (no substrate-level aggregation choice):</span>
+0091 <span class="comment">%ec_code, substrate, organism, value, n, references.</span>
+0092 KCAT          = <a href="#_sub1" class="code" title="subfunction data_cell = openDataFile(fileName,scalingFactor,formatSpec,valueCols)">openDataFile</a>(KCAT_file,1,<span class="string">'%q %q %q %f %f %f %q'</span>,[4 5]);
+0093 scalingFactor = 1/60;    <span class="comment">%[umol/min/mg] -&gt; [mmol/s/g]</span>
+0094 SA            = <a href="#_sub1" class="code" title="subfunction data_cell = openDataFile(fileName,scalingFactor,formatSpec,valueCols)">openDataFile</a>(SA_file,scalingFactor,<span class="string">'%q %q %q %f %f %f %q'</span>,[4 5]);
+0095 scalingFactor = 1/1000;  <span class="comment">%[g/mol] -&gt; [g/mmol]</span>
+0096 MW            = <a href="#_sub1" class="code" title="subfunction data_cell = openDataFile(fileName,scalingFactor,formatSpec,valueCols)">openDataFile</a>(MW_file,scalingFactor,<span class="string">'%q %q %q %f %f %q'</span>,4);
+0097 
+0098 <span class="comment">%build an index on MW{1} to speed things up a bit</span>
+0099 <span class="comment">%first just extract the genus (i.e. the first part of the name)</span>
+0100 MWECNum = unique(upper(MW{1}));
+0101 MWECNumIndices = cell(length(MWECNum),1);
+0102 MWECNumHashMap = containers.Map(MWECNum,1:length(MWECNum));
+0103 <span class="keyword">for</span> i = 1:length(MW{1})
+0104     matchInd = cell2mat(values(MWECNumHashMap, upper(MW{1}(i))));
+0105     MWECNumIndices{matchInd} = [MWECNumIndices{matchInd};i];
+0106 <span class="keyword">end</span>
+0107 
+0108 <span class="comment">%Match each specific activity to the molecular weight of its EC and</span>
+0109 <span class="comment">%organism. The first match is used.</span>
+0110 previousEC = []; EC_indexes = [];
+0111 saRows = zeros(length(SA{1}),1);
+0112 mwVals = zeros(length(SA{1}),1);
+0113 nMatched = 0;
+0114 <span class="keyword">for</span> i=1:length(SA{1})
+0115     <span class="comment">%Gets the indexes of the EC repetitions in the MW cell for every</span>
+0116     <span class="comment">%new (different) EC</span>
+0117     <span class="keyword">if</span> ~strcmpi(SA{1}(i), previousEC)
+0118         key = upper(SA{1}(i));
+0119         <span class="keyword">if</span> isKey(MWECNumHashMap,key) <span class="comment">%annoyingly, this seems to be needed</span>
+0120             matchInd = cell2mat(values(MWECNumHashMap,key));
+0121             EC_indexes = MWECNumIndices{matchInd};
+0122         <span class="keyword">else</span>
+0123             EC_indexes = [];
+0124         <span class="keyword">end</span>
+0125     <span class="keyword">end</span>
+0126     mwEC{1} = MW{3}(EC_indexes); mwEC{2} = MW{4}(EC_indexes);
+0127     <span class="comment">% just looks for the first match because just the maximal value for</span>
+0128     <span class="comment">% each EC# / Orgaism is reported on the file</span>
+0129     org_index = find(strcmpi(SA{3}(i),mwEC{1}),1);
+0130     <span class="keyword">if</span> ~isempty(org_index)
+0131         nMatched = nMatched + 1;
+0132         saRows(nMatched) = i;
+0133         mwVals(nMatched) = mwEC{2}(org_index);
+0134     <span class="keyword">end</span>
+0135     previousEC = SA{1}(i);
+0136 <span class="keyword">end</span>
+0137 saRows = saRows(1:nMatched);
+0138 mwVals = mwVals(1:nMatched);
+0139 
+0140 <span class="comment">%Specific activities as kcat values [1/s], for the max and the median</span>
+0141 saEC     = SA{1}(saRows);
+0142 saMax    = SA{4}(saRows).*mwVals;
+0143 saMedian = SA{5}(saRows).*mwVals;
+0144 
+0145 <span class="keyword">if</span> valueCol == 4
+0146     saSelected = saMax;
+0147 <span class="keyword">else</span>
+0148     saSelected = saMedian;
+0149 <span class="keyword">end</span>
+0150 
+0151 <span class="comment">%Drop kcats that are implausibly low for their EC</span>
+0152 keepKcat = true(size(KCAT{1}));
+0153 keepSA   = true(size(saEC));
+0154 <span class="keyword">if</span> filterOutlierKcats
+0155     ecPool  = [KCAT{1}; KCAT{1}; saEC; saEC];
+0156     valPool = [KCAT{4}; KCAT{5}; saMax; saMedian];
+0157     keepKcat = ~<a href="#_sub2" class="code" title="subfunction outlier = isOutlier(ecs,vals,ecPool,valPool)">isOutlier</a>(KCAT{1},KCAT{valueCol},ecPool,valPool);
+0158     keepSA   = ~<a href="#_sub2" class="code" title="subfunction outlier = isOutlier(ecs,vals,ecPool,valPool)">isOutlier</a>(saEC,saSelected,ecPool,valPool);
+0159 <span class="keyword">end</span>
+0160 
+0161 KCATcell = {KCAT{1}(keepKcat), KCAT{2}(keepKcat), KCAT{3}(keepKcat), <span class="keyword">...</span>
+0162             KCAT{valueCol}(keepKcat)};
+0163 <span class="keyword">if</span> nMatched &gt; 0
+0164     SAcell = {saEC(keepSA), SA{3}(saRows(keepSA)), saSelected(keepSA), <span class="keyword">...</span>
+0165               mwVals(keepSA)};
+0166 <span class="keyword">else</span>
+0167     SAcell = {[],[],[],[]};
+0168 <span class="keyword">end</span>
+0169 <span class="keyword">end</span>
+0170 
+0171 <a name="_sub1" href="#_subfunctions" class="code">function data_cell = openDataFile(fileName,scalingFactor,formatSpec,valueCols)</a>
+0172 fID          = fopen(fileName);
+0173 raw          = textscan(fID,formatSpec,<span class="string">'delimiter'</span>,<span class="string">'\t'</span>,<span class="string">'HeaderLines'</span>,2);
+0174 fclose(fID);
+0175 data_cell    = [raw(1:3), cellfun(@(c) raw{c}*scalingFactor, num2cell(valueCols), <span class="keyword">...</span>
+0176                                   <span class="string">'UniformOutput'</span>, false)];
+0177 <span class="keyword">end</span>
+0178 
+0179 <a name="_sub2" href="#_subfunctions" class="code">function outlier = isOutlier(ecs,vals,ecPool,valPool)</a>
+0180 <span class="comment">%A value is an outlier if it is more than 'decades' orders of magnitude below</span>
+0181 <span class="comment">%the median kcat of its own EC, taken over the pool of values. The EC widens</span>
+0182 <span class="comment">%from the full code to its 3-, 2- and 1-level prefix while fewer than minRef</span>
+0183 <span class="comment">%values are available.</span>
+0184 decades = 4;
+0185 minRef  = 5;
+0186 usePool = valPool &gt; 0 &amp; ~contains(ecPool,<span class="string">'-'</span>);
+0187 ecPool  = ecPool(usePool);
+0188 logPool = log10(valPool(usePool));
+0189 refLog  = NaN(size(ecs));
+0190 <span class="keyword">if</span> isempty(ecs) || isempty(logPool)
+0191     outlier = false(size(ecs));
+0192     <span class="keyword">return</span>
+0193 <span class="keyword">end</span>
+0194 <span class="keyword">for</span> level = 4:-1:1
+0195     poolKey = <a href="#_sub3" class="code" title="subfunction prefix = ecPrefix(ecs,level)">ecPrefix</a>(ecPool,level);
+0196     [grp,keys] = findgroups(poolKey);
+0197     nPerKey    = accumarray(grp,1);
+0198     medPerKey  = splitapply(@median,logPool,grp);
+0199     [found,loc] = ismember(<a href="#_sub3" class="code" title="subfunction prefix = ecPrefix(ecs,level)">ecPrefix</a>(ecs,level),keys);
+0200     use = isnan(refLog) &amp; found;
+0201     use(use) = nPerKey(loc(use)) &gt;= minRef;
+0202     refLog(use) = medPerKey(loc(use));
+0203 <span class="keyword">end</span>
+0204 outlier = vals &gt; 0 &amp; ~isnan(refLog) &amp; log10(vals) &lt; refLog - decades;
+0205 <span class="keyword">end</span>
+0206 
+0207 <a name="_sub3" href="#_subfunctions" class="code">function prefix = ecPrefix(ecs,level)</a>
+0208 <span class="comment">%The first 'level' dot-separated parts of each EC code</span>
+0209 prefix = regexp(ecs,[<span class="string">'^[^.]*(?:\.[^.]*){0,'</span> num2str(level-1) <span class="string">'}'</span>],<span class="string">'match'</span>,<span class="string">'once'</span>);
+0210 prefix(cellfun(@isempty,prefix)) = {<span class="string">''</span>};
+0211 prefix = reshape(prefix,size(ecs));
+0212 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

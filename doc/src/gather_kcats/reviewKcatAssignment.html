@@ -1,0 +1,396 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of reviewKcatAssignment</title>
+  <meta name="keywords" content="reviewKcatAssignment">
+  <meta name="description" content="reviewKcatAssignment  Flag kcat assignments that deserve a second look.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">gather_kcats</a> &gt; reviewKcatAssignment.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/gather_kcats&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>reviewKcatAssignment
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>reviewKcatAssignment  Flag kcat assignments that deserve a second look.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function findings = reviewKcatAssignment(rxnIds,kcats,sources,ecCodes,varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> reviewKcatAssignment  Flag kcat assignments that deserve a second look.
+
+ A tuner's largest corrections are rarely discoveries about biology.
+ They are places the assignment went wrong: a value derived from one
+ specific-activity measurement, a database maximum standing in for a
+ distribution with a two-hundred-fold spread, one fallback number reused
+ across a whole family of reactions. Finding those directly is cheaper
+ than inferring them from a fit, and a corrected prior propagates to
+ every model built from the same databases, where a tuned kcat stays in
+ the model it was tuned on.
+
+ Two design choices, both from measurement rather than taste (see
+ geckopy's gather_kcats/review.py, which this ports):
+
+ Rank by leverage, and cut the report there. Tightening the checks
+ themselves does not shorten a report nearly as well, because looking
+ odd and mattering are unrelated properties. Filtering by leverage keeps
+ the list short and keeps the entries worth a curator's time.
+
+ Report a parameter once. Isozyme copies the assignment could not
+ separate share a value and a source, so they share a finding; listing
+ them separately fills the report with duplicates of one decision.
+
+ Parameters
+ ----------
+ rxnIds, kcats, sources, ecCodes : cell/double
+     ec.rxns, ec.kcat, ec.source, ec.eccodes (or the equivalent
+     subset), all the same length.
+
+ Name-Value Arguments
+ --------------------
+ ecStats : containers.Map
+     EC code -&gt; struct(nKcat,kcatMax,kcatMedian,values,nSa), as returned
+     by ecStatsFromBrenda. Checks needing it are skipped when it is
+     absent, so this still runs without a database.
+ enzymes : cell
+     protein ids per kcat (cell of cell arrays), used to count how many
+     other reactions share an enzyme.
+ names : cell
+     reaction names, same length as rxnIds (default: not shown).
+ leverage : double
+     per-kcat effect on the distance from a one-at-a-time screen (e.g.
+     screenKcatLeverage's leverage column, expanded back to
+     ecModel.ec.rxns positions). Without it findings cannot be ranked
+     and are returned in input order.
+ slow, fast : double
+     magnitude check bounds (default 1e-2, 1e4).
+ ecMaxGap : double
+     how many times the EC median a value must exceed, while sitting
+     exactly at the EC max, to flag as ec-maximum (default 3.0).
+ repeatMin : double
+     how many distinct reactions must share one kcat value to flag as
+     repeated-value (default 5).
+ include : cell
+     names from {'standard-fallback','tied-isozymes'} to report as well
+     (default: neither -- both are deliberate choices, not mistakes, so
+     stay quiet unless asked for).
+ coverage : double
+     truncate the report to the rows carrying this share of the
+     *flagged* leverage (default: no truncation).
+ top : double
+     truncate the report to this many rows (default: no truncation).
+
+ Returns
+ -------
+ findings : table
+     one row per free parameter: rxnId, name, ecCode, source, kcat,
+     leverage, nIsozymes, otherReactions, checks (comma-joined string),
+     detail. Write to TSV with e.g.
+         writetable(findings,'findings.tsv','FileType','text','Delimiter','\t')
+
+ See also
+ --------
+ <a href="ecStatsFromBrenda.html" class="code" title="function ecStats = ecStatsFromBrenda(KCATcell,SAcell)">ecStatsFromBrenda</a>, isozymeTieMap, screenKcatLeverage</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function key = reuseKey(kcat)</a></li><li><a href="#_sub2" class="code">function ec = firstEc(ecCode)</a></li><li><a href="#_sub3" class="code">function base = baseReactionLocal(rxnId)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function findings = reviewKcatAssignment(rxnIds,kcats,sources,ecCodes,varargin)</a>
+0002 <span class="comment">% reviewKcatAssignment  Flag kcat assignments that deserve a second look.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% A tuner's largest corrections are rarely discoveries about biology.</span>
+0005 <span class="comment">% They are places the assignment went wrong: a value derived from one</span>
+0006 <span class="comment">% specific-activity measurement, a database maximum standing in for a</span>
+0007 <span class="comment">% distribution with a two-hundred-fold spread, one fallback number reused</span>
+0008 <span class="comment">% across a whole family of reactions. Finding those directly is cheaper</span>
+0009 <span class="comment">% than inferring them from a fit, and a corrected prior propagates to</span>
+0010 <span class="comment">% every model built from the same databases, where a tuned kcat stays in</span>
+0011 <span class="comment">% the model it was tuned on.</span>
+0012 <span class="comment">%</span>
+0013 <span class="comment">% Two design choices, both from measurement rather than taste (see</span>
+0014 <span class="comment">% geckopy's gather_kcats/review.py, which this ports):</span>
+0015 <span class="comment">%</span>
+0016 <span class="comment">% Rank by leverage, and cut the report there. Tightening the checks</span>
+0017 <span class="comment">% themselves does not shorten a report nearly as well, because looking</span>
+0018 <span class="comment">% odd and mattering are unrelated properties. Filtering by leverage keeps</span>
+0019 <span class="comment">% the list short and keeps the entries worth a curator's time.</span>
+0020 <span class="comment">%</span>
+0021 <span class="comment">% Report a parameter once. Isozyme copies the assignment could not</span>
+0022 <span class="comment">% separate share a value and a source, so they share a finding; listing</span>
+0023 <span class="comment">% them separately fills the report with duplicates of one decision.</span>
+0024 <span class="comment">%</span>
+0025 <span class="comment">% Parameters</span>
+0026 <span class="comment">% ----------</span>
+0027 <span class="comment">% rxnIds, kcats, sources, ecCodes : cell/double</span>
+0028 <span class="comment">%     ec.rxns, ec.kcat, ec.source, ec.eccodes (or the equivalent</span>
+0029 <span class="comment">%     subset), all the same length.</span>
+0030 <span class="comment">%</span>
+0031 <span class="comment">% Name-Value Arguments</span>
+0032 <span class="comment">% --------------------</span>
+0033 <span class="comment">% ecStats : containers.Map</span>
+0034 <span class="comment">%     EC code -&gt; struct(nKcat,kcatMax,kcatMedian,values,nSa), as returned</span>
+0035 <span class="comment">%     by ecStatsFromBrenda. Checks needing it are skipped when it is</span>
+0036 <span class="comment">%     absent, so this still runs without a database.</span>
+0037 <span class="comment">% enzymes : cell</span>
+0038 <span class="comment">%     protein ids per kcat (cell of cell arrays), used to count how many</span>
+0039 <span class="comment">%     other reactions share an enzyme.</span>
+0040 <span class="comment">% names : cell</span>
+0041 <span class="comment">%     reaction names, same length as rxnIds (default: not shown).</span>
+0042 <span class="comment">% leverage : double</span>
+0043 <span class="comment">%     per-kcat effect on the distance from a one-at-a-time screen (e.g.</span>
+0044 <span class="comment">%     screenKcatLeverage's leverage column, expanded back to</span>
+0045 <span class="comment">%     ecModel.ec.rxns positions). Without it findings cannot be ranked</span>
+0046 <span class="comment">%     and are returned in input order.</span>
+0047 <span class="comment">% slow, fast : double</span>
+0048 <span class="comment">%     magnitude check bounds (default 1e-2, 1e4).</span>
+0049 <span class="comment">% ecMaxGap : double</span>
+0050 <span class="comment">%     how many times the EC median a value must exceed, while sitting</span>
+0051 <span class="comment">%     exactly at the EC max, to flag as ec-maximum (default 3.0).</span>
+0052 <span class="comment">% repeatMin : double</span>
+0053 <span class="comment">%     how many distinct reactions must share one kcat value to flag as</span>
+0054 <span class="comment">%     repeated-value (default 5).</span>
+0055 <span class="comment">% include : cell</span>
+0056 <span class="comment">%     names from {'standard-fallback','tied-isozymes'} to report as well</span>
+0057 <span class="comment">%     (default: neither -- both are deliberate choices, not mistakes, so</span>
+0058 <span class="comment">%     stay quiet unless asked for).</span>
+0059 <span class="comment">% coverage : double</span>
+0060 <span class="comment">%     truncate the report to the rows carrying this share of the</span>
+0061 <span class="comment">%     *flagged* leverage (default: no truncation).</span>
+0062 <span class="comment">% top : double</span>
+0063 <span class="comment">%     truncate the report to this many rows (default: no truncation).</span>
+0064 <span class="comment">%</span>
+0065 <span class="comment">% Returns</span>
+0066 <span class="comment">% -------</span>
+0067 <span class="comment">% findings : table</span>
+0068 <span class="comment">%     one row per free parameter: rxnId, name, ecCode, source, kcat,</span>
+0069 <span class="comment">%     leverage, nIsozymes, otherReactions, checks (comma-joined string),</span>
+0070 <span class="comment">%     detail. Write to TSV with e.g.</span>
+0071 <span class="comment">%         writetable(findings,'findings.tsv','FileType','text','Delimiter','\t')</span>
+0072 <span class="comment">%</span>
+0073 <span class="comment">% See also</span>
+0074 <span class="comment">% --------</span>
+0075 <span class="comment">% ecStatsFromBrenda, isozymeTieMap, screenKcatLeverage</span>
+0076 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0077     <span class="string">'ecStats'</span>, containers.Map(<span class="string">'KeyType'</span>,<span class="string">'char'</span>,<span class="string">'ValueType'</span>,<span class="string">'any'</span>); <span class="keyword">...</span>
+0078     <span class="string">'enzymes'</span>, {}; <span class="keyword">...</span>
+0079     <span class="string">'names'</span>, {}; <span class="keyword">...</span>
+0080     <span class="string">'leverage'</span>, []; <span class="keyword">...</span>
+0081     <span class="string">'slow'</span>, 1e-2; <span class="keyword">...</span>
+0082     <span class="string">'fast'</span>, 1e4; <span class="keyword">...</span>
+0083     <span class="string">'ecMaxGap'</span>, 3.0; <span class="keyword">...</span>
+0084     <span class="string">'repeatMin'</span>, 5; <span class="keyword">...</span>
+0085     <span class="string">'include'</span>, {}; <span class="keyword">...</span>
+0086     <span class="string">'coverage'</span>, []; <span class="keyword">...</span>
+0087     <span class="string">'top'</span>, []});
+0088 ecStats   = p.ecStats;
+0089 enzymes   = p.enzymes;
+0090 names     = p.names;
+0091 leverage  = p.leverage;
+0092 slow      = p.slow;
+0093 fast      = p.fast;
+0094 ecMaxGap  = p.ecMaxGap;
+0095 repeatMin = p.repeatMin;
+0096 include   = p.include;
+0097 coverage  = p.coverage;
+0098 top       = p.top;
+0099 
+0100 kcats = kcats(:);
+0101 n = numel(kcats);
+0102 <span class="keyword">if</span> numel(rxnIds) ~= n || numel(sources) ~= n || numel(ecCodes) ~= n
+0103     error(<span class="string">'rxnIds, sources and ecCodes must all have %d entries, matching kcats.'</span>, n)
+0104 <span class="keyword">end</span>
+0105 <span class="keyword">if</span> isempty(leverage)
+0106     lev = zeros(n,1);
+0107 <span class="keyword">else</span>
+0108     lev = leverage(:);
+0109 <span class="keyword">end</span>
+0110 
+0111 tie = isozymeTieMap(rxnIds,kcats,<span class="string">'sources'</span>,sources);
+0112 reps = unique(tie);
+0113 memberLists = cell(numel(reps),1);
+0114 <span class="keyword">for</span> r = 1:numel(reps)
+0115     memberLists{r} = find(tie == reps(r));
+0116 <span class="keyword">end</span>
+0117 
+0118 <span class="comment">% A value reused across many distinct reactions is a fallback wearing a</span>
+0119 <span class="comment">% measurement's label, whatever its source says.</span>
+0120 reuseMap = containers.Map(<span class="string">'KeyType'</span>,<span class="string">'char'</span>,<span class="string">'ValueType'</span>,<span class="string">'any'</span>);
+0121 <span class="keyword">for</span> i = 1:n
+0122     key = <a href="#_sub1" class="code" title="subfunction key = reuseKey(kcat)">reuseKey</a>(kcats(i));
+0123     base = <a href="#_sub3" class="code" title="subfunction base = baseReactionLocal(rxnId)">baseReactionLocal</a>(rxnIds{i});
+0124     <span class="keyword">if</span> isKey(reuseMap,key)
+0125         reuseMap(key) = union(reuseMap(key), {base});
+0126     <span class="keyword">else</span>
+0127         reuseMap(key) = {base};
+0128     <span class="keyword">end</span>
+0129 <span class="keyword">end</span>
+0130 
+0131 enzymeRxns = containers.Map(<span class="string">'KeyType'</span>,<span class="string">'char'</span>,<span class="string">'ValueType'</span>,<span class="string">'any'</span>);
+0132 <span class="keyword">if</span> ~isempty(enzymes)
+0133     <span class="keyword">for</span> i = 1:n
+0134         <span class="keyword">for</span> e = 1:numel(enzymes{i})
+0135             prot = char(enzymes{i}{e});
+0136             base = <a href="#_sub3" class="code" title="subfunction base = baseReactionLocal(rxnId)">baseReactionLocal</a>(rxnIds{i});
+0137             <span class="keyword">if</span> isKey(enzymeRxns,prot)
+0138                 enzymeRxns(prot) = union(enzymeRxns(prot), {base});
+0139             <span class="keyword">else</span>
+0140                 enzymeRxns(prot) = {base};
+0141             <span class="keyword">end</span>
+0142         <span class="keyword">end</span>
+0143     <span class="keyword">end</span>
+0144 <span class="keyword">end</span>
+0145 
+0146 rxnIdOut=[]; nameOut=[]; ecOut=[]; sourceOut=[]; kcatOut=[]; leverageOut=[];
+0147 nIsoOut=[]; otherOut=[]; checksOut=[]; detailOut=[];
+0148 
+0149 <span class="keyword">for</span> r = 1:numel(reps)
+0150     idx = memberLists{r};
+0151     i = idx(1);
+0152     ec = <a href="#_sub2" class="code" title="subfunction ec = firstEc(ecCode)">firstEc</a>(ecCodes{i});
+0153     st = [];
+0154     <span class="keyword">if</span> isKey(ecStats,ec)
+0155         st = ecStats(ec);
+0156     <span class="keyword">end</span>
+0157     checks = {}; detail = {};
+0158 
+0159     <span class="keyword">if</span> ~isempty(st) &amp;&amp; st.nKcat == 0
+0160         checks{end+1} = <span class="string">'no-ec-evidence'</span>; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0161         <span class="keyword">if</span> st.nSa &gt; 0
+0162             detail{end+1} = sprintf(<span class="string">'no kcat rows for EC %s; %d specific-activity rows instead'</span>, ec, st.nSa); <span class="comment">%#ok&lt;AGROW&gt;</span>
+0163         <span class="keyword">else</span>
+0164             detail{end+1} = sprintf(<span class="string">'no kcat rows for EC %s'</span>, ec); <span class="comment">%#ok&lt;AGROW&gt;</span>
+0165         <span class="keyword">end</span>
+0166     <span class="keyword">end</span>
+0167     key = <a href="#_sub1" class="code" title="subfunction key = reuseKey(kcat)">reuseKey</a>(kcats(i));
+0168     <span class="keyword">if</span> isKey(reuseMap,key) &amp;&amp; numel(reuseMap(key)) &gt;= repeatMin
+0169         checks{end+1} = <span class="string">'repeated-value'</span>; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0170         detail{end+1} = sprintf(<span class="string">'%g 1/s reused across %d reactions'</span>, kcats(i), numel(reuseMap(key))); <span class="comment">%#ok&lt;AGROW&gt;</span>
+0171     <span class="keyword">end</span>
+0172     <span class="keyword">if</span> ~isempty(st) &amp;&amp; st.nKcat &gt; 0 &amp;&amp; isfinite(st.kcatMedian) &amp;&amp; st.kcatMedian &gt; 0 <span class="keyword">...</span>
+0173             &amp;&amp; abs(kcats(i)-st.kcatMax) &lt;= 1e-9*max(kcats(i),1) &amp;&amp; st.kcatMax/st.kcatMedian &gt; ecMaxGap
+0174         checks{end+1} = <span class="string">'ec-maximum'</span>; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0175         detail{end+1} = sprintf(<span class="string">'took the EC maximum, %.0fx its median over %d rows'</span>, st.kcatMax/st.kcatMedian, st.nKcat); <span class="comment">%#ok&lt;AGROW&gt;</span>
+0176     <span class="keyword">end</span>
+0177     <span class="keyword">if</span> kcats(i) &lt; slow || kcats(i) &gt; fast
+0178         checks{end+1} = <span class="string">'magnitude'</span>; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0179         detail{end+1} = sprintf(<span class="string">'%g 1/s is outside %g-%g'</span>, kcats(i), slow, fast); <span class="comment">%#ok&lt;AGROW&gt;</span>
+0180     <span class="keyword">end</span>
+0181     <span class="keyword">if</span> strcmpi(sources{i},<span class="string">'custom'</span>) &amp;&amp; ~isempty(st) &amp;&amp; ismember(round(kcats(i),6), st.values)
+0182         checks{end+1} = <span class="string">'custom-duplicate'</span>; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0183         detail{end+1} = <span class="string">'custom value equals a database value for its own EC'</span>; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0184     <span class="keyword">end</span>
+0185     <span class="keyword">if</span> numel(idx) &gt; 1
+0186         <span class="keyword">if</span> ismember(<span class="string">'tied-isozymes'</span>,include)
+0187             checks{end+1} = <span class="string">'tied-isozymes'</span>; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0188         <span class="keyword">end</span>
+0189         detail{end+1} = sprintf(<span class="string">'%d isozyme copies share this value'</span>, numel(idx)); <span class="comment">%#ok&lt;AGROW&gt;</span>
+0190     <span class="keyword">end</span>
+0191     <span class="keyword">if</span> strcmpi(sources{i},<span class="string">'standard'</span>)
+0192         <span class="keyword">if</span> ~ismember(<span class="string">'standard-fallback'</span>,include)
+0193             <span class="keyword">continue</span>
+0194         <span class="keyword">end</span>
+0195         checks{end+1} = <span class="string">'standard-fallback'</span>; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0196         detail{end+1} = <span class="string">'the model''s fallback value, not a measurement'</span>; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0197     <span class="keyword">end</span>
+0198 
+0199     <span class="keyword">if</span> isempty(checks)
+0200         <span class="keyword">continue</span>
+0201     <span class="keyword">end</span>
+0202     others = {};
+0203     <span class="keyword">if</span> ~isempty(enzymes)
+0204         <span class="keyword">for</span> e = 1:numel(enzymes{i})
+0205             prot = char(enzymes{i}{e});
+0206             <span class="keyword">if</span> isKey(enzymeRxns,prot)
+0207                 others = union(others, enzymeRxns(prot));
+0208             <span class="keyword">end</span>
+0209         <span class="keyword">end</span>
+0210     <span class="keyword">end</span>
+0211     others = setdiff(others, {<a href="#_sub3" class="code" title="subfunction base = baseReactionLocal(rxnId)">baseReactionLocal</a>(rxnIds{i})});
+0212 
+0213     rxnIdOut{end+1,1}   = rxnIds{i}; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0214     <span class="keyword">if</span> isempty(names)
+0215         nameOut{end+1,1} = <span class="string">''</span>; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0216     <span class="keyword">else</span>
+0217         nameOut{end+1,1} = names{i}; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0218     <span class="keyword">end</span>
+0219     ecOut{end+1,1}       = ec; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0220     sourceOut{end+1,1}   = sources{i}; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0221     kcatOut(end+1,1)     = kcats(i); <span class="comment">%#ok&lt;AGROW&gt;</span>
+0222     leverageOut(end+1,1) = max(lev(idx)); <span class="comment">%#ok&lt;AGROW&gt;</span>
+0223     nIsoOut(end+1,1)     = numel(idx); <span class="comment">%#ok&lt;AGROW&gt;</span>
+0224     otherOut(end+1,1)    = numel(others); <span class="comment">%#ok&lt;AGROW&gt;</span>
+0225     checksOut{end+1,1}   = strjoin(checks,<span class="string">','</span>); <span class="comment">%#ok&lt;AGROW&gt;</span>
+0226     detailOut{end+1,1}   = strjoin(detail,<span class="string">'; '</span>); <span class="comment">%#ok&lt;AGROW&gt;</span>
+0227 <span class="keyword">end</span>
+0228 
+0229 <span class="keyword">if</span> isempty(rxnIdOut)
+0230     findings = table(cell(0,1),cell(0,1),cell(0,1),cell(0,1),zeros(0,1),zeros(0,1), <span class="keyword">...</span>
+0231         zeros(0,1),zeros(0,1),cell(0,1),cell(0,1), <span class="string">'VariableNames'</span>, <span class="keyword">...</span>
+0232         {<span class="string">'rxnId'</span>,<span class="string">'name'</span>,<span class="string">'ecCode'</span>,<span class="string">'source'</span>,<span class="string">'kcat'</span>,<span class="string">'leverage'</span>,<span class="string">'nIsozymes'</span>,<span class="string">'otherReactions'</span>,<span class="string">'checks'</span>,<span class="string">'detail'</span>});
+0233     <span class="keyword">return</span>
+0234 <span class="keyword">end</span>
+0235 
+0236 findings = table(rxnIdOut,nameOut,ecOut,sourceOut,kcatOut,leverageOut,nIsoOut,otherOut,checksOut,detailOut, <span class="keyword">...</span>
+0237     <span class="string">'VariableNames'</span>,{<span class="string">'rxnId'</span>,<span class="string">'name'</span>,<span class="string">'ecCode'</span>,<span class="string">'source'</span>,<span class="string">'kcat'</span>,<span class="string">'leverage'</span>,<span class="string">'nIsozymes'</span>,<span class="string">'otherReactions'</span>,<span class="string">'checks'</span>,<span class="string">'detail'</span>});
+0238 findings = sortrows(findings,<span class="string">'leverage'</span>,<span class="string">'descend'</span>);
+0239 
+0240 flaggedTotal = sum(findings.leverage);
+0241 <span class="keyword">if</span> ~isempty(coverage) &amp;&amp; flaggedTotal &gt; 0
+0242     acc = cumsum(findings.leverage);
+0243     keepN = find(acc/flaggedTotal &gt;= coverage, 1, <span class="string">'first'</span>);
+0244     <span class="keyword">if</span> isempty(keepN)
+0245         keepN = height(findings);
+0246     <span class="keyword">end</span>
+0247     findings = findings(1:keepN,:);
+0248 <span class="keyword">end</span>
+0249 <span class="keyword">if</span> ~isempty(top)
+0250     findings = findings(1:min(top,height(findings)),:);
+0251 <span class="keyword">end</span>
+0252 <span class="keyword">end</span>
+0253 
+0254 <a name="_sub1" href="#_subfunctions" class="code">function key = reuseKey(kcat)</a>
+0255 <span class="keyword">if</span> kcat &gt; 0
+0256     key = sprintf(<span class="string">'%.9f'</span>, round(log(kcat),9));
+0257 <span class="keyword">else</span>
+0258     key = <span class="string">'NONE'</span>;
+0259 <span class="keyword">end</span>
+0260 <span class="keyword">end</span>
+0261 
+0262 <a name="_sub2" href="#_subfunctions" class="code">function ec = firstEc(ecCode)</a>
+0263 parts = strsplit(char(ecCode), <span class="string">';'</span>);
+0264 ec = strtrim(parts{1});
+0265 <span class="keyword">end</span>
+0266 
+0267 <a name="_sub3" href="#_subfunctions" class="code">function base = baseReactionLocal(rxnId)</a>
+0268 <span class="comment">% Same one-line split as isozymeTieMap's local baseReaction. Kept as a</span>
+0269 <span class="comment">% local duplicate rather than exported from isozymeTieMap.m, since</span>
+0270 <span class="comment">% MATLAB only exposes a file's first function to other files and this is</span>
+0271 <span class="comment">% its only caller here.</span>
+0272 parts = strsplit(rxnId, <span class="string">'_EXP_'</span>);
+0273 base = parts{1};
+0274 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>
