@@ -5,9 +5,7 @@ function [objective,rmse,rmseDetail,ecModel] = evotuneScore(ecModel,evoData,vara
 % tunePriorPenaltyWeight to score one ecModel (with a given set of kcats
 % already applied via applyKcatConstraints) against the experimental
 % growth and flux data. Fuses what geckopy splits into simulate.py (the
-% FBA half) and distance.py (the RMSE half) into one function, matching
-% this module's own predecessor abc_max.m -- there is no MATLAB test
-% suite here to benefit from Python's testability-driven split.
+% FBA half) and distance.py (the RMSE half) into one function.
 %
 % Parameters
 % ----------
@@ -114,7 +112,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [rmse, rmseList] = simulateCondition(ecModel,data,constrain,rxn2block,modelAdapter)
 % One condition's FBA simulation + carbon-weighted RMSE against measured
-% data. Ported from abc_max.m's rmsecal.
+% data.
 
 rmseList = zeros(length(data.conds),1);
 
