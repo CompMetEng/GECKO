@@ -133,13 +133,14 @@ if isfield(model,'subSystems') && ~all(cellfun(@isempty, model.subSystems))
     end
     % Map ec-rxns to model.rxns
     [~,rxnIdx]  = ismember(modRxns,model.rxns);
-    % Choose first subSystem
-    enzSubSystems = flattenCell(model.subSystems(rxnIdx));
-    enzSubSystems = enzSubSystems(:,1);
+    % Choose first subSystem ('' when a reaction has none)
+    enzSubSystems = cellfun(@firstSubSystem, model.subSystems(rxnIdx), 'UniformOutput', false);
     if ~all(cellfun(@isempty, enzSubSystems))
 
-    % Make list of unique subsystems, and which rxns are linked to them
-    [enzSubSystem_names, ~, rxnToSub] = unique(enzSubSystems);
+    % Make list of unique subsystems, and which rxns are linked to them.
+    % Names that differ only in letter case are one subSystem.
+    [~, firstOccurrence, rxnToSub] = unique(lower(enzSubSystems));
+    enzSubSystem_names = enzSubSystems(firstOccurrence);
     % Calculate the median kcat per subSystem, counting only reactions
     % with a real (nonzero, non-NaN) kcat toward both the median itself
     % and the threshold that decides whether a subSystem-specific value
@@ -289,8 +290,9 @@ for i = 1:numel(rxnsMissingGPR)
         % all(), is the right test -- all() only ever succeeds when the model
         % has exactly one subSystem in total, silently falling back to the
         % model-wide standardKcat for every reaction otherwise.
-        kcatSubSystemIdx = strcmpi(enzSubSystem_names, model.subSystems{rxnIdx}(1));
-        if any(kcatSubSystemIdx)
+        rxnSubSystem = firstSubSystem(model.subSystems{rxnIdx});
+        kcatSubSystemIdx = strcmpi(enzSubSystem_names, rxnSubSystem);
+        if ~isempty(rxnSubSystem) && any(kcatSubSystemIdx)
             model.ec.kcat(end+1) = kcatSubSystem(kcatSubSystemIdx);
         else
             model.ec.kcat(end+1) = standardKcat;
@@ -319,39 +321,14 @@ else
 end
 end
 
-function Cflat = flattenCell(C,strFlag)
-%FLATTENCELL  Flatten a nested column cell array into a matrix cell array.
-%
-% CFLAT = FLATTENCELL(C) takes a column cell array in which one or more
-% entries is a nested cell array, and flattens it into a 2D matrix cell
-% array, where the nested entries are spread across new columns.
-%
-% CFLAT = FLATTENCELL(C,STRFLAG) if STRFLAG is TRUE, empty entries in the
-% resulting CFLAT will be replaced with empty strings {''}. Default = FALSE
-if nargin < 2
-    strFlag = false;
-end
-
-% determine which entries are cells
-cells = cellfun(@iscell,C);
-
-% determine number of elements in each nested cell
-cellsizes = cellfun(@numel,C);
-cellsizes(~cells) = 1;  % ignore non-cell entries
-
-% flatten single-entry cells
-Cflat = C;
-Cflat(cells & (cellsizes == 1)) = cellfun(@(x) x{1},Cflat(cells & (cellsizes == 1)),'UniformOutput',false);
-
-% iterate through multi-entry cells
-multiCells = find(cellsizes > 1);
-for i = 1:length(multiCells)
-    cellContents = Cflat{multiCells(i)};
-    Cflat(multiCells(i),1:length(cellContents)) = cellContents;
-end
-
-% change empty elements to strings, if specified
-if ( strFlag )
-    Cflat(cellfun(@isempty,Cflat)) = {''};
+function name = firstSubSystem(subSystems)
+% First subSystem of a reaction as a character vector; '' when the reaction
+% has none.
+if ischar(subSystems)
+    name = subSystems;
+elseif iscell(subSystems) && ~isempty(subSystems) && ischar(subSystems{1})
+    name = subSystems{1};
+else
+    name = '';
 end
 end

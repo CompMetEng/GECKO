@@ -50,7 +50,11 @@ genesToRemove  = setdiff(bigEcModel.genes,smallGEM.genes);
 if ismember('standard', genesToRemove)
     genesToRemove(strcmp(genesToRemove, 'standard')) = [];
 end
-smallEcModel = removeGenes(bigEcModel,genesToRemove,true,true,false);
+if isempty(genesToRemove)
+    smallEcModel = bigEcModel;
+else
+    smallEcModel = removeGenes(bigEcModel,genesToRemove,true,true,false);
+end
 
 % Remove genes from ec-structure
 enzToRemove = ismember(smallEcModel.ec.genes,genesToRemove);
@@ -68,7 +72,13 @@ keepRxns = ismember(trimRxns,smallGEM.rxns) | protRxns;
 smallEcModel = removeReactions(smallEcModel,~keepRxns, true, true, true);
 
 % Remove reactions from ec-structure
-ecRxnsToRemove = ~ismember(smallEcModel.ec.rxns,smallEcModel.rxns);
+% The reaction identifiers of a light ecModel carry a 4 character prefix
+if smallEcModel.ec.geckoLight
+    ecModelRxns = extractAfter(smallEcModel.ec.rxns,4);
+else
+    ecModelRxns = smallEcModel.ec.rxns;
+end
+ecRxnsToRemove = ~ismember(ecModelRxns,smallEcModel.rxns);
 
 smallEcModel.ec.rxns(ecRxnsToRemove)        = [];
 smallEcModel.ec.kcat(ecRxnsToRemove)        = [];

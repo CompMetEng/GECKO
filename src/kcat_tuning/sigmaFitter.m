@@ -95,7 +95,14 @@ for i=1:100
     error     = num2str(((growthRate-solution.x(objPos))/growthRate)*100);
     sigParam  = [sigParam; sigma];
 end
-[~, minIndx] = min(errors);
+% Growth that is flat from some sigma on (a target above what the model can
+% reach) is returned by the solver with rounding noise. The smallest sigma
+% whose growth is within 1e-9 (relative) of the best growth is chosen, so the
+% result is the start of the plateau on every solver. The tolerance is
+% expressed on the percent error.
+[minError, minIndx] = min(errors);
+errTol    = 1e-9*100*abs(objValues(minIndx))/abs(growthRate);
+minIndx   = find(errors <= minError + errTol, 1);
 sigma     = sigParam(minIndx);
 % The loop above leaves the protein pool sized for the *last* sigma tried
 % (i=100, i.e. sigma=1), not the best-fitting one found by the search --
