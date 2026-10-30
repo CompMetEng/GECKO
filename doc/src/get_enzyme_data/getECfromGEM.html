@@ -1,0 +1,179 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of getECfromGEM</title>
+  <meta name="keywords" content="getECfromGEM">
+  <meta name="description" content="getECfromGEM  Populate model.ec.eccodes from the model.eccodes field.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">get_enzyme_data</a> &gt; getECfromGEM.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/get_enzyme_data&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>getECfromGEM
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>getECfromGEM  Populate model.ec.eccodes from the model.eccodes field.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function [model, invalidEC, invalidECpos] = getECfromGEM(model, varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> getECfromGEM  Populate model.ec.eccodes from the model.eccodes field.
+
+ Uses the model.eccodes to populate the model.ec.eccodes field. EC numbers
+ must be formatted as four numbers separated by periods, possibly with
+ trailing wildcards; incorrectly formatted EC numbers are skipped.
+
+ Parameters
+ ----------
+ model : struct
+     an ecModel in GECKO 3 format (with ecModel.ec structure).
+
+ Name-Value Arguments
+ --------------------
+ ecRxns : logical
+     of length model.ec.rxns that specifies for which reactions the
+     existing model.ec.eccodes entry should be kept and not modified by
+     this function (by default all model.ec.eccodes entries are populated
+     by this function).
+
+ Returns
+ -------
+ model : struct
+     ecModel with populated model.ec.eccodes.
+ invalidEC : cell
+     incorrectly formatted EC numbers.
+ invalidECpos : double
+     position of invalidEC in model.eccodes.
+
+ Notes
+ -----
+ Valid EC numbers are e.g. 1.2.3.4 or 1.2.3.-, while invalid EC numbers are
+ 1.2.3 or 1_2_3_4. Multiple EC numbers are separated by ; for instance
+ 1.2.3.4;1.2.3.5 not 1.2.3.4|1.2.3.5.
+
+ Examples
+ --------
+     % optional arguments may be given positionally or as name-value pairs:
+     [model, invalidEC, invalidECpos] = getECfromGEM(model, ecRxns);
+     [model, invalidEC, invalidECpos] = getECfromGEM(model, 'ecRxns', ecRxns);
+
+ See also
+ --------
+ <a href="getECfromDatabase.html" class="code" title="function model = getECfromDatabase(model, varargin)">getECfromDatabase</a>, <a href="applyECcodes.html" class="code" title="function ecModel = applyECcodes(ecModel, varargin)">applyECcodes</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [model, invalidEC, invalidECpos] = getECfromGEM(model, varargin)</a>
+0002 <span class="comment">% getECfromGEM  Populate model.ec.eccodes from the model.eccodes field.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Uses the model.eccodes to populate the model.ec.eccodes field. EC numbers</span>
+0005 <span class="comment">% must be formatted as four numbers separated by periods, possibly with</span>
+0006 <span class="comment">% trailing wildcards; incorrectly formatted EC numbers are skipped.</span>
+0007 <span class="comment">%</span>
+0008 <span class="comment">% Parameters</span>
+0009 <span class="comment">% ----------</span>
+0010 <span class="comment">% model : struct</span>
+0011 <span class="comment">%     an ecModel in GECKO 3 format (with ecModel.ec structure).</span>
+0012 <span class="comment">%</span>
+0013 <span class="comment">% Name-Value Arguments</span>
+0014 <span class="comment">% --------------------</span>
+0015 <span class="comment">% ecRxns : logical</span>
+0016 <span class="comment">%     of length model.ec.rxns that specifies for which reactions the</span>
+0017 <span class="comment">%     existing model.ec.eccodes entry should be kept and not modified by</span>
+0018 <span class="comment">%     this function (by default all model.ec.eccodes entries are populated</span>
+0019 <span class="comment">%     by this function).</span>
+0020 <span class="comment">%</span>
+0021 <span class="comment">% Returns</span>
+0022 <span class="comment">% -------</span>
+0023 <span class="comment">% model : struct</span>
+0024 <span class="comment">%     ecModel with populated model.ec.eccodes.</span>
+0025 <span class="comment">% invalidEC : cell</span>
+0026 <span class="comment">%     incorrectly formatted EC numbers.</span>
+0027 <span class="comment">% invalidECpos : double</span>
+0028 <span class="comment">%     position of invalidEC in model.eccodes.</span>
+0029 <span class="comment">%</span>
+0030 <span class="comment">% Notes</span>
+0031 <span class="comment">% -----</span>
+0032 <span class="comment">% Valid EC numbers are e.g. 1.2.3.4 or 1.2.3.-, while invalid EC numbers are</span>
+0033 <span class="comment">% 1.2.3 or 1_2_3_4. Multiple EC numbers are separated by ; for instance</span>
+0034 <span class="comment">% 1.2.3.4;1.2.3.5 not 1.2.3.4|1.2.3.5.</span>
+0035 <span class="comment">%</span>
+0036 <span class="comment">% Examples</span>
+0037 <span class="comment">% --------</span>
+0038 <span class="comment">%     % optional arguments may be given positionally or as name-value pairs:</span>
+0039 <span class="comment">%     [model, invalidEC, invalidECpos] = getECfromGEM(model, ecRxns);</span>
+0040 <span class="comment">%     [model, invalidEC, invalidECpos] = getECfromGEM(model, 'ecRxns', ecRxns);</span>
+0041 <span class="comment">%</span>
+0042 <span class="comment">% See also</span>
+0043 <span class="comment">% --------</span>
+0044 <span class="comment">% getECfromDatabase, applyECcodes</span>
+0045 
+0046 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0047     <span class="string">'ecRxns'</span>, []});
+0048 ecRxns = p.ecRxns;
+0049 
+0050 <span class="keyword">if</span> ~isfield(model,<span class="string">'eccodes'</span>)
+0051     error(<span class="string">'The model has no model.eccodes field.'</span>)
+0052 <span class="keyword">end</span>
+0053 
+0054 <span class="comment">%Need to remove the prefix of GECKO light rxn names in the ec structure</span>
+0055 <span class="keyword">if</span> ~model.ec.geckoLight
+0056     rxnNames = model.ec.rxns;
+0057 <span class="keyword">else</span>
+0058     rxnNames = extractAfter(model.ec.rxns, 4);
+0059 <span class="keyword">end</span>
+0060 
+0061 [~,rxnIdxs] = ismember(rxnNames,model.rxns);
+0062 
+0063 <span class="comment">% Check if eccodes are valid. Each of the four dot-separated components must</span>
+0064 <span class="comment">% be either a run of digits or the wildcard '-'; \w (the previous class) also</span>
+0065 <span class="comment">% matches letters and underscores, so malformed codes such as '1.1.1.n12' or</span>
+0066 <span class="comment">% '1_2_3_4' were incorrectly accepted.</span>
+0067 eccodes = model.eccodes;
+0068 invalidEC = regexprep(eccodes,<span class="string">'(\d+\.(\d+|-)\.(\d+|-)\.(\d+|-))(;\d+\.(\d+|-)\.(\d+|-)\.(\d+|-))*(.*)'</span>,<span class="string">'$3'</span>);
+0069 invalidEC = ~cellfun(@isempty,invalidEC);
+0070 invalidECpos = find(invalidEC);
+0071 <span class="keyword">if</span> any(invalidECpos)
+0072     invalidEC = model.eccodes(invalidEC);
+0073     <span class="keyword">if</span> nargout&lt;2
+0074         fprintf(<span class="string">'Skipped incorrectly formatted EC numbers, rerun getECfromGEM with all outputs to get a list.\n'</span>)
+0075     <span class="keyword">else</span>
+0076         fprintf(<span class="string">'Skipped incorrectly formatted EC numbers.\n'</span>)
+0077     <span class="keyword">end</span>
+0078     eccodes(invalidECpos)={<span class="string">''</span>};
+0079 <span class="keyword">else</span>
+0080     invalidEC = [];
+0081 <span class="keyword">end</span>
+0082 <span class="keyword">if</span> isempty(ecRxns) || all(ecRxns)
+0083     model.ec.eccodes = eccodes(rxnIdxs);
+0084 <span class="keyword">else</span>
+0085     <span class="keyword">if</span> ~isfield(model.ec,<span class="string">'eccodes'</span>)
+0086         model.ec.eccodes(1:numel(model.ec.rxns),1) = {<span class="string">''</span>};
+0087     <span class="keyword">end</span>
+0088     model.ec.eccodes(ecRxns) = eccodes(rxnIdxs(ecRxns));
+0089 <span class="keyword">end</span>
+0090 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

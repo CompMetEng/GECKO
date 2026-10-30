@@ -1,0 +1,244 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of kcatAssignmentConfig</title>
+  <meta name="keywords" content="kcatAssignmentConfig">
+  <meta name="description" content="kcatAssignmentConfig  The kcat assignment settings of a model adapter.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">gather_kcats</a> &gt; kcatAssignmentConfig.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/gather_kcats&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>kcatAssignmentConfig
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>kcatAssignmentConfig  The kcat assignment settings of a model adapter.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function config = kcatAssignmentConfig(params) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> kcatAssignmentConfig  The kcat assignment settings of a model adapter.
+
+ Reads [kcat_assignment] and [kcat_sources.*] of model_adapter.toml (or
+ params.kcat_assignment and params.kcat_sources of an adapter class), and
+ expands a preset into its stages, as collectKcats and updateKcatSources
+ use them. Without a preset or stages the preset is brenda_ec_tree.
+ geckopy's kcat_assignment_config gives the same settings.
+
+ Parameters
+ ----------
+ params : struct
+     the parameters of a model adapter (modelAdapter.params).
+
+ Returns
+ -------
+ config : struct
+     - preset: the preset name, or '' when stages are given;
+     - isozymes, standard: logical;
+     - stages: struct array with action ('select' or 'combine'), sources
+       (cell, as given), files (the source files they read, with okp
+       replaced by the files of its methods), criteria, topOriginLimit,
+       bottomOriginLimit and wildcardLimit;
+     - okpMethods: the OKP methods of the okp source group ([kcat_sources.okp]
+       methods; default all methods with combination parameters);
+     - sources: per source name its options (from [kcat_sources] and the
+       preset).
+
+ Examples
+ --------
+     config = kcatAssignmentConfig(modelAdapter.params);
+     config.stages(1).sources   % the order of the sources
+
+ See also
+ --------
+ <a href="collectKcats.html" class="code" title="function [decisions, report, ecModel] = collectKcats(model, varargin)">collectKcats</a>, <a href="assignKcats.html" class="code" title="function [model, decisions, report] = assignKcats(model, varargin)">assignKcats</a>, <a href="updateKcatSources.html" class="code" title="function report = updateKcatSources(model, varargin)">updateKcatSources</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="collectKcats.html" class="code" title="function [decisions, report, ecModel] = collectKcats(model, varargin)">collectKcats</a>	collectKcats  Decide one kcat per reaction from the kcat source files.</li><li><a href="updateKcatSources.html" class="code" title="function report = updateKcatSources(model, varargin)">updateKcatSources</a>	updateKcatSources  Gather the kcat sources that the configuration needs.</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function [stages, sources] = presetStages(preset)</a></li><li><a href="#_sub2" class="code">function stage = readStage(s)</a></li><li><a href="#_sub3" class="code">function v = getOr(s, field, default)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function config = kcatAssignmentConfig(params)</a>
+0002 <span class="comment">% kcatAssignmentConfig  The kcat assignment settings of a model adapter.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Reads [kcat_assignment] and [kcat_sources.*] of model_adapter.toml (or</span>
+0005 <span class="comment">% params.kcat_assignment and params.kcat_sources of an adapter class), and</span>
+0006 <span class="comment">% expands a preset into its stages, as collectKcats and updateKcatSources</span>
+0007 <span class="comment">% use them. Without a preset or stages the preset is brenda_ec_tree.</span>
+0008 <span class="comment">% geckopy's kcat_assignment_config gives the same settings.</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% Parameters</span>
+0011 <span class="comment">% ----------</span>
+0012 <span class="comment">% params : struct</span>
+0013 <span class="comment">%     the parameters of a model adapter (modelAdapter.params).</span>
+0014 <span class="comment">%</span>
+0015 <span class="comment">% Returns</span>
+0016 <span class="comment">% -------</span>
+0017 <span class="comment">% config : struct</span>
+0018 <span class="comment">%     - preset: the preset name, or '' when stages are given;</span>
+0019 <span class="comment">%     - isozymes, standard: logical;</span>
+0020 <span class="comment">%     - stages: struct array with action ('select' or 'combine'), sources</span>
+0021 <span class="comment">%       (cell, as given), files (the source files they read, with okp</span>
+0022 <span class="comment">%       replaced by the files of its methods), criteria, topOriginLimit,</span>
+0023 <span class="comment">%       bottomOriginLimit and wildcardLimit;</span>
+0024 <span class="comment">%     - okpMethods: the OKP methods of the okp source group ([kcat_sources.okp]</span>
+0025 <span class="comment">%       methods; default all methods with combination parameters);</span>
+0026 <span class="comment">%     - sources: per source name its options (from [kcat_sources] and the</span>
+0027 <span class="comment">%       preset).</span>
+0028 <span class="comment">%</span>
+0029 <span class="comment">% Examples</span>
+0030 <span class="comment">% --------</span>
+0031 <span class="comment">%     config = kcatAssignmentConfig(modelAdapter.params);</span>
+0032 <span class="comment">%     config.stages(1).sources   % the order of the sources</span>
+0033 <span class="comment">%</span>
+0034 <span class="comment">% See also</span>
+0035 <span class="comment">% --------</span>
+0036 <span class="comment">% collectKcats, assignKcats, updateKcatSources</span>
+0037 
+0038 a = struct();
+0039 <span class="keyword">if</span> isfield(params, <span class="string">'kcat_assignment'</span>) &amp;&amp; isstruct(params.kcat_assignment)
+0040     a = params.kcat_assignment;
+0041 <span class="keyword">end</span>
+0042 config.preset = <span class="string">''</span>;
+0043 config.isozymes = <a href="#_sub3" class="code" title="subfunction v = getOr(s, field, default)">getOr</a>(a, <span class="string">'isozymes'</span>, true);
+0044 config.standard = <a href="#_sub3" class="code" title="subfunction v = getOr(s, field, default)">getOr</a>(a, <span class="string">'standard'</span>, true);
+0045 config.sources = struct();
+0046 hasPreset = isfield(a, <span class="string">'preset'</span>) &amp;&amp; ~isempty(a.preset);
+0047 hasStages = isfield(a, <span class="string">'stage'</span>) &amp;&amp; ~isempty(a.stage);
+0048 <span class="keyword">if</span> hasPreset &amp;&amp; hasStages
+0049     error(<span class="string">'kcatAssignment:config'</span>, [<span class="string">'[kcat_assignment] gives both a preset and stages; '</span> <span class="keyword">...</span>
+0050         <span class="string">'give one of the two.'</span>])
+0051 <span class="keyword">end</span>
+0052 <span class="keyword">if</span> hasStages
+0053     config.stages = arrayfun(@<a href="#_sub2" class="code" title="subfunction stage = readStage(s)">readStage</a>, a.stage(:)');
+0054 <span class="keyword">else</span>
+0055     preset = <span class="string">'brenda_ec_tree'</span>;
+0056     <span class="keyword">if</span> hasPreset
+0057         preset = char(a.preset);
+0058     <span class="keyword">end</span>
+0059     [config.stages, config.sources] = <a href="#_sub1" class="code" title="subfunction [stages, sources] = presetStages(preset)">presetStages</a>(preset);
+0060     config.preset = preset;
+0061 <span class="keyword">end</span>
+0062 <span class="keyword">if</span> isfield(params, <span class="string">'kcat_sources'</span>) &amp;&amp; isstruct(params.kcat_sources)
+0063     names = fieldnames(params.kcat_sources);
+0064     <span class="keyword">for</span> k = 1:numel(names)
+0065         config.sources.(names{k}) = params.kcat_sources.(names{k});
+0066     <span class="keyword">end</span>
+0067 <span class="keyword">end</span>
+0068 <span class="comment">% The okp group: the OKP methods of [kcat_sources.okp] methods.</span>
+0069 known = {<span class="string">'CataPro'</span>,<span class="string">'CatPred'</span>,<span class="string">'CatRange'</span>,<span class="string">'DLKcat'</span>,<span class="string">'EITLEM'</span>,<span class="string">'KinForm-H'</span>,<span class="string">'KinForm-L'</span>, <span class="keyword">...</span>
+0070     <span class="string">'OmniESI'</span>,<span class="string">'OmniESI-O2DENet'</span>,<span class="string">'TurNup'</span>,<span class="string">'UniKP'</span>};
+0071 <span class="comment">% The default: methods that read enzyme-substrate pairs and have combination</span>
+0072 <span class="comment">% parameters (CatRange predicts classes; CatPred and TurNup read whole</span>
+0073 <span class="comment">% reactions, which kcatsFromOKP does not submit).</span>
+0074 config.okpMethods = known(~ismember(known, {<span class="string">'CatRange'</span>, <span class="string">'CatPred'</span>, <span class="string">'TurNup'</span>}));
+0075 <span class="keyword">if</span> isfield(config.sources, <span class="string">'okp'</span>) &amp;&amp; isfield(config.sources.okp, <span class="string">'methods'</span>) &amp;&amp; ~isempty(config.sources.okp.methods)
+0076     config.okpMethods = cellstr(config.sources.okp.methods);
+0077     config.okpMethods = config.okpMethods(:)';
+0078 <span class="keyword">end</span>
+0079 unknown = setdiff(config.okpMethods, known);
+0080 <span class="keyword">if</span> ~isempty(unknown)
+0081     error(<span class="string">'kcatAssignment:config'</span>, <span class="string">'Unknown OKP methods in [kcat_sources.okp] methods: %s; methods: %s.'</span>, <span class="keyword">...</span>
+0082         strjoin(unknown, <span class="string">', '</span>), strjoin(known, <span class="string">', '</span>))
+0083 <span class="keyword">end</span>
+0084 okpFiles = cellfun(@(m) [<span class="string">'okp_'</span> lower(regexprep(regexprep(m, <span class="string">'[^A-Za-z0-9]+'</span>, <span class="string">'_'</span>), <span class="string">'^_+|_+$'</span>, <span class="string">''</span>))], <span class="keyword">...</span>
+0085     config.okpMethods, <span class="string">'UniformOutput'</span>, false);
+0086 <span class="keyword">for</span> s = 1:numel(config.stages)
+0087     files = {};
+0088     <span class="keyword">for</span> t = config.stages(s).sources
+0089         <span class="keyword">if</span> strcmp(t{1}, <span class="string">'okp'</span>)
+0090             files = [files, okpFiles]; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0091         <span class="keyword">else</span>
+0092             files{end+1} = t{1}; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0093         <span class="keyword">end</span>
+0094     <span class="keyword">end</span>
+0095     [~, first] = unique(files, <span class="string">'stable'</span>);
+0096     config.stages(s).files = files(sort(first));
+0097 <span class="keyword">end</span>
+0098 <span class="keyword">end</span>
+0099 
+0100 <a name="_sub1" href="#_subfunctions" class="code">function [stages, sources] = presetStages(preset)</a>
+0101 <span class="comment">% The presets of kcat assignment; geckopy defines the same.</span>
+0102 stage = @(action, srcs, top) struct(<span class="string">'action'</span>, action, <span class="string">'sources'</span>, {srcs}, <span class="string">'criteria'</span>, <span class="string">'max'</span>, <span class="keyword">...</span>
+0103     <span class="string">'topOriginLimit'</span>, top, <span class="string">'bottomOriginLimit'</span>, 6, <span class="string">'wildcardLimit'</span>, 3);
+0104 order = {<span class="string">'custom'</span>, <span class="string">'database_top'</span>, <span class="string">'dlkcat'</span>, <span class="string">'database_bottom'</span>};
+0105 own = {<span class="string">'custom'</span>, <span class="string">'database_top'</span>}; <span class="comment">% with topOriginLimit 1: the organism's own BRENDA value</span>
+0106 sources = struct();
+0107 <span class="keyword">switch</span> preset
+0108     <span class="keyword">case</span> <span class="string">'brenda_ec_tree'</span>
+0109         stages = [stage(<span class="string">'select'</span>, [own, {<span class="string">'ec_tree'</span>}], 1), stage(<span class="string">'combine'</span>, {<span class="string">'okp'</span>}, 4)];
+0110         sources.brenda = struct(<span class="string">'aggregation'</span>, <span class="string">'median'</span>);
+0111         sources.ec_tree = struct(<span class="string">'k'</span>, 5);
+0112     <span class="keyword">case</span> <span class="string">'ec_tree_homologs'</span>
+0113         stages = [stage(<span class="string">'select'</span>, own, 1), stage(<span class="string">'combine'</span>, {<span class="string">'ec_tree'</span>, <span class="string">'homologs'</span>}, 4), <span class="keyword">...</span>
+0114             stage(<span class="string">'combine'</span>, {<span class="string">'okp'</span>}, 4)];
+0115         sources.brenda = struct(<span class="string">'aggregation'</span>, <span class="string">'median'</span>);
+0116         sources.ec_tree = struct(<span class="string">'k'</span>, 5);
+0117     <span class="keyword">case</span> <span class="string">'ec_tree_okp'</span>
+0118         stages = [stage(<span class="string">'select'</span>, own, 1), stage(<span class="string">'combine'</span>, {<span class="string">'ec_tree'</span>, <span class="string">'homologs'</span>, <span class="string">'okp'</span>}, 4), <span class="keyword">...</span>
+0119             stage(<span class="string">'combine'</span>, {<span class="string">'okp'</span>}, 4)];
+0120         sources.brenda = struct(<span class="string">'aggregation'</span>, <span class="string">'median'</span>);
+0121         sources.ec_tree = struct(<span class="string">'k'</span>, 5);
+0122     <span class="keyword">case</span> <span class="string">'okp'</span>
+0123         stages = [stage(<span class="string">'select'</span>, {<span class="string">'custom'</span>}, 4), stage(<span class="string">'combine'</span>, {<span class="string">'okp'</span>}, 4)];
+0124     <span class="keyword">case</span> <span class="string">'gecko_median'</span>
+0125         stages = stage(<span class="string">'select'</span>, order, 4);
+0126         sources.brenda = struct(<span class="string">'aggregation'</span>, <span class="string">'median'</span>);
+0127     <span class="keyword">case</span> <span class="string">'gecko_classic'</span>
+0128         stages = stage(<span class="string">'select'</span>, order, 6);
+0129         sources.brenda = struct(<span class="string">'aggregation'</span>, <span class="string">'max'</span>);
+0130     <span class="keyword">otherwise</span>
+0131         error(<span class="string">'kcatAssignment:config'</span>, <span class="string">'Unknown kcat assignment preset &quot;%s&quot;. Presets: %s.'</span>, <span class="keyword">...</span>
+0132             preset, <span class="string">'brenda_ec_tree, ec_tree_homologs, ec_tree_okp, okp, gecko_median, gecko_classic'</span>)
+0133 <span class="keyword">end</span>
+0134 <span class="keyword">end</span>
+0135 
+0136 <a name="_sub2" href="#_subfunctions" class="code">function stage = readStage(s)</a>
+0137 stage.action = <a href="#_sub3" class="code" title="subfunction v = getOr(s, field, default)">getOr</a>(s, <span class="string">'action'</span>, <span class="string">'select'</span>);
+0138 <span class="keyword">if</span> ~any(strcmp(stage.action, {<span class="string">'select'</span>, <span class="string">'combine'</span>}))
+0139     error(<span class="string">'kcatAssignment:config'</span>, [<span class="string">'Unknown stage action &quot;%s&quot;; this GECKO version knows '</span> <span class="keyword">...</span>
+0140         <span class="string">'&quot;select&quot; and &quot;combine&quot;.'</span>], stage.action)
+0141 <span class="keyword">end</span>
+0142 sources = <a href="#_sub3" class="code" title="subfunction v = getOr(s, field, default)">getOr</a>(s, <span class="string">'sources'</span>, {});
+0143 <span class="keyword">if</span> ischar(sources)
+0144     sources = {sources};
+0145 <span class="keyword">end</span>
+0146 <span class="keyword">if</span> isempty(sources)
+0147     error(<span class="string">'kcatAssignment:config'</span>, <span class="string">'A [[kcat_assignment.stage]] needs sources.'</span>)
+0148 <span class="keyword">end</span>
+0149 stage.sources = sources(:)';
+0150 stage.criteria = validatestring(<a href="#_sub3" class="code" title="subfunction v = getOr(s, field, default)">getOr</a>(s, <span class="string">'criteria'</span>, <span class="string">'max'</span>), {<span class="string">'max'</span>,<span class="string">'min'</span>,<span class="string">'median'</span>,<span class="string">'mean'</span>});
+0151 stage.topOriginLimit = <a href="#_sub3" class="code" title="subfunction v = getOr(s, field, default)">getOr</a>(s, <span class="string">'top_origin_limit'</span>, 4);
+0152 stage.bottomOriginLimit = <a href="#_sub3" class="code" title="subfunction v = getOr(s, field, default)">getOr</a>(s, <span class="string">'bottom_origin_limit'</span>, 6);
+0153 stage.wildcardLimit = <a href="#_sub3" class="code" title="subfunction v = getOr(s, field, default)">getOr</a>(s, <span class="string">'wildcard_limit'</span>, 3);
+0154 <span class="keyword">end</span>
+0155 
+0156 <a name="_sub3" href="#_subfunctions" class="code">function v = getOr(s, field, default)</a>
+0157 v = default;
+0158 <span class="keyword">if</span> isstruct(s) &amp;&amp; isfield(s, field) &amp;&amp; ~isempty(s.(field))
+0159     v = s.(field);
+0160 <span class="keyword">end</span>
+0161 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

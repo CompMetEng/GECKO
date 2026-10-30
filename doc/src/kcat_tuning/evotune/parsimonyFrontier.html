@@ -1,0 +1,163 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of parsimonyFrontier</title>
+  <meta name="keywords" content="parsimonyFrontier">
+  <meta name="description" content="parsimonyFrontier  Score kcat with progressively more of it reverted to">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="../index.html">kcat_tuning</a> &gt; <a href="index.html">evotune</a> &gt; parsimonyFrontier.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../../index.html"><img alt="<" border="0" src="../../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/kcat_tuning/evotune&nbsp;<img alt=">" border="0" src="../../../right.png"></a></td></tr></table>-->
+
+<h1>parsimonyFrontier
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+<div class="box"><strong>parsimonyFrontier  Score kcat with progressively more of it reverted to</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+<div class="box"><strong>function points = parsimonyFrontier(scoreFcn,kcat,kcat0,sigma0log,varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> parsimonyFrontier  Score kcat with progressively more of it reverted to
+ prior.
+
+ A tuned kcat vector that fits well by rewriting every parameter is not
+ a useful answer: changes should be few, and concentrated in the
+ parameters least confident about. This sweeps a revert-threshold (in
+ units of each kcat's own prior sigma) and reports how RMSE trades off
+ against how many kcats stayed at their tuned value, so a sparser
+ result within noise of the best fit can be preferred over the raw
+ tuner output. See bestParsimonious to pick a point off this frontier.
+
+ Parameters
+ ----------
+ scoreFcn : function_handle
+     scores one kcat vector; called once per threshold. Build it against
+     a specific ecModel/evoData, e.g.
+         scoreFcn = @(vec) evotuneScoreVector(ecModel,tunableIdx, ...
+             ecRxnIdsTunable,evoData,modelAdapter,params,vec);
+     where evotuneScoreVector applies vec to ecModel.ec.kcat(tunableIdx),
+     calls applyKcatConstraints, and returns evotuneScore's plain rmse.
+ kcat, kcat0, sigma0log : double
+     tuned vector, prior vector, and per-kcat prior sigma, all the same
+     length.
+
+ Name-Value Arguments
+ --------------------
+ thresholds : double
+     sigma cutoffs to sweep, ascending (default
+     [0 1 2 3 4 6 8 10 15]). 0 reverts nothing, reproducing kcat's own
+     score.
+
+ Returns
+ -------
+ points : struct array
+     one entry per threshold, in the order given: threshold, kcat (the
+     partially-reverted vector), nChanged, meanDev (mean movement in
+     sigma units), rmse.
+
+ See also
+ --------
+ <a href="bestParsimonious.html" class="code" title="function point = bestParsimonious(points,varargin)">bestParsimonious</a>, <a href="nChanged.html" class="code" title="function n = nChanged(kcat,kcat0,varargin)">nChanged</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../../matlabicon.gif)">
+<li><a href="nChanged.html" class="code" title="function n = nChanged(kcat,kcat0,varargin)">nChanged</a>	nChanged  How many kcats differ from their prior by more than relTol.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../../../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+<ul style="list-style-image:url(../../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function dev = movementInSigma(kcat,kcat0,sigma0log)</a></li><li><a href="#_sub2" class="code">function vec = revertBelow(kcat,kcat0,sigma0log,threshold)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function points = parsimonyFrontier(scoreFcn,kcat,kcat0,sigma0log,varargin)</a>
+0002 <span class="comment">% parsimonyFrontier  Score kcat with progressively more of it reverted to</span>
+0003 <span class="comment">% prior.</span>
+0004 <span class="comment">%</span>
+0005 <span class="comment">% A tuned kcat vector that fits well by rewriting every parameter is not</span>
+0006 <span class="comment">% a useful answer: changes should be few, and concentrated in the</span>
+0007 <span class="comment">% parameters least confident about. This sweeps a revert-threshold (in</span>
+0008 <span class="comment">% units of each kcat's own prior sigma) and reports how RMSE trades off</span>
+0009 <span class="comment">% against how many kcats stayed at their tuned value, so a sparser</span>
+0010 <span class="comment">% result within noise of the best fit can be preferred over the raw</span>
+0011 <span class="comment">% tuner output. See bestParsimonious to pick a point off this frontier.</span>
+0012 <span class="comment">%</span>
+0013 <span class="comment">% Parameters</span>
+0014 <span class="comment">% ----------</span>
+0015 <span class="comment">% scoreFcn : function_handle</span>
+0016 <span class="comment">%     scores one kcat vector; called once per threshold. Build it against</span>
+0017 <span class="comment">%     a specific ecModel/evoData, e.g.</span>
+0018 <span class="comment">%         scoreFcn = @(vec) evotuneScoreVector(ecModel,tunableIdx, ...</span>
+0019 <span class="comment">%             ecRxnIdsTunable,evoData,modelAdapter,params,vec);</span>
+0020 <span class="comment">%     where evotuneScoreVector applies vec to ecModel.ec.kcat(tunableIdx),</span>
+0021 <span class="comment">%     calls applyKcatConstraints, and returns evotuneScore's plain rmse.</span>
+0022 <span class="comment">% kcat, kcat0, sigma0log : double</span>
+0023 <span class="comment">%     tuned vector, prior vector, and per-kcat prior sigma, all the same</span>
+0024 <span class="comment">%     length.</span>
+0025 <span class="comment">%</span>
+0026 <span class="comment">% Name-Value Arguments</span>
+0027 <span class="comment">% --------------------</span>
+0028 <span class="comment">% thresholds : double</span>
+0029 <span class="comment">%     sigma cutoffs to sweep, ascending (default</span>
+0030 <span class="comment">%     [0 1 2 3 4 6 8 10 15]). 0 reverts nothing, reproducing kcat's own</span>
+0031 <span class="comment">%     score.</span>
+0032 <span class="comment">%</span>
+0033 <span class="comment">% Returns</span>
+0034 <span class="comment">% -------</span>
+0035 <span class="comment">% points : struct array</span>
+0036 <span class="comment">%     one entry per threshold, in the order given: threshold, kcat (the</span>
+0037 <span class="comment">%     partially-reverted vector), nChanged, meanDev (mean movement in</span>
+0038 <span class="comment">%     sigma units), rmse.</span>
+0039 <span class="comment">%</span>
+0040 <span class="comment">% See also</span>
+0041 <span class="comment">% --------</span>
+0042 <span class="comment">% bestParsimonious, nChanged</span>
+0043 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0044     <span class="string">'thresholds'</span>, [0 1 2 3 4 6 8 10 15]});
+0045 thresholds = p.thresholds;
+0046 
+0047 kcat0     = kcat0(:);
+0048 sigma0log = sigma0log(:);
+0049 kcat      = kcat(:);
+0050 
+0051 points = repmat(struct(<span class="string">'threshold'</span>,[],<span class="string">'kcat'</span>,[],<span class="string">'nChanged'</span>,[],<span class="string">'meanDev'</span>,[],<span class="string">'rmse'</span>,[]), <span class="keyword">...</span>
+0052     numel(thresholds), 1);
+0053 <span class="keyword">for</span> t = 1:numel(thresholds)
+0054     thr = thresholds(t);
+0055     vec = <a href="#_sub2" class="code" title="subfunction vec = revertBelow(kcat,kcat0,sigma0log,threshold)">revertBelow</a>(kcat,kcat0,sigma0log,thr);
+0056     points(t).threshold = thr;
+0057     points(t).kcat       = vec;
+0058     points(t).nChanged   = <a href="nChanged.html" class="code" title="function n = nChanged(kcat,kcat0,varargin)">nChanged</a>(vec,kcat0);
+0059     points(t).meanDev    = mean(<a href="#_sub1" class="code" title="subfunction dev = movementInSigma(kcat,kcat0,sigma0log)">movementInSigma</a>(vec,kcat0,sigma0log));
+0060     points(t).rmse       = scoreFcn(vec);
+0061 <span class="keyword">end</span>
+0062 <span class="keyword">end</span>
+0063 
+0064 <a name="_sub1" href="#_subfunctions" class="code">function dev = movementInSigma(kcat,kcat0,sigma0log)</a>
+0065 <span class="comment">% Per-kcat displacement from the prior, in prior standard deviations.</span>
+0066 dev = abs(log(kcat ./ kcat0)) ./ sigma0log;
+0067 <span class="keyword">end</span>
+0068 
+0069 <a name="_sub2" href="#_subfunctions" class="code">function vec = revertBelow(kcat,kcat0,sigma0log,threshold)</a>
+0070 <span class="comment">% Put every kcat that moved less than threshold sigma back on its prior.</span>
+0071 keep = <a href="#_sub1" class="code" title="subfunction dev = movementInSigma(kcat,kcat0,sigma0log)">movementInSigma</a>(kcat,kcat0,sigma0log) &gt;= threshold;
+0072 vec = kcat0;
+0073 vec(keep) = kcat(keep);
+0074 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

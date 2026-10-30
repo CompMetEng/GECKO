@@ -1,0 +1,457 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of ecFSEOF</title>
+  <meta name="keywords" content="ecFSEOF">
+  <meta name="description" content="ecFSEOF  Run Flux-Scanning with Enforced Objective Function for a target.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">flux_analysis</a> &gt; ecFSEOF.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/flux_analysis&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>ecFSEOF
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>ecFSEOF  Run Flux-Scanning with Enforced Objective Function for a target.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function fseof = ecFSEOF(model,prodTargetRxn,csRxn,varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> ecFSEOF  Run Flux-Scanning with Enforced Objective Function for a target.
+
+ Runs Flux-Scanning with Enforced Objective Function (FSEOF) for a
+ specified production target, to identify reaction and gene targets for
+ metabolic engineering. Reactions are classified as targets with the same
+ rule as RAVEN's FSEOF: the correlation between the absolute flux of a
+ reaction and the enforced production flux.
+
+ Parameters
+ ----------
+ model : struct
+     an ecModel in GECKO 3 format (with ecModel.ec structure).
+ prodTargetRxn : char
+     rxn ID for the production target reaction, an exchange reaction is
+     recommended.
+ csRxn : char
+     rxn ID for the main carbon source uptake reaction.
+
+ Name-Value Arguments
+ --------------------
+ nSteps : double
+     number of steps for suboptimal objective in FSEOF (default 16).
+ outputFile : logical
+     boolean option to save results in a file (default false).
+ filePath : char
+     file path for results output. It will store two files: at the genes
+     level, ecFSEOF_genes.tsv; and at the reactions level,
+     ecFSEOF_rxns.tsv (default: the 'output' sub-folder taken from
+     modelAdapter, e.g. output/ecFSEOF_rxns.tsv).
+ modelAdapter : ModelAdapter
+     a loaded model adapter (default: the current default model adapter).
+ corrThreshold : double
+     minimum absolute Pearson correlation between the absolute flux of a
+     reaction and the enforced production flux for the reaction to be a
+     target (default 0.9).
+
+ Returns
+ -------
+ fseof : struct
+     a structure with all results.
+
+ Notes
+ -----
+ The fseof structure has the following fields:
+
+ - alpha : target production used for enforced objective limits (from minimum to maximum production).
+ - v_matrix : fluxes for each target reaction predicted and each alpha.
+ - rxnTargets : a list with all reactions whose absolute flux is correlated with the enforced production, with an absolute correlation of at least corrThreshold. Contains ID, name, slope, gene rule, and equation. The slope is the absolute slope of the regression of the absolute flux on the enforced production flux. The list is ordered by the product of slope and correlation, highest first.
+ - transportTargets : the same for transport reactions.
+ - geneTargets : a list with all genes of the targets. Contains gene, shortName, slope, action, and essentiality.
+
+ Only reactions with a gene rule are considered, and not those that are
+ assigned to the standard enzyme. The enforced production reaction is
+ included when it has a gene rule, as its flux follows the enforced
+ production by definition. The reactions that draw enzyme usage
+ (usage_prot_*) take part in the classification and are not reported.
+ A reaction is over expressed (OE) when its flux increases with production,
+ knocked out (KO) when it decreases and is at most 1e-8 at the last step,
+ and knocked down (KD) when it decreases otherwise.
+
+ Examples
+ --------
+     % optional arguments may be given positionally or as name-value pairs:
+     fseof = ecFSEOF(model,prodTargetRxn,csRxn,nSteps,outputFile,filePath,modelAdapter,corrThreshold);
+     fseof = ecFSEOF(model,prodTargetRxn,csRxn,'nSteps',32);</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function fseof = ecFSEOF(model,prodTargetRxn,csRxn,varargin)</a>
+0002 <span class="comment">% ecFSEOF  Run Flux-Scanning with Enforced Objective Function for a target.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Runs Flux-Scanning with Enforced Objective Function (FSEOF) for a</span>
+0005 <span class="comment">% specified production target, to identify reaction and gene targets for</span>
+0006 <span class="comment">% metabolic engineering. Reactions are classified as targets with the same</span>
+0007 <span class="comment">% rule as RAVEN's FSEOF: the correlation between the absolute flux of a</span>
+0008 <span class="comment">% reaction and the enforced production flux.</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% Parameters</span>
+0011 <span class="comment">% ----------</span>
+0012 <span class="comment">% model : struct</span>
+0013 <span class="comment">%     an ecModel in GECKO 3 format (with ecModel.ec structure).</span>
+0014 <span class="comment">% prodTargetRxn : char</span>
+0015 <span class="comment">%     rxn ID for the production target reaction, an exchange reaction is</span>
+0016 <span class="comment">%     recommended.</span>
+0017 <span class="comment">% csRxn : char</span>
+0018 <span class="comment">%     rxn ID for the main carbon source uptake reaction.</span>
+0019 <span class="comment">%</span>
+0020 <span class="comment">% Name-Value Arguments</span>
+0021 <span class="comment">% --------------------</span>
+0022 <span class="comment">% nSteps : double</span>
+0023 <span class="comment">%     number of steps for suboptimal objective in FSEOF (default 16).</span>
+0024 <span class="comment">% outputFile : logical</span>
+0025 <span class="comment">%     boolean option to save results in a file (default false).</span>
+0026 <span class="comment">% filePath : char</span>
+0027 <span class="comment">%     file path for results output. It will store two files: at the genes</span>
+0028 <span class="comment">%     level, ecFSEOF_genes.tsv; and at the reactions level,</span>
+0029 <span class="comment">%     ecFSEOF_rxns.tsv (default: the 'output' sub-folder taken from</span>
+0030 <span class="comment">%     modelAdapter, e.g. output/ecFSEOF_rxns.tsv).</span>
+0031 <span class="comment">% modelAdapter : ModelAdapter</span>
+0032 <span class="comment">%     a loaded model adapter (default: the current default model adapter).</span>
+0033 <span class="comment">% corrThreshold : double</span>
+0034 <span class="comment">%     minimum absolute Pearson correlation between the absolute flux of a</span>
+0035 <span class="comment">%     reaction and the enforced production flux for the reaction to be a</span>
+0036 <span class="comment">%     target (default 0.9).</span>
+0037 <span class="comment">%</span>
+0038 <span class="comment">% Returns</span>
+0039 <span class="comment">% -------</span>
+0040 <span class="comment">% fseof : struct</span>
+0041 <span class="comment">%     a structure with all results.</span>
+0042 <span class="comment">%</span>
+0043 <span class="comment">% Notes</span>
+0044 <span class="comment">% -----</span>
+0045 <span class="comment">% The fseof structure has the following fields:</span>
+0046 <span class="comment">%</span>
+0047 <span class="comment">% - alpha : target production used for enforced objective limits (from minimum to maximum production).</span>
+0048 <span class="comment">% - v_matrix : fluxes for each target reaction predicted and each alpha.</span>
+0049 <span class="comment">% - rxnTargets : a list with all reactions whose absolute flux is correlated with the enforced production, with an absolute correlation of at least corrThreshold. Contains ID, name, slope, gene rule, and equation. The slope is the absolute slope of the regression of the absolute flux on the enforced production flux. The list is ordered by the product of slope and correlation, highest first.</span>
+0050 <span class="comment">% - transportTargets : the same for transport reactions.</span>
+0051 <span class="comment">% - geneTargets : a list with all genes of the targets. Contains gene, shortName, slope, action, and essentiality.</span>
+0052 <span class="comment">%</span>
+0053 <span class="comment">% Only reactions with a gene rule are considered, and not those that are</span>
+0054 <span class="comment">% assigned to the standard enzyme. The enforced production reaction is</span>
+0055 <span class="comment">% included when it has a gene rule, as its flux follows the enforced</span>
+0056 <span class="comment">% production by definition. The reactions that draw enzyme usage</span>
+0057 <span class="comment">% (usage_prot_*) take part in the classification and are not reported.</span>
+0058 <span class="comment">% A reaction is over expressed (OE) when its flux increases with production,</span>
+0059 <span class="comment">% knocked out (KO) when it decreases and is at most 1e-8 at the last step,</span>
+0060 <span class="comment">% and knocked down (KD) when it decreases otherwise.</span>
+0061 <span class="comment">%</span>
+0062 <span class="comment">% Examples</span>
+0063 <span class="comment">% --------</span>
+0064 <span class="comment">%     % optional arguments may be given positionally or as name-value pairs:</span>
+0065 <span class="comment">%     fseof = ecFSEOF(model,prodTargetRxn,csRxn,nSteps,outputFile,filePath,modelAdapter,corrThreshold);</span>
+0066 <span class="comment">%     fseof = ecFSEOF(model,prodTargetRxn,csRxn,'nSteps',32);</span>
+0067 
+0068 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0069     <span class="string">'nSteps'</span>,       16; <span class="keyword">...</span>
+0070     <span class="string">'outputFile'</span>,   false; <span class="keyword">...</span>
+0071     <span class="string">'filePath'</span>,     []; <span class="keyword">...</span>
+0072     <span class="string">'modelAdapter'</span>, []; <span class="keyword">...</span>
+0073     <span class="string">'corrThreshold'</span>,0.9});
+0074 nSteps       = p.nSteps;
+0075 outputFile   = p.outputFile;
+0076 filePath     = p.filePath;
+0077 modelAdapter  = p.modelAdapter;
+0078 corrThreshold = p.corrThreshold;
+0079 
+0080 <span class="keyword">if</span> isempty(modelAdapter)
+0081     modelAdapter = ModelAdapterManager.getDefault();
+0082     <span class="keyword">if</span> isempty(modelAdapter)
+0083         error(<span class="string">'Either send in a modelAdapter or set the default model adapter in the ModelAdapterManager.'</span>)
+0084     <span class="keyword">end</span>
+0085 <span class="keyword">end</span>
+0086 params = modelAdapter.getParameters();
+0087 
+0088 <span class="keyword">if</span> isempty(filePath)
+0089     filePath = fullfile(params.path,<span class="string">'output'</span>);
+0090 <span class="keyword">end</span>
+0091 
+0092 <span class="comment">% Get relevant rxn indexes</span>
+0093 prodTargetRxnIdx = getIndexes(model, prodTargetRxn,<span class="string">'rxns'</span>);
+0094 csRxnIdx         = getIndexes(model, csRxn,<span class="string">'rxns'</span>);
+0095 bioRxnIdx        = getIndexes(model, params.bioRxn,<span class="string">'rxns'</span>);
+0096 
+0097 <span class="comment">% Standardize grRules and rxnGeneMat in model</span>
+0098 [grRules,rxnGeneMat] = standardizeGrRules(model,true);
+0099 model.grRules        = grRules;
+0100 model.rxnGeneMat     = rxnGeneMat;
+0101 
+0102 <span class="comment">% Check carbon source uptake rate and LB defined</span>
+0103 model = setParam(model, <span class="string">'obj'</span>, params.bioRxn, 1);
+0104 sol   = solveLP(model);
+0105 <span class="keyword">if</span> model.lb(csRxnIdx) &lt; sol.x(csRxnIdx)
+0106     printOrange([<span class="string">'WARNING: Carbon source lower bound was set to '</span> num2str(model.lb(csRxnIdx)) <span class="keyword">...</span>
+0107         <span class="string">', but the uptake rate after model optimization is '</span> num2str(sol.x(csRxnIdx)) <span class="string">'.\n'</span>]);
+0108 <span class="keyword">end</span>
+0109 
+0110 <span class="comment">% run FSEOF analysis</span>
+0111 
+0112 <span class="comment">% Find out the initial target production.</span>
+0113 iniTarget = sol.x(prodTargetRxnIdx);
+0114 
+0115 <span class="comment">% Find out the maximum theoretical yield of target reaction.</span>
+0116 model     = setParam(model,<span class="string">'obj'</span>,prodTargetRxn,1);
+0117 sol       = solveLP(model,1);
+0118 <span class="comment">% Set to 90%% based on https://doi.org/10.1128/AEM.00115-10</span>
+0119 maxTarget = sol.x(prodTargetRxnIdx) * 0.9;
+0120 
+0121 <span class="comment">% Define alpha vector for suboptimal enforced objective values between</span>
+0122 <span class="comment">% minimal production and 90%% of the maximum theoretical yield, initialize</span>
+0123 <span class="comment">% fluxes matriz</span>
+0124 alpha    = iniTarget:((maxTarget-iniTarget)/(nSteps-1)):maxTarget;
+0125 v_matrix = zeros(length(model.rxns),length(alpha));
+0126 
+0127 <span class="comment">% Enforce objective flux iteratively</span>
+0128 PB = progressReport(nSteps, <span class="string">'Flux Scanning with Enforced Objective Function'</span>);
+0129 <span class="keyword">for</span> i = 1:nSteps
+0130     PB.count;
+0131     <span class="comment">% Enforce the objetive flux of product formation</span>
+0132     model = setParam(model,<span class="string">'eq'</span>,prodTargetRxnIdx,alpha(i));
+0133 
+0134     <span class="comment">% Restore minimum biomass lb to zero and set it as objective</span>
+0135     model.lb(bioRxnIdx) = 0;
+0136     model = setParam(model,<span class="string">'obj'</span>,params.bioRxn,1);
+0137     sol   = solveLP(model,1);
+0138 
+0139     <span class="comment">% Store flux distribution</span>
+0140     v_matrix(:,i) = sol.x;
+0141 
+0142 <span class="keyword">end</span>
+0143 PB.done;
+0144 
+0145 <span class="comment">% Take out rxns with no grRule and standard gene</span>
+0146 withGR         = ~cellfun(@isempty,model.grRules);
+0147 stdIdx         = contains(model.grRules,<span class="string">'standard'</span>);
+0148 withGR(stdIdx) = 0;
+0149 target_rxns    = model.rxns(withGR);
+0150 v_matrix       = v_matrix(withGR,:);
+0151 rxnGeneM       = model.rxnGeneMat(withGR,:);
+0152 
+0153 <span class="comment">% Classify the reactions as in RAVEN's FSEOF. Slope and correlation are taken</span>
+0154 <span class="comment">% on the absolute flux against the enforced production flux, so a reversible</span>
+0155 <span class="comment">% reaction running backwards counts by its magnitude. A reaction is a target</span>
+0156 <span class="comment">% when some absolute flux exceeds 1e-10, the standard deviation of its</span>
+0157 <span class="comment">% absolute flux is above 0 and the absolute Pearson correlation reaches</span>
+0158 <span class="comment">% corrThreshold. It is suggested for over expression (OE) when the slope is</span>
+0159 <span class="comment">% positive, for knock out (KO) when the slope is negative and the absolute</span>
+0160 <span class="comment">% flux at the last step is at most 1e-8, and for knock down (KD) for any</span>
+0161 <span class="comment">% other negative slope.</span>
+0162 absV        = abs(v_matrix);
+0163 slope_rxns  = zeros(size(target_rxns));
+0164 corr_rxns   = zeros(size(target_rxns));
+0165 target_type = cell(size(target_rxns));
+0166 targets     = false(size(target_rxns));
+0167 <span class="keyword">if</span> numel(alpha) &gt; 1 &amp;&amp; std(alpha) &gt; 0
+0168     <span class="keyword">for</span> i = 1:length(target_rxns)
+0169         track = absV(i,:);
+0170         <span class="keyword">if</span> any(track &gt; 1e-10) &amp;&amp; std(track) &gt; 0
+0171             fit = polyfit(alpha,track,1);
+0172             r   = corrcoef(alpha,track);
+0173             <span class="keyword">if</span> abs(r(1,2)) &gt;= corrThreshold &amp;&amp; fit(1) ~= 0
+0174                 targets(i)     = true;
+0175                 slope_rxns(i)  = abs(fit(1));
+0176                 corr_rxns(i)   = abs(r(1,2));
+0177                 <span class="keyword">if</span> fit(1) &gt; 0
+0178                     target_type(i) = {<span class="string">'OE'</span>};
+0179                 <span class="keyword">elseif</span> track(end) &lt;= 1e-8
+0180                     target_type(i) = {<span class="string">'KO'</span>};
+0181                 <span class="keyword">else</span>
+0182                     target_type(i) = {<span class="string">'KD'</span>};
+0183                 <span class="keyword">end</span>
+0184             <span class="keyword">end</span>
+0185         <span class="keyword">end</span>
+0186     <span class="keyword">end</span>
+0187 <span class="keyword">end</span>
+0188 
+0189 <span class="comment">% Only keep those reactions that are classified as a target</span>
+0190 target_rxns = target_rxns(targets);
+0191 v_matrix    = v_matrix(targets,:);
+0192 rxnGeneM    = rxnGeneM(targets,:);
+0193 slope_rxns  = slope_rxns(targets);
+0194 corr_rxns   = corr_rxns(targets);
+0195 target_type = target_type(targets);
+0196 
+0197 <span class="comment">% Order from highest to lowest score, the product of slope and correlation</span>
+0198 [~,order]   = sort(slope_rxns .* corr_rxns,<span class="string">'descend'</span>);
+0199 target_rxns = target_rxns(order);
+0200 v_matrix    = v_matrix(order,:);
+0201 rxnGeneM    = rxnGeneM(order,:);
+0202 slope_rxns  = slope_rxns(order);
+0203 target_type = target_type(order);
+0204 
+0205 <span class="comment">% Exclude enzyme usage reactions: they are not reported, and they would otherwise</span>
+0206 <span class="comment">% enter the gene slopes and the choice of the action per gene</span>
+0207 notUsage    = ~startsWith(target_rxns,<span class="string">'usage_prot_'</span>);
+0208 target_rxns = target_rxns(notUsage);
+0209 v_matrix    = v_matrix(notUsage,:);
+0210 rxnGeneM    = rxnGeneM(notUsage,:);
+0211 slope_rxns  = slope_rxns(notUsage);
+0212 target_type = target_type(notUsage);
+0213 
+0214 <span class="comment">% Create gene list of those connected to the remaining rxns</span>
+0215 genes             = model.genes(sum(rxnGeneM,1) &gt; 0);
+0216 slope_genes       = zeros(size(genes));
+0217 rxnGeneM          = rxnGeneM(:,sum(rxnGeneM,1) &gt; 0);
+0218 target_type_genes = cell(size(genes));
+0219 essentiality      = cell(size(genes));
+0220 
+0221 <span class="comment">% Validate for gene essentiality</span>
+0222 PB = progressReport(numel(genes), <span class="string">'Checking for gene essentiality'</span>);
+0223 <span class="keyword">for</span> i = 1:numel(genes)
+0224     PB.count;
+0225 
+0226     <span class="comment">% Block protein usage to KO al the reactions associated to it.</span>
+0227     usage_rxn_idx = strcmpi(model.ec.genes, genes{i});
+0228     usage_rxn = strcat(<span class="string">'usage_prot_'</span>, model.ec.enzymes(usage_rxn_idx));
+0229     tempModel = setParam(model, <span class="string">'eq'</span>, usage_rxn, 0);
+0230     solKO     = solveLP(tempModel);
+0231     <span class="comment">% Check if no feasible solution was found</span>
+0232     <span class="keyword">if</span> solKO.stat == -1 || solKO.x(bioRxnIdx) &lt; 1e-8
+0233         essentiality(i) = {<span class="string">'essential'</span>};
+0234     <span class="keyword">end</span>
+0235 
+0236     <span class="comment">% Since a gene can be involved in multiple reactions, multiple</span>
+0237     <span class="comment">% engineering manipulations can be suggested for the same gene</span>
+0238     <span class="comment">% e.g. (OE and KD). So, reconcilie them, and report only one.</span>
+0239     
+0240     <span class="comment">% Get reaction index, in targets set, for each gene</span>
+0241     rxns_for_gene = find(rxnGeneM(:,i) &gt; 0);
+0242     actions = unique(target_type(rxns_for_gene));
+0243     <span class="keyword">if</span> numel(actions) &gt; 1
+0244         <span class="comment">% If any OE is suggested give the highest priority over KD or KO</span>
+0245         <span class="keyword">if</span> any(startsWith(actions, <span class="string">'OE'</span>))
+0246             target_type_genes(i) = {<span class="string">'OE'</span>};
+0247             <span class="comment">% Otherwise change to KO if not essential</span>
+0248         <span class="keyword">elseif</span> ~any(startsWith(actions, <span class="string">'OE'</span>)) &amp;&amp; ~isequal(essentiality(i),{<span class="string">'essential'</span>})
+0249             target_type_genes(i) = {<span class="string">'KO'</span>};
+0250         <span class="keyword">else</span>
+0251             target_type_genes(i) = {<span class="string">'KD'</span>};
+0252         <span class="keyword">end</span>
+0253     <span class="keyword">else</span>
+0254         target_type_genes(i) = actions;
+0255     <span class="keyword">end</span>
+0256     <span class="comment">% Extract all the slope (from rxns across alphas) conected to</span>
+0257     <span class="comment">% each remaining gene</span>
+0258     slope_set      = slope_rxns(rxns_for_gene);
+0259     slope_genes(i) = mean(slope_set);
+0260 
+0261 <span class="keyword">end</span>
+0262 PB.done;
+0263 
+0264 <span class="comment">% Order genes from highest to lowest slope:</span>
+0265 [~,order]         = sort(slope_genes,<span class="string">'descend'</span>);
+0266 genes             = genes(order,:);
+0267 slope_genes       = slope_genes(order,:);
+0268 target_type_genes = target_type_genes(order,:);
+0269 essentiality      = essentiality(order,:);
+0270 
+0271 <span class="comment">% Create output:</span>
+0272 
+0273 <span class="comment">% Report values used to enforce objective target production</span>
+0274 fseof.alpha = alpha;
+0275 
+0276 rxnIdx = getIndexes(model,target_rxns,<span class="string">'rxns'</span>);
+0277 
+0278 <span class="comment">% Report the fluxes at each alpha</span>
+0279 fseof.v_matrix = array2table(v_matrix, <span class="keyword">...</span>
+0280     <span class="string">'VariableNames'</span>, string(alpha), <span class="string">'RowNames'</span>, model.rxns(rxnIdx));
+0281 
+0282 <span class="comment">% Report reaction targets</span>
+0283 fseof.rxnTargets(:,1) = model.rxns(rxnIdx);
+0284 fseof.rxnTargets(:,2) = model.rxnNames(rxnIdx);
+0285 fseof.rxnTargets(:,3) = num2cell(slope_rxns);
+0286 fseof.rxnTargets(:,4) = model.grRules(rxnIdx);
+0287 <span class="keyword">if</span> isempty(rxnIdx)
+0288     fseof.rxnTargets(:,5) = cell(0,1); <span class="comment">% constructEquations would give all reactions</span>
+0289 <span class="keyword">else</span>
+0290     fseof.rxnTargets(:,5) = constructEquations(model,rxnIdx);
+0291 <span class="keyword">end</span>
+0292 
+0293 <span class="comment">% Identify transport reactions; defined as reactions involving (at least)</span>
+0294 <span class="comment">% one metabolite name in more than one compartment.</span>
+0295 transportRxns = false(numel(rxnIdx),1);
+0296 <span class="keyword">for</span> i = 1:numel(rxnIdx)
+0297     <span class="comment">% Get the involved metabolites in each reaction</span>
+0298     mets = model.metNames(model.S(:,rxnIdx(i))~=0);
+0299     <span class="comment">% Remove enzyme metabolite</span>
+0300     mets(startsWith(mets,<span class="string">'prot_'</span>)) = [];
+0301     <span class="comment">% Validate if it is a transport reaciton</span>
+0302     transportRxns(i) = numel(mets) ~= numel(unique(mets));
+0303 <span class="keyword">end</span>
+0304 
+0305 <span class="comment">% Create separate table for transport reactions</span>
+0306 fseof.transportTargets = fseof.rxnTargets(transportRxns,:);
+0307 fseof.rxnTargets(transportRxns,:) = [];
+0308 
+0309 <span class="comment">% Report gene targets</span>
+0310 geneIdx              = cellfun(@(x) find(strcmpi(model.genes,x)),genes);
+0311 fseof.geneTargets(:,1) = genes;
+0312 fseof.geneTargets(:,2) = model.geneShortNames(geneIdx);
+0313 fseof.geneTargets(:,3) = num2cell(slope_genes);
+0314 fseof.geneTargets(:,4) = target_type_genes;
+0315 fseof.geneTargets(:,5) = essentiality;
+0316 
+0317 <span class="comment">% Save results in a file if defined</span>
+0318 <span class="keyword">if</span> outputFile
+0319     <span class="comment">% Write file with gene targets</span>
+0320     writetable(cell2table(fseof.geneTargets, <span class="keyword">...</span>
+0321         <span class="string">'VariableNames'</span>, {<span class="string">'gene_IDs'</span> <span class="string">'gene_names'</span> <span class="string">'slope'</span> <span class="string">'action'</span> <span class="string">'essentiality'</span>}), <span class="keyword">...</span>
+0322         fullfile(filePath, <span class="string">'ecFSEOF_genes.tsv'</span>), <span class="keyword">...</span>
+0323         <span class="string">'FileType'</span>, <span class="string">'text'</span>, <span class="keyword">...</span>
+0324         <span class="string">'Delimiter'</span>, <span class="string">'\t'</span>, <span class="keyword">...</span>
+0325         <span class="string">'QuoteStrings'</span>, false);
+0326 
+0327     <span class="comment">% Write file with rxn targets</span>
+0328     writetable(cell2table(fseof.rxnTargets, <span class="keyword">...</span>
+0329         <span class="string">'VariableNames'</span>, {<span class="string">'rxn_IDs'</span> <span class="string">'rxnNames'</span> <span class="string">'slope'</span> <span class="string">'grRules'</span> <span class="string">'rxn_formula'</span>}), <span class="keyword">...</span>
+0330         fullfile(filePath, <span class="string">'ecFSEOF_rxns.tsv'</span>), <span class="keyword">...</span>
+0331         <span class="string">'FileType'</span>, <span class="string">'text'</span>, <span class="keyword">...</span>
+0332         <span class="string">'Delimiter'</span>, <span class="string">'\t'</span>, <span class="keyword">...</span>
+0333         <span class="string">'QuoteStrings'</span>, false);
+0334 
+0335     <span class="comment">% Write file with transport targets</span>
+0336     writetable(cell2table(fseof.transportTargets, <span class="keyword">...</span>
+0337         <span class="string">'VariableNames'</span>, {<span class="string">'rxn_IDs'</span> <span class="string">'rxnNames'</span> <span class="string">'slope'</span> <span class="string">'grRules'</span> <span class="string">'rxn_formula'</span>}), <span class="keyword">...</span>
+0338         fullfile(filePath, <span class="string">'ecFSEOF_transporter.tsv'</span>), <span class="keyword">...</span>
+0339         <span class="string">'FileType'</span>, <span class="string">'text'</span>, <span class="keyword">...</span>
+0340         <span class="string">'Delimiter'</span>, <span class="string">'\t'</span>, <span class="keyword">...</span>
+0341         <span class="string">'QuoteStrings'</span>, false);
+0342 
+0343     disp([<span class="string">'ecFSEOF results stored at: '</span> newline filePath]);
+0344 <span class="keyword">end</span>
+0345 
+0346 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

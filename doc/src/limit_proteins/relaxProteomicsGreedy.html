@@ -1,0 +1,262 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of relaxProteomicsGreedy</title>
+  <meta name="keywords" content="relaxProteomicsGreedy">
+  <meta name="description" content="relaxProteomicsGreedy  Greedy shadow-price-ordered relaxation of proteomics">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">limit_proteins</a> &gt; relaxProteomicsGreedy.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/limit_proteins&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>relaxProteomicsGreedy
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>relaxProteomicsGreedy  Greedy shadow-price-ordered relaxation of proteomics</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function result = relaxProteomicsGreedy(model, varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> relaxProteomicsGreedy  Greedy shadow-price-ordered relaxation of proteomics
+ constraints.
+
+ While growth is below minimalGrowth, finds the still-proteomics-constrained
+ enzyme (usage_prot_&lt;id&gt; upper bound below defaultUpperBound) with the
+ largest absolute shadow price on its prot_&lt;id&gt; mass-balance constraint,
+ fully relaxes it back to defaultUpperBound, re-solves, and repeats.
+
+ Parameters
+ ----------
+ model : struct
+     a full ecModel in GECKO 3 format, with some usage_prot_&lt;id&gt; reactions
+     constrained below defaultUpperBound (e.g. by constrainEnzConcs).
+
+ Name-Value Arguments
+ --------------------
+ minimalGrowth : double
+     target objective value. Required.
+ enzymeSet : cell
+     subset of uniprot ids eligible for relaxation (default: every
+     currently proteomics-constrained enzyme).
+ maxIterations : double
+     safety cap; errors if exceeded while eligible enzymes still remained
+     (default 100).
+ defaultUpperBound : double
+     value to restore on a relaxed usage reaction, matching the shared-pool
+     default makeEcModel itself sets (default 1000).
+
+ Returns
+ -------
+ result : struct
+     - relaxed : struct mapping each relaxed uniprot id to its original
+       model.ec.concs value, so the caller can restore it later.
+     - trace : struct array, one row per relaxation step, with fields
+       iteration (0-based), relaxedUniprot, growthBefore, growthAfter,
+       shadowPrice.
+     - finalGrowth : objective value when the loop stopped.
+     - converged : true iff finalGrowth &gt;= minimalGrowth.
+
+ Examples
+ --------
+     result = relaxProteomicsGreedy(ecModel, 'minimalGrowth', 0.1);
+
+ Notes
+ -----
+ Different relaxation strategy from flexibilizeEnzConcs: this one is
+ shadow-price-ordered (one solve per step) and often converges in fewer
+ iterations when one or two enzymes dominate the infeasibility. The
+ trade-off is that it fully unconstrains each picked enzyme with no
+ tighten-back pass, so the result is looser (less proteomics-faithful).
+
+ There are two distinct non-convergence outcomes: running out of
+ eligible candidates before reaching minimalGrowth returns normally with
+ converged=false; exhausting maxIterations while candidates still
+ remained raises an error instead.
+
+ See also
+ --------
+ <a href="flexibilizeEnzConcs.html" class="code" title="function [model, flexEnz] = flexibilizeEnzConcs(model, varargin)">flexibilizeEnzConcs</a>, getEnzymeBottlenecks</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function result = relaxProteomicsGreedy(model, varargin)</a>
+0002 <span class="comment">% relaxProteomicsGreedy  Greedy shadow-price-ordered relaxation of proteomics</span>
+0003 <span class="comment">% constraints.</span>
+0004 <span class="comment">%</span>
+0005 <span class="comment">% While growth is below minimalGrowth, finds the still-proteomics-constrained</span>
+0006 <span class="comment">% enzyme (usage_prot_&lt;id&gt; upper bound below defaultUpperBound) with the</span>
+0007 <span class="comment">% largest absolute shadow price on its prot_&lt;id&gt; mass-balance constraint,</span>
+0008 <span class="comment">% fully relaxes it back to defaultUpperBound, re-solves, and repeats.</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% Parameters</span>
+0011 <span class="comment">% ----------</span>
+0012 <span class="comment">% model : struct</span>
+0013 <span class="comment">%     a full ecModel in GECKO 3 format, with some usage_prot_&lt;id&gt; reactions</span>
+0014 <span class="comment">%     constrained below defaultUpperBound (e.g. by constrainEnzConcs).</span>
+0015 <span class="comment">%</span>
+0016 <span class="comment">% Name-Value Arguments</span>
+0017 <span class="comment">% --------------------</span>
+0018 <span class="comment">% minimalGrowth : double</span>
+0019 <span class="comment">%     target objective value. Required.</span>
+0020 <span class="comment">% enzymeSet : cell</span>
+0021 <span class="comment">%     subset of uniprot ids eligible for relaxation (default: every</span>
+0022 <span class="comment">%     currently proteomics-constrained enzyme).</span>
+0023 <span class="comment">% maxIterations : double</span>
+0024 <span class="comment">%     safety cap; errors if exceeded while eligible enzymes still remained</span>
+0025 <span class="comment">%     (default 100).</span>
+0026 <span class="comment">% defaultUpperBound : double</span>
+0027 <span class="comment">%     value to restore on a relaxed usage reaction, matching the shared-pool</span>
+0028 <span class="comment">%     default makeEcModel itself sets (default 1000).</span>
+0029 <span class="comment">%</span>
+0030 <span class="comment">% Returns</span>
+0031 <span class="comment">% -------</span>
+0032 <span class="comment">% result : struct</span>
+0033 <span class="comment">%     - relaxed : struct mapping each relaxed uniprot id to its original</span>
+0034 <span class="comment">%       model.ec.concs value, so the caller can restore it later.</span>
+0035 <span class="comment">%     - trace : struct array, one row per relaxation step, with fields</span>
+0036 <span class="comment">%       iteration (0-based), relaxedUniprot, growthBefore, growthAfter,</span>
+0037 <span class="comment">%       shadowPrice.</span>
+0038 <span class="comment">%     - finalGrowth : objective value when the loop stopped.</span>
+0039 <span class="comment">%     - converged : true iff finalGrowth &gt;= minimalGrowth.</span>
+0040 <span class="comment">%</span>
+0041 <span class="comment">% Examples</span>
+0042 <span class="comment">% --------</span>
+0043 <span class="comment">%     result = relaxProteomicsGreedy(ecModel, 'minimalGrowth', 0.1);</span>
+0044 <span class="comment">%</span>
+0045 <span class="comment">% Notes</span>
+0046 <span class="comment">% -----</span>
+0047 <span class="comment">% Different relaxation strategy from flexibilizeEnzConcs: this one is</span>
+0048 <span class="comment">% shadow-price-ordered (one solve per step) and often converges in fewer</span>
+0049 <span class="comment">% iterations when one or two enzymes dominate the infeasibility. The</span>
+0050 <span class="comment">% trade-off is that it fully unconstrains each picked enzyme with no</span>
+0051 <span class="comment">% tighten-back pass, so the result is looser (less proteomics-faithful).</span>
+0052 <span class="comment">%</span>
+0053 <span class="comment">% There are two distinct non-convergence outcomes: running out of</span>
+0054 <span class="comment">% eligible candidates before reaching minimalGrowth returns normally with</span>
+0055 <span class="comment">% converged=false; exhausting maxIterations while candidates still</span>
+0056 <span class="comment">% remained raises an error instead.</span>
+0057 <span class="comment">%</span>
+0058 <span class="comment">% See also</span>
+0059 <span class="comment">% --------</span>
+0060 <span class="comment">% flexibilizeEnzConcs, getEnzymeBottlenecks</span>
+0061 
+0062 p = parseGECKOargs(varargin, {<span class="string">'minimalGrowth'</span>, []; <span class="string">'enzymeSet'</span>, []; <span class="keyword">...</span>
+0063     <span class="string">'maxIterations'</span>, []; <span class="string">'defaultUpperBound'</span>, []});
+0064 minimalGrowth     = p.minimalGrowth;
+0065 enzymeSet         = p.enzymeSet;
+0066 maxIterations     = p.maxIterations;
+0067 defaultUpperBound = p.defaultUpperBound;
+0068 <span class="keyword">if</span> isempty(minimalGrowth)
+0069     error(<span class="string">'relaxProteomicsGreedy: minimalGrowth is required.'</span>)
+0070 <span class="keyword">end</span>
+0071 <span class="keyword">if</span> isempty(maxIterations)
+0072     maxIterations = 100;
+0073 <span class="keyword">end</span>
+0074 <span class="keyword">if</span> isempty(defaultUpperBound)
+0075     defaultUpperBound = 1000;
+0076 <span class="keyword">end</span>
+0077 
+0078 <span class="keyword">if</span> isfield(model.ec, <span class="string">'geckoLight'</span>) &amp;&amp; model.ec.geckoLight
+0079     error([<span class="string">'relaxProteomicsGreedy requires a full ecModel, not gecko-light: light models have no '</span> <span class="keyword">...</span>
+0080         <span class="string">'per-enzyme prot_&lt;id&gt; / usage_prot_&lt;id&gt; machinery.'</span>])
+0081 <span class="keyword">end</span>
+0082 
+0083 usageRxns = strcat(<span class="string">'usage_prot_'</span>, model.ec.enzymes);
+0084 [found, usageIdx] = ismember(usageRxns, model.rxns);
+0085 <span class="keyword">if</span> ~all(found)
+0086     error(<span class="string">'Usage reactions are not defined for all enzymes. This is done by makeEcModel.'</span>)
+0087 <span class="keyword">end</span>
+0088 protMets = strcat(<span class="string">'prot_'</span>, model.ec.enzymes);
+0089 [found, protMetIdx] = ismember(protMets, model.mets);
+0090 <span class="keyword">if</span> ~all(found)
+0091     error(<span class="string">'Cannot find prot_&lt;id&gt; metabolites for all enzymes. This is done by makeEcModel.'</span>)
+0092 <span class="keyword">end</span>
+0093 
+0094 <span class="keyword">if</span> isempty(enzymeSet)
+0095     pool = model.ec.enzymes;
+0096 <span class="keyword">else</span>
+0097     pool = intersect(enzymeSet(:), model.ec.enzymes, <span class="string">'stable'</span>);
+0098 <span class="keyword">end</span>
+0099 [~, poolIdx] = ismember(pool, model.ec.enzymes);
+0100 poolIdx = poolIdx(poolIdx &gt; 0);
+0101 candidates = poolIdx(model.ub(usageIdx(poolIdx)) &lt; defaultUpperBound);
+0102 
+0103 relaxed = struct();
+0104 trace = struct(<span class="string">'iteration'</span>, {}, <span class="string">'relaxedUniprot'</span>, {}, <span class="string">'growthBefore'</span>, {}, <span class="keyword">...</span>
+0105     <span class="string">'growthAfter'</span>, {}, <span class="string">'shadowPrice'</span>, {});
+0106 
+0107 sol = solveLP(model);
+0108 <span class="keyword">if</span> sol.stat == 1
+0109     growth = sol.f;
+0110 <span class="keyword">else</span>
+0111     growth = -inf;
+0112 <span class="keyword">end</span>
+0113 
+0114 <span class="keyword">for</span> it = 0:(maxIterations - 1)
+0115     <span class="keyword">if</span> growth &gt;= minimalGrowth
+0116         result.relaxed = relaxed;
+0117         result.trace = trace;
+0118         result.finalGrowth = growth;
+0119         result.converged = true;
+0120         <span class="keyword">return</span>
+0121     <span class="keyword">end</span>
+0122     <span class="keyword">if</span> isempty(candidates)
+0123         warning(<span class="string">'relaxProteomicsGreedy: no more candidates to relax; stopping.'</span>)
+0124         result.relaxed = relaxed;
+0125         result.trace = trace;
+0126         result.finalGrowth = growth;
+0127         result.converged = false;
+0128         <span class="keyword">return</span>
+0129     <span class="keyword">end</span>
+0130 
+0131     shadowPrices = abs(sol.sPrice(protMetIdx(candidates)));
+0132     [~, bestPos] = max(shadowPrices);
+0133     targetIdx = candidates(bestPos);
+0134     targetUniprot = model.ec.enzymes{targetIdx};
+0135     sp = sol.sPrice(protMetIdx(targetIdx));
+0136 
+0137     relaxed.(matlab.lang.makeValidName(targetUniprot)) = model.ec.concs(targetIdx);
+0138     model.ub(usageIdx(targetIdx)) = defaultUpperBound;
+0139     candidates(candidates == targetIdx) = [];
+0140 
+0141     newSol = solveLP(model);
+0142     <span class="keyword">if</span> newSol.stat == 1
+0143         newGrowth = newSol.f;
+0144     <span class="keyword">else</span>
+0145         newGrowth = -inf;
+0146     <span class="keyword">end</span>
+0147 
+0148     trace(end+1) = struct(<span class="string">'iteration'</span>, it, <span class="string">'relaxedUniprot'</span>, targetUniprot, <span class="keyword">...</span>
+0149         <span class="string">'growthBefore'</span>, growth, <span class="string">'growthAfter'</span>, newGrowth, <span class="string">'shadowPrice'</span>, sp); <span class="comment">%#ok&lt;AGROW&gt;</span>
+0150 
+0151     growth = newGrowth;
+0152     sol = newSol;
+0153 <span class="keyword">end</span>
+0154 
+0155 error(<span class="string">'relaxProteomicsGreedy: did not converge in %d iterations (final growth %.4g &lt; target %.4g).'</span>, <span class="keyword">...</span>
+0156     maxIterations, growth, minimalGrowth)
+0157 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

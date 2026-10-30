@@ -1,0 +1,489 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of loadKcatSource</title>
+  <meta name="keywords" content="loadKcatSource">
+  <meta name="description" content="loadKcatSource  Read a kcat source file and map its rows to an ecModel.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">gather_kcats</a> &gt; loadKcatSource.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/gather_kcats&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>loadKcatSource
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>loadKcatSource  Read a kcat source file and map its rows to an ecModel.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function [kcatList, report] = loadKcatSource(model, name, varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> loadKcatSource  Read a kcat source file and map its rows to an ecModel.
+
+ Reads data/kcats/&lt;name&gt;.tsv (see saveKcatSource) and maps every row to
+ the model.ec reactions it applies to, by conventional reaction and
+ enzyme set (see getEcRxnKeys):
+
+ 1. A row with rxn and enzymes applies to the model.ec rows with that
+    conventional reaction and that enzyme set.
+ 2. A row with only enzymes applies to every model.ec row with that
+    enzyme set; a row with only rxn to every model.ec row of that
+    conventional reaction (curated rows; saveKcatSource always writes
+    both).
+ 3. A row whose kcat is missing, not a number, infinite, or not above 0
+    is reported as invalid and not applied.
+ 4. A row that matches nothing is reported, never dropped silently. If a
+    model.ec row has at least half of the row's enzymes, that partial
+    match is reported as well, but not applied.
+
+ The enzymes of a row may be listed in any order.
+
+ The file is read as UTF-8 (a leading byte-order mark is ignored). The
+ '#' lines before the column header are the header; '#' lines and blank
+ lines further down are skipped. Fields wrapped in double quotes, as a
+ spreadsheet may save them, are unwrapped. kcat and log10_sd must be plain
+ numbers (12, 0.5, 1e-05); other text, such as '5,5' with a decimal comma,
+ is reported as invalid. A row with more filled fields than there are
+ columns is an error.
+
+ Parameters
+ ----------
+ model : struct
+     an ecModel in GECKO 3 format (with ecModel.ec structure).
+ name : char
+     name of the source (data/kcats/&lt;name&gt;.tsv in the project folder), or
+     the path to a kcat source file.
+
+ Name-Value Arguments
+ --------------------
+ modelAdapter : ModelAdapter
+     a loaded model adapter (default: the current default model adapter).
+
+ Returns
+ -------
+ kcatList : struct
+     kcat values per model.ec reaction, as used by mergeKcats and
+     assignKcatValues: source (the source name), rxns, kcats,
+     substrates, eccodes, wildcardLvl and origin (from the detail
+     column), kcatSource (the per-row source), log10sd, detail (the detail
+     column), and line (the line of the file each entry comes from).
+ report : struct
+     - invalid: table of the file rows with a missing or invalid kcat;
+     - unmatched: table of the file rows that apply to no model.ec row;
+     - partial: table of rows that only partly match an enzyme set, with
+       the model.ec reaction and its enzymes;
+     - header: the '#' header lines of the file, as field: value (for
+       instance header.source, header.parameters);
+     - records: the rows of the file as read, one field per column (kcat
+       and log10_sd as double, other columns as cell of char) and line,
+       the line number of each row.
+
+ Examples
+ --------
+     kcatList = loadKcatSource(ecModel, 'brenda');
+     [kcatList, report] = loadKcatSource(ecModel, 'custom');
+
+ See also
+ --------
+ <a href="saveKcatSource.html" class="code" title="function filename = saveKcatSource(model, kcatList, name, varargin)">saveKcatSource</a>, <a href="kcatsFromBrenda.html" class="code" title="function kcatList = kcatsFromBrenda(model, varargin)">kcatsFromBrenda</a>, <a href="getEcRxnKeys.html" class="code" title="function [baseRxns, enzymeSets] = getEcRxnKeys(model)">getEcRxnKeys</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="getEcRxnKeys.html" class="code" title="function [baseRxns, enzymeSets] = getEcRxnKeys(model)">getEcRxnKeys</a>	getEcRxnKeys  Build-independent keys of the model.ec reactions.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="collectKcats.html" class="code" title="function [decisions, report, ecModel] = collectKcats(model, varargin)">collectKcats</a>	collectKcats  Decide one kcat per reaction from the kcat source files.</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function map = groupIndex(keys, rows)</a></li><li><a href="#_sub2" class="code">function rows = lookup(map, key)</a></li><li><a href="#_sub3" class="code">function enz = normalizeEnzymes(enz)</a></li><li><a href="#_sub4" class="code">function [wc, origin] = parseDetail(detail)</a></li><li><a href="#_sub5" class="code">function [records, meta] = readSourceFile(filename)</a></li><li><a href="#_sub6" class="code">function text = readUtf8(filename)</a></li><li><a href="#_sub7" class="code">function x = parseKcatNumber(texts)</a></li><li><a href="#_sub8" class="code">function [key, value] = parseHeaderLine(line)</a></li><li><a href="#_sub9" class="code">function t = unquoteField(t)</a></li><li><a href="#_sub10" class="code">function checkOptions(args, names, functionName)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [kcatList, report] = loadKcatSource(model, name, varargin)</a>
+0002 <span class="comment">% loadKcatSource  Read a kcat source file and map its rows to an ecModel.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Reads data/kcats/&lt;name&gt;.tsv (see saveKcatSource) and maps every row to</span>
+0005 <span class="comment">% the model.ec reactions it applies to, by conventional reaction and</span>
+0006 <span class="comment">% enzyme set (see getEcRxnKeys):</span>
+0007 <span class="comment">%</span>
+0008 <span class="comment">% 1. A row with rxn and enzymes applies to the model.ec rows with that</span>
+0009 <span class="comment">%    conventional reaction and that enzyme set.</span>
+0010 <span class="comment">% 2. A row with only enzymes applies to every model.ec row with that</span>
+0011 <span class="comment">%    enzyme set; a row with only rxn to every model.ec row of that</span>
+0012 <span class="comment">%    conventional reaction (curated rows; saveKcatSource always writes</span>
+0013 <span class="comment">%    both).</span>
+0014 <span class="comment">% 3. A row whose kcat is missing, not a number, infinite, or not above 0</span>
+0015 <span class="comment">%    is reported as invalid and not applied.</span>
+0016 <span class="comment">% 4. A row that matches nothing is reported, never dropped silently. If a</span>
+0017 <span class="comment">%    model.ec row has at least half of the row's enzymes, that partial</span>
+0018 <span class="comment">%    match is reported as well, but not applied.</span>
+0019 <span class="comment">%</span>
+0020 <span class="comment">% The enzymes of a row may be listed in any order.</span>
+0021 <span class="comment">%</span>
+0022 <span class="comment">% The file is read as UTF-8 (a leading byte-order mark is ignored). The</span>
+0023 <span class="comment">% '#' lines before the column header are the header; '#' lines and blank</span>
+0024 <span class="comment">% lines further down are skipped. Fields wrapped in double quotes, as a</span>
+0025 <span class="comment">% spreadsheet may save them, are unwrapped. kcat and log10_sd must be plain</span>
+0026 <span class="comment">% numbers (12, 0.5, 1e-05); other text, such as '5,5' with a decimal comma,</span>
+0027 <span class="comment">% is reported as invalid. A row with more filled fields than there are</span>
+0028 <span class="comment">% columns is an error.</span>
+0029 <span class="comment">%</span>
+0030 <span class="comment">% Parameters</span>
+0031 <span class="comment">% ----------</span>
+0032 <span class="comment">% model : struct</span>
+0033 <span class="comment">%     an ecModel in GECKO 3 format (with ecModel.ec structure).</span>
+0034 <span class="comment">% name : char</span>
+0035 <span class="comment">%     name of the source (data/kcats/&lt;name&gt;.tsv in the project folder), or</span>
+0036 <span class="comment">%     the path to a kcat source file.</span>
+0037 <span class="comment">%</span>
+0038 <span class="comment">% Name-Value Arguments</span>
+0039 <span class="comment">% --------------------</span>
+0040 <span class="comment">% modelAdapter : ModelAdapter</span>
+0041 <span class="comment">%     a loaded model adapter (default: the current default model adapter).</span>
+0042 <span class="comment">%</span>
+0043 <span class="comment">% Returns</span>
+0044 <span class="comment">% -------</span>
+0045 <span class="comment">% kcatList : struct</span>
+0046 <span class="comment">%     kcat values per model.ec reaction, as used by mergeKcats and</span>
+0047 <span class="comment">%     assignKcatValues: source (the source name), rxns, kcats,</span>
+0048 <span class="comment">%     substrates, eccodes, wildcardLvl and origin (from the detail</span>
+0049 <span class="comment">%     column), kcatSource (the per-row source), log10sd, detail (the detail</span>
+0050 <span class="comment">%     column), and line (the line of the file each entry comes from).</span>
+0051 <span class="comment">% report : struct</span>
+0052 <span class="comment">%     - invalid: table of the file rows with a missing or invalid kcat;</span>
+0053 <span class="comment">%     - unmatched: table of the file rows that apply to no model.ec row;</span>
+0054 <span class="comment">%     - partial: table of rows that only partly match an enzyme set, with</span>
+0055 <span class="comment">%       the model.ec reaction and its enzymes;</span>
+0056 <span class="comment">%     - header: the '#' header lines of the file, as field: value (for</span>
+0057 <span class="comment">%       instance header.source, header.parameters);</span>
+0058 <span class="comment">%     - records: the rows of the file as read, one field per column (kcat</span>
+0059 <span class="comment">%       and log10_sd as double, other columns as cell of char) and line,</span>
+0060 <span class="comment">%       the line number of each row.</span>
+0061 <span class="comment">%</span>
+0062 <span class="comment">% Examples</span>
+0063 <span class="comment">% --------</span>
+0064 <span class="comment">%     kcatList = loadKcatSource(ecModel, 'brenda');</span>
+0065 <span class="comment">%     [kcatList, report] = loadKcatSource(ecModel, 'custom');</span>
+0066 <span class="comment">%</span>
+0067 <span class="comment">% See also</span>
+0068 <span class="comment">% --------</span>
+0069 <span class="comment">% saveKcatSource, kcatsFromBrenda, getEcRxnKeys</span>
+0070 
+0071 <a href="#_sub10" class="code" title="subfunction checkOptions(args, names, functionName)">checkOptions</a>(varargin, {<span class="string">'modelAdapter'</span>}, <span class="string">'loadKcatSource'</span>);
+0072 p = parseGECKOargs(varargin, {<span class="string">'modelAdapter'</span>, []});
+0073 
+0074 <span class="keyword">if</span> isfile(name)
+0075     filename = name;
+0076 <span class="keyword">else</span>
+0077     modelAdapter = p.modelAdapter;
+0078     <span class="keyword">if</span> isempty(modelAdapter)
+0079         modelAdapter = ModelAdapterManager.getDefault();
+0080         <span class="keyword">if</span> isempty(modelAdapter)
+0081             error(<span class="string">'Either send in a modelAdapter or set the default model adapter in the ModelAdapterManager.'</span>)
+0082         <span class="keyword">end</span>
+0083     <span class="keyword">end</span>
+0084     filename = fullfile(modelAdapter.params.path, <span class="string">'data'</span>, <span class="string">'kcats'</span>, [name <span class="string">'.tsv'</span>]);
+0085     <span class="keyword">if</span> ~isfile(filename)
+0086         error(<span class="string">'loadKcatSource:missing'</span>, [<span class="string">'No kcat source file %s. Make it with the '</span> <span class="keyword">...</span>
+0087             <span class="string">'kcatsFrom&lt;Source&gt; function of this source (kcatsFromBrenda, kcatsFromDLKcat, '</span> <span class="keyword">...</span>
+0088             <span class="string">'kcatsFromOKP), or with saveKcatSource.'</span>], filename)
+0089     <span class="keyword">end</span>
+0090 <span class="keyword">end</span>
+0091 [records, meta] = <a href="#_sub5" class="code" title="subfunction [records, meta] = readSourceFile(filename)">readSourceFile</a>(filename);
+0092 sourceName = <span class="string">''</span>;
+0093 <span class="keyword">if</span> isfield(meta, <span class="string">'source'</span>)
+0094     sourceName = meta.source;
+0095 <span class="keyword">end</span>
+0096 
+0097 [baseRxns, enzymeSets] = <a href="getEcRxnKeys.html" class="code" title="function [baseRxns, enzymeSets] = getEcRxnKeys(model)">getEcRxnKeys</a>(model);
+0098 nEc = numel(baseRxns);
+0099 nRec = numel(records.kcat);
+0100 
+0101 <span class="comment">% Lookup tables: key -&gt; model.ec rows.</span>
+0102 byPair = <a href="#_sub1" class="code" title="subfunction map = groupIndex(keys, rows)">groupIndex</a>(strcat(baseRxns, <span class="string">'|'</span>, enzymeSets));
+0103 byBase = <a href="#_sub1" class="code" title="subfunction map = groupIndex(keys, rows)">groupIndex</a>(baseRxns);
+0104 byEnz  = <a href="#_sub1" class="code" title="subfunction map = groupIndex(keys, rows)">groupIndex</a>(enzymeSets);
+0105 <span class="comment">% accession -&gt; model.ec rows containing it, for partial matches.</span>
+0106 accRows = cell(nEc, 1);
+0107 <span class="keyword">for</span> i = 1:nEc
+0108     <span class="keyword">if</span> ~isempty(enzymeSets{i})
+0109         accRows{i} = strsplit(enzymeSets{i}, <span class="string">' + '</span>);
+0110     <span class="keyword">end</span>
+0111 <span class="keyword">end</span>
+0112 accIdx = repelem((1:nEc)', cellfun(@numel, accRows));
+0113 byAcc = <a href="#_sub1" class="code" title="subfunction map = groupIndex(keys, rows)">groupIndex</a>([accRows{:}]', accIdx);
+0114 
+0115 invalid = ~(records.kcat &gt; 0) | ~isfinite(records.kcat);
+0116 matchRec = cell(nRec, 1);
+0117 matchEc  = cell(nRec, 1);
+0118 unmatched = false(nRec, 1);
+0119 partialRec = zeros(0, 1); partialEc = zeros(0, 1);
+0120 <span class="keyword">for</span> r = find(~invalid)'
+0121     rxn = records.rxn{r};
+0122     enz = <a href="#_sub3" class="code" title="subfunction enz = normalizeEnzymes(enz)">normalizeEnzymes</a>(records.enzymes{r});
+0123     <span class="keyword">if</span> ~isempty(rxn) &amp;&amp; ~isempty(enz)
+0124         hit = <a href="#_sub2" class="code" title="subfunction rows = lookup(map, key)">lookup</a>(byPair, [rxn <span class="string">'|'</span> enz]);
+0125     <span class="keyword">elseif</span> ~isempty(enz)
+0126         hit = <a href="#_sub2" class="code" title="subfunction rows = lookup(map, key)">lookup</a>(byEnz, enz);
+0127     <span class="keyword">elseif</span> ~isempty(rxn)
+0128         hit = <a href="#_sub2" class="code" title="subfunction rows = lookup(map, key)">lookup</a>(byBase, rxn);
+0129     <span class="keyword">else</span>
+0130         hit = [];
+0131     <span class="keyword">end</span>
+0132     <span class="keyword">if</span> isempty(hit)
+0133         unmatched(r) = true;
+0134         <span class="keyword">if</span> ~isempty(enz)
+0135             wanted = strsplit(enz, <span class="string">' + '</span>);
+0136             candidates = unique(cell2mat(cellfun(@(a) <a href="#_sub2" class="code" title="subfunction rows = lookup(map, key)">lookup</a>(byAcc, a), wanted(:), <span class="string">'UniformOutput'</span>, false)));
+0137             <span class="keyword">if</span> ~isempty(rxn)
+0138                 candidates = intersect(candidates, <a href="#_sub2" class="code" title="subfunction rows = lookup(map, key)">lookup</a>(byBase, rxn));
+0139             <span class="keyword">end</span>
+0140             <span class="keyword">for</span> c = candidates(:)'
+0141                 <span class="keyword">if</span> mean(ismember(wanted, accRows{c})) &gt;= 0.5
+0142                     partialRec(end+1, 1) = r; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0143                     partialEc(end+1, 1) = c; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0144                 <span class="keyword">end</span>
+0145             <span class="keyword">end</span>
+0146         <span class="keyword">end</span>
+0147     <span class="keyword">else</span>
+0148         matchRec{r} = repmat(r, numel(hit), 1);
+0149         matchEc{r} = hit(:);
+0150     <span class="keyword">end</span>
+0151 <span class="keyword">end</span>
+0152 rec = vertcat(matchRec{:}, zeros(0, 1));
+0153 ec  = vertcat(matchEc{:}, zeros(0, 1));
+0154 
+0155 kcatList.source      = sourceName;
+0156 kcatList.rxns        = reshape(model.ec.rxns(ec), [], 1);
+0157 kcatList.kcats       = records.kcat(rec);
+0158 kcatList.substrates  = records.substrate(rec);
+0159 kcatList.eccodes     = records.ec_code(rec);
+0160 kcatList.kcatSource  = records.source(rec);
+0161 kcatList.log10sd     = records.log10_sd(rec);
+0162 kcatList.detail      = records.detail(rec);
+0163 [kcatList.wildcardLvl, kcatList.origin] = <a href="#_sub4" class="code" title="subfunction [wc, origin] = parseDetail(detail)">parseDetail</a>(records.detail(rec));
+0164 kcatList.line        = records.line(rec);
+0165 
+0166 report.invalid = table(records.line(invalid), records.rxn(invalid), records.enzymes(invalid), <span class="keyword">...</span>
+0167     records.kcat(invalid), <span class="string">'VariableNames'</span>, {<span class="string">'line'</span>,<span class="string">'rxn'</span>,<span class="string">'enzymes'</span>,<span class="string">'kcat'</span>});
+0168 report.unmatched = table(records.line(unmatched), records.rxn(unmatched), records.enzymes(unmatched), <span class="keyword">...</span>
+0169     records.kcat(unmatched), <span class="string">'VariableNames'</span>, {<span class="string">'line'</span>,<span class="string">'rxn'</span>,<span class="string">'enzymes'</span>,<span class="string">'kcat'</span>});
+0170 report.partial = table(records.line(partialRec), records.rxn(partialRec), records.enzymes(partialRec), <span class="keyword">...</span>
+0171     reshape(model.ec.rxns(partialEc), [], 1), enzymeSets(partialEc), <span class="keyword">...</span>
+0172     <span class="string">'VariableNames'</span>, {<span class="string">'line'</span>,<span class="string">'rxn'</span>,<span class="string">'enzymes'</span>,<span class="string">'ecRxn'</span>,<span class="string">'ecEnzymes'</span>});
+0173 <span class="keyword">if</span> any(invalid)
+0174     printOrange(sprintf(<span class="string">'%d of %d rows of %s have no valid kcat; see report.invalid.\n'</span>, <span class="keyword">...</span>
+0175         sum(invalid), nRec, filename));
+0176 <span class="keyword">end</span>
+0177 <span class="keyword">if</span> any(unmatched)
+0178     printOrange(sprintf(<span class="string">'%d of %d rows of %s apply to no reaction of this model; see report.unmatched.\n'</span>, <span class="keyword">...</span>
+0179         sum(unmatched), nRec, filename));
+0180 <span class="keyword">end</span>
+0181 report.header = meta;
+0182 report.records = records;
+0183 <span class="keyword">end</span>
+0184 
+0185 <a name="_sub1" href="#_subfunctions" class="code">function map = groupIndex(keys, rows)</a>
+0186 <span class="comment">% containers.Map from each key to the rows (default 1:n) that have it.</span>
+0187 <span class="keyword">if</span> nargin &lt; 2
+0188     rows = (1:numel(keys))';
+0189 <span class="keyword">end</span>
+0190 map = containers.Map(<span class="string">'KeyType'</span>, <span class="string">'char'</span>, <span class="string">'ValueType'</span>, <span class="string">'any'</span>);
+0191 <span class="keyword">if</span> isempty(keys)
+0192     <span class="keyword">return</span>
+0193 <span class="keyword">end</span>
+0194 [u, ~, g] = unique(keys(:));
+0195 groups = accumarray(g, rows(:), [], @(x) {sort(x)});
+0196 <span class="keyword">for</span> i = 1:numel(u)
+0197     <span class="keyword">if</span> ~isempty(u{i})
+0198         map(u{i}) = groups{i};
+0199     <span class="keyword">end</span>
+0200 <span class="keyword">end</span>
+0201 <span class="keyword">end</span>
+0202 
+0203 <a name="_sub2" href="#_subfunctions" class="code">function rows = lookup(map, key)</a>
+0204 <span class="keyword">if</span> isKey(map, key)
+0205     rows = map(key);
+0206 <span class="keyword">else</span>
+0207     rows = zeros(0, 1);
+0208 <span class="keyword">end</span>
+0209 <span class="keyword">end</span>
+0210 
+0211 <a name="_sub3" href="#_subfunctions" class="code">function enz = normalizeEnzymes(enz)</a>
+0212 <span class="comment">% Sorted and joined as getEcRxnKeys does, so hand-written rows match too.</span>
+0213 <span class="keyword">if</span> isempty(enz)
+0214     <span class="keyword">return</span>
+0215 <span class="keyword">end</span>
+0216 parts = strtrim(strsplit(enz, <span class="string">'+'</span>));
+0217 parts = unique(parts(~cellfun(@isempty, parts)));
+0218 enz = strjoin(sort(parts(:)'), <span class="string">' + '</span>);
+0219 <span class="keyword">end</span>
+0220 
+0221 <a name="_sub4" href="#_subfunctions" class="code">function [wc, origin] = parseDetail(detail)</a>
+0222 wc = nan(numel(detail), 1);
+0223 origin = nan(numel(detail), 1);
+0224 <span class="keyword">for</span> i = 1:numel(detail)
+0225     t = regexp(detail{i}, <span class="string">'wc=(\d+)'</span>, <span class="string">'tokens'</span>, <span class="string">'once'</span>);
+0226     <span class="keyword">if</span> ~isempty(t)
+0227         wc(i) = str2double(t{1});
+0228     <span class="keyword">end</span>
+0229     t = regexp(detail{i}, <span class="string">'origin=(\d+)'</span>, <span class="string">'tokens'</span>, <span class="string">'once'</span>);
+0230     <span class="keyword">if</span> ~isempty(t)
+0231         origin(i) = str2double(t{1});
+0232     <span class="keyword">end</span>
+0233 <span class="keyword">end</span>
+0234 <span class="keyword">end</span>
+0235 
+0236 <a name="_sub5" href="#_subfunctions" class="code">function [records, meta] = readSourceFile(filename)</a>
+0237 <span class="comment">% The rows and '#' header lines of a kcat source file, as they are.</span>
+0238 text = <a href="#_sub6" class="code" title="subfunction text = readUtf8(filename)">readUtf8</a>(filename);
+0239 lines = regexp(text, <span class="string">'\r?\n'</span>, <span class="string">'split'</span>);
+0240 
+0241 meta = struct();
+0242 k = 1;
+0243 <span class="keyword">while</span> k &lt;= numel(lines) &amp;&amp; (isempty(strtrim(lines{k})) || startsWith(<a href="#_sub9" class="code" title="subfunction t = unquoteField(t)">unquoteField</a>(lines{k}), <span class="string">'#'</span>))
+0244     [key, value] = <a href="#_sub8" class="code" title="subfunction [key, value] = parseHeaderLine(line)">parseHeaderLine</a>(lines{k});
+0245     <span class="keyword">if</span> ~isempty(key)
+0246         meta.(key) = value;
+0247     <span class="keyword">end</span>
+0248     k = k + 1;
+0249 <span class="keyword">end</span>
+0250 <span class="keyword">if</span> k &gt; numel(lines)
+0251     error(<span class="string">'loadKcatSource:noHeader'</span>, <span class="string">'%s has no column header.'</span>, filename)
+0252 <span class="keyword">end</span>
+0253 columns = cellfun(@<a href="#_sub9" class="code" title="subfunction t = unquoteField(t)">unquoteField</a>, strsplit(lines{k}, sprintf(<span class="string">'\t'</span>), <span class="keyword">...</span>
+0254     <span class="string">'CollapseDelimiters'</span>, false), <span class="string">'UniformOutput'</span>, false);
+0255 <span class="keyword">if</span> ~all(ismember({<span class="string">'kcat'</span>,<span class="string">'source'</span>}, columns)) || ~any(ismember({<span class="string">'rxn'</span>,<span class="string">'enzymes'</span>}, columns))
+0256     error(<span class="string">'loadKcatSource:columns'</span>, [<span class="string">'%s needs the columns kcat and source, and rxn '</span> <span class="keyword">...</span>
+0257         <span class="string">'and/or enzymes.'</span>], filename)
+0258 <span class="keyword">end</span>
+0259 named = columns(~cellfun(@isempty, columns));
+0260 <span class="keyword">if</span> numel(unique(named)) &lt; numel(named) || any(strcmp(columns, <span class="string">'line'</span>))
+0261     error(<span class="string">'loadKcatSource:columns'</span>, <span class="string">'%s has a column name twice, or a column named line.'</span>, filename)
+0262 <span class="keyword">end</span>
+0263 nCol = numel(columns);
+0264 
+0265 trimmed = strtrim(lines);
+0266 skip = cellfun(@isempty, trimmed) | startsWith(trimmed, <span class="string">'#'</span>) | startsWith(trimmed, <span class="string">'&quot;#'</span>);
+0267 skip(1:k) = true;
+0268 kept = find(~skip);
+0269 L = string(lines(kept));
+0270 L = L(:);
+0271 F = strings(numel(kept), nCol);
+0272 nTabs = count(L, sprintf(<span class="string">'\t'</span>));
+0273 regular = nTabs == nCol - 1;
+0274 <span class="keyword">if</span> any(regular)
+0275     <span class="comment">% Rows with exactly one field per column, split in one go.</span>
+0276     F(regular, :) = reshape(split(L(regular), sprintf(<span class="string">'\t'</span>), 2), [], nCol);
+0277 <span class="keyword">end</span>
+0278 <span class="keyword">for</span> r = find(~regular)'
+0279     fields = strsplit(char(L(r)), sprintf(<span class="string">'\t'</span>), <span class="string">'CollapseDelimiters'</span>, false);
+0280     <span class="keyword">if</span> numel(fields) &gt; nCol
+0281         <span class="keyword">if</span> any(~cellfun(@isempty, strtrim(fields(nCol+1:end))))
+0282             error(<span class="string">'loadKcatSource:fields'</span>, <span class="string">'%s, line %d has more fields than the %d columns.'</span>, <span class="keyword">...</span>
+0283                 filename, kept(r), nCol)
+0284         <span class="keyword">end</span>
+0285         fields = fields(1:nCol);
+0286     <span class="keyword">end</span>
+0287     fields(end+1:nCol) = {<span class="string">''</span>};
+0288     F(r, :) = string(fields);
+0289 <span class="keyword">end</span>
+0290 F = strtrim(F);
+0291 quoted = find(startsWith(F, <span class="string">'&quot;'</span>));
+0292 <span class="keyword">for</span> q = quoted(:)'
+0293     F(q) = <a href="#_sub9" class="code" title="subfunction t = unquoteField(t)">unquoteField</a>(char(F(q)));
+0294 <span class="keyword">end</span>
+0295 filled = any(F ~= &quot;&quot;, 2); <span class="comment">% a row of tabs only is skipped</span>
+0296 values = cellstr(F(filled, :));
+0297 <span class="keyword">if</span> isempty(values)
+0298     values = cell(0, nCol);
+0299 <span class="keyword">end</span>
+0300 lineNo = kept(filled);
+0301 lineNo = lineNo(:);
+0302 n = numel(lineNo);
+0303 
+0304 records = struct();
+0305 <span class="keyword">for</span> c = 1:nCol
+0306     <span class="keyword">if</span> isempty(columns{c})
+0307         <span class="keyword">continue</span>
+0308     <span class="keyword">end</span>
+0309     name = matlab.lang.makeValidName(columns{c});
+0310     v = values(:, c);
+0311     <span class="keyword">if</span> any(strcmp(columns{c}, {<span class="string">'kcat'</span>,<span class="string">'log10_sd'</span>}))
+0312         v = <a href="#_sub7" class="code" title="subfunction x = parseKcatNumber(texts)">parseKcatNumber</a>(v);
+0313     <span class="keyword">end</span>
+0314     records.(name) = v;
+0315 <span class="keyword">end</span>
+0316 <span class="keyword">for</span> c = {<span class="string">'rxn'</span>,<span class="string">'enzymes'</span>,<span class="string">'substrate'</span>,<span class="string">'source'</span>,<span class="string">'detail'</span>,<span class="string">'ec_code'</span>,<span class="string">'note'</span>}
+0317     <span class="keyword">if</span> ~isfield(records, c{1})
+0318         records.(c{1}) = repmat({<span class="string">''</span>}, n, 1);
+0319     <span class="keyword">end</span>
+0320 <span class="keyword">end</span>
+0321 <span class="keyword">if</span> ~isfield(records, <span class="string">'log10_sd'</span>)
+0322     records.log10_sd = nan(n, 1);
+0323 <span class="keyword">end</span>
+0324 records.line = lineNo;
+0325 <span class="keyword">end</span>
+0326 
+0327 <a name="_sub6" href="#_subfunctions" class="code">function text = readUtf8(filename)</a>
+0328 fid = fopen(filename, <span class="string">'r'</span>, <span class="string">'n'</span>, <span class="string">'UTF-8'</span>);
+0329 <span class="keyword">if</span> fid &lt; 0
+0330     error(<span class="string">'loadKcatSource:read'</span>, <span class="string">'Cannot read %s'</span>, filename)
+0331 <span class="keyword">end</span>
+0332 cleanup = onCleanup(@() fclose(fid));
+0333 text = fread(fid, [1 Inf], <span class="string">'*char'</span>);
+0334 text = regexprep(text, [<span class="string">'^'</span> char(65279)], <span class="string">''</span>);
+0335 <span class="keyword">end</span>
+0336 
+0337 <a name="_sub7" href="#_subfunctions" class="code">function x = parseKcatNumber(texts)</a>
+0338 <span class="comment">% Plain numbers only: '5,5' or '12 /s' read as NaN.</span>
+0339 x = nan(numel(texts), 1);
+0340 ok = ~cellfun(@isempty, regexp(texts(:), <span class="string">'^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$|^[-+]?Inf$'</span>, <span class="string">'once'</span>));
+0341 x(ok) = str2double(texts(ok));
+0342 <span class="keyword">end</span>
+0343 
+0344 <a name="_sub8" href="#_subfunctions" class="code">function [key, value] = parseHeaderLine(line)</a>
+0345 key = <span class="string">''</span>; value = <span class="string">''</span>;
+0346 tok = regexp(<a href="#_sub9" class="code" title="subfunction t = unquoteField(t)">unquoteField</a>(line), <span class="string">'^\s*#\s*([A-Za-z][A-Za-z0-9_]{0,62})\s*:\s?(.*)$'</span>, <span class="string">'tokens'</span>, <span class="string">'once'</span>);
+0347 <span class="keyword">if</span> ~isempty(tok)
+0348     key = lower(tok{1});
+0349     value = strtrim(tok{2});
+0350 <span class="keyword">end</span>
+0351 <span class="keyword">end</span>
+0352 
+0353 <a name="_sub9" href="#_subfunctions" class="code">function t = unquoteField(t)</a>
+0354 t = strtrim(t);
+0355 <span class="keyword">if</span> numel(t) &gt;= 2 &amp;&amp; t(1) == <span class="string">'&quot;'</span> &amp;&amp; t(end) == <span class="string">'&quot;'</span>
+0356     t = strtrim(strrep(t(2:end-1), <span class="string">'&quot;&quot;'</span>, <span class="string">'&quot;'</span>));
+0357 <span class="keyword">end</span>
+0358 <span class="keyword">end</span>
+0359 
+0360 <a name="_sub10" href="#_subfunctions" class="code">function checkOptions(args, names, functionName)</a>
+0361 <span class="comment">% Options are name-value pairs with known names, so a misspelled option is</span>
+0362 <span class="comment">% an error instead of being taken as a positional argument.</span>
+0363 id = [functionName <span class="string">':arguments'</span>];
+0364 given = args(1:2:end);
+0365 <span class="keyword">if</span> mod(numel(args), 2) ~= 0 || ~all(cellfun(@(x) ischar(x) || (isstring(x) &amp;&amp; isscalar(x)), given))
+0366     error(id, <span class="string">'Options of %s are name-value pairs. Options: %s.'</span>, functionName, strjoin(names, <span class="string">', '</span>))
+0367 <span class="keyword">end</span>
+0368 unknown = setdiff(cellfun(@char, given, <span class="string">'UniformOutput'</span>, false), names);
+0369 <span class="keyword">if</span> ~isempty(unknown)
+0370     error(id, <span class="string">'Unknown option of %s: %s. Options: %s.'</span>, functionName, strjoin(unknown, <span class="string">', '</span>), <span class="keyword">...</span>
+0371         strjoin(names, <span class="string">', '</span>))
+0372 <span class="keyword">end</span>
+0373 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

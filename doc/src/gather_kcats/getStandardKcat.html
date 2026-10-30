@@ -1,0 +1,483 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of getStandardKcat</title>
+  <meta name="keywords" content="getStandardKcat">
+  <meta name="description" content="getStandardKcat  Assign standard kcat and MW to reactions without enzymes.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">gather_kcats</a> &gt; getStandardKcat.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/gather_kcats&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>getStandardKcat
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>getStandardKcat  Assign standard kcat and MW to reactions without enzymes.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function [model, rxnsMissingGPR, standardMW, standardKcat, rxnsNoKcat] = getStandardKcat(model, varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> getStandardKcat  Assign standard kcat and MW to reactions without enzymes.
+
+ Calculates a standard kcat and standard molecular weight (MW) that can be
+ used to apply enzyme constraints to reactions without any associated
+ enzymes. Such reactions have either an empty model.grRules field, or they
+ have no match in model.ec.rxns (which can be the case if the genes in the
+ model.grRules field could not be mapped to enzymes). This is done by
+ adding those reactions to model.ec, assigning a &quot;standard&quot; pseudoenzyme
+ with the standard MW (median of all proteins in the organism) and standard
+ kcat (median from all kcat, or subsystem specific kcat).
+
+ A reaction is assigned a subSystem specific kcat value if the model has a
+ subSystems field and the reaction is annotated with a subSystem. Only the
+ first subSystem will be considered if multiple are annotated to the same
+ reaction.
+
+ Exchange, transport and pseudoreactions are filtered out, plus any
+ reaction identifiers specified in /data/pseudoRxns.tsv in the model
+ adapter folder.
+
+ In addition, reactions that are annotated with an enzyme (and therefore
+ already in model.ec), but not assigned any reaction-specific kcat value
+ (their model.ec.kcat entry is either 0 or NaN), can be assigned standard
+ kcat values by a similar approach. However, those reactions will not be
+ linked to the &quot;standard&quot; pseudoenzyme, but will use the enzyme that they
+ had already been associated with.
+
+ Any pre-existing standard kcat assignments (identified by 'standard'
+ entries in model.ec.source) are removed when applying this function.
+
+ Parameters
+ ----------
+ model : struct
+     an ecModel in GECKO 3 format (with ecModel.ec structure).
+
+ Name-Value Arguments
+ --------------------
+ modelAdapter : ModelAdapter
+     a loaded model adapter (default: the current default model adapter).
+ threshold : double
+     a threshold to determine whether to use a kcat value based on the
+     median kcat of the reactions in the same subSystem or based on the
+     median value of all the kcat in the model. The second option is used
+     when the number of reactions in a determined subSystem with a real
+     (nonzero, non-NaN) kcat value is &lt; threshold (default 10).
+ fillZeroKcat : logical
+     whether zero kcat values should be replaced with standard kcat values
+     (default true).
+
+ Returns
+ -------
+ model : struct
+     ecModel where model.ec is expanded with a standard protein with
+     standard kcat and standard MW, assigned to reactions without gene
+     associations.
+ rxnsMissingGPR : cell
+     a list of updated rxns identifiers with a standard value.
+ standardMW : double
+     the standard MW value calculated.
+ standardKcat : double
+     the standard kcat value calculated.
+ rxnsNoKcat : cell
+     a list of rxns identifiers whose zero kcat has been replaced.
+
+ Notes
+ -----
+ While model.ec.kcat is populated, applyKcatConstraints would still need to
+ be run to apply the new constraints to the S-matrix.
+
+ Examples
+ --------
+     % optional arguments may be given positionally or as name-value pairs:
+     [model, rxnsMissingGPR, standardMW, standardKcat, rxnsNoKcat] = getStandardKcat(model);
+     [model, rxnsMissingGPR, standardMW, standardKcat, rxnsNoKcat] = getStandardKcat(model, 'threshold', 20);
+
+ See also
+ --------
+ <a href="removeStandardKcat.html" class="code" title="function model = removeStandardKcat(model)">removeStandardKcat</a>, applyKcatConstraints</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="collectKcats.html" class="code" title="function [decisions, report, ecModel] = collectKcats(model, varargin)">collectKcats</a>	collectKcats  Decide one kcat per reaction from the kcat source files.</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function Cflat = flattenCell(C,strFlag)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [model, rxnsMissingGPR, standardMW, standardKcat, rxnsNoKcat] = getStandardKcat(model, varargin)</a>
+0002 <span class="comment">% getStandardKcat  Assign standard kcat and MW to reactions without enzymes.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Calculates a standard kcat and standard molecular weight (MW) that can be</span>
+0005 <span class="comment">% used to apply enzyme constraints to reactions without any associated</span>
+0006 <span class="comment">% enzymes. Such reactions have either an empty model.grRules field, or they</span>
+0007 <span class="comment">% have no match in model.ec.rxns (which can be the case if the genes in the</span>
+0008 <span class="comment">% model.grRules field could not be mapped to enzymes). This is done by</span>
+0009 <span class="comment">% adding those reactions to model.ec, assigning a &quot;standard&quot; pseudoenzyme</span>
+0010 <span class="comment">% with the standard MW (median of all proteins in the organism) and standard</span>
+0011 <span class="comment">% kcat (median from all kcat, or subsystem specific kcat).</span>
+0012 <span class="comment">%</span>
+0013 <span class="comment">% A reaction is assigned a subSystem specific kcat value if the model has a</span>
+0014 <span class="comment">% subSystems field and the reaction is annotated with a subSystem. Only the</span>
+0015 <span class="comment">% first subSystem will be considered if multiple are annotated to the same</span>
+0016 <span class="comment">% reaction.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% Exchange, transport and pseudoreactions are filtered out, plus any</span>
+0019 <span class="comment">% reaction identifiers specified in /data/pseudoRxns.tsv in the model</span>
+0020 <span class="comment">% adapter folder.</span>
+0021 <span class="comment">%</span>
+0022 <span class="comment">% In addition, reactions that are annotated with an enzyme (and therefore</span>
+0023 <span class="comment">% already in model.ec), but not assigned any reaction-specific kcat value</span>
+0024 <span class="comment">% (their model.ec.kcat entry is either 0 or NaN), can be assigned standard</span>
+0025 <span class="comment">% kcat values by a similar approach. However, those reactions will not be</span>
+0026 <span class="comment">% linked to the &quot;standard&quot; pseudoenzyme, but will use the enzyme that they</span>
+0027 <span class="comment">% had already been associated with.</span>
+0028 <span class="comment">%</span>
+0029 <span class="comment">% Any pre-existing standard kcat assignments (identified by 'standard'</span>
+0030 <span class="comment">% entries in model.ec.source) are removed when applying this function.</span>
+0031 <span class="comment">%</span>
+0032 <span class="comment">% Parameters</span>
+0033 <span class="comment">% ----------</span>
+0034 <span class="comment">% model : struct</span>
+0035 <span class="comment">%     an ecModel in GECKO 3 format (with ecModel.ec structure).</span>
+0036 <span class="comment">%</span>
+0037 <span class="comment">% Name-Value Arguments</span>
+0038 <span class="comment">% --------------------</span>
+0039 <span class="comment">% modelAdapter : ModelAdapter</span>
+0040 <span class="comment">%     a loaded model adapter (default: the current default model adapter).</span>
+0041 <span class="comment">% threshold : double</span>
+0042 <span class="comment">%     a threshold to determine whether to use a kcat value based on the</span>
+0043 <span class="comment">%     median kcat of the reactions in the same subSystem or based on the</span>
+0044 <span class="comment">%     median value of all the kcat in the model. The second option is used</span>
+0045 <span class="comment">%     when the number of reactions in a determined subSystem with a real</span>
+0046 <span class="comment">%     (nonzero, non-NaN) kcat value is &lt; threshold (default 10).</span>
+0047 <span class="comment">% fillZeroKcat : logical</span>
+0048 <span class="comment">%     whether zero kcat values should be replaced with standard kcat values</span>
+0049 <span class="comment">%     (default true).</span>
+0050 <span class="comment">%</span>
+0051 <span class="comment">% Returns</span>
+0052 <span class="comment">% -------</span>
+0053 <span class="comment">% model : struct</span>
+0054 <span class="comment">%     ecModel where model.ec is expanded with a standard protein with</span>
+0055 <span class="comment">%     standard kcat and standard MW, assigned to reactions without gene</span>
+0056 <span class="comment">%     associations.</span>
+0057 <span class="comment">% rxnsMissingGPR : cell</span>
+0058 <span class="comment">%     a list of updated rxns identifiers with a standard value.</span>
+0059 <span class="comment">% standardMW : double</span>
+0060 <span class="comment">%     the standard MW value calculated.</span>
+0061 <span class="comment">% standardKcat : double</span>
+0062 <span class="comment">%     the standard kcat value calculated.</span>
+0063 <span class="comment">% rxnsNoKcat : cell</span>
+0064 <span class="comment">%     a list of rxns identifiers whose zero kcat has been replaced.</span>
+0065 <span class="comment">%</span>
+0066 <span class="comment">% Notes</span>
+0067 <span class="comment">% -----</span>
+0068 <span class="comment">% While model.ec.kcat is populated, applyKcatConstraints would still need to</span>
+0069 <span class="comment">% be run to apply the new constraints to the S-matrix.</span>
+0070 <span class="comment">%</span>
+0071 <span class="comment">% Examples</span>
+0072 <span class="comment">% --------</span>
+0073 <span class="comment">%     % optional arguments may be given positionally or as name-value pairs:</span>
+0074 <span class="comment">%     [model, rxnsMissingGPR, standardMW, standardKcat, rxnsNoKcat] = getStandardKcat(model);</span>
+0075 <span class="comment">%     [model, rxnsMissingGPR, standardMW, standardKcat, rxnsNoKcat] = getStandardKcat(model, 'threshold', 20);</span>
+0076 <span class="comment">%</span>
+0077 <span class="comment">% See also</span>
+0078 <span class="comment">% --------</span>
+0079 <span class="comment">% removeStandardKcat, applyKcatConstraints</span>
+0080 
+0081 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0082     <span class="string">'modelAdapter'</span>, []; <span class="keyword">...</span>
+0083     <span class="string">'threshold'</span>,    []; <span class="keyword">...</span>
+0084     <span class="string">'fillZeroKcat'</span>, []});
+0085 modelAdapter = p.modelAdapter;
+0086 threshold    = p.threshold;
+0087 fillZeroKcat = p.fillZeroKcat;
+0088 
+0089 <span class="keyword">if</span> isempty(modelAdapter)
+0090     modelAdapter = ModelAdapterManager.getDefault();
+0091     <span class="keyword">if</span> isempty(modelAdapter)
+0092         error(<span class="string">'Either send in a modelAdapter or set the default model adapter in the ModelAdapterManager.'</span>)
+0093     <span class="keyword">end</span>
+0094 <span class="keyword">end</span>
+0095 params = modelAdapter.getParameters();
+0096 
+0097 <span class="keyword">if</span> isempty(threshold)
+0098     threshold = 10;
+0099 <span class="keyword">end</span>
+0100 
+0101 <span class="keyword">if</span> isempty(fillZeroKcat)
+0102     fillZeroKcat = true;
+0103 <span class="keyword">end</span>
+0104 
+0105 databases = loadDatabases(<span class="string">'uniprot'</span>, modelAdapter);
+0106 
+0107 <span class="comment">% An standard MW is defined for all the rxns which does not have a GPR</span>
+0108 <span class="comment">% rule defined. This is based in all the proteins reported for the specific</span>
+0109 <span class="comment">% organism in uniprot</span>
+0110 standardMW = median(databases.uniprot.MW, <span class="string">'omitnan'</span>);
+0111 
+0112 <span class="comment">% An standard Kcat is defined for all the rxns which does not have a GPR</span>
+0113 <span class="comment">% rule defined. In this case, the kcat value for a particular reaction is</span>
+0114 <span class="comment">% defined as the median of the kcat values of the reactions (with a real,</span>
+0115 <span class="comment">% nonzero, non-NaN kcat) involved in the same subsystem in which the given</span>
+0116 <span class="comment">% reaction is involved. Nevertheless, if a subSystem have a number of such</span>
+0117 <span class="comment">% reactions lower than a treshold, the kcat value will be the median of the</span>
+0118 <span class="comment">% kcat in all the reactions of the model.</span>
+0119 
+0120 <span class="comment">% Remove from the list those with kcat zero</span>
+0121 rxnsKcatZero = model.ec.kcat &gt; 0;
+0122 
+0123 <span class="comment">% Get the kcat value based on all the kcats in the model</span>
+0124 standardKcat = median(model.ec.kcat(rxnsKcatZero), <span class="string">'omitnan'</span>);
+0125 
+0126 <span class="comment">% If the model have subSystems assigned calculate kcat based on subSystem</span>
+0127 <span class="keyword">if</span> isfield(model,<span class="string">'subSystems'</span>) &amp;&amp; ~all(cellfun(@isempty, model.subSystems))
+0128     standard = false;
+0129     <span class="keyword">if</span> model.ec.geckoLight
+0130         modRxns = extractAfter(model.ec.rxns,4);
+0131     <span class="keyword">else</span>
+0132         modRxns = model.ec.rxns;
+0133     <span class="keyword">end</span>
+0134     <span class="comment">% Map ec-rxns to model.rxns</span>
+0135     [~,rxnIdx]  = ismember(modRxns,model.rxns);
+0136     <span class="comment">% Choose first subSystem</span>
+0137     enzSubSystems = <a href="#_sub1" class="code" title="subfunction Cflat = flattenCell(C,strFlag)">flattenCell</a>(model.subSystems(rxnIdx));
+0138     enzSubSystems = enzSubSystems(:,1);
+0139     <span class="keyword">if</span> ~all(cellfun(@isempty, enzSubSystems))
+0140 
+0141     <span class="comment">% Make list of unique subsystems, and which rxns are linked to them</span>
+0142     [enzSubSystem_names, ~, rxnToSub] = unique(enzSubSystems);
+0143     <span class="comment">% Calculate the median kcat per subSystem, counting only reactions</span>
+0144     <span class="comment">% with a real (nonzero, non-NaN) kcat toward both the median itself</span>
+0145     <span class="comment">% and the threshold that decides whether a subSystem-specific value</span>
+0146     <span class="comment">% is used at all.</span>
+0147     numSubSystem = numel(enzSubSystem_names);
+0148     kcatsPerSubSystem = zeros(numSubSystem,1);
+0149     kcatSubSystem = zeros(numSubSystem,1);
+0150     <span class="keyword">for</span> i = 1:numSubSystem
+0151         subKcat = model.ec.kcat(rxnToSub == i);
+0152         subKcat = subKcat(subKcat ~= 0 &amp; ~isnan(subKcat));
+0153         kcatsPerSubSystem(i) = numel(subKcat);
+0154         <span class="keyword">if</span> kcatsPerSubSystem(i) &gt;= threshold
+0155             kcatSubSystem(i) = median(subKcat);
+0156         <span class="keyword">else</span>
+0157             kcatSubSystem(i) = standardKcat;
+0158         <span class="keyword">end</span>
+0159     <span class="keyword">end</span>
+0160     <span class="keyword">else</span>
+0161         standard = true;
+0162         printOrange(<span class="string">'WARNING: No subSystem-specific kcat values can be calculated'</span>);
+0163     <span class="keyword">end</span>
+0164 <span class="keyword">else</span>
+0165     standard = true;
+0166     printOrange(<span class="string">'WARNING: No subSystem-specific kcat values can be calculated'</span>);
+0167 <span class="keyword">end</span>
+0168 
+0169 <span class="comment">% Find reactions without GPR</span>
+0170 rxnsMissingGPR = find(cellfun(@isempty, model.grRules));
+0171 
+0172 <span class="comment">% Find reactions with GPR but without model.ec entry (for instance due to</span>
+0173 <span class="comment">% no protein matching)</span>
+0174 rxnsMissingEnzyme = find(~cellfun(@isempty, model.grRules));
+0175 <span class="keyword">if</span> model.ec.geckoLight
+0176     ecRxnsList = unique(extractAfter(model.ec.rxns,4));
+0177 <span class="keyword">else</span>
+0178     ecRxnsList = model.ec.rxns;
+0179 <span class="keyword">end</span>
+0180 rxnsMissingEnzyme = find(and(~ismember(model.rxns(rxnsMissingEnzyme),ecRxnsList), ~contains(model.rxns(rxnsMissingEnzyme),<span class="string">'usage_prot_'</span>)));
+0181 rxnsMissingGPR = [rxnsMissingGPR;rxnsMissingEnzyme];
+0182 
+0183 <span class="comment">% Get custom list of reaction IDs to ignore, if existing. First column</span>
+0184 <span class="comment">% contains reaction IDs, second column contains reaction names for</span>
+0185 <span class="comment">% reference only.</span>
+0186 <span class="keyword">if</span> exist(fullfile(params.path,<span class="string">'data'</span>,<span class="string">'pseudoRxns.tsv'</span>),<span class="string">'file'</span>)
+0187     fID        = fopen(fullfile(params.path,<span class="string">'data'</span>,<span class="string">'pseudoRxns.tsv'</span>));
+0188     fileData   = textscan(fID,<span class="string">'%s %s'</span>,<span class="string">'delimiter'</span>,<span class="string">'\t'</span>);
+0189     fclose(fID);
+0190     customRxns = fileData{1};
+0191     customRxns = find(ismember(model.rxns,customRxns));
+0192 <span class="keyword">else</span>
+0193     customRxns = [];
+0194 <span class="keyword">end</span>
+0195 <span class="comment">% Get and remove exchange, transport, spontaneous and pseudo reactions</span>
+0196 [~, exchangeRxns]  = getExchangeRxns(model);
+0197 transportRxns = getTransportRxns(model);
+0198 [spontaneousRxns, ~] = modelAdapter.getSpontaneousReactions(model);
+0199 pseudoRxns = contains(model.rxnNames,<span class="string">'pseudoreaction'</span>);
+0200 slimeRxns = contains(model.rxnNames,<span class="string">'SLIME rxn'</span>);
+0201 rxnsToIgnore = [customRxns; exchangeRxns; find(transportRxns); <span class="keyword">...</span>
+0202                 find(spontaneousRxns); find(pseudoRxns); find(slimeRxns)];
+0203 rxnsMissingGPR(ismember(rxnsMissingGPR, rxnsToIgnore)) = [];
+0204 
+0205 <span class="comment">% Only add if not geckoLight &amp; getStandardKcat was not run earlier</span>
+0206 <span class="keyword">if</span> ~any(strcmp(model.mets,<span class="string">'prot_standard'</span>))
+0207     <span class="comment">% Add a new gene to be consistent with ec field named standard</span>
+0208     proteinStdGenes.genes = <span class="string">'standard'</span>;
+0209     <span class="keyword">if</span> isfield(model,<span class="string">'geneShortNames'</span>)
+0210         proteinStdGenes.geneShortNames = <span class="string">'std'</span>;
+0211     <span class="keyword">end</span>
+0212     model = addGenesRaven(model, proteinStdGenes);
+0213 
+0214     <span class="keyword">if</span> ~model.ec.geckoLight
+0215         <span class="comment">% Add a new metabolite named prot_standard</span>
+0216         proteinStdMets.mets         = <span class="string">'prot_standard'</span>;
+0217         proteinStdMets.metNames     = proteinStdMets.mets;
+0218         <span class="comment">% Validate compartment</span>
+0219         compartmentID = strcmp(model.compNames,params.enzyme_comp);
+0220         <span class="keyword">if</span> ~any(compartmentID)
+0221             error([<span class="string">'Compartment '</span> params.enzyme_comp <span class="string">' (specified in params.enzyme_comp) '</span><span class="keyword">...</span>
+0222                 <span class="string">'cannot be found in model.compNames'</span>])
+0223         <span class="keyword">end</span>
+0224         proteinStdMets.compartments = model.comps(compartmentID);
+0225 
+0226         <span class="keyword">if</span> isfield(model,<span class="string">'metNotes'</span>)
+0227             proteinStdMets.metNotes = <span class="string">'Standard enzyme-usage pseudometabolite'</span>;
+0228         <span class="keyword">end</span>
+0229         model = addMets(model, proteinStdMets);
+0230 
+0231         <span class="comment">% Add a protein usage reaction if not a light version</span>
+0232         proteinStdUsageRxn.rxns         = {<span class="string">'usage_prot_standard'</span>};
+0233         proteinStdUsageRxn.rxnNames     = proteinStdUsageRxn.rxns;
+0234         proteinStdUsageRxn.mets         = {proteinStdMets.mets, <span class="string">'prot_pool'</span>};
+0235         proteinStdUsageRxn.stoichCoeffs = [1, -1];
+0236         proteinStdUsageRxn.lb           = 0;
+0237         proteinStdUsageRxn.ub           = 1000;
+0238         proteinStdUsageRxn.grRules      = proteinStdGenes.genes;
+0239 
+0240         model = addRxns(model, proteinStdUsageRxn);
+0241     <span class="keyword">end</span>
+0242     <span class="comment">% Update .ec structure in model</span>
+0243     model.ec.genes(end+1)      = {<span class="string">'standard'</span>};
+0244     model.ec.enzymes(end+1)    = {<span class="string">'standard'</span>};
+0245     model.ec.mw(end+1)         = standardMW;
+0246     model.ec.sequence(end+1)   = {<span class="string">''</span>};
+0247     <span class="comment">% Additional info</span>
+0248     <span class="keyword">if</span> isfield(model.ec,<span class="string">'concs'</span>)
+0249         model.ec.concs(end+1)  = nan();
+0250     <span class="keyword">end</span>
+0251 
+0252     <span class="comment">% Expand the enzyme rxns matrix</span>
+0253     model.ec.rxnEnzMat =  [model.ec.rxnEnzMat, zeros(length(model.ec.rxns), 1)]; <span class="comment">% 1 new enzyme</span>
+0254     model.ec.rxnEnzMat =  [model.ec.rxnEnzMat; zeros(length(rxnsMissingGPR), length(model.ec.enzymes))]; <span class="comment">% new rxns</span>
+0255 <span class="keyword">end</span>
+0256 stdMetIdx = find(strcmpi(model.ec.enzymes, <span class="string">'standard'</span>));
+0257 
+0258 <span class="comment">% Remove previous standard kcat assignment</span>
+0259 oldStandardEnz = find(strcmp(model.ec.source,<span class="string">'standard'</span>));
+0260 <span class="keyword">if</span> ~isempty(oldStandardEnz)
+0261     oldStandardProt = logical(model.ec.rxnEnzMat(oldStandardEnz,stdMetIdx));
+0262     <span class="comment">% If annotated with real enzyme =&gt; set kcat to zero</span>
+0263     model.ec.kcat(oldStandardEnz(~oldStandardProt))        = 0;
+0264     model.ec.source(oldStandardEnz(~oldStandardProt))      = {<span class="string">''</span>};
+0265     <span class="comment">% If annotated with standard protein =&gt; remove entry</span>
+0266     model.ec.rxns(oldStandardEnz(oldStandardProt))        = [];
+0267     model.ec.kcat(oldStandardEnz(oldStandardProt))        = [];
+0268     model.ec.source(oldStandardEnz(oldStandardProt))      = [];
+0269     model.ec.notes(oldStandardEnz(oldStandardProt))       = [];
+0270     model.ec.eccodes(oldStandardEnz(oldStandardProt))     = [];
+0271     model.ec.rxnEnzMat(oldStandardEnz(oldStandardProt),:) = [];
+0272 <span class="keyword">end</span>
+0273 
+0274 numRxns = length(model.ec.rxns);
+0275 <span class="keyword">for</span> i = 1:numel(rxnsMissingGPR)
+0276     rxnIdx = rxnsMissingGPR(i);
+0277 
+0278     <span class="comment">% Update .ec structure in model</span>
+0279     <span class="keyword">if</span> ~model.ec.geckoLight
+0280         model.ec.rxns(end+1)     = model.rxns(rxnIdx);
+0281         <span class="comment">% Add prefix in case is light version</span>
+0282     <span class="keyword">else</span>
+0283         model.ec.rxns{end+1}     = [<span class="string">'001_'</span> model.rxns{rxnIdx}];
+0284     <span class="keyword">end</span>
+0285 
+0286     <span class="keyword">if</span> ~standard
+0287         <span class="comment">% kcatSubSystemIdx is a one-hot vector (the reaction's first subSystem</span>
+0288         <span class="comment">% matched against every subSystem that has a computed kcat); any(), not</span>
+0289         <span class="comment">% all(), is the right test -- all() only ever succeeds when the model</span>
+0290         <span class="comment">% has exactly one subSystem in total, silently falling back to the</span>
+0291         <span class="comment">% model-wide standardKcat for every reaction otherwise.</span>
+0292         kcatSubSystemIdx = strcmpi(enzSubSystem_names, model.subSystems{rxnIdx}(1));
+0293         <span class="keyword">if</span> any(kcatSubSystemIdx)
+0294             model.ec.kcat(end+1) = kcatSubSystem(kcatSubSystemIdx);
+0295         <span class="keyword">else</span>
+0296             model.ec.kcat(end+1) = standardKcat;
+0297         <span class="keyword">end</span>
+0298     <span class="keyword">else</span>
+0299         model.ec.kcat(end+1) = standardKcat;
+0300     <span class="keyword">end</span>
+0301 
+0302     model.ec.source(end+1)   = {<span class="string">'standard'</span>};
+0303     model.ec.notes(end+1)    = {<span class="string">''</span>};
+0304     model.ec.eccodes(end+1)  = {<span class="string">''</span>};
+0305 
+0306     <span class="comment">% Update the enzyme rxns matrix</span>
+0307     model.ec.rxnEnzMat(numRxns+i, stdMetIdx) = 1;
+0308 <span class="keyword">end</span>
+0309 <span class="comment">% Get the rxns identifiers of the updated rxns</span>
+0310 rxnsMissingGPR = model.rxns(rxnsMissingGPR);
+0311 
+0312 <span class="keyword">if</span> fillZeroKcat
+0313     zeroKcat = model.ec.kcat == 0 | isnan(model.ec.kcat);
+0314     model.ec.kcat(zeroKcat)     = standardKcat;
+0315     model.ec.source(zeroKcat)   = {<span class="string">'standard'</span>};
+0316     rxnsNoKcat = model.ec.rxns(zeroKcat);
+0317 <span class="keyword">else</span>
+0318     rxnsNoKcat = [];
+0319 <span class="keyword">end</span>
+0320 <span class="keyword">end</span>
+0321 
+0322 <a name="_sub1" href="#_subfunctions" class="code">function Cflat = flattenCell(C,strFlag)</a>
+0323 <span class="comment">%FLATTENCELL  Flatten a nested column cell array into a matrix cell array.</span>
+0324 <span class="comment">%</span>
+0325 <span class="comment">% CFLAT = FLATTENCELL(C) takes a column cell array in which one or more</span>
+0326 <span class="comment">% entries is a nested cell array, and flattens it into a 2D matrix cell</span>
+0327 <span class="comment">% array, where the nested entries are spread across new columns.</span>
+0328 <span class="comment">%</span>
+0329 <span class="comment">% CFLAT = FLATTENCELL(C,STRFLAG) if STRFLAG is TRUE, empty entries in the</span>
+0330 <span class="comment">% resulting CFLAT will be replaced with empty strings {''}. Default = FALSE</span>
+0331 <span class="keyword">if</span> nargin &lt; 2
+0332     strFlag = false;
+0333 <span class="keyword">end</span>
+0334 
+0335 <span class="comment">% determine which entries are cells</span>
+0336 cells = cellfun(@iscell,C);
+0337 
+0338 <span class="comment">% determine number of elements in each nested cell</span>
+0339 cellsizes = cellfun(@numel,C);
+0340 cellsizes(~cells) = 1;  <span class="comment">% ignore non-cell entries</span>
+0341 
+0342 <span class="comment">% flatten single-entry cells</span>
+0343 Cflat = C;
+0344 Cflat(cells &amp; (cellsizes == 1)) = cellfun(@(x) x{1},Cflat(cells &amp; (cellsizes == 1)),<span class="string">'UniformOutput'</span>,false);
+0345 
+0346 <span class="comment">% iterate through multi-entry cells</span>
+0347 multiCells = find(cellsizes &gt; 1);
+0348 <span class="keyword">for</span> i = 1:length(multiCells)
+0349     cellContents = Cflat{multiCells(i)};
+0350     Cflat(multiCells(i),1:length(cellContents)) = cellContents;
+0351 <span class="keyword">end</span>
+0352 
+0353 <span class="comment">% change empty elements to strings, if specified</span>
+0354 <span class="keyword">if</span> ( strFlag )
+0355     Cflat(cellfun(@isempty,Cflat)) = {<span class="string">''</span>};
+0356 <span class="keyword">end</span>
+0357 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

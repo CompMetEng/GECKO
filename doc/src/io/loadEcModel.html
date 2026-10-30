@@ -1,0 +1,170 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of loadEcModel</title>
+  <meta name="keywords" content="loadEcModel">
+  <meta name="description" content="loadEcModel  Load the ecModel that matches the modelAdapter.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">io</a> &gt; loadEcModel.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/io&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>loadEcModel
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>loadEcModel  Load the ecModel that matches the modelAdapter.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function model = loadEcModel(varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> loadEcModel  Load the ecModel that matches the modelAdapter.
+
+ Loads the ecModel that matches the modelAdapter. By default, it loads the
+ models/ecModel.yml in the directory specified as param.path in the
+ modelAdapter. Alternative files in the same folder can be loaded by
+ providing the appropriate filename. If loading models from other
+ locations, one can directly use readYAMLmodel.
+
+ An ecModel whose protein usage and pool reactions run in the GECKO 3
+ direction is upgraded in the loaded model with upgradeEcModel, with a
+ warning. An ecModel format (gecko_format in the file's metaData, see
+ saveEcModel) above 4 is an error.
+
+ Name-Value Arguments
+ --------------------
+ filename : char
+     name of the ecModel file (default 'ecModel.yml'). File should be
+     located in the models/ subfolder of param.path as specified in the
+     modelAdapter.
+ modelAdapter : ModelAdapter
+     a loaded model adapter, from where the model folder is read (default:
+     the current default model adapter).
+
+ Returns
+ -------
+ model : struct
+     an ecModel (with ecModel.ec structure).
+
+ Examples
+ --------
+     % optional arguments may be given positionally or as name-value pairs:
+     model = loadEcModel(filename, modelAdapter);
+     model = loadEcModel('filename', filename);
+
+ See also
+ --------
+ <a href="loadConventionalGEM.html" class="code" title="function model = loadConventionalGEM(varargin)">loadConventionalGEM</a>, <a href="saveEcModel.html" class="code" title="function saveEcModel(ecModel,varargin)">saveEcModel</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function model = loadEcModel(varargin)</a>
+0002 <span class="comment">% loadEcModel  Load the ecModel that matches the modelAdapter.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Loads the ecModel that matches the modelAdapter. By default, it loads the</span>
+0005 <span class="comment">% models/ecModel.yml in the directory specified as param.path in the</span>
+0006 <span class="comment">% modelAdapter. Alternative files in the same folder can be loaded by</span>
+0007 <span class="comment">% providing the appropriate filename. If loading models from other</span>
+0008 <span class="comment">% locations, one can directly use readYAMLmodel.</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% An ecModel whose protein usage and pool reactions run in the GECKO 3</span>
+0011 <span class="comment">% direction is upgraded in the loaded model with upgradeEcModel, with a</span>
+0012 <span class="comment">% warning. An ecModel format (gecko_format in the file's metaData, see</span>
+0013 <span class="comment">% saveEcModel) above 4 is an error.</span>
+0014 <span class="comment">%</span>
+0015 <span class="comment">% Name-Value Arguments</span>
+0016 <span class="comment">% --------------------</span>
+0017 <span class="comment">% filename : char</span>
+0018 <span class="comment">%     name of the ecModel file (default 'ecModel.yml'). File should be</span>
+0019 <span class="comment">%     located in the models/ subfolder of param.path as specified in the</span>
+0020 <span class="comment">%     modelAdapter.</span>
+0021 <span class="comment">% modelAdapter : ModelAdapter</span>
+0022 <span class="comment">%     a loaded model adapter, from where the model folder is read (default:</span>
+0023 <span class="comment">%     the current default model adapter).</span>
+0024 <span class="comment">%</span>
+0025 <span class="comment">% Returns</span>
+0026 <span class="comment">% -------</span>
+0027 <span class="comment">% model : struct</span>
+0028 <span class="comment">%     an ecModel (with ecModel.ec structure).</span>
+0029 <span class="comment">%</span>
+0030 <span class="comment">% Examples</span>
+0031 <span class="comment">% --------</span>
+0032 <span class="comment">%     % optional arguments may be given positionally or as name-value pairs:</span>
+0033 <span class="comment">%     model = loadEcModel(filename, modelAdapter);</span>
+0034 <span class="comment">%     model = loadEcModel('filename', filename);</span>
+0035 <span class="comment">%</span>
+0036 <span class="comment">% See also</span>
+0037 <span class="comment">% --------</span>
+0038 <span class="comment">% loadConventionalGEM, saveEcModel</span>
+0039 
+0040 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0041     <span class="string">'filename'</span>,     []; <span class="keyword">...</span>
+0042     <span class="string">'modelAdapter'</span>, []});
+0043 filename     = p.filename;
+0044 modelAdapter = p.modelAdapter;
+0045 
+0046 <span class="keyword">if</span> isempty(modelAdapter)
+0047     modelAdapter = ModelAdapterManager.getDefault();
+0048     <span class="keyword">if</span> isempty(modelAdapter)
+0049         error(<span class="string">'Either send in a modelAdapter or set the default model adapter in the ModelAdapterManager.'</span>)
+0050     <span class="keyword">end</span>
+0051 <span class="keyword">end</span>
+0052 params = modelAdapter.getParameters();
+0053 <span class="keyword">if</span> isempty(filename)
+0054     filename = <span class="string">'ecModel.yml'</span>;
+0055 <span class="keyword">end</span>
+0056 
+0057 <span class="keyword">if</span> ~endsWith(filename,{<span class="string">'yml'</span>,<span class="string">'yaml'</span>})
+0058     error([<span class="string">'ecModels should preferably be distributed in YAML file format, '</span>, <span class="keyword">...</span>
+0059            <span class="string">'as otherwise model content will be lost. If the model is in '</span>, <span class="keyword">...</span>
+0060            <span class="string">'SBML format, you can use the usual importModel function to load '</span>, <span class="keyword">...</span>
+0061            <span class="string">'this as any other genome-scale model.'</span>])
+0062 <span class="keyword">end</span>
+0063 
+0064 filename = fullfile(params.path,<span class="string">'models'</span>,filename); 
+0065 <span class="keyword">if</span> endsWith(filename,{<span class="string">'yml'</span>,<span class="string">'yaml'</span>})
+0066     model = readYAMLmodel(filename);
+0067 <span class="keyword">elseif</span> endsWith(filename,{<span class="string">'xml'</span>,<span class="string">'sbml'</span>})
+0068     model = importModel(filename);
+0069 <span class="keyword">end</span>
+0070 
+0071 <span class="keyword">if</span> isfield(model, <span class="string">'annotation'</span>) &amp;&amp; isfield(model.annotation, <span class="string">'gecko_format'</span>) <span class="keyword">...</span>
+0072         &amp;&amp; str2double(model.annotation.gecko_format) &gt; 4
+0073     writer = <span class="string">'an unknown release'</span>;
+0074     <span class="keyword">if</span> isfield(model.annotation, <span class="string">'generator'</span>)
+0075         writer = model.annotation.generator;
+0076     <span class="keyword">end</span>
+0077     error(<span class="string">'loadEcModel:format'</span>, [<span class="string">'%s has ecModel format %s (written by %s); '</span> <span class="keyword">...</span>
+0078         <span class="string">'this GECKO reads format 4 and older. Update GECKO to load it.'</span>], <span class="keyword">...</span>
+0079         filename, model.annotation.gecko_format, writer)
+0080 <span class="keyword">end</span>
+0081 [model, changed] = upgradeEcModel(model);
+0082 <span class="keyword">if</span> ~isempty(changed)
+0083     warning(<span class="string">'loadEcModel:upgraded'</span>, [<span class="string">'%s has %d protein usage and pool reactions in the GECKO 3 '</span> <span class="keyword">...</span>
+0084         <span class="string">'direction; they are turned forward in the loaded model. upgradeGECKOproject upgrades the '</span> <span class="keyword">...</span>
+0085         <span class="string">'files of the project.'</span>], filename, numel(changed))
+0086 <span class="keyword">end</span>
+0087 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

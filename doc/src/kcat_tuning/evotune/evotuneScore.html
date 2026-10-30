@@ -1,0 +1,283 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of evotuneScore</title>
+  <meta name="keywords" content="evotuneScore">
+  <meta name="description" content="evotuneScore  Score one ecModel's current kcats against evotune data.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="../index.html">kcat_tuning</a> &gt; <a href="index.html">evotune</a> &gt; evotuneScore.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../../index.html"><img alt="<" border="0" src="../../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/kcat_tuning/evotune&nbsp;<img alt=">" border="0" src="../../../right.png"></a></td></tr></table>-->
+
+<h1>evotuneScore
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+<div class="box"><strong>evotuneScore  Score one ecModel's current kcats against evotune data.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+<div class="box"><strong>function [objective,rmse,rmseDetail,ecModel] = evotuneScore(ecModel,evoData,varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> evotuneScore  Score one ecModel's current kcats against evotune data.
+
+ Internal helper used by cmaesKcatTuning, screenKcatLeverage and
+ tunePriorPenaltyWeight to score one ecModel (with a given set of kcats
+ already applied via applyKcatConstraints) against the experimental
+ growth and flux data. Fuses what geckopy splits into simulate.py (the
+ FBA half) and distance.py (the RMSE half) into one function.
+
+ Parameters
+ ----------
+ ecModel : struct
+     ecModel with the current candidate kcats already applied (via
+     applyKcatConstraints). Not mutated.
+ evoData : struct
+     structure with experimental data to be used, as returned by
+     loadEvotuneData.
+
+ Name-Value Arguments
+ --------------------
+ modelAdapter : ModelAdapter
+     a loaded model adapter (default: the current default model adapter).
+ maxGrowthWeight : double
+     relative weight of the max-growth dataset against the flux dataset:
+     (rmseFlux + w*rmseMaxGrate) / (w+1) (default 1.0).
+ priorPenaltyWeight : double
+     weight on a prior term added to the objective (default 0, i.e. the
+     objective equals the plain RMSE). See kcatVec/kcat0/sigma0log below.
+ kcatVec, kcat0, sigma0log : double
+     only used when priorPenaltyWeight &gt; 0: the tunable kcat subset's
+     current values, prior values, and per-kcat prior log-space std dev,
+     all the same length and in the same order. The penalty added to the
+     objective is priorPenaltyWeight * mean((log(kcatVec./kcat0)./sigma0log).^2).
+
+ Returns
+ -------
+ objective : double
+     rmse, plus the prior penalty term when priorPenaltyWeight &gt; 0. This
+     is what a search should minimise.
+ rmse : double
+     the plain (unpenalised) average RMSE, always comparable across runs
+     regardless of priorPenaltyWeight.
+ rmseDetail : cell
+     per-condition RMSE values, labelled by data type and condition index.
+ ecModel : struct
+     the input ecModel, with ec.excarbon cached on it if it wasn't
+     already present. MATLAB structs are copied on assignment, not
+     shared by reference like a Python object, so callers scoring many
+     candidates in a loop should carry this output back in as the base
+     copy for the next candidate, rather than recomputing excarbon (an
+     expensive metabolite-formula scan) on every single call.
+
+ See also
+ --------
+ <a href="cmaesKcatTuning.html" class="code" title="function [ecModel,result] = cmaesKcatTuning(ecModel,varargin)">cmaesKcatTuning</a>, <a href="screenKcatLeverage.html" class="code" title="function screen = screenKcatLeverage(ecModel,varargin)">screenKcatLeverage</a>, <a href="loadEvotuneData.html" class="code" title="function evoData = loadEvotuneData(varargin)">loadEvotuneData</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../../matlabicon.gif)">
+<li><a href="cmaesKcatTuning.html" class="code" title="function [ecModel,result] = cmaesKcatTuning(ecModel,varargin)">cmaesKcatTuning</a>	cmaesKcatTuning  Tune kcats against experimental data with CMA-ES.</li><li><a href="screenKcatLeverage.html" class="code" title="function screen = screenKcatLeverage(ecModel,varargin)">screenKcatLeverage</a>	screenKcatLeverage  Report which kcats the data can actually speak to.</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+<ul style="list-style-image:url(../../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function [rmse, rmseList] = simulateCondition(ecModel,data,constrain,rxn2block,modelAdapter)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [objective,rmse,rmseDetail,ecModel] = evotuneScore(ecModel,evoData,varargin)</a>
+0002 <span class="comment">% evotuneScore  Score one ecModel's current kcats against evotune data.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Internal helper used by cmaesKcatTuning, screenKcatLeverage and</span>
+0005 <span class="comment">% tunePriorPenaltyWeight to score one ecModel (with a given set of kcats</span>
+0006 <span class="comment">% already applied via applyKcatConstraints) against the experimental</span>
+0007 <span class="comment">% growth and flux data. Fuses what geckopy splits into simulate.py (the</span>
+0008 <span class="comment">% FBA half) and distance.py (the RMSE half) into one function.</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% Parameters</span>
+0011 <span class="comment">% ----------</span>
+0012 <span class="comment">% ecModel : struct</span>
+0013 <span class="comment">%     ecModel with the current candidate kcats already applied (via</span>
+0014 <span class="comment">%     applyKcatConstraints). Not mutated.</span>
+0015 <span class="comment">% evoData : struct</span>
+0016 <span class="comment">%     structure with experimental data to be used, as returned by</span>
+0017 <span class="comment">%     loadEvotuneData.</span>
+0018 <span class="comment">%</span>
+0019 <span class="comment">% Name-Value Arguments</span>
+0020 <span class="comment">% --------------------</span>
+0021 <span class="comment">% modelAdapter : ModelAdapter</span>
+0022 <span class="comment">%     a loaded model adapter (default: the current default model adapter).</span>
+0023 <span class="comment">% maxGrowthWeight : double</span>
+0024 <span class="comment">%     relative weight of the max-growth dataset against the flux dataset:</span>
+0025 <span class="comment">%     (rmseFlux + w*rmseMaxGrate) / (w+1) (default 1.0).</span>
+0026 <span class="comment">% priorPenaltyWeight : double</span>
+0027 <span class="comment">%     weight on a prior term added to the objective (default 0, i.e. the</span>
+0028 <span class="comment">%     objective equals the plain RMSE). See kcatVec/kcat0/sigma0log below.</span>
+0029 <span class="comment">% kcatVec, kcat0, sigma0log : double</span>
+0030 <span class="comment">%     only used when priorPenaltyWeight &gt; 0: the tunable kcat subset's</span>
+0031 <span class="comment">%     current values, prior values, and per-kcat prior log-space std dev,</span>
+0032 <span class="comment">%     all the same length and in the same order. The penalty added to the</span>
+0033 <span class="comment">%     objective is priorPenaltyWeight * mean((log(kcatVec./kcat0)./sigma0log).^2).</span>
+0034 <span class="comment">%</span>
+0035 <span class="comment">% Returns</span>
+0036 <span class="comment">% -------</span>
+0037 <span class="comment">% objective : double</span>
+0038 <span class="comment">%     rmse, plus the prior penalty term when priorPenaltyWeight &gt; 0. This</span>
+0039 <span class="comment">%     is what a search should minimise.</span>
+0040 <span class="comment">% rmse : double</span>
+0041 <span class="comment">%     the plain (unpenalised) average RMSE, always comparable across runs</span>
+0042 <span class="comment">%     regardless of priorPenaltyWeight.</span>
+0043 <span class="comment">% rmseDetail : cell</span>
+0044 <span class="comment">%     per-condition RMSE values, labelled by data type and condition index.</span>
+0045 <span class="comment">% ecModel : struct</span>
+0046 <span class="comment">%     the input ecModel, with ec.excarbon cached on it if it wasn't</span>
+0047 <span class="comment">%     already present. MATLAB structs are copied on assignment, not</span>
+0048 <span class="comment">%     shared by reference like a Python object, so callers scoring many</span>
+0049 <span class="comment">%     candidates in a loop should carry this output back in as the base</span>
+0050 <span class="comment">%     copy for the next candidate, rather than recomputing excarbon (an</span>
+0051 <span class="comment">%     expensive metabolite-formula scan) on every single call.</span>
+0052 <span class="comment">%</span>
+0053 <span class="comment">% See also</span>
+0054 <span class="comment">% --------</span>
+0055 <span class="comment">% cmaesKcatTuning, screenKcatLeverage, loadEvotuneData</span>
+0056 
+0057 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0058     <span class="string">'modelAdapter'</span>, []; <span class="keyword">...</span>
+0059     <span class="string">'maxGrowthWeight'</span>, 1.0; <span class="keyword">...</span>
+0060     <span class="string">'priorPenaltyWeight'</span>, 0.0; <span class="keyword">...</span>
+0061     <span class="string">'kcatVec'</span>, []; <span class="keyword">...</span>
+0062     <span class="string">'kcat0'</span>, []; <span class="keyword">...</span>
+0063     <span class="string">'sigma0log'</span>, []});
+0064 modelAdapter        = p.modelAdapter;
+0065 maxGrowthWeight     = p.maxGrowthWeight;
+0066 priorPenaltyWeight  = p.priorPenaltyWeight;
+0067 
+0068 <span class="keyword">if</span> isempty(modelAdapter)
+0069     modelAdapter = ModelAdapterManager.getDefault();
+0070     <span class="keyword">if</span> isempty(modelAdapter)
+0071         error(<span class="string">'Either send in a modelAdapter or set the default ecModel adapter in the ModelAdapterManager.'</span>)
+0072     <span class="keyword">end</span>
+0073 <span class="keyword">end</span>
+0074 
+0075 <span class="keyword">if</span> ~isfield(ecModel,<span class="string">'excarbon'</span>)
+0076     ecModel = fillCarbonNum(ecModel);
+0077     ecModel.excarbon(ecModel.excarbon == 0) = 1;
+0078 <span class="keyword">end</span>
+0079 
+0080 rmse_1 = []; rmseDetail1 = []; rmse_2 = []; rmseDetail2 = [];
+0081 
+0082 <span class="keyword">if</span> ~isempty(evoData.fluxData)
+0083     [rmse_1, rmseDetail1] = <a href="#_sub1" class="code" title="subfunction [rmse, rmseList] = simulateCondition(ecModel,data,constrain,rxn2block,modelAdapter)">simulateCondition</a>(ecModel,evoData.fluxData,true,evoData.zeroFlux,modelAdapter);
+0084     rmseDetail1 = [cellstr(&quot;fluxData_&quot; + string(1:numel(rmseDetail1)))',num2cell(rmseDetail1)];
+0085 <span class="keyword">end</span>
+0086 <span class="keyword">if</span> ~isempty(evoData.maxGrate)
+0087     [rmse_2, rmseDetail2] = <a href="#_sub1" class="code" title="subfunction [rmse, rmseList] = simulateCondition(ecModel,data,constrain,rxn2block,modelAdapter)">simulateCondition</a>(ecModel,evoData.maxGrate,false,evoData.zeroFlux,modelAdapter);
+0088     rmseDetail2 = [cellstr(&quot;maxGrowth_&quot; + string(1:numel(rmseDetail2)))',num2cell(rmseDetail2)];
+0089 <span class="keyword">end</span>
+0090 
+0091 parts = []; weights = [];
+0092 <span class="keyword">if</span> ~isempty(rmse_1)
+0093     parts(end+1) = rmse_1; weights(end+1) = 1.0;
+0094 <span class="keyword">end</span>
+0095 <span class="keyword">if</span> ~isempty(rmse_2)
+0096     parts(end+1) = rmse_2; weights(end+1) = maxGrowthWeight;
+0097 <span class="keyword">end</span>
+0098 <span class="keyword">if</span> isempty(parts)
+0099     rmse = NaN;
+0100 <span class="keyword">else</span>
+0101     rmse = sum(parts .* weights) / sum(weights);
+0102 <span class="keyword">end</span>
+0103 rmseDetail = [rmseDetail1;rmseDetail2];
+0104 
+0105 objective = rmse;
+0106 <span class="keyword">if</span> priorPenaltyWeight &gt; 0 &amp;&amp; ~isempty(p.kcatVec) &amp;&amp; ~isempty(p.kcat0) &amp;&amp; ~isempty(p.sigma0log)
+0107     dev = log(p.kcatVec(:) ./ p.kcat0(:)) ./ p.sigma0log(:);
+0108     objective = rmse + priorPenaltyWeight * mean(dev.^2);
+0109 <span class="keyword">end</span>
+0110 <span class="keyword">end</span>
+0111 
+0112 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0113 <a name="_sub1" href="#_subfunctions" class="code">function [rmse, rmseList] = simulateCondition(ecModel,data,constrain,rxn2block,modelAdapter)</a>
+0114 <span class="comment">% One condition's FBA simulation + carbon-weighted RMSE against measured</span>
+0115 <span class="comment">% data.</span>
+0116 
+0117 rmseList = zeros(length(data.conds),1);
+0118 
+0119 [~,exchIdx] = ismember(data.conds,data.exchMets);
+0120 <span class="keyword">if</span> any(exchIdx == 0)
+0121     missingMets = strjoin(unique(data.conds(exchIdx == 0)), <span class="string">'; '</span>);
+0122     error(<span class="string">'Carbon source(s) &quot;%s&quot; in the provided fluxData or maxGrowth cannot be matched by name with an exchange reaction.'</span>, missingMets);
+0123 <span class="keyword">end</span>
+0124 
+0125 <span class="keyword">for</span> i = 1:length(data.conds)
+0126     <span class="comment">% Set all other carbon sources to zero, then unblock this condition's</span>
+0127     model_tmp = setParam(ecModel,<span class="string">'lb'</span>,data.exchRxnIDs(unique(exchIdx)),0);
+0128     <span class="keyword">if</span> constrain <span class="comment">% RMSE from flux data: constrain carbon uptake at the measured rate</span>
+0129         model_tmp = setParam(model_tmp,<span class="string">'lb'</span>,data.exchRxnIDs(exchIdx(i)),data.exchFluxes(i,exchIdx(i)));
+0130     <span class="keyword">else</span> <span class="comment">% RMSE from max growth: leave carbon uptake fully open</span>
+0131         model_tmp = setParam(model_tmp,<span class="string">'lb'</span>,data.exchRxnIDs(exchIdx(i)),-1000);
+0132     <span class="keyword">end</span>
+0133 
+0134     <span class="comment">% This row's own carbon source is never itself asserted zero-flux.</span>
+0135     rxn2blockIter = rxn2block;
+0136     rxn2blockIter(strcmp(rxn2blockIter,data.exchRxnIDs(exchIdx(i)))) = [];
+0137 
+0138     o2Flux = data.exchFluxes(i,strcmp(<span class="string">'oxygen'</span>,data.exchMets));
+0139     <span class="keyword">if</span> o2Flux == 0
+0140         model_tmp = modelAdapter.makeModelAnaerobic(model_tmp);
+0141     <span class="keyword">end</span>
+0142     <span class="keyword">if</span> ~(isnan(data.Ptot(i)) || data.Ptot(i) == 0)
+0143         model_tmp = modelAdapter.changeProteinBiomass(model_tmp,data.Ptot(i));
+0144     <span class="keyword">end</span>
+0145 
+0146     sol = solveLP(model_tmp);
+0147     <span class="keyword">if</span> checkSolution(sol)
+0148         bioRxn  = getIndexes(model_tmp,data.biomass,<span class="string">'rxns'</span>);
+0149         <span class="comment">% Biomass carries an assumed 41 Cmmol/gDCW, matching fillCarbonNum.</span>
+0150         bioMeas = data.grRate(i) * 41;
+0151         bioSim  = sol.x(bioRxn) * 41;
+0152 
+0153         <span class="keyword">if</span> constrain
+0154             fluxToCheck   = ~isnan(data.exchFluxes(i,:));
+0155             fluxRxnIdx    = getIndexes(model_tmp,data.exchRxnIDs(fluxToCheck),<span class="string">'rxns'</span>);
+0156             cNormMeasFlux = model_tmp.excarbon(fluxRxnIdx) .* transpose(data.exchFluxes(i,fluxToCheck));
+0157             cNormSimFlux  = model_tmp.excarbon(fluxRxnIdx) .* sol.x(fluxRxnIdx);
+0158 
+0159             blockRxnIdx = getIndexes(model_tmp,rxn2blockIter,<span class="string">'rxns'</span>);
+0160             blockSim    = sol.x(blockRxnIdx) .* model_tmp.excarbon(blockRxnIdx);
+0161             <span class="comment">% Already-correct zero predictions don't dilute the RMSE.</span>
+0162             blockSim(blockSim == 0) = [];
+0163             blockMeas = zeros(numel(blockSim),1);
+0164 
+0165             measured  = [cNormMeasFlux; bioMeas; blockMeas];
+0166             simulated = [cNormSimFlux; bioSim; blockSim];
+0167         <span class="keyword">else</span>
+0168             measured  = bioMeas;
+0169             simulated = bioSim;
+0170         <span class="keyword">end</span>
+0171         rmseList(i) = sqrt(mean((measured - simulated).^2));
+0172     <span class="keyword">else</span>
+0173         rmseList(i) = NaN;
+0174     <span class="keyword">end</span>
+0175 <span class="keyword">end</span>
+0176 rmseList(isnan(rmseList)) = 99; <span class="comment">% Fixed penalty for an infeasible condition.</span>
+0177 <span class="keyword">if</span> isfield(data,<span class="string">'evotuneRMSEweight'</span>) &amp;&amp; ~isempty(data.evotuneRMSEweight)
+0178     rmseList = rmseList .* data.evotuneRMSEweight;
+0179 <span class="keyword">end</span>
+0180 rmse = mean(rmseList);
+0181 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

@@ -1,0 +1,210 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of adapterTemplate</title>
+  <meta name="keywords" content="adapterTemplate">
+  <meta name="description" content="KEY_CLASSNAME  Template ModelAdapter to copy and adapt per organism.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">model_adapter</a> &gt; adapterTemplate.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/model_adapter&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>adapterTemplate
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>KEY_CLASSNAME  Template ModelAdapter to copy and adapt per organism.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>This is a script file. </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> KEY_CLASSNAME  Template ModelAdapter to copy and adapt per organism.
+
+ Starting point for a species-specific adapter. Copy this file, rename
+ the class, and edit the parameter values set in the constructor and the
+ getSpontaneousReactions method to match the target organism and model.
+
+ See also
+ --------
+ <a href="ModelAdapter.html" class="code" title="">ModelAdapter</a>, <a href="ModelAdapterManager.html" class="code" title="">ModelAdapterManager</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="ModelAdapter.html" class="code" title="">ModelAdapter</a>	ModelAdapter  Abstract base class for species-specific model adapters.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function obj = KEY_CLASSNAME()</a></li><li><a href="#_sub2" class="code">function [spont,spontRxnNames] = getSpontaneousReactions(obj,model)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">% KEY_CLASSNAME  Template ModelAdapter to copy and adapt per organism.</span>
+0002 <span class="comment">%</span>
+0003 <span class="comment">% Starting point for a species-specific adapter. Copy this file, rename</span>
+0004 <span class="comment">% the class, and edit the parameter values set in the constructor and the</span>
+0005 <span class="comment">% getSpontaneousReactions method to match the target organism and model.</span>
+0006 <span class="comment">%</span>
+0007 <span class="comment">% See also</span>
+0008 <span class="comment">% --------</span>
+0009 <span class="comment">% ModelAdapter, ModelAdapterManager</span>
+0010 classdef <a href="#_sub1" class="code" title="subfunction obj = KEY_CLASSNAME()">KEY_CLASSNAME</a> &lt; <a href="ModelAdapter.html" class="code" title="">ModelAdapter</a>
+0011     methods
+0012         <a name="_sub0" href="#_subfunctions" class="code">function obj = KEY_CLASSNAME()</a>
+0013             <span class="comment">% KEY_CLASSNAME  Construct the adapter and set default parameters.</span>
+0014             <span class="comment">%</span>
+0015             <span class="comment">% Sets initial values of obj.params; they can be changed by</span>
+0016             <span class="comment">% the user after construction.</span>
+0017             <span class="comment">%</span>
+0018             <span class="comment">% Returns</span>
+0019             <span class="comment">% -------</span>
+0020             <span class="comment">% obj : ModelAdapter</span>
+0021             <span class="comment">%     the constructed adapter instance.</span>
+0022 
+0023             <span class="comment">% Directory where all model-specific files and scripts are kept.</span>
+0024             <span class="comment">% Is assumed to follow the GECKO-defined folder structure.</span>
+0025             obj.params.path = fullfile(<span class="string">'KEY_PATH'</span>, <span class="string">'KEY_NAME'</span>);
+0026             addpath(fullfile(obj.params.path,<span class="string">'code'</span>));
+0027 
+0028             <span class="comment">% Path to the conventional GEM that this ecModel will be based on.</span>
+0029             obj.params.convGEM = fullfile(obj.params.path,<span class="string">'models'</span>,<span class="string">'yourModel.xml'</span>);
+0030 
+0031             <span class="comment">% Average enzyme saturation factor</span>
+0032             obj.params.sigma = 0.5;
+0033 
+0034             <span class="comment">% Total protein content in the cell [g protein/gDw]</span>
+0035             obj.params.Ptot = 0.5;
+0036 
+0037             <span class="comment">% Fraction of enzymes in the model [g enzyme/g protein]</span>
+0038             obj.params.f = 0.5;
+0039             
+0040             <span class="comment">% Growth rate the model should be able to reach when not</span>
+0041             <span class="comment">% constraint by nutrient uptake (e.g. max growth rate) [1/h]</span>
+0042             obj.params.gR_exp = 0.41;
+0043 
+0044             <span class="comment">% Provide your organism scientific name</span>
+0045             obj.params.org_name = <span class="string">'genus species'</span>;
+0046 
+0047             <span class="comment">% Which BRENDA aggregate fuzzyKcatMatching reads for each</span>
+0048             <span class="comment">% (EC, substrate, organism) triple: 'max' (the highest</span>
+0049             <span class="comment">% turnover reported) or 'median' (the middle one). Can also</span>
+0050             <span class="comment">% be given per call as</span>
+0051             <span class="comment">% fuzzyKcatMatching(model,'kcatAggregation','median').</span>
+0052             obj.params.kcatAggregation = <span class="string">'max'</span>;
+0053             
+0054             <span class="comment">% Taxonomic identifier for Complex Portal</span>
+0055             obj.params.complex.taxonomicID = [];
+0056 
+0057             <span class="comment">% Provide your organism KEGG ID, selected at</span>
+0058             <span class="comment">% https://www.genome.jp/kegg/catalog/org_list.html</span>
+0059             obj.params.kegg.ID = <span class="string">'sce'</span>;
+0060             <span class="comment">% Field for KEGG gene identifier; should match the gene</span>
+0061             <span class="comment">% identifiers used in the model. With 'kegg', it takes the</span>
+0062             <span class="comment">% default KEGG Entry identifier (for example YER023W here:</span>
+0063             <span class="comment">% https://www.genome.jp/dbget-bin/www_bget?sce:YER023W).</span>
+0064             <span class="comment">% Alternatively, gene identifiers from the &quot;Other DBs&quot; section</span>
+0065             <span class="comment">% of the KEGG page can be selected. For example &quot;NCBI-GeneID&quot;,</span>
+0066             <span class="comment">% &quot;UniProt&quot;, or &quot;Ensembl&quot;. Not all DB entries are available for</span>
+0067             <span class="comment">% all organisms and/or genes.</span>
+0068             obj.params.kegg.geneID = <span class="string">'kegg'</span>;
+0069 
+0070             <span class="comment">% Provide what identifier should be used to query UniProt.</span>
+0071             <span class="comment">% Select proteome IDs at https://www.uniprot.org/proteomes/</span>
+0072             <span class="comment">% or taxonomy IDs at https://www.uniprot.org/taxonomy.</span>
+0073             obj.params.uniprot.type = <span class="string">'taxonomy'</span>; <span class="comment">% 'proteome' or 'taxonomy'</span>
+0074             obj.params.uniprot.ID = <span class="string">'559292'</span>; <span class="comment">% should match the ID type</span>
+0075             <span class="comment">% Field for Uniprot gene ID - should match the gene ids used in the</span>
+0076             <span class="comment">% model. It should be one of the &quot;Returned Field&quot; entries under</span>
+0077             <span class="comment">% &quot;Names &amp; Taxonomy&quot; at this page: https://www.uniprot.org/help/return_fields</span>
+0078             obj.params.uniprot.geneIDfield = <span class="string">'gene_oln'</span>;
+0079             <span class="comment">% Whether only reviewed data from UniProt should be considered.</span>
+0080             <span class="comment">% Reviewed data has highest confidence, but coverage might be (very)</span>
+0081             <span class="comment">% low for non-model organisms</span>
+0082             obj.params.uniprot.reviewed = false;
+0083 
+0084             <span class="comment">% Reaction ID for glucose exchange reaction (or other preferred carbon source)</span>
+0085             obj.params.c_source = <span class="string">'r_1714'</span>; 
+0086 
+0087             <span class="comment">% Reaction ID for biomass pseudoreaction</span>
+0088             obj.params.bioRxn = <span class="string">'r_4041'</span>;
+0089 
+0090             <span class="comment">% Name of the compartment where the protein pseudometabolites</span>
+0091             <span class="comment">% should be located (all be located in the same compartment,</span>
+0092             <span class="comment">% this does not interfere with them catalyzing reactions in</span>
+0093             <span class="comment">% different compartments). Typically, cytoplasm is chosen.</span>
+0094             obj.params.enzyme_comp = <span class="string">'cytoplasm'</span>;
+0095 
+0096             <span class="comment">%% Hyperparameters for evotune (CMA-ES) kcat fitting</span>
+0097             <span class="comment">% Default initial uncertainty (standard deviation in log-space) for kcat values</span>
+0098             obj.params.evotune.sigma0logDefault    = 0.5;
+0099             <span class="comment">% Data sources for kcat values, ordered from least to most trusted</span>
+0100             obj.params.evotune.kcatSources         = {<span class="string">'dlkcat'</span>,<span class="string">'brenda'</span>,<span class="string">'custom'</span>};
+0101             <span class="comment">% Initial uncertainty for each source (lower = more trusted data)</span>
+0102             obj.params.evotune.sigma0logSource     = [0.4; 0.2; 0.1];
+0103 
+0104             <span class="comment">% Weight on the max-growth RMSE against the flux RMSE:</span>
+0105             <span class="comment">% (rmseFlux + w*rmseMaxGrowth) / (w+1). At 1 both count equally.</span>
+0106             obj.params.evotune.maxGrowthWeight     = 1.0;
+0107             <span class="comment">% Weight on a prior term in the search objective,</span>
+0108             <span class="comment">% rmse + w*mean((log(k/k0)/sigma0log)^2). Keeps large corrections</span>
+0109             <span class="comment">% reproducible across seeds; 0 scores on RMSE alone.</span>
+0110             obj.params.evotune.priorPenaltyWeight  = 0.03;
+0111             <span class="comment">% Give isozyme copies of one reaction (sharing a prior value and</span>
+0112             <span class="comment">% a source) a single shared kcat, so the search cannot invent a</span>
+0113             <span class="comment">% distinction the kcat assignment never made.</span>
+0114             obj.params.evotune.tieIsozymes         = true;
+0115 
+0116             <span class="comment">% Stop optimization when RMSE falls below this threshold</span>
+0117             obj.params.evotune.rmseThreshold       = 0.2;
+0118             <span class="comment">% Maximum number of CMA-ES generations before termination</span>
+0119             obj.params.evotune.maxGenerations      = 150;
+0120         <span class="keyword">end</span>
+0121 
+0122         <span class="comment">% function ecModel = makeModelAnaerobic(ecModel)</span>
+0123         <span class="comment">%     % Define a model-specific function in the 'code' subfolder,</span>
+0124         <span class="comment">%     % that can constrain the model to anaerobic conditions, and</span>
+0125         <span class="comment">%     % include the name of this function here. This is used by</span>
+0126         <span class="comment">%     % cmaesKcatTuning.m (via evotuneScore.m) if the fluxData</span>
+0127         <span class="comment">%     % has anaerobic conditions.</span>
+0128         <span class="comment">%     addpath(fullfile(obj.params.path,'code'));</span>
+0129         <span class="comment">%     ecModel = nameOfModelSpecificFunction(ecModel);</span>
+0130         <span class="comment">% end</span>
+0131 
+0132         <a name="_sub1" href="#_subfunctions" class="code">function [spont,spontRxnNames] = getSpontaneousReactions(obj,model)</a>
+0133             <span class="comment">% getSpontaneousReactions  Identify spontaneous reactions in the model.</span>
+0134             <span class="comment">%</span>
+0135             <span class="comment">% Indicates how spontaneous reactions are identified. Here it</span>
+0136             <span class="comment">% is done by the reaction having 'spontaneous' in its name.</span>
+0137             <span class="comment">%</span>
+0138             <span class="comment">% Parameters</span>
+0139             <span class="comment">% ----------</span>
+0140             <span class="comment">% model : struct</span>
+0141             <span class="comment">%     a model in RAVEN format.</span>
+0142             <span class="comment">%</span>
+0143             <span class="comment">% Returns</span>
+0144             <span class="comment">% -------</span>
+0145             <span class="comment">% spont : logical</span>
+0146             <span class="comment">%     true for each reaction identified as spontaneous.</span>
+0147             <span class="comment">% spontRxnNames : cell</span>
+0148             <span class="comment">%     names of the reactions identified as spontaneous.</span>
+0149             spont = contains(model.rxnNames,<span class="string">'spontaneous'</span>);
+0150             spontRxnNames = model.rxnNames(spont);
+0151         <span class="keyword">end</span>
+0152     <span class="keyword">end</span>
+0153 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

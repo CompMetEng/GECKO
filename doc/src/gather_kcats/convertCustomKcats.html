@@ -1,0 +1,233 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of convertCustomKcats</title>
+  <meta name="keywords" content="convertCustomKcats">
+  <meta name="description" content="convertCustomKcats  Convert data/customKcats.tsv into data/kcats/custom.tsv.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">gather_kcats</a> &gt; convertCustomKcats.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/gather_kcats&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>convertCustomKcats
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>convertCustomKcats  Convert data/customKcats.tsv into data/kcats/custom.tsv.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function [file, report] = convertCustomKcats(model, varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> convertCustomKcats  Convert data/customKcats.tsv into data/kcats/custom.tsv.
+
+ Writes the custom kcats of a GECKO 3 project as the curated kcat source
+ file data/kcats/custom.tsv, which collectKcats reads first. The kcats are
+ those applyCustomKcats gives the ecModel, including which of two entries
+ for the same reaction wins: one row per reaction, keyed by conventional
+ reaction and enzyme set (see getEcRxnKeys), with the entry's notes in the
+ note column. The stoicho column is left out: complex stoichiometry comes
+ from applyComplexData. Unlike applyCustomKcats, custom.tsv also applies to
+ light ecModels. geckopy has the same (convert_custom_kcats).
+
+ Parameters
+ ----------
+ model : struct
+     the full ecModel the custom kcats are for (with EC data).
+
+ Name-Value Arguments
+ --------------------
+ modelAdapter : ModelAdapter
+     a loaded model adapter (default: the current default model adapter).
+ customKcats : char
+     the file to convert (default: data/customKcats.tsv in the project).
+ outFile : char
+     the file to write (default: data/kcats/custom.tsv in the project). An
+     existing file is not overwritten.
+
+ Returns
+ -------
+ file : char
+     the file written.
+ report : struct
+     - rows: number of rows written;
+     - partial: reactions whose enzymes only partly match an entry, which
+       applyCustomKcats does not change either (its notMatch).
+
+ Examples
+ --------
+     convertCustomKcats(ecModel);   % then collectKcats/assignKcats read custom.tsv
+
+ See also
+ --------
+ <a href="collectKcats.html" class="code" title="function [decisions, report, ecModel] = collectKcats(model, varargin)">collectKcats</a>, applyCustomKcats, <a href="getEcRxnKeys.html" class="code" title="function [baseRxns, enzymeSets] = getEcRxnKeys(model)">getEcRxnKeys</a>, upgradeGECKOproject</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="getEcRxnKeys.html" class="code" title="function [baseRxns, enzymeSets] = getEcRxnKeys(model)">getEcRxnKeys</a>	getEcRxnKeys  Build-independent keys of the model.ec reactions.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function t = formatNumber(x)</a></li><li><a href="#_sub2" class="code">function checkOptions(args, names, functionName)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [file, report] = convertCustomKcats(model, varargin)</a>
+0002 <span class="comment">% convertCustomKcats  Convert data/customKcats.tsv into data/kcats/custom.tsv.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Writes the custom kcats of a GECKO 3 project as the curated kcat source</span>
+0005 <span class="comment">% file data/kcats/custom.tsv, which collectKcats reads first. The kcats are</span>
+0006 <span class="comment">% those applyCustomKcats gives the ecModel, including which of two entries</span>
+0007 <span class="comment">% for the same reaction wins: one row per reaction, keyed by conventional</span>
+0008 <span class="comment">% reaction and enzyme set (see getEcRxnKeys), with the entry's notes in the</span>
+0009 <span class="comment">% note column. The stoicho column is left out: complex stoichiometry comes</span>
+0010 <span class="comment">% from applyComplexData. Unlike applyCustomKcats, custom.tsv also applies to</span>
+0011 <span class="comment">% light ecModels. geckopy has the same (convert_custom_kcats).</span>
+0012 <span class="comment">%</span>
+0013 <span class="comment">% Parameters</span>
+0014 <span class="comment">% ----------</span>
+0015 <span class="comment">% model : struct</span>
+0016 <span class="comment">%     the full ecModel the custom kcats are for (with EC data).</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% Name-Value Arguments</span>
+0019 <span class="comment">% --------------------</span>
+0020 <span class="comment">% modelAdapter : ModelAdapter</span>
+0021 <span class="comment">%     a loaded model adapter (default: the current default model adapter).</span>
+0022 <span class="comment">% customKcats : char</span>
+0023 <span class="comment">%     the file to convert (default: data/customKcats.tsv in the project).</span>
+0024 <span class="comment">% outFile : char</span>
+0025 <span class="comment">%     the file to write (default: data/kcats/custom.tsv in the project). An</span>
+0026 <span class="comment">%     existing file is not overwritten.</span>
+0027 <span class="comment">%</span>
+0028 <span class="comment">% Returns</span>
+0029 <span class="comment">% -------</span>
+0030 <span class="comment">% file : char</span>
+0031 <span class="comment">%     the file written.</span>
+0032 <span class="comment">% report : struct</span>
+0033 <span class="comment">%     - rows: number of rows written;</span>
+0034 <span class="comment">%     - partial: reactions whose enzymes only partly match an entry, which</span>
+0035 <span class="comment">%       applyCustomKcats does not change either (its notMatch).</span>
+0036 <span class="comment">%</span>
+0037 <span class="comment">% Examples</span>
+0038 <span class="comment">% --------</span>
+0039 <span class="comment">%     convertCustomKcats(ecModel);   % then collectKcats/assignKcats read custom.tsv</span>
+0040 <span class="comment">%</span>
+0041 <span class="comment">% See also</span>
+0042 <span class="comment">% --------</span>
+0043 <span class="comment">% collectKcats, applyCustomKcats, getEcRxnKeys, upgradeGECKOproject</span>
+0044 
+0045 <a href="#_sub2" class="code" title="subfunction checkOptions(args, names, functionName)">checkOptions</a>(varargin, {<span class="string">'modelAdapter'</span>,<span class="string">'customKcats'</span>,<span class="string">'outFile'</span>}, <span class="string">'convertCustomKcats'</span>);
+0046 p = parseGECKOargs(varargin, {<span class="string">'modelAdapter'</span>, []; <span class="string">'customKcats'</span>, []; <span class="string">'outFile'</span>, []});
+0047 modelAdapter = p.modelAdapter;
+0048 <span class="keyword">if</span> isempty(modelAdapter)
+0049     modelAdapter = ModelAdapterManager.getDefault();
+0050     <span class="keyword">if</span> isempty(modelAdapter)
+0051         error(<span class="string">'Either send in a modelAdapter or set the default model adapter in the ModelAdapterManager.'</span>)
+0052     <span class="keyword">end</span>
+0053 <span class="keyword">end</span>
+0054 <span class="keyword">if</span> model.ec.geckoLight
+0055     error(<span class="string">'convertCustomKcats:light'</span>, [<span class="string">'applyCustomKcats does not work on light ecModels; give '</span> <span class="keyword">...</span>
+0056         <span class="string">'the full ecModel. The custom.tsv written applies to light ecModels too.'</span>])
+0057 <span class="keyword">end</span>
+0058 inFile = p.customKcats;
+0059 <span class="keyword">if</span> isempty(inFile)
+0060     inFile = fullfile(modelAdapter.params.path, <span class="string">'data'</span>, <span class="string">'customKcats.tsv'</span>);
+0061 <span class="keyword">end</span>
+0062 file = p.outFile;
+0063 <span class="keyword">if</span> isempty(file)
+0064     file = fullfile(modelAdapter.params.path, <span class="string">'data'</span>, <span class="string">'kcats'</span>, <span class="string">'custom.tsv'</span>);
+0065 <span class="keyword">end</span>
+0066 <span class="keyword">if</span> ~isfile(inFile)
+0067     error(<span class="string">'convertCustomKcats:missing'</span>, <span class="string">'No custom kcats file %s.'</span>, inFile)
+0068 <span class="keyword">end</span>
+0069 <span class="keyword">if</span> isfile(file)
+0070     error(<span class="string">'convertCustomKcats:exists'</span>, <span class="string">'%s exists and is not overwritten.'</span>, file)
+0071 <span class="keyword">end</span>
+0072 
+0073 base = model;
+0074 base.ec.notes(:) = {<span class="string">''</span>};
+0075 [applied, rxnUpdated, notMatch] = applyCustomKcats(base, <span class="string">'customKcats'</span>, inFile, <span class="string">'modelAdapter'</span>, modelAdapter);
+0076 idx = find(ismember(applied.ec.rxns, rxnUpdated));
+0077 [baseRxns, enzymeSets] = <a href="getEcRxnKeys.html" class="code" title="function [baseRxns, enzymeSets] = getEcRxnKeys(model)">getEcRxnKeys</a>(applied);
+0078 rows = strings(numel(idx), 9);
+0079 <span class="keyword">for</span> k = 1:numel(idx)
+0080     i = idx(k);
+0081     note = regexprep(applied.ec.notes{i}, <span class="string">'[\t\r\n]'</span>, <span class="string">' '</span>);
+0082     rows(k, :) = [string(baseRxns{i}), string(enzymeSets{i}), &quot;&quot;, <a href="#_sub1" class="code" title="subfunction t = formatNumber(x)">formatNumber</a>(applied.ec.kcat(i)), <span class="keyword">...</span>
+0083         &quot;&quot;, &quot;custom&quot;, &quot;&quot;, &quot;&quot;, string(note)];
+0084 <span class="keyword">end</span>
+0085 <span class="comment">% Isozymic copies of one conventional reaction share a key and a value.</span>
+0086 <span class="keyword">if</span> ~isempty(rows)
+0087     [~, first] = unique(join(rows(:, 1:2), char(1), 2), <span class="string">'stable'</span>);
+0088     rows = rows(sort(first), :);
+0089     [~, order] = sort(join(rows(:, [1 2 3 6 4 5 7 8 9]), char(1), 2));
+0090     rows = rows(order, :);
+0091 <span class="keyword">end</span>
+0092 
+0093 folder = fileparts(file);
+0094 <span class="keyword">if</span> ~isfolder(folder)
+0095     mkdir(folder);
+0096 <span class="keyword">end</span>
+0097 gecko = strtrim(fileread(fullfile(findGECKOroot(), <span class="string">'version.txt'</span>)));
+0098 [~, name, ext] = fileparts(inFile);
+0099 fid = fopen(file, <span class="string">'w'</span>, <span class="string">'n'</span>, <span class="string">'UTF-8'</span>);
+0100 fprintf(fid, <span class="string">'# source: custom\n'</span>);
+0101 fprintf(fid, <span class="string">'# generator: convertCustomKcats (GECKO %s)\n'</span>, gecko);
+0102 fprintf(fid, <span class="string">'# parameters: {}\n'</span>);
+0103 fprintf(fid, <span class="string">'# data: %s\n'</span>, [name ext]);
+0104 fprintf(fid, <span class="string">'# kind: curated\n'</span>);
+0105 fprintf(fid, <span class="string">'# created: %s\n'</span>, char(datetime(<span class="string">'now'</span>, <span class="string">'TimeZone'</span>, <span class="string">'UTC'</span>, <span class="string">'Format'</span>, <span class="string">'yyyy-MM-dd''T''HH:mm:ss''Z'''</span>)));
+0106 fprintf(fid, <span class="string">'rxn\tenzymes\tsubstrate\tkcat\tlog10_sd\tsource\tdetail\tec_code\tnote\n'</span>);
+0107 <span class="keyword">if</span> ~isempty(rows)
+0108     fprintf(fid, <span class="string">'%s\n'</span>, join(rows, sprintf(<span class="string">'\t'</span>), 2));
+0109 <span class="keyword">end</span>
+0110 fclose(fid);
+0111 report.rows = size(rows, 1);
+0112 report.partial = notMatch;
+0113 fprintf(<span class="string">'%d custom kcats written to %s.\n'</span>, report.rows, file);
+0114 <span class="keyword">end</span>
+0115 
+0116 <a name="_sub1" href="#_subfunctions" class="code">function t = formatNumber(x)</a>
+0117 <span class="comment">% The shortest text that reads back as x, as saveKcatSource writes numbers.</span>
+0118 <span class="keyword">if</span> x == round(x) &amp;&amp; abs(x) &lt; 1e15
+0119     t = string(sprintf(<span class="string">'%d'</span>, x));
+0120     <span class="keyword">return</span>
+0121 <span class="keyword">end</span>
+0122 <span class="keyword">for</span> digits = 1:17
+0123     t = string(sprintf(sprintf(<span class="string">'%%.%dg'</span>, digits), x));
+0124     <span class="keyword">if</span> str2double(t) == x
+0125         <span class="keyword">return</span>
+0126     <span class="keyword">end</span>
+0127 <span class="keyword">end</span>
+0128 <span class="keyword">end</span>
+0129 
+0130 <a name="_sub2" href="#_subfunctions" class="code">function checkOptions(args, names, functionName)</a>
+0131 <span class="comment">% Options are name-value pairs with known names, so a misspelled option is</span>
+0132 <span class="comment">% an error instead of being taken as a positional argument.</span>
+0133 id = [functionName <span class="string">':arguments'</span>];
+0134 given = args(1:2:end);
+0135 <span class="keyword">if</span> mod(numel(args), 2) ~= 0 || ~all(cellfun(@(x) ischar(x) || (isstring(x) &amp;&amp; isscalar(x)), given))
+0136     error(id, <span class="string">'Options of %s are name-value pairs. Options: %s.'</span>, functionName, strjoin(names, <span class="string">', '</span>))
+0137 <span class="keyword">end</span>
+0138 unknown = setdiff(cellfun(@char, given, <span class="string">'UniformOutput'</span>, false), names);
+0139 <span class="keyword">if</span> ~isempty(unknown)
+0140     error(id, <span class="string">'Unknown option of %s: %s. Options: %s.'</span>, functionName, strjoin(unknown, <span class="string">', '</span>), <span class="keyword">...</span>
+0141         strjoin(names, <span class="string">', '</span>))
+0142 <span class="keyword">end</span>
+0143 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

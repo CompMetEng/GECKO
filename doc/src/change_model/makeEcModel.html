@@ -1,0 +1,669 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of makeEcModel</title>
+  <meta name="keywords" content="makeEcModel">
+  <meta name="description" content="makeEcModel  Expand a conventional GEM into a basic ecModel.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">change_model</a> &gt; makeEcModel.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/change_model&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>makeEcModel
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>makeEcModel  Expand a conventional GEM into a basic ecModel.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function [model, noUniprot] = makeEcModel(model, varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> makeEcModel  Expand a conventional GEM into a basic ecModel.
+
+ Expands a conventional genome-scale model (in RAVEN format) with enzyme
+ information and prepares the reactions for integration of enzyme usage
+ coefficients. This function contains all the steps that need to be done to
+ get a basic ecModel, without incorporating any kcat values or constraints
+ yet. This function should only have to be run once for a model.
+
+ Parameters
+ ----------
+ model : struct
+     a model in RAVEN format.
+
+ Name-Value Arguments
+ --------------------
+ geckoLight : logical
+     true if a simplified GECKO light model should be generated (default
+     false).
+ modelAdapter : ModelAdapter
+     a loaded model adapter (default: the current default model adapter).
+
+ Returns
+ -------
+ model : struct
+     an ecModel in GECKO 3 format, with a model.ec structure where enzyme
+     and kcat information are stored. Protein pseudometabolites and their
+     draw reactions are added to the model, but their usage is not yet
+     implemented (due to absent kcat values at this stage).
+ noUniprot : cell
+     genes for which no information could be found in either the Uniprot
+     or, as fallback, the KEGG database.
+
+ Notes
+ -----
+ The function goes through the following steps:
+
+ 1.  Remove gene associations from pseudoreactions.
+ 2.  Invert irreversible backwards reactions.
+ 3.  Correct 'rev' vector to match lb and ub vectors.
+ 4.  Convert to irreversible model (splits reversible reactions).
+ 5.  [Skipped with geckoLight:] Expand model to split reactions with 'OR'
+     in grRules (each reaction is then catalyzed by one enzyme (complex)).
+ 6.  Make empty model.ec structure, that will contain enzyme and kcat
+     information. One entry per reaction, where isozymes have multiple
+     entries. This model.ec structure will later be populated with kcat
+     values. For geckoLight the structure is different, where each reaction
+     can have multiple isozymes.
+ 7.  Add enzyme information fields to model.ec structure: MW, sequence.
+     Data is gathered from UniProt, with KEGG used as a fallback for genes
+     that UniProt does not match.
+ 8.  Populate model.ec structure with information from each reaction.
+ 9.  [Skipped with geckoLight:] Add proteins as pseudometabolites.
+ 10. Add prot_pool pseudometabolite.
+ 11. [Skipped with geckoLight:] Add usage reactions for the protein
+     pseudometabolites, replenishing from the protein pool (default, can be
+     changed to consider proteomics data at later stage).
+ 12. Add protein pool reaction, without upper bound.
+
+ Note that while protein pseudometabolites, draw &amp; pool reactions might be
+ added to the model, the enzyme usage is not yet incorporated in each
+ metabolic reaction, so enzymes will not be used. applyKcatConstraints
+ incorporates protein pseudometabolites in reactions as enzyme usages by
+ applying the specified kcats as constraints.
+
+ The model.ec structure has the following fields:
+
+ - geckoLight : 0 if full model, 1 if light.
+ - rxns : reaction identifiers that correspond to model.rxns.
+ - kcat : kcat values - not set here.
+ - source : specifies where the kcats come from - not set here.
+ - notes : notes that can be set by downstream functions - not set here.
+ - eccodes : enzyme codes for each enzyme - not set here.
+ - genes : the genes involved in the kcats - not necessarily the same as model.genes, since some genes may not be found in databases etc.
+ - enzymes : Uniprot protein identifiers for the genes; for a gene that
+   was only matched via the KEGG fallback and has no UniProt accession on
+   its KEGG entry, the bare KEGG gene identifier is used instead.
+ - mw : molecular weights of the enzymes.
+ - sequence : sequence of the genes/enzymes.
+ - concs : concentrations of the enzymes - not set here.
+ - rxnEnzMat : matrix of enzymes and rxns.
+
+ The full model is split on all ORs in the GPRs, meaning that the reactions
+ will be duplicated for each isozyme. Only the rxns with genes are added.
+ The fields rxns, eccodes, kcat, source and notes will therefore have one
+ entry per reaction. The fields genes, enzymes, mw, sequence and concs will
+ have one entry per gene. The rxnEnzMat is a matrix with reactions and
+ genes, mapping which genes are connected to which reaction (where isozymes
+ have different reactions).
+
+ The light model works a bit differently. The model has the same number of
+ rxns as the original model, but expanded since it is reversible + one the
+ extra prot maintenance rxn and one extra prot_pool rxn. However, the ec
+ fields rxns, eccodes, kcat, source and notes are duplicated for each
+ isozyme, sorted the same way as model.rxns. So, in model.ec.rxns, the same
+ reaction will appear several times after one another, one entry per
+ izozyme, with corresponding values for that isozyme. These fields
+ therefore have the same length as for the full model. The fields genes,
+ enzymes, mw, sequence and concs are the same here as in the full model.
+ The rxnEnzMat maps the model.ec.rxns entries to genes and is therefore of
+ the same size as for the full model.
+
+ Examples
+ --------
+     % optional arguments may be given positionally or as name-value pairs:
+     [model, noUniprot] = makeEcModel(model);
+     [model, noUniprot] = makeEcModel(model, 'geckoLight', true);
+
+ See also
+ --------
+ <a href="applyKcatConstraints.html" class="code" title="function model = applyKcatConstraints(model,varargin)">applyKcatConstraints</a>, <a href="applyComplexData.html" class="code" title="function [model, foundComplex, proposedComplex] = applyComplexData(model, varargin)">applyComplexData</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function dnf = gprToDnf(rule)</a></li><li><a href="#_sub2" class="code">function [dnf,pos] = parseOr(tokens,pos,rule)</a></li><li><a href="#_sub3" class="code">function [dnf,pos] = parseAnd(tokens,pos,rule)</a></li><li><a href="#_sub4" class="code">function [dnf,pos] = parseAtom(tokens,pos,rule)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [model, noUniprot] = makeEcModel(model, varargin)</a>
+0002 <span class="comment">% makeEcModel  Expand a conventional GEM into a basic ecModel.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Expands a conventional genome-scale model (in RAVEN format) with enzyme</span>
+0005 <span class="comment">% information and prepares the reactions for integration of enzyme usage</span>
+0006 <span class="comment">% coefficients. This function contains all the steps that need to be done to</span>
+0007 <span class="comment">% get a basic ecModel, without incorporating any kcat values or constraints</span>
+0008 <span class="comment">% yet. This function should only have to be run once for a model.</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% Parameters</span>
+0011 <span class="comment">% ----------</span>
+0012 <span class="comment">% model : struct</span>
+0013 <span class="comment">%     a model in RAVEN format.</span>
+0014 <span class="comment">%</span>
+0015 <span class="comment">% Name-Value Arguments</span>
+0016 <span class="comment">% --------------------</span>
+0017 <span class="comment">% geckoLight : logical</span>
+0018 <span class="comment">%     true if a simplified GECKO light model should be generated (default</span>
+0019 <span class="comment">%     false).</span>
+0020 <span class="comment">% modelAdapter : ModelAdapter</span>
+0021 <span class="comment">%     a loaded model adapter (default: the current default model adapter).</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Returns</span>
+0024 <span class="comment">% -------</span>
+0025 <span class="comment">% model : struct</span>
+0026 <span class="comment">%     an ecModel in GECKO 3 format, with a model.ec structure where enzyme</span>
+0027 <span class="comment">%     and kcat information are stored. Protein pseudometabolites and their</span>
+0028 <span class="comment">%     draw reactions are added to the model, but their usage is not yet</span>
+0029 <span class="comment">%     implemented (due to absent kcat values at this stage).</span>
+0030 <span class="comment">% noUniprot : cell</span>
+0031 <span class="comment">%     genes for which no information could be found in either the Uniprot</span>
+0032 <span class="comment">%     or, as fallback, the KEGG database.</span>
+0033 <span class="comment">%</span>
+0034 <span class="comment">% Notes</span>
+0035 <span class="comment">% -----</span>
+0036 <span class="comment">% The function goes through the following steps:</span>
+0037 <span class="comment">%</span>
+0038 <span class="comment">% 1.  Remove gene associations from pseudoreactions.</span>
+0039 <span class="comment">% 2.  Invert irreversible backwards reactions.</span>
+0040 <span class="comment">% 3.  Correct 'rev' vector to match lb and ub vectors.</span>
+0041 <span class="comment">% 4.  Convert to irreversible model (splits reversible reactions).</span>
+0042 <span class="comment">% 5.  [Skipped with geckoLight:] Expand model to split reactions with 'OR'</span>
+0043 <span class="comment">%     in grRules (each reaction is then catalyzed by one enzyme (complex)).</span>
+0044 <span class="comment">% 6.  Make empty model.ec structure, that will contain enzyme and kcat</span>
+0045 <span class="comment">%     information. One entry per reaction, where isozymes have multiple</span>
+0046 <span class="comment">%     entries. This model.ec structure will later be populated with kcat</span>
+0047 <span class="comment">%     values. For geckoLight the structure is different, where each reaction</span>
+0048 <span class="comment">%     can have multiple isozymes.</span>
+0049 <span class="comment">% 7.  Add enzyme information fields to model.ec structure: MW, sequence.</span>
+0050 <span class="comment">%     Data is gathered from UniProt, with KEGG used as a fallback for genes</span>
+0051 <span class="comment">%     that UniProt does not match.</span>
+0052 <span class="comment">% 8.  Populate model.ec structure with information from each reaction.</span>
+0053 <span class="comment">% 9.  [Skipped with geckoLight:] Add proteins as pseudometabolites.</span>
+0054 <span class="comment">% 10. Add prot_pool pseudometabolite.</span>
+0055 <span class="comment">% 11. [Skipped with geckoLight:] Add usage reactions for the protein</span>
+0056 <span class="comment">%     pseudometabolites, replenishing from the protein pool (default, can be</span>
+0057 <span class="comment">%     changed to consider proteomics data at later stage).</span>
+0058 <span class="comment">% 12. Add protein pool reaction, without upper bound.</span>
+0059 <span class="comment">%</span>
+0060 <span class="comment">% Note that while protein pseudometabolites, draw &amp; pool reactions might be</span>
+0061 <span class="comment">% added to the model, the enzyme usage is not yet incorporated in each</span>
+0062 <span class="comment">% metabolic reaction, so enzymes will not be used. applyKcatConstraints</span>
+0063 <span class="comment">% incorporates protein pseudometabolites in reactions as enzyme usages by</span>
+0064 <span class="comment">% applying the specified kcats as constraints.</span>
+0065 <span class="comment">%</span>
+0066 <span class="comment">% The model.ec structure has the following fields:</span>
+0067 <span class="comment">%</span>
+0068 <span class="comment">% - geckoLight : 0 if full model, 1 if light.</span>
+0069 <span class="comment">% - rxns : reaction identifiers that correspond to model.rxns.</span>
+0070 <span class="comment">% - kcat : kcat values - not set here.</span>
+0071 <span class="comment">% - source : specifies where the kcats come from - not set here.</span>
+0072 <span class="comment">% - notes : notes that can be set by downstream functions - not set here.</span>
+0073 <span class="comment">% - eccodes : enzyme codes for each enzyme - not set here.</span>
+0074 <span class="comment">% - genes : the genes involved in the kcats - not necessarily the same as model.genes, since some genes may not be found in databases etc.</span>
+0075 <span class="comment">% - enzymes : Uniprot protein identifiers for the genes; for a gene that</span>
+0076 <span class="comment">%   was only matched via the KEGG fallback and has no UniProt accession on</span>
+0077 <span class="comment">%   its KEGG entry, the bare KEGG gene identifier is used instead.</span>
+0078 <span class="comment">% - mw : molecular weights of the enzymes.</span>
+0079 <span class="comment">% - sequence : sequence of the genes/enzymes.</span>
+0080 <span class="comment">% - concs : concentrations of the enzymes - not set here.</span>
+0081 <span class="comment">% - rxnEnzMat : matrix of enzymes and rxns.</span>
+0082 <span class="comment">%</span>
+0083 <span class="comment">% The full model is split on all ORs in the GPRs, meaning that the reactions</span>
+0084 <span class="comment">% will be duplicated for each isozyme. Only the rxns with genes are added.</span>
+0085 <span class="comment">% The fields rxns, eccodes, kcat, source and notes will therefore have one</span>
+0086 <span class="comment">% entry per reaction. The fields genes, enzymes, mw, sequence and concs will</span>
+0087 <span class="comment">% have one entry per gene. The rxnEnzMat is a matrix with reactions and</span>
+0088 <span class="comment">% genes, mapping which genes are connected to which reaction (where isozymes</span>
+0089 <span class="comment">% have different reactions).</span>
+0090 <span class="comment">%</span>
+0091 <span class="comment">% The light model works a bit differently. The model has the same number of</span>
+0092 <span class="comment">% rxns as the original model, but expanded since it is reversible + one the</span>
+0093 <span class="comment">% extra prot maintenance rxn and one extra prot_pool rxn. However, the ec</span>
+0094 <span class="comment">% fields rxns, eccodes, kcat, source and notes are duplicated for each</span>
+0095 <span class="comment">% isozyme, sorted the same way as model.rxns. So, in model.ec.rxns, the same</span>
+0096 <span class="comment">% reaction will appear several times after one another, one entry per</span>
+0097 <span class="comment">% izozyme, with corresponding values for that isozyme. These fields</span>
+0098 <span class="comment">% therefore have the same length as for the full model. The fields genes,</span>
+0099 <span class="comment">% enzymes, mw, sequence and concs are the same here as in the full model.</span>
+0100 <span class="comment">% The rxnEnzMat maps the model.ec.rxns entries to genes and is therefore of</span>
+0101 <span class="comment">% the same size as for the full model.</span>
+0102 <span class="comment">%</span>
+0103 <span class="comment">% Examples</span>
+0104 <span class="comment">% --------</span>
+0105 <span class="comment">%     % optional arguments may be given positionally or as name-value pairs:</span>
+0106 <span class="comment">%     [model, noUniprot] = makeEcModel(model);</span>
+0107 <span class="comment">%     [model, noUniprot] = makeEcModel(model, 'geckoLight', true);</span>
+0108 <span class="comment">%</span>
+0109 <span class="comment">% See also</span>
+0110 <span class="comment">% --------</span>
+0111 <span class="comment">% applyKcatConstraints, applyComplexData</span>
+0112 
+0113 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0114     <span class="string">'geckoLight'</span>,   false; <span class="keyword">...</span>
+0115     <span class="string">'modelAdapter'</span>, []});
+0116 geckoLight   = p.geckoLight;
+0117 modelAdapter = p.modelAdapter;
+0118 
+0119 <span class="keyword">if</span> ~islogical(geckoLight) &amp;&amp; ~(geckoLight == 0) &amp;&amp; ~(geckoLight == 1)
+0120     error(<span class="string">'geckoLight should be either true or false'</span>)
+0121 <span class="keyword">end</span>
+0122 
+0123 <span class="keyword">if</span> isempty(modelAdapter)
+0124     modelAdapter = ModelAdapterManager.getDefault();
+0125     <span class="keyword">if</span> isempty(modelAdapter)
+0126         error(<span class="string">'Either send in a modelAdapter or set the default model adapter in the ModelAdapterManager.'</span>)
+0127     <span class="keyword">end</span>
+0128 <span class="keyword">end</span>
+0129 params = modelAdapter.getParameters();
+0130 compartmentID = strcmp(model.compNames,params.enzyme_comp);
+0131 <span class="keyword">if</span> ~any(compartmentID)
+0132     error([<span class="string">'Compartment '</span> params.enzyme_comp <span class="string">' (specified in params.enzyme_comp) '</span><span class="keyword">...</span>
+0133            <span class="string">'cannot be found in model.compNames'</span>])
+0134 <span class="keyword">end</span>
+0135 compartmentID = model.comps(compartmentID);
+0136 
+0137 <span class="keyword">if</span> geckoLight
+0138     ec.geckoLight=true;
+0139 <span class="keyword">else</span>
+0140     ec.geckoLight=false;
+0141 <span class="keyword">end</span>
+0142 
+0143 <span class="comment">%Check if model is in RAVEN format</span>
+0144 <span class="keyword">if</span> any(isfield(model,{<span class="string">'rules'</span>,<span class="string">'modelID'</span>}))
+0145     error([<span class="string">'The model is likely loaded using COBRA Toolbox readCbModel(). Instead, use '</span> <span class="keyword">...</span>
+0146            <span class="string">'RAVEN Toolbox importModel(). Alternatively, you can also convert the '</span>, <span class="keyword">...</span>
+0147            <span class="string">'model in MATLAB using ravenCobraWrapper().'</span>])
+0148 <span class="keyword">end</span>
+0149 
+0150 <span class="comment">%Check for conflicting reaction and metabolite identifiers</span>
+0151 conflictId = startsWith(model.mets,<span class="string">'prot_'</span>);
+0152 <span class="keyword">if</span> any(conflictId)
+0153     error(<span class="string">'The identifiers in model.mets are not allowed to start with ''prot_''.'</span>)
+0154 <span class="keyword">end</span>
+0155 conflictId = startsWith(model.rxns,{<span class="string">'usage_prot_'</span>,<span class="string">'prot_pool'</span>}) | <span class="keyword">...</span>
+0156              endsWith(model.rxns,<span class="string">'_REV'</span>) | <span class="keyword">...</span>
+0157              ~cellfun(@isempty,regexp(model.rxns,<span class="string">'_EXP_\d+$'</span>));
+0158 <span class="keyword">if</span> any(conflictId)
+0159     error([<span class="string">'The identifiers in model.rxns are not allowed to start with ''usage_prot'' '</span> <span class="keyword">...</span>
+0160            <span class="string">'or ''prot_pool'', or end with ''_REV'' or ''_EXP_[digit]''.'</span>])
+0161 <span class="keyword">end</span>
+0162 
+0163 databases = loadDatabases(<span class="string">'both'</span>, modelAdapter);
+0164 uniprotDB = databases.uniprot;
+0165 keggDB    = databases.kegg;
+0166 
+0167 <span class="comment">%1: Remove gene rules from pseudoreactions (if any):</span>
+0168 <span class="keyword">if</span> exist(fullfile(params.path,<span class="string">'data'</span>,<span class="string">'pseudoRxns.tsv'</span>),<span class="string">'file'</span>)
+0169     fID        = fopen(fullfile(params.path,<span class="string">'data'</span>,<span class="string">'pseudoRxns.tsv'</span>));
+0170     fileData   = textscan(fID,<span class="string">'%s %s'</span>,<span class="string">'delimiter'</span>,<span class="string">'\t'</span>);
+0171     fclose(fID);
+0172     pseudoRxns = fileData{1};
+0173     pseudoRxns = ismember(model.rxns,pseudoRxns);
+0174 <span class="keyword">else</span>
+0175     pseudoRxns = false(numel(model.rxns),1);
+0176 <span class="keyword">end</span>
+0177 pseudoRxns = find(pseudoRxns | contains(model.rxnNames,<span class="string">'pseudoreaction'</span>));
+0178 model.grRules(pseudoRxns)       = {<span class="string">''</span>};
+0179 model.rxnGeneMat(pseudoRxns,:)  = zeros(numel(pseudoRxns), numel(model.genes));
+0180 
+0181 <span class="comment">%2: Swap direction of reactions that are defined to only carry negative flux</span>
+0182 to_swap=model.lb &lt; 0 &amp; model.ub == 0;
+0183 model.S(:,to_swap)=-model.S(:,to_swap);
+0184 model.ub(to_swap)=-model.lb(to_swap);
+0185 model.lb(to_swap)=0;
+0186 
+0187 <span class="comment">%3: Correct rev vector: true if LB &lt; 0 &amp; UB &gt; 0, or it is an exchange reaction:</span>
+0188 model.rev = false(size(model.rxns));
+0189 <span class="keyword">for</span> i = 1:length(model.rxns)
+0190     <span class="keyword">if</span> (model.lb(i) &lt; 0 &amp;&amp; model.ub(i) &gt; 0) || sum(model.S(:,i) ~= 0) == 1
+0191         model.rev(i) = true;
+0192     <span class="keyword">end</span>
+0193 <span class="keyword">end</span>
+0194 
+0195 <span class="comment">%4: Make irreversible model (appends _REV to reaction IDs to indicate reverse</span>
+0196 <span class="comment">%reactions)</span>
+0197 [~,exchRxns] = getExchangeRxns(model);
+0198 nonExchRxns = model.rxns;
+0199 nonExchRxns(exchRxns) = [];
+0200 model=convertToIrrev(model, nonExchRxns);
+0201 
+0202 <span class="comment">%5: Expand model, to separate isozymes (appends _EXP_* to reaction IDs to</span>
+0203 <span class="comment">%indicate duplication)</span>
+0204 <span class="keyword">if</span> ~geckoLight
+0205     model=expandModel(model);
+0206 <span class="keyword">end</span>
+0207 <span class="comment">% Sort reactions, so that reversible and isozymic reactions are kept near</span>
+0208 <span class="keyword">if</span> ~geckoLight
+0209     model=sortIdentifiers(model);
+0210 <span class="keyword">end</span>
+0211 
+0212 <span class="comment">%6: Make ec-extension structure, one for gene-associated reaction.</span>
+0213 <span class="comment">%   The structure is different for light and full models</span>
+0214 rxnWithGene  = find(sum(model.rxnGeneMat,2));
+0215 <span class="keyword">if</span> ~geckoLight
+0216     ec.rxns      = model.rxns(rxnWithGene);
+0217     emptyCell    = cell(numel(rxnWithGene),1);
+0218     emptyCell(:) = {<span class="string">''</span>};
+0219     emptyVect    = zeros(numel(rxnWithGene),1);
+0220     
+0221     ec.kcat      = emptyVect;
+0222     ec.source    = emptyCell; <span class="comment">% Strings, like 'dlkcat', 'manual', 'brenda', etc.</span>
+0223     ec.notes     = emptyCell; <span class="comment">% Additional comments</span>
+0224     ec.eccodes   = emptyCell;
+0225     ec.concs     = emptyVect;
+0226 <span class="keyword">else</span>
+0227     <span class="comment">%Different strategy for GECKO light: Each reaction can exist multiple times in</span>
+0228     <span class="comment">%ec.rxns and similar fields - one time per isozyme. The number of copies is</span>
+0229     <span class="comment">%the number of AND-clauses of the GPR in disjunctive normal form, so</span>
+0230     <span class="comment">%'G1 and (G2 or G3)' gives the isozymes {G1,G2} and {G1,G3}.</span>
+0231     isozymes = cellfun(@<a href="#_sub1" class="code" title="subfunction dnf = gprToDnf(rule)">gprToDnf</a>, model.grRules(rxnWithGene), <span class="string">'UniformOutput'</span>, false);
+0232     <span class="comment">% A reaction with gene entries but an empty rule keeps one isozyme without enzymes</span>
+0233     isozymes(cellfun(@isempty,isozymes)) = {{cell(1,0)}};
+0234     cpys = cellfun(@numel, isozymes);
+0235     prevNumRxns = numel(isozymes);
+0236     cpyIndices = repelem(rxnWithGene, cpys).'; <span class="comment">%.' only matter when number of rxns is 1</span>
+0237     <span class="comment">%loop through and add a prefix with an isozyme index to the rxns</span>
+0238     <span class="comment">%we just give a fixed-length number as prefix, and assume that 999 is enough</span>
+0239     tmpRxns = model.rxns(cpyIndices); <span class="comment">%now they have no prefix</span>
+0240     newRxns = tmpRxns;
+0241     
+0242     <span class="comment">%add the prefix</span>
+0243     nextIndex = 1;
+0244     <span class="keyword">for</span> i = 1:numel(model.rxns)
+0245         localRxnIndex = 1;
+0246         <span class="keyword">if</span> nextIndex &lt;= length(tmpRxns) &amp;&amp; strcmp(model.rxns(i), tmpRxns(nextIndex))
+0247             <span class="keyword">while</span> true
+0248                 tmp = compose(<span class="string">'%03d_'</span>,localRxnIndex);
+0249                 newRxns{nextIndex} = [tmp{1} tmpRxns{nextIndex}];
+0250                 localRxnIndex = localRxnIndex + 1;
+0251                 <span class="keyword">if</span> (localRxnIndex &gt;= 1000)
+0252                     error(<span class="string">'Increase index size to 10000 - error in the code.'</span>); <span class="comment">%this should never happen, we don't have &gt; 999 isozymes</span>
+0253                 <span class="keyword">end</span>
+0254                 nextIndex = nextIndex + 1;
+0255                 <span class="keyword">if</span>  nextIndex &gt; length(tmpRxns) || ~strcmp(model.rxns(i), tmpRxns(nextIndex))
+0256                     <span class="keyword">break</span>;
+0257                 <span class="keyword">end</span>
+0258             <span class="keyword">end</span>
+0259         <span class="keyword">end</span>
+0260     <span class="keyword">end</span>
+0261 
+0262     ec.rxns      = newRxns;
+0263     
+0264     emptyCell    = cell(numel(ec.rxns),1);
+0265     emptyCell(:) = {<span class="string">''</span>};
+0266     emptyVect    = zeros(numel(ec.rxns),1);
+0267 
+0268     ec.kcat      = emptyVect;
+0269     ec.source    = emptyCell; <span class="comment">% Strings, like 'dlkcat', 'manual', 'brenda', etc.</span>
+0270     ec.notes     = emptyCell; <span class="comment">% Additional comments</span>
+0271     ec.eccodes   = emptyCell;
+0272     ec.concs     = emptyVect;
+0273 <span class="keyword">end</span>
+0274     
+0275 <span class="comment">%7: Gather enzyme information via UniprotDB (with optional KEGG fallback)</span>
+0276 uniprotCompatibleGenes = modelAdapter.getUniprotCompatibleGenes(model.genes);
+0277 [Lia,Locb] = ismember(uniprotCompatibleGenes,uniprotDB.genes);
+0278 
+0279 uniprot = modelAdapter.getUniprotIDsFromTable(uniprotCompatibleGenes);
+0280 <span class="keyword">if</span> ~isequal(uniprot,uniprotCompatibleGenes)
+0281     uniprot(cellfun(@isempty,uniprot)) = {<span class="string">''</span>};
+0282     [Lia,Locb] = ismember(uniprot,uniprotDB.ID);
+0283 <span class="keyword">end</span>
+0284 
+0285 <span class="comment">%KEGG fallback for genes UniProt could not match.</span>
+0286 keggMatched = false(numel(model.genes),1);
+0287 keggIdx     = zeros(numel(model.genes),1);
+0288 <span class="keyword">if</span> ~isempty(keggDB) &amp;&amp; any(~Lia)
+0289     notLia              = find(~Lia);
+0290     keggCompatibleGenes = modelAdapter.getKeggCompatibleGenes(model.genes(notLia));
+0291     [keggHit, kLocb]    = ismember(keggCompatibleGenes,keggDB.genes);
+0292     keggMatched(notLia(keggHit)) = true;
+0293     keggIdx(notLia(keggHit))     = kLocb(keggHit);
+0294 <span class="keyword">end</span>
+0295 
+0296 <span class="comment">%noUniprot is now: gene unmatched in both UniProt and KEGG.</span>
+0297 noUniprot = uniprotCompatibleGenes(~Lia &amp; ~keggMatched);
+0298 <span class="keyword">if</span> all(~Lia &amp; ~keggMatched)
+0299     error(<span class="string">'None of the proteins in uniprot.tsv or kegg.tsv match the genes in the model. Changes to the obj.params.uniprot / obj.params.kegg parameters, or a data/uniprotConversion.tsv file are likely required.'</span>)
+0300 <span class="keyword">elseif</span> ~isempty(noUniprot)
+0301     printOrange([<span class="string">'WARNING: The '</span> num2str(numel(noUniprot)) <span class="string">' gene(s) reported '</span><span class="keyword">...</span>
+0302         <span class="string">'in &quot;noUniprot&quot; cannot be found in data/uniprot.tsv or data/kegg.tsv, these will '</span> <span class="keyword">...</span>
+0303         <span class="string">'not be enzyme-constrained. If you intend to use different Uniprot '</span><span class="keyword">...</span>
+0304         <span class="string">'data (e.g. from a different proteome, make sure you first delete '</span><span class="keyword">...</span>
+0305         <span class="string">'the existing data/uniprot.tsv file.\n'</span>]);
+0306 <span class="keyword">end</span>
+0307 
+0308 <span class="comment">%Build the per-gene enzyme/MW/sequence arrays in two passes: (a)</span>
+0309 <span class="comment">%UniProt-matched, (b) KEGG-fallback-matched. Then concatenate and sort</span>
+0310 <span class="comment">%alphabetically so ec.genes has a stable order across runs.</span>
+0311 ecGenesUni  = model.genes(Lia); <span class="comment">%Will often be duplicate of model.genes, but is done here to prevent issues when it is not.</span>
+0312 LocbUni     = Locb(Lia);
+0313 enzUni      = uniprotDB.ID(LocbUni);
+0314 mwUni       = uniprotDB.MW(LocbUni);
+0315 seqUni      = uniprotDB.seq(LocbUni);
+0316 
+0317 ecGenesKegg = model.genes(keggMatched);
+0318 LocbKegg    = keggIdx(keggMatched);
+0319 <span class="keyword">if</span> isempty(LocbKegg)
+0320     enzKegg = {};
+0321     mwKegg  = [];
+0322     seqKegg = {};
+0323 <span class="keyword">else</span>
+0324     <span class="comment">%ec.enzymes gets the UniProt accession stored on the KEGG row; if</span>
+0325     <span class="comment">%that is empty, fall back to the bare KEGG gene id.</span>
+0326     enzKegg = keggDB.uniprot(LocbKegg);
+0327     keggFallback = cellfun(@isempty,enzKegg);
+0328     enzKegg(keggFallback) = keggDB.keggGene(LocbKegg(keggFallback));
+0329     mwKegg  = keggDB.MW(LocbKegg);
+0330     seqKegg = keggDB.seq(LocbKegg);
+0331     <span class="keyword">if</span> any(keggFallback)
+0332         fallbackGenes = ecGenesKegg(keggFallback);
+0333         fallbackIDs   = enzKegg(keggFallback);
+0334         previewN = min(numel(fallbackGenes),10);
+0335         previewParts = cell(1,previewN);
+0336         <span class="keyword">for</span> ii = 1:previewN
+0337             previewParts{ii} = [fallbackGenes{ii} <span class="string">'-&gt;'</span> fallbackIDs{ii}];
+0338         <span class="keyword">end</span>
+0339         more = <span class="string">''</span>;
+0340         <span class="keyword">if</span> numel(fallbackGenes) &gt; 10
+0341             more = [<span class="string">' (and '</span> num2str(numel(fallbackGenes)-10) <span class="string">' more)'</span>];
+0342         <span class="keyword">end</span>
+0343         printOrange([<span class="string">'WARNING: '</span> num2str(numel(fallbackGenes)) <span class="keyword">...</span>
+0344             <span class="string">' KEGG-resolved gene(s) had no UniProt accession on the KEGG '</span><span class="keyword">...</span>
+0345             <span class="string">'row; the bare KEGG gene id is used in ec.enzymes instead: '</span><span class="keyword">...</span>
+0346             strjoin(previewParts,<span class="string">', '</span>) more <span class="string">'\n'</span>]);
+0347     <span class="keyword">end</span>
+0348 <span class="keyword">end</span>
+0349 
+0350 allGenes   = [ecGenesUni; ecGenesKegg];
+0351 allEnzymes = [enzUni; enzKegg];
+0352 allMW      = [mwUni; mwKegg];
+0353 allSeq     = [seqUni; seqKegg];
+0354 
+0355 [ec.genes,sIdx] = sort(allGenes);
+0356 ec.enzymes      = allEnzymes(sIdx);
+0357 ec.mw           = allMW(sIdx);
+0358 ec.sequence     = allSeq(sIdx);
+0359 <span class="comment">%Additional info</span>
+0360 ec.concs        = nan(numel(ec.genes),1); <span class="comment">% To be filled with proteomics data when available</span>
+0361 
+0362 <span class="comment">%8: Only parse rxns associated to genes</span>
+0363 <span class="keyword">if</span> ~geckoLight
+0364     ec.rxnEnzMat = zeros(numel(rxnWithGene),numel(ec.genes)); <span class="comment">% Non-zeros will indicate the number of subunits</span>
+0365     <span class="keyword">for</span> r=1:numel(rxnWithGene)
+0366         rxnGenes   = model.genes(find(model.rxnGeneMat(rxnWithGene(r),:)));
+0367         [~,locEnz] = ismember(rxnGenes,ec.genes); <span class="comment">% Could also parse directly from rxnGeneMat, but some genes might be missing from Uniprot DB</span>
+0368         locEnz = locEnz(locEnz ~= 0); <span class="comment">% Subunits missing from the databases are left out; the others still couple the reaction</span>
+0369         ec.rxnEnzMat(r,locEnz) = 1; <span class="comment">%Assume 1 copy per subunit or enzyme, can be modified later</span>
+0370     <span class="keyword">end</span>
+0371 <span class="keyword">else</span>
+0372     <span class="comment">%For light models, we need to split up all GPRs</span>
+0373     ec.rxnEnzMat = zeros(numel(ec.rxns),numel(ec.genes)); <span class="comment">% Non-zeros will indicate the number of subunits</span>
+0374     nextIndex = 1;
+0375     <span class="keyword">for</span> i=1:prevNumRxns
+0376         <span class="comment">%Each isozyme is one AND-clause of the GPR and gets its own row of</span>
+0377         <span class="comment">%ec.rxnEnzMat, in the order of the copies of the reaction in ec.rxns.</span>
+0378         <span class="keyword">for</span> j = 1:numel(isozymes{i})
+0379             ec.rxnEnzMat(nextIndex,ismember(ec.genes,isozymes{i}{j})) = 1;<span class="comment">%should be subunit stoichoimetry</span>
+0380             nextIndex = nextIndex + 1;
+0381         <span class="keyword">end</span>
+0382     <span class="keyword">end</span>
+0383 <span class="keyword">end</span>
+0384 
+0385 <span class="comment">%9: Add proteins as pseudometabolites</span>
+0386 <span class="keyword">if</span> ~geckoLight
+0387     [proteinMets.mets, uniprotSortId] = unique(ec.enzymes);
+0388     proteinMets.mets         = strcat(<span class="string">'prot_'</span>,proteinMets.mets);
+0389     proteinMets.metNames     = proteinMets.mets;
+0390     proteinMets.compartments = compartmentID;
+0391     <span class="keyword">if</span> isfield(model,<span class="string">'metMiriams'</span>)
+0392         proteinMets.metMiriams   = repmat({struct(<span class="string">'name'</span>,{{<span class="string">'sbo'</span>}},<span class="string">'value'</span>,{{<span class="string">'SBO:0000252'</span>}})},numel(proteinMets.mets),1);
+0393     <span class="keyword">end</span>
+0394     <span class="keyword">if</span> isfield(model,<span class="string">'metCharges'</span>)
+0395         proteinMets.metCharges   = zeros(numel(proteinMets.mets),1);
+0396     <span class="keyword">end</span>
+0397     proteinMets.metNotes     = repmat({<span class="string">'Enzyme-usage pseudometabolite'</span>},numel(proteinMets.mets),1);
+0398     model = addMets(model,proteinMets);
+0399 <span class="keyword">end</span>
+0400 
+0401 <span class="comment">%10: Add protein pool pseudometabolite</span>
+0402 pool.mets         = <span class="string">'prot_pool'</span>;
+0403 pool.metNames     = pool.mets;
+0404 pool.compartments = compartmentID;
+0405 pool.metNotes     = <span class="string">'Enzyme-usage protein pool'</span>;
+0406 model = addMets(model,pool);
+0407 
+0408 <span class="comment">%11: Add protein usage reactions.</span>
+0409 <span class="comment">% Match the model's own subSystems convention (a cell array of chars, or a</span>
+0410 <span class="comment">% cell array of cell arrays of chars -- RAVEN's checkModelStruct requires</span>
+0411 <span class="comment">% the whole field to be consistently one or the other) rather than always</span>
+0412 <span class="comment">% assuming one shape: mixing the two here is what left new ecModels unable</span>
+0413 <span class="comment">% to be saved once RAVEN's own reconciliation in addRxns stopped papering</span>
+0414 <span class="comment">% over the mismatch.</span>
+0415 <span class="keyword">if</span> isfield(model,<span class="string">'subSystems'</span>) &amp;&amp; ~isempty(model.subSystems) &amp;&amp; <span class="keyword">...</span>
+0416         ~any(cellfun(@iscell,model.subSystems))
+0417     protUsageSubSystem = {<span class="string">'Protein usage'</span>};
+0418 <span class="keyword">else</span>
+0419     protUsageSubSystem = {{<span class="string">'Protein usage'</span>}};
+0420 <span class="keyword">end</span>
+0421 <span class="keyword">if</span> ~geckoLight
+0422     rxnNum                    = numel(proteinMets.mets);
+0423     usageRxns.rxns            = strcat(<span class="string">'usage_'</span>,proteinMets.mets);
+0424     usageRxns.rxnNames        = usageRxns.rxns;
+0425     usageRxns.mets            = cell(rxnNum,1);
+0426     usageRxns.stoichCoeffs    = cell(rxnNum,1);
+0427     <span class="keyword">for</span> i=1:numel(usageRxns.mets)
+0428         usageRxns.mets{i}         = {proteinMets.mets{i}, <span class="string">'prot_pool'</span>};
+0429         usageRxns.stoichCoeffs{i} = [1,-1];
+0430     <span class="keyword">end</span>
+0431     usageRxns.lb              = zeros(rxnNum,1);
+0432     usageRxns.ub              = zeros(rxnNum,1) + 1000;
+0433     usageRxns.rev             = ones(rxnNum,1);
+0434     usageRxns.grRules         = ec.genes(uniprotSortId);
+0435     <span class="keyword">if</span> isfield(model,<span class="string">'subSystems'</span>)
+0436         usageRxns.subSystems  = repmat(protUsageSubSystem, rxnNum, 1);
+0437     <span class="keyword">end</span>
+0438     model = addRxns(model,usageRxns);
+0439 <span class="keyword">end</span>
+0440 
+0441 <span class="comment">%12: Add protein pool reaction (forward: -&gt; prot_pool; UB set by setProtPoolSize)</span>
+0442 poolRxn.rxns            = <span class="string">'prot_pool_exchange'</span>;
+0443 poolRxn.rxnNames        = poolRxn.rxns;
+0444 poolRxn.mets            = {<span class="string">'prot_pool'</span>};
+0445 poolRxn.stoichCoeffs    = {1};
+0446 poolRxn.lb              = 0;
+0447 poolRxn.ub              = 1000;
+0448 poolRxn.rev             = 1;
+0449 <span class="keyword">if</span> isfield(model,<span class="string">'subSystems'</span>)
+0450     poolRxn.subSystems  = protUsageSubSystem;
+0451 <span class="keyword">end</span>
+0452 model = addRxns(model,poolRxn);
+0453 
+0454 model.ec=ec;
+0455 <span class="keyword">end</span>
+0456 
+0457 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0458 <span class="comment">%Function that expands a gene rule into disjunctive normal form: a cell array</span>
+0459 <span class="comment">%with one cell per isozyme, each holding the gene ids that are ANDed in it.</span>
+0460 <span class="comment">%Gene ids are whole words, so an id that contains 'or' or 'and' is kept</span>
+0461 <span class="comment">%intact. An empty rule gives an empty cell array.</span>
+0462 <a name="_sub1" href="#_subfunctions" class="code">function dnf = gprToDnf(rule)</a>
+0463 tokens = regexp(rule,<span class="string">'\(|\)|[^\s()]+'</span>,<span class="string">'match'</span>);
+0464 isOperator = strcmpi(tokens,<span class="string">'and'</span>) | strcmpi(tokens,<span class="string">'or'</span>);
+0465 tokens(isOperator) = lower(tokens(isOperator)); <span class="comment">% Operators are case insensitive</span>
+0466 <span class="keyword">if</span> isempty(tokens)
+0467     dnf = {};
+0468     <span class="keyword">return</span>
+0469 <span class="keyword">end</span>
+0470 [dnf,pos] = <a href="#_sub2" class="code" title="subfunction [dnf,pos] = parseOr(tokens,pos,rule)">parseOr</a>(tokens,1,rule);
+0471 <span class="keyword">if</span> pos &lt;= numel(tokens)
+0472     error(<span class="string">'Cannot parse the gene rule &quot;%s&quot;'</span>,rule)
+0473 <span class="keyword">end</span>
+0474 <span class="keyword">end</span>
+0475 
+0476 <a name="_sub2" href="#_subfunctions" class="code">function [dnf,pos] = parseOr(tokens,pos,rule)</a>
+0477 [dnf,pos] = <a href="#_sub3" class="code" title="subfunction [dnf,pos] = parseAnd(tokens,pos,rule)">parseAnd</a>(tokens,pos,rule);
+0478 <span class="keyword">while</span> pos &lt;= numel(tokens) &amp;&amp; strcmp(tokens{pos},<span class="string">'or'</span>)
+0479     [rhs,pos] = <a href="#_sub3" class="code" title="subfunction [dnf,pos] = parseAnd(tokens,pos,rule)">parseAnd</a>(tokens,pos+1,rule);
+0480     dnf = [dnf,rhs];
+0481 <span class="keyword">end</span>
+0482 <span class="keyword">end</span>
+0483 
+0484 <a name="_sub3" href="#_subfunctions" class="code">function [dnf,pos] = parseAnd(tokens,pos,rule)</a>
+0485 [dnf,pos] = <a href="#_sub4" class="code" title="subfunction [dnf,pos] = parseAtom(tokens,pos,rule)">parseAtom</a>(tokens,pos,rule);
+0486 <span class="keyword">while</span> pos &lt;= numel(tokens) &amp;&amp; strcmp(tokens{pos},<span class="string">'and'</span>)
+0487     [rhs,pos] = <a href="#_sub4" class="code" title="subfunction [dnf,pos] = parseAtom(tokens,pos,rule)">parseAtom</a>(tokens,pos+1,rule);
+0488     product = cell(1,0);
+0489     <span class="keyword">for</span> a = 1:numel(dnf)
+0490         <span class="keyword">for</span> b = 1:numel(rhs)
+0491             product{end+1} = [dnf{a},rhs{b}]; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0492         <span class="keyword">end</span>
+0493     <span class="keyword">end</span>
+0494     dnf = product;
+0495 <span class="keyword">end</span>
+0496 <span class="keyword">end</span>
+0497 
+0498 <a name="_sub4" href="#_subfunctions" class="code">function [dnf,pos] = parseAtom(tokens,pos,rule)</a>
+0499 <span class="keyword">if</span> pos &gt; numel(tokens) || any(strcmp(tokens{pos},{<span class="string">')'</span>,<span class="string">'and'</span>,<span class="string">'or'</span>}))
+0500     error(<span class="string">'Cannot parse the gene rule &quot;%s&quot;'</span>,rule)
+0501 <span class="keyword">elseif</span> strcmp(tokens{pos},<span class="string">'('</span>)
+0502     [dnf,pos] = <a href="#_sub2" class="code" title="subfunction [dnf,pos] = parseOr(tokens,pos,rule)">parseOr</a>(tokens,pos+1,rule);
+0503     <span class="keyword">if</span> pos &gt; numel(tokens) || ~strcmp(tokens{pos},<span class="string">')'</span>)
+0504         error(<span class="string">'Cannot parse the gene rule &quot;%s&quot;'</span>,rule)
+0505     <span class="keyword">end</span>
+0506     pos = pos + 1;
+0507 <span class="keyword">else</span>
+0508     dnf = {tokens(pos)};
+0509     pos = pos + 1;
+0510 <span class="keyword">end</span>
+0511 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

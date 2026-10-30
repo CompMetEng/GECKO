@@ -1,0 +1,381 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of flexibilizeEnzConcs</title>
+  <meta name="keywords" content="flexibilizeEnzConcs">
+  <meta name="description" content="flexibilizeEnzConcs  Flexibilize enzyme concentrations of an ecModel.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">limit_proteins</a> &gt; flexibilizeEnzConcs.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/limit_proteins&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>flexibilizeEnzConcs
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>flexibilizeEnzConcs  Flexibilize enzyme concentrations of an ecModel.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function [model, flexEnz] = flexibilizeEnzConcs(model, varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> flexibilizeEnzConcs  Flexibilize enzyme concentrations of an ecModel.
+
+ Flexibilize enzyme concentration of an ecModel constrained with proteomics
+ data. The upper bound of the protein usage reaction is changed, while the
+ concentrations in ecModel.ec.concs remain unchanged.
+
+ If no (more) limiting enzyme concentrations can be found, it might be the
+ protein pool exchange that is limiting growth. In that case, an attempt
+ will be made to relax the protein pool exchange reaction, and if the growth
+ rate indeed increases, it is suggested to set the protein pool exchange
+ unconstrained (ub=1000) before again running flexibilizeEnzConcs. Such
+ situations, where a proteomics integrated ecModel is overconstrained, may
+ occur if the ecModel should be able to simulate maximum growth rate (from
+ e.g. batch cultivation).
+
+ If relaxing the protein pool exchange does not increase the growth rate,
+ then this is not due to enzyme constraints, but rather an issue with the
+ metabolic network itself, or the set nutrient exchange is not sufficient.
+
+ Parameters
+ ----------
+ model : struct
+     an ecModel in GECKO 3 format (with ecModel.ec structure).
+
+ Name-Value Arguments
+ --------------------
+ expGrowth : double
+     estimated experimental growth rate. If not specified, the value will be
+     read from the model adapter.
+ foldChange : double
+     a value how much to increase the enzyme concentration (default 2).
+ iterPerEnzyme : double
+     the number of iterations that an enzyme can be increased. A zero number
+     can be defined; if zero is defined no limit will be set, and it will
+     increase the enzyme concentration until it reaches the defined growth
+     rate (default 5).
+ modelAdapter : ModelAdapter
+     a loaded model adapter (default: the current default model adapter).
+ verbose : logical
+     whether progress should be reported (default true).
+
+ Returns
+ -------
+ model : struct
+     ecModel where the constraint of measured enzyme concentrations have
+     been flexibilized (=relaxed) in the S-matrix, to allow the model to
+     reach the growth rate defined in expGrowth, while the values in
+     ecModel.ec.concs have remained untouched.
+ flexEnz : struct
+     array with information about flexibilized proteins, with the fields:
+
+     - uniprotIDs : enzymes whose usage UB was flexibilized.
+     - oldConcs : original concentrations, from model.ec.concs.
+     - flexConcs : flexibilized concentrations, new UB in model.
+     - ratioIncr : ratio by which the concentration increased; the enzymes
+       will be sorted by this field.
+     - frequence : numeric how often the enzyme has been step-wise
+       flexibilized.
+
+ Examples
+ --------
+     % optional arguments may be given positionally or as name-value pairs:
+     [model, flexEnz] = flexibilizeEnzConcs(model);
+     [model, flexEnz] = flexibilizeEnzConcs(model, 'foldChange', 3);
+
+ See also
+ --------
+ <a href="constrainEnzConcs.html" class="code" title="function model = constrainEnzConcs(model, varargin)">constrainEnzConcs</a>, <a href="getConcControlCoeffs.html" class="code" title="function [enz, controlCoeffs] = getConcControlCoeffs(model, varargin)">getConcControlCoeffs</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="getConcControlCoeffs.html" class="code" title="function [enz, controlCoeffs] = getConcControlCoeffs(model, varargin)">getConcControlCoeffs</a>	getConcControlCoeffs  Calculate control coefficients of protein usage.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [model, flexEnz] = flexibilizeEnzConcs(model, varargin)</a>
+0002 <span class="comment">% flexibilizeEnzConcs  Flexibilize enzyme concentrations of an ecModel.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Flexibilize enzyme concentration of an ecModel constrained with proteomics</span>
+0005 <span class="comment">% data. The upper bound of the protein usage reaction is changed, while the</span>
+0006 <span class="comment">% concentrations in ecModel.ec.concs remain unchanged.</span>
+0007 <span class="comment">%</span>
+0008 <span class="comment">% If no (more) limiting enzyme concentrations can be found, it might be the</span>
+0009 <span class="comment">% protein pool exchange that is limiting growth. In that case, an attempt</span>
+0010 <span class="comment">% will be made to relax the protein pool exchange reaction, and if the growth</span>
+0011 <span class="comment">% rate indeed increases, it is suggested to set the protein pool exchange</span>
+0012 <span class="comment">% unconstrained (ub=1000) before again running flexibilizeEnzConcs. Such</span>
+0013 <span class="comment">% situations, where a proteomics integrated ecModel is overconstrained, may</span>
+0014 <span class="comment">% occur if the ecModel should be able to simulate maximum growth rate (from</span>
+0015 <span class="comment">% e.g. batch cultivation).</span>
+0016 <span class="comment">%</span>
+0017 <span class="comment">% If relaxing the protein pool exchange does not increase the growth rate,</span>
+0018 <span class="comment">% then this is not due to enzyme constraints, but rather an issue with the</span>
+0019 <span class="comment">% metabolic network itself, or the set nutrient exchange is not sufficient.</span>
+0020 <span class="comment">%</span>
+0021 <span class="comment">% Parameters</span>
+0022 <span class="comment">% ----------</span>
+0023 <span class="comment">% model : struct</span>
+0024 <span class="comment">%     an ecModel in GECKO 3 format (with ecModel.ec structure).</span>
+0025 <span class="comment">%</span>
+0026 <span class="comment">% Name-Value Arguments</span>
+0027 <span class="comment">% --------------------</span>
+0028 <span class="comment">% expGrowth : double</span>
+0029 <span class="comment">%     estimated experimental growth rate. If not specified, the value will be</span>
+0030 <span class="comment">%     read from the model adapter.</span>
+0031 <span class="comment">% foldChange : double</span>
+0032 <span class="comment">%     a value how much to increase the enzyme concentration (default 2).</span>
+0033 <span class="comment">% iterPerEnzyme : double</span>
+0034 <span class="comment">%     the number of iterations that an enzyme can be increased. A zero number</span>
+0035 <span class="comment">%     can be defined; if zero is defined no limit will be set, and it will</span>
+0036 <span class="comment">%     increase the enzyme concentration until it reaches the defined growth</span>
+0037 <span class="comment">%     rate (default 5).</span>
+0038 <span class="comment">% modelAdapter : ModelAdapter</span>
+0039 <span class="comment">%     a loaded model adapter (default: the current default model adapter).</span>
+0040 <span class="comment">% verbose : logical</span>
+0041 <span class="comment">%     whether progress should be reported (default true).</span>
+0042 <span class="comment">%</span>
+0043 <span class="comment">% Returns</span>
+0044 <span class="comment">% -------</span>
+0045 <span class="comment">% model : struct</span>
+0046 <span class="comment">%     ecModel where the constraint of measured enzyme concentrations have</span>
+0047 <span class="comment">%     been flexibilized (=relaxed) in the S-matrix, to allow the model to</span>
+0048 <span class="comment">%     reach the growth rate defined in expGrowth, while the values in</span>
+0049 <span class="comment">%     ecModel.ec.concs have remained untouched.</span>
+0050 <span class="comment">% flexEnz : struct</span>
+0051 <span class="comment">%     array with information about flexibilized proteins, with the fields:</span>
+0052 <span class="comment">%</span>
+0053 <span class="comment">%     - uniprotIDs : enzymes whose usage UB was flexibilized.</span>
+0054 <span class="comment">%     - oldConcs : original concentrations, from model.ec.concs.</span>
+0055 <span class="comment">%     - flexConcs : flexibilized concentrations, new UB in model.</span>
+0056 <span class="comment">%     - ratioIncr : ratio by which the concentration increased; the enzymes</span>
+0057 <span class="comment">%       will be sorted by this field.</span>
+0058 <span class="comment">%     - frequence : numeric how often the enzyme has been step-wise</span>
+0059 <span class="comment">%       flexibilized.</span>
+0060 <span class="comment">%</span>
+0061 <span class="comment">% Examples</span>
+0062 <span class="comment">% --------</span>
+0063 <span class="comment">%     % optional arguments may be given positionally or as name-value pairs:</span>
+0064 <span class="comment">%     [model, flexEnz] = flexibilizeEnzConcs(model);</span>
+0065 <span class="comment">%     [model, flexEnz] = flexibilizeEnzConcs(model, 'foldChange', 3);</span>
+0066 <span class="comment">%</span>
+0067 <span class="comment">% See also</span>
+0068 <span class="comment">% --------</span>
+0069 <span class="comment">% constrainEnzConcs, getConcControlCoeffs</span>
+0070 
+0071 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0072     <span class="string">'expGrowth'</span>,     []; <span class="keyword">...</span>
+0073     <span class="string">'foldChange'</span>,    []; <span class="keyword">...</span>
+0074     <span class="string">'iterPerEnzyme'</span>, []; <span class="keyword">...</span>
+0075     <span class="string">'modelAdapter'</span>,  []; <span class="keyword">...</span>
+0076     <span class="string">'verbose'</span>,       []});
+0077 expGrowth     = p.expGrowth;
+0078 foldChange    = p.foldChange;
+0079 iterPerEnzyme = p.iterPerEnzyme;
+0080 modelAdapter  = p.modelAdapter;
+0081 verbose       = p.verbose;
+0082 
+0083 <span class="keyword">if</span> isempty(verbose)
+0084     verbose = true;
+0085 <span class="keyword">end</span>
+0086 <span class="keyword">if</span> isempty(modelAdapter)
+0087     modelAdapter = ModelAdapterManager.getDefault();
+0088     <span class="keyword">if</span> isempty(modelAdapter)
+0089         error(<span class="string">'Either send in a modelAdapter or set the default model adapter in the ModelAdapterManager.'</span>)
+0090     <span class="keyword">end</span>
+0091 <span class="keyword">end</span>
+0092 params = modelAdapter.getParameters();
+0093 
+0094 <span class="keyword">if</span> isempty(iterPerEnzyme)
+0095     iterPerEnzyme = 5;
+0096 <span class="keyword">end</span>
+0097 
+0098 <span class="keyword">if</span> isempty(foldChange)
+0099     foldChange = 2;
+0100 <span class="keyword">end</span>
+0101 
+0102 <span class="keyword">if</span> isempty(expGrowth)
+0103     expGrowth = modelAdapter.getParameters().gR_exp;
+0104 <span class="keyword">end</span>
+0105 
+0106 <span class="comment">% If a zero value is defined, not iteration limit will be set</span>
+0107 <span class="keyword">if</span> iterPerEnzyme == 0
+0108     iterPerEnzyme = inf;
+0109 <span class="keyword">end</span>
+0110 
+0111 bioRxnIdx = getIndexes(model,params.bioRxn,<span class="string">'rxns'</span>);
+0112 <span class="keyword">if</span> model.ub(bioRxnIdx) &lt; expGrowth
+0113     fprintf([<span class="string">'The upper bound of the biomass reaction was %s, while expGrowth '</span><span class="keyword">...</span>
+0114              <span class="string">'is %s. The upper bound has been set to expGrowth.'</span>],<span class="keyword">...</span>
+0115              num2str(model.ub(bioRxnIdx)), num2str(expGrowth))
+0116     model.ub(bioRxnIdx) = expGrowth;
+0117 <span class="keyword">end</span>
+0118 
+0119 <span class="comment">% Keep track if protein pool will be flexibilized</span>
+0120 changedProtPool = false;
+0121 
+0122 <span class="comment">% In case the model have not been protein constrained</span>
+0123 <span class="comment">% model = constrainEnzConcs(model);</span>
+0124 
+0125 [sol,hs] = solveLP(model);
+0126 predGrowth = sol.f;
+0127 
+0128 <span class="comment">% Get those proteins with a concentration defined</span>
+0129 protConcs = find(~isnan(model.ec.concs));
+0130 
+0131 <span class="comment">% Get enzymes names with a concentration value</span>
+0132 proteins = model.ec.enzymes(protConcs);
+0133 
+0134 <span class="comment">% Store how many time is predicted a enzyme with the highest coeff</span>
+0135 frequence = zeros(numel(proteins),1);
+0136 
+0137 flexBreak=false;
+0138 <span class="keyword">if</span> any(protConcs)
+0139     <span class="keyword">while</span> predGrowth &lt; expGrowth
+0140 
+0141         <span class="comment">% Get the control coefficients</span>
+0142         [~, controlCoeffs] = <a href="getConcControlCoeffs.html" class="code" title="function [enz, controlCoeffs] = getConcControlCoeffs(model, varargin)">getConcControlCoeffs</a>(model, proteins, foldChange, 0.75);
+0143 
+0144         <span class="comment">% Stop looking for limiting proteins all coeffs are zero</span>
+0145         <span class="keyword">if</span> any(controlCoeffs)
+0146 
+0147             <span class="comment">% Find the maximum coefficient index</span>
+0148             [~,maxIdx] = max(controlCoeffs);
+0149 
+0150             <span class="comment">% Increase +1 the frequence</span>
+0151             frequence(maxIdx) = frequence(maxIdx) + 1;
+0152 
+0153             <span class="comment">% Allow to increase the UB maximum five times</span>
+0154             <span class="keyword">if</span> frequence(maxIdx) &lt;= iterPerEnzyme
+0155 
+0156                 <span class="comment">% Set how much will increase the UB</span>
+0157                 increase = foldChange*frequence(maxIdx);
+0158 
+0159                 <span class="comment">% Get usage rxn for the highest coeff</span>
+0160                 protUsageIdx = strcmpi(model.rxns, strcat(<span class="string">'usage_prot_'</span>, proteins(maxIdx)));
+0161 
+0162                 <span class="comment">% replace the UB</span>
+0163                 model.ub(protUsageIdx) = model.ec.concs(protConcs(maxIdx)) * (1+increase);
+0164 
+0165                 <span class="comment">% Get the new growth rate</span>
+0166                 sol = solveLP(model,0,[],hs);
+0167                 predGrowth = sol.f;
+0168 
+0169                 <span class="keyword">if</span> verbose
+0170                     disp([<span class="string">'Protein '</span> proteins{maxIdx} <span class="string">' UB adjusted. Grow: '</span> num2str(predGrowth)])
+0171                 <span class="keyword">end</span>
+0172             <span class="keyword">else</span>
+0173                 printOrange([<span class="string">'WARNING: Limit has been reached. Protein '</span>  proteins{maxIdx} <span class="string">' seems to be problematic. Consider changing the kcat.\n'</span>]);
+0174                 flexBreak=true;
+0175                 <span class="keyword">break</span>
+0176             <span class="keyword">end</span>
+0177         <span class="keyword">else</span>
+0178             disp(<span class="string">'No (more) limiting enzymes have been found. Attempting to increase protein pool exchange...'</span>)
+0179             protPoolIdx = getIndexes(model,<span class="string">'prot_pool_exchange'</span>,<span class="string">'rxns'</span>);
+0180             oldProtPool = model.ub(protPoolIdx);
+0181             tempModel = setParam(model,<span class="string">'ub'</span>,protPoolIdx,1000);
+0182             tempModel = setParam(tempModel,<span class="string">'ub'</span>,bioRxnIdx,expGrowth);
+0183             sol = solveLP(tempModel);
+0184             <span class="keyword">if</span> (sol.f-predGrowth)&gt;1e-3 <span class="comment">% There is improvement in growth rate</span>
+0185                 <span class="comment">% Find new protein pool constraint</span>
+0186                 predGrowth = sol.f;
+0187                 tempModel = setParam(tempModel,<span class="string">'lb'</span>,bioRxnIdx,predGrowth);
+0188                 <span class="comment">% minimise pool usage (solveLP maximises the objective, so use -1)</span>
+0189                 tempModel = setParam(tempModel,<span class="string">'obj'</span>,protPoolIdx,-1);
+0190                 sol = solveLP(tempModel);
+0191                 newProtPool = sol.x(protPoolIdx);
+0192                 model.ub(protPoolIdx) = newProtPool;
+0193                 fprintf([<span class="string">'Changing the upper bound of protein pool exchange from %s '</span>,<span class="keyword">...</span>
+0194                          <span class="string">'to %s enabled a\ngrowth rate of %s. It can be helpful to set '</span>, <span class="keyword">...</span>
+0195                          <span class="string">'the upper bound of protein\npool exchange to 1000 before '</span>,<span class="keyword">...</span>
+0196                          <span class="string">'running flexibilizeEnzConcs.\n'</span>],num2str(oldProtPool), <span class="keyword">...</span>
+0197                          num2str(newProtPool),num2str(predGrowth));
+0198                 changedProtPool = true;
+0199             <span class="keyword">else</span>
+0200                 fprintf([<span class="string">'Protein pool exchange was also not limiting. Inability to reach growth '</span>,<span class="keyword">...</span>
+0201                         <span class="string">'rate is not related to\nenzyme constraints. Maximum growth rate '</span>,<span class="keyword">...</span>
+0202                         <span class="string">'is %s.\n'</span>], num2str(predGrowth))
+0203             <span class="keyword">end</span>
+0204             <span class="comment">% To return an usable model with these conditions, set the</span>
+0205             <span class="comment">% highest growth rate reached as the experimental value</span>
+0206             expGrowth = predGrowth;
+0207             <span class="keyword">break</span>
+0208         <span class="keyword">end</span>
+0209     <span class="keyword">end</span>
+0210 <span class="keyword">else</span>
+0211     error(<span class="string">'Protein concentrations have not been defined. Please run readProteomics and constrainEnzConcs'</span>)
+0212 <span class="keyword">end</span>
+0213 
+0214 protFlex         = proteins(frequence&gt;0);
+0215 [~,protUsageIdx] = ismember(strcat(<span class="string">'usage_prot_'</span>, protFlex), model.rxns);
+0216 [~,ecProtId]     = ismember(protFlex, model.ec.enzymes);
+0217 oldConcs         = model.ec.concs(ecProtId);
+0218 <span class="comment">%frequence        = frequence(ecProtId);</span>
+0219 
+0220 <span class="keyword">if</span> flexBreak == false &amp;&amp; ~isempty(protFlex)
+0221     <span class="comment">% Not all flexibilized proteins require flexibilization in the end</span>
+0222     <span class="comment">% Test flux distribution with minimum prot_pool usage</span>
+0223     modelTemp       = setParam(model,<span class="string">'var'</span>,params.bioRxn,expGrowth,0.5);
+0224     <span class="comment">% minimise pool usage (solveLP maximises the objective, so use -1)</span>
+0225     modelTemp       = setParam(modelTemp,<span class="string">'obj'</span>,<span class="string">'prot_pool_exchange'</span>,-1);
+0226     sol             = solveLP(modelTemp,1);
+0227     <span class="comment">% Check which concentrations can remain unchanged</span>
+0228     newConcs        = abs(sol.x(protUsageIdx));
+0229     keepOld         = newConcs&lt;oldConcs;
+0230     <span class="comment">% Set UBs</span>
+0231     model.ub(protUsageIdx(keepOld))  = oldConcs(keepOld);
+0232     model.ub(protUsageIdx(~keepOld)) = newConcs(~keepOld);
+0233     <span class="comment">% Output structure</span>
+0234     protFlex(keepOld) = [];
+0235     oldConcs(keepOld) = [];
+0236     newConcs(keepOld) = [];
+0237     frequence=frequence(frequence&gt;0);
+0238     frequence(keepOld) = [];
+0239     
+0240     flexEnz.uniprotIDs = protFlex;
+0241     flexEnz.oldConcs   = oldConcs;
+0242     flexEnz.flexConcs  = newConcs;
+0243     flexEnz.frequence  = frequence(frequence&gt;0);
+0244 <span class="keyword">else</span>
+0245     protFlex           = proteins(frequence&gt;0);
+0246     [~, protUsageIdx]  = ismember(strcat(<span class="string">'usage_prot_'</span>, protFlex), model.rxns);
+0247 
+0248     flexEnz.uniprotIDs = protFlex;
+0249     flexEnz.oldConcs   = model.ec.concs(ecProtId);
+0250     flexEnz.flexConcs  = model.ub(protUsageIdx);
+0251     flexEnz.frequence  = frequence(frequence&gt;0);
+0252 <span class="keyword">end</span>
+0253 <span class="keyword">if</span> changedProtPool
+0254     flexEnz.uniprotIDs(end+1) = {<span class="string">'prot_pool'</span>};
+0255     flexEnz.oldConcs(end+1)   = oldProtPool;
+0256     flexEnz.flexConcs(end+1)  = newProtPool;
+0257     flexEnz.frequence(end+1)  = 1;
+0258 <span class="keyword">end</span>
+0259 <span class="comment">% Sort by biggest ratio increase</span>
+0260 flexEnz.ratioIncr  = flexEnz.flexConcs./flexEnz.oldConcs;
+0261 [~,b] = sort(flexEnz.ratioIncr,<span class="string">'descend'</span>);
+0262 flexEnz.ratioIncr  = flexEnz.ratioIncr(b);
+0263 flexEnz.uniprotIDs = flexEnz.uniprotIDs(b);
+0264 flexEnz.oldConcs   = flexEnz.oldConcs(b);
+0265 flexEnz.flexConcs  = flexEnz.flexConcs(b);
+0266 flexEnz.frequence  = flexEnz.frequence(b);
+0267 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

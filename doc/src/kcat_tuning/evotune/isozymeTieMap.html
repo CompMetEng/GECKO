@@ -1,0 +1,165 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of isozymeTieMap</title>
+  <meta name="keywords" content="isozymeTieMap">
+  <meta name="description" content="isozymeTieMap  Index of the parameter each isozyme copy follows.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="../index.html">kcat_tuning</a> &gt; <a href="index.html">evotune</a> &gt; isozymeTieMap.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../../index.html"><img alt="<" border="0" src="../../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/kcat_tuning/evotune&nbsp;<img alt=">" border="0" src="../../../right.png"></a></td></tr></table>-->
+
+<h1>isozymeTieMap
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+<div class="box"><strong>isozymeTieMap  Index of the parameter each isozyme copy follows.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+<div class="box"><strong>function tieMap = isozymeTieMap(rxnIds,kcat0,varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> isozymeTieMap  Index of the parameter each isozyme copy follows.
+
+ A reaction catalysed by several isozymes gets one ec.rxns row per
+ isozyme, each with its own kcat. Where the kcat assignment could tell
+ them apart, those are genuinely different parameters; where it could
+ not, every copy shares the same value from the same source, and an
+ untied search is then free to invent a difference between them that
+ means nothing biologically. Copies group together (and share one
+ parameter) when they share a base reaction (the part of the rxn id
+ before its &quot;_EXP_&quot; isozyme suffix), a prior value, and -- when sources
+ is given -- a source.
+
+ Parameters
+ ----------
+ rxnIds : cell
+     ec.rxns entries.
+ kcat0 : double
+     prior kcat per row, same length as rxnIds.
+
+ Name-Value Arguments
+ --------------------
+ sources : cell
+     ec.source entries, same length as rxnIds (default: not used, so
+     grouping ignores source).
+ relTol : double
+     relative tolerance for treating two prior values as equal (default
+     1e-9).
+
+ Returns
+ -------
+ tieMap : double
+     one entry per position. tieMap(i) == i for a free parameter,
+     otherwise the (lower) index of the representative it follows.
+
+ See also
+ --------
+ <a href="cmaesKcatTuning.html" class="code" title="function [ecModel,result] = cmaesKcatTuning(ecModel,varargin)">cmaesKcatTuning</a>, <a href="screenKcatLeverage.html" class="code" title="function screen = screenKcatLeverage(ecModel,varargin)">screenKcatLeverage</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../../matlabicon.gif)">
+<li><a href="resolveTunableContext.html" class="code" title="function [tunableIdx,ecRxnIdsTunable,kcat0,groups,sigma0log,tieMap] = resolveTunableContext(ecModel,params,tunableMask)">resolveTunableContext</a>	resolveTunableContext  The tunable kcat subset plus everything derived</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+<ul style="list-style-image:url(../../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function base = baseReaction(rxnId)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function tieMap = isozymeTieMap(rxnIds,kcat0,varargin)</a>
+0002 <span class="comment">% isozymeTieMap  Index of the parameter each isozyme copy follows.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% A reaction catalysed by several isozymes gets one ec.rxns row per</span>
+0005 <span class="comment">% isozyme, each with its own kcat. Where the kcat assignment could tell</span>
+0006 <span class="comment">% them apart, those are genuinely different parameters; where it could</span>
+0007 <span class="comment">% not, every copy shares the same value from the same source, and an</span>
+0008 <span class="comment">% untied search is then free to invent a difference between them that</span>
+0009 <span class="comment">% means nothing biologically. Copies group together (and share one</span>
+0010 <span class="comment">% parameter) when they share a base reaction (the part of the rxn id</span>
+0011 <span class="comment">% before its &quot;_EXP_&quot; isozyme suffix), a prior value, and -- when sources</span>
+0012 <span class="comment">% is given -- a source.</span>
+0013 <span class="comment">%</span>
+0014 <span class="comment">% Parameters</span>
+0015 <span class="comment">% ----------</span>
+0016 <span class="comment">% rxnIds : cell</span>
+0017 <span class="comment">%     ec.rxns entries.</span>
+0018 <span class="comment">% kcat0 : double</span>
+0019 <span class="comment">%     prior kcat per row, same length as rxnIds.</span>
+0020 <span class="comment">%</span>
+0021 <span class="comment">% Name-Value Arguments</span>
+0022 <span class="comment">% --------------------</span>
+0023 <span class="comment">% sources : cell</span>
+0024 <span class="comment">%     ec.source entries, same length as rxnIds (default: not used, so</span>
+0025 <span class="comment">%     grouping ignores source).</span>
+0026 <span class="comment">% relTol : double</span>
+0027 <span class="comment">%     relative tolerance for treating two prior values as equal (default</span>
+0028 <span class="comment">%     1e-9).</span>
+0029 <span class="comment">%</span>
+0030 <span class="comment">% Returns</span>
+0031 <span class="comment">% -------</span>
+0032 <span class="comment">% tieMap : double</span>
+0033 <span class="comment">%     one entry per position. tieMap(i) == i for a free parameter,</span>
+0034 <span class="comment">%     otherwise the (lower) index of the representative it follows.</span>
+0035 <span class="comment">%</span>
+0036 <span class="comment">% See also</span>
+0037 <span class="comment">% --------</span>
+0038 <span class="comment">% cmaesKcatTuning, screenKcatLeverage</span>
+0039 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0040     <span class="string">'sources'</span>, []; <span class="keyword">...</span>
+0041     <span class="string">'relTol'</span>, 1e-9});
+0042 sources = p.sources;
+0043 relTol  = p.relTol;
+0044 
+0045 n = numel(kcat0);
+0046 <span class="keyword">if</span> numel(rxnIds) ~= n
+0047     error(<span class="string">'rxnIds has %d entries; kcat0 has %d.'</span>, numel(rxnIds), n)
+0048 <span class="keyword">end</span>
+0049 tieMap = (1:n)';
+0050 
+0051 keys = cell(n,1);
+0052 <span class="keyword">for</span> i = 1:n
+0053     base = <a href="#_sub1" class="code" title="subfunction base = baseReaction(rxnId)">baseReaction</a>(rxnIds{i});
+0054     <span class="keyword">if</span> kcat0(i) &gt; 0
+0055         logKey = sprintf(<span class="string">'%d'</span>, round(log(kcat0(i)) / relTol));
+0056     <span class="keyword">else</span>
+0057         logKey = <span class="string">'NONE'</span>;
+0058     <span class="keyword">end</span>
+0059     <span class="keyword">if</span> isempty(sources)
+0060         srcKey = <span class="string">''</span>;
+0061     <span class="keyword">else</span>
+0062         srcKey = char(sources{i});
+0063     <span class="keyword">end</span>
+0064     keys{i} = strjoin({base, logKey, srcKey}, char(31));
+0065 <span class="keyword">end</span>
+0066 
+0067 [~, ~, groupIdx] = unique(keys);
+0068 <span class="keyword">for</span> g = 1:max(groupIdx)
+0069     members = find(groupIdx == g);
+0070     <span class="keyword">if</span> numel(members) &gt; 1
+0071         tieMap(members) = members(1);
+0072     <span class="keyword">end</span>
+0073 <span class="keyword">end</span>
+0074 <span class="keyword">end</span>
+0075 
+0076 <a name="_sub1" href="#_subfunctions" class="code">function base = baseReaction(rxnId)</a>
+0077 <span class="comment">% The reaction an ec.rxns entry belongs to, isozyme suffix removed.</span>
+0078 parts = strsplit(rxnId, <span class="string">'_EXP_'</span>);
+0079 base = parts{1};
+0080 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

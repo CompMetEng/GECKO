@@ -1,0 +1,192 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of loadDatabases</title>
+  <meta name="keywords" content="loadDatabases">
+  <meta name="description" content="loadDatabases  Load the organism-specific KEGG and UniProt databases.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">download_databases</a> &gt; loadDatabases.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/download_databases&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>loadDatabases
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>loadDatabases  Load the organism-specific KEGG and UniProt databases.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function databases = loadDatabases(varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> loadDatabases  Load the organism-specific KEGG and UniProt databases.
+
+ Loads (and downloads if necessary) the organism-specific KEGG and UniProt
+ databases that are required to extract protein information. The uniprot.ID
+ and kegg.ID are taken from the ModelAdapter.
+
+ Name-Value Arguments
+ --------------------
+ selectDatabase : char
+     which databases should be loaded, either 'uniprot', 'kegg' or 'both'
+     (default 'both').
+ modelAdapter : ModelAdapter
+     a loaded model adapter (default: the current default model adapter;
+     send in [] for default).
+
+ Returns
+ -------
+ databases : struct
+     contains .uniprot and .kegg structures, dependent on which databases
+     were selected.
+
+ Examples
+ --------
+     % optional arguments may be given positionally or as name-value pairs:
+     databases = loadDatabases('both', adapter);
+     databases = loadDatabases('selectDatabase', 'both');
+
+ See also
+ --------
+ getECfromDatabase, <a href="loadBRENDAdata.html" class="code" title="function [KCATcell, SAcell] = loadBRENDAdata(varargin)">loadBRENDAdata</a>, <a href="downloadKEGG.html" class="code" title="function downloadKEGG(keggID, filePath, keggGeneID)">downloadKEGG</a>, <a href="downloadUniProt.html" class="code" title="function downloadUniProt(uniprotID, filePath, geneIDfield, type, reviewed)">downloadUniProt</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="downloadKEGG.html" class="code" title="function downloadKEGG(keggID, filePath, keggGeneID)">downloadKEGG</a>	downloadKEGG  Download a KEGG organism's gene data and write a CSV.</li><li><a href="downloadUniProt.html" class="code" title="function downloadUniProt(uniprotID, filePath, geneIDfield, type, reviewed)">downloadUniProt</a>	downloadUniProt  Download UniProt protein data for an organism and write a TSV.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function databases = loadDatabases(varargin)</a>
+0002 <span class="comment">% loadDatabases  Load the organism-specific KEGG and UniProt databases.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Loads (and downloads if necessary) the organism-specific KEGG and UniProt</span>
+0005 <span class="comment">% databases that are required to extract protein information. The uniprot.ID</span>
+0006 <span class="comment">% and kegg.ID are taken from the ModelAdapter.</span>
+0007 <span class="comment">%</span>
+0008 <span class="comment">% Name-Value Arguments</span>
+0009 <span class="comment">% --------------------</span>
+0010 <span class="comment">% selectDatabase : char</span>
+0011 <span class="comment">%     which databases should be loaded, either 'uniprot', 'kegg' or 'both'</span>
+0012 <span class="comment">%     (default 'both').</span>
+0013 <span class="comment">% modelAdapter : ModelAdapter</span>
+0014 <span class="comment">%     a loaded model adapter (default: the current default model adapter;</span>
+0015 <span class="comment">%     send in [] for default).</span>
+0016 <span class="comment">%</span>
+0017 <span class="comment">% Returns</span>
+0018 <span class="comment">% -------</span>
+0019 <span class="comment">% databases : struct</span>
+0020 <span class="comment">%     contains .uniprot and .kegg structures, dependent on which databases</span>
+0021 <span class="comment">%     were selected.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Examples</span>
+0024 <span class="comment">% --------</span>
+0025 <span class="comment">%     % optional arguments may be given positionally or as name-value pairs:</span>
+0026 <span class="comment">%     databases = loadDatabases('both', adapter);</span>
+0027 <span class="comment">%     databases = loadDatabases('selectDatabase', 'both');</span>
+0028 <span class="comment">%</span>
+0029 <span class="comment">% See also</span>
+0030 <span class="comment">% --------</span>
+0031 <span class="comment">% getECfromDatabase, loadBRENDAdata, downloadKEGG, downloadUniProt</span>
+0032 
+0033 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0034     <span class="string">'selectDatabase'</span>, <span class="string">'both'</span>; <span class="keyword">...</span>
+0035     <span class="string">'modelAdapter'</span>,   []});
+0036 selectDatabase = p.selectDatabase;
+0037 modelAdapter   = p.modelAdapter;
+0038 
+0039 <span class="keyword">if</span> isempty(modelAdapter)
+0040     modelAdapter = ModelAdapterManager.getDefault();
+0041     <span class="keyword">if</span> isempty(modelAdapter)
+0042         error(<span class="string">'Either send in a modelAdapter or set the default model adapter in the ModelAdapterManager.'</span>)
+0043     <span class="keyword">end</span>
+0044 <span class="keyword">end</span>
+0045 
+0046 params      = modelAdapter.getParameters();
+0047 kegg.ID      = params.kegg.ID;
+0048 uniprot.ID   = params.uniprot.ID;
+0049 filePath    = fullfile(params.path,<span class="string">'data'</span>);
+0050 uniprot.geneIDfield = params.uniprot.geneIDfield;
+0051 uniprot.type = params.uniprot.type;
+0052 kegg.geneID = params.kegg.geneID;
+0053 
+0054 warning(<span class="string">'off'</span>, <span class="string">'MATLAB:MKDIR:DirectoryExists'</span>);
+0055 
+0056 databases.uniprot = [];
+0057 databases.kegg = [];
+0058 
+0059 <span class="comment">%% Uniprot</span>
+0060 <span class="keyword">if</span> any(strcmp(selectDatabase,{<span class="string">'uniprot'</span>,<span class="string">'both'</span>}))
+0061     uniprotPath = fullfile(filePath,<span class="string">'uniprot.tsv'</span>);
+0062     <span class="keyword">if</span> ~exist(uniprotPath,<span class="string">'file'</span>)
+0063         <span class="keyword">if</span> isempty(uniprot.ID)
+0064             printOrange(<span class="string">'WARNING: No uniprot.ID is specified, unable to download UniProt DB.\n'</span>);
+0065         <span class="keyword">end</span>
+0066         <a href="downloadUniProt.html" class="code" title="function downloadUniProt(uniprotID, filePath, geneIDfield, type, reviewed)">downloadUniProt</a>(uniprot.ID, uniprotPath, uniprot.geneIDfield, uniprot.type, params.uniprot.reviewed);
+0067     <span class="keyword">end</span>
+0068     <span class="keyword">if</span> exist(uniprotPath,<span class="string">'file'</span>)
+0069         fid         = fopen(uniprotPath,<span class="string">'r'</span>);
+0070         fileContent = textscan(fid,<span class="string">'%q %q %q %q %q'</span>,<span class="string">'Delimiter'</span>,<span class="string">'\t'</span>,<span class="string">'HeaderLines'</span>,1);
+0071         fclose(fid);
+0072         databases.uniprot.ID      = fileContent{1};
+0073         databases.uniprot.genes   = fileContent{2};
+0074         databases.uniprot.eccodes = fileContent{3};
+0075         databases.uniprot.MW      = str2double(fileContent{4});
+0076         databases.uniprot.seq     = fileContent{5};
+0077     <span class="keyword">else</span>
+0078         databases.uniprot = [];
+0079     <span class="keyword">end</span>
+0080     <span class="keyword">if</span> ~isempty(databases.uniprot)
+0081         [uniqueIDs,uniqueIdx] = unique(databases.uniprot.ID,<span class="string">'stable'</span>);
+0082         <span class="keyword">if</span> numel(uniqueIDs) &lt; numel(databases.uniprot.ID)
+0083             duplID = setdiff(1:numel(databases.uniprot.ID),uniqueIdx);
+0084             error(<span class="string">'%s'</span>, ravenList([<span class="string">'Duplicate entries are found for the following proteins. '</span><span class="keyword">...</span>
+0085                     <span class="string">'Manually curate the ''uniprot.tsv'' file, or adjust the uniprot parameters '</span><span class="keyword">...</span>
+0086                     <span class="string">'in the model adapter:'</span>],databases.uniprot.ID(duplID)));
+0087         <span class="keyword">end</span>
+0088     <span class="keyword">end</span>
+0089 <span class="keyword">end</span>
+0090 
+0091 <span class="comment">%% KEGG</span>
+0092 <span class="keyword">if</span> any(strcmp(selectDatabase,{<span class="string">'kegg'</span>,<span class="string">'both'</span>}))
+0093     keggPath = fullfile(filePath,<span class="string">'kegg.tsv'</span>);
+0094     <span class="keyword">if</span> ~exist(keggPath,<span class="string">'file'</span>)
+0095         <span class="keyword">if</span> isempty(kegg.ID)
+0096             printOrange(<span class="string">'WARNING: No kegg.ID is specified, unable to download KEGG DB.\n'</span>);
+0097         <span class="keyword">else</span>
+0098             <a href="downloadKEGG.html" class="code" title="function downloadKEGG(keggID, filePath, keggGeneID)">downloadKEGG</a>(kegg.ID,keggPath,kegg.geneID);
+0099         <span class="keyword">end</span>
+0100     <span class="keyword">end</span>
+0101     <span class="keyword">if</span> exist(keggPath,<span class="string">'file'</span>)
+0102         fid         = fopen(keggPath,<span class="string">'r'</span>);
+0103         fileContent = textscan(fid,<span class="string">'%q %q %q %q %q %q %q'</span>,<span class="string">'Delimiter'</span>,<span class="string">','</span>,<span class="string">'HeaderLines'</span>,0);
+0104         fclose(fid);
+0105         databases.kegg.uniprot    = fileContent{1};
+0106         databases.kegg.genes      = fileContent{2};
+0107         databases.kegg.keggGene   = fileContent{3};
+0108         databases.kegg.eccodes    = fileContent{4};
+0109         databases.kegg.MW         = str2double(fileContent{5});
+0110         databases.kegg.pathway    = fileContent{6};
+0111         databases.kegg.seq        = fileContent{7};
+0112     <span class="keyword">else</span>
+0113         databases.kegg = [];
+0114     <span class="keyword">end</span>
+0115 <span class="keyword">end</span>
+0116 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>
