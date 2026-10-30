@@ -13,7 +13,8 @@ function f = calculateFfactor(model, varargin)
 % --------------------
 % protData : struct
 %     structure with proteome data, from loadProtData (by default it instead
-%     attempts to load data/paxDB.tsv).
+%     attempts to load data/paxDB.tsv). With several samples, the abundance
+%     of a protein is averaged over the samples in which it is measured.
 % enzymes : cell
 %     list of enzymes (default model.ec.enzymes).
 % modelAdapter : ModelAdapter
@@ -99,7 +100,7 @@ if ischar(protData) && endsWith(protData,'paxDB.tsv')
     protData.abundances = protData.level .* protData.MW;
 end
 
-avgAbundances = mean(protData.abundances,2);
+avgAbundances = mean(protData.abundances,2,'omitnan');
 totalProt = sum(avgAbundances,'omitnan');
 
 % Get enzymes in model

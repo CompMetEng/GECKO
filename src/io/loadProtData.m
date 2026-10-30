@@ -11,7 +11,9 @@ function protData = loadProtData(replPerCond, varargin)
 % replPerCond : double
 %     vector with number of replicates for each condition in the dataset.
 %     Example: [3, 2] if first condition has triplicates and second
-%     condition has duplicates.
+%     condition has duplicates. The sum must equal the number of replicate
+%     columns of the file (all columns after the UniProt ID), otherwise an
+%     error is raised.
 %
 % Name-Value Arguments
 % --------------------
@@ -109,6 +111,15 @@ end
 if ~isstruct(protDataFile)
     checkFileExistence(protDataFile);
     fID         = fopen(protDataFile);
+    nHeaderCols = numel(strsplit(fgetl(fID),'\t','CollapseDelimiters',false));
+    if nHeaderCols ~= sum(replPerCond)+1
+        fclose(fID);
+        error('loadProtData:replicateMismatch', ...
+              ['The header of %s has %d columns but replPerCond sums to %d, ' ...
+               'so %d columns are expected (the UniProt ID and one per replicate).'], ...
+              protDataFile, nHeaderCols, sum(replPerCond), sum(replPerCond)+1)
+    end
+    frewind(fID);
     protDataRaw = textscan(fID,format,'Delimiter','\t','HeaderLines',1,'TreatAsEmpty',{'NA','na','NaN','#VALUE!'});
     uniprotIDs  = protDataRaw{1};
     abundances  = cell2mat(protDataRaw(2:end));

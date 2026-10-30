@@ -31,6 +31,30 @@ function testLoadProtDataCutLowestIsUsed_tc0102(testCase)
     verifyEqual(testCase, min(p20.abundances), 9)
 end
 
+function testLoadProtDataReplicateCountMustMatchColumns_tc0260(testCase)
+    % replPerCond has to add up to the replicate columns of the file; columns
+    % beyond the sum are not read silently.
+    adapter = getTestAdapter();
+    file = writeProteomics({'X1','X2'}, [1 2 3; 4 5 6]);
+    verifyError(testCase, @() loadProtData(2, 'protDataFile', file, 'modelAdapter', adapter), ...
+        'loadProtData:replicateMismatch')
+    verifyError(testCase, @() loadProtData(4, 'protDataFile', file, 'modelAdapter', adapter), ...
+        'loadProtData:replicateMismatch')
+    protData = loadProtData(3, 'protDataFile', file, 'modelAdapter', adapter, ...
+        'addStdevs', 0, 'cutLowest', 0);
+    verifyEqual(testCase, protData.uniprotIDs, {'X1';'X2'})
+end
+
+function testCalculateFfactorAveragesOverMeasuredSamples_tc0261(testCase)
+    % A protein measured in one of two samples counts with that measurement
+    % in both sums of the f factor instead of dropping out of them.
+    adapter = getTestAdapter();
+    protData.uniprotIDs = {'A';'B';'C'};
+    protData.abundances = [10 NaN; 20 20; 30 30];
+    f = calculateFfactor([], 'protData', protData, 'enzymes', {'A';'B'}, 'modelAdapter', adapter);
+    verifyEqual(testCase, f, 0.5, 'AbsTol', 1e-12)
+end
+
 function testApplyComplexDataStoichiometryByProteinId_tc0103(testCase)
     % The complex lists its proteins in another order than model.ec.enzymes;
     % each protein receives its own stoichiometry.
