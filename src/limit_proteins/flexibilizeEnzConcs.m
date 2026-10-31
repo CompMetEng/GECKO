@@ -39,6 +39,17 @@ function [model, flexEnz] = flexibilizeEnzConcs(model, varargin)
 %     a loaded model adapter (default: the current default model adapter).
 % verbose : logical
 %     whether progress should be reported (default true).
+% perComplex : logical
+%     whether every complex (see getComplexFamilies) is flexibilized as one
+%     enzyme (default false). Enzymes and complexes are then ranked by the
+%     growth gained per foldChange of raising all their usage upper bounds
+%     together (a levelled complex binds on all subunits at once, so no
+%     single subunit shows a gain), every measured subunit of the picked
+%     complex is raised by the same factor, iterations are counted per
+%     complex, and one factor per complex is kept in the final pass, so that
+%     concentrations levelled by levelComplexConcs stay levelled. An upper
+%     bound is never lowered below its current value. The frequence of a
+%     complex is recorded on its first measured subunit.
 %
 % Returns
 % -------
@@ -66,22 +77,27 @@ function [model, flexEnz] = flexibilizeEnzConcs(model, varargin)
 %
 % See also
 % --------
-% constrainEnzConcs, getConcControlCoeffs
+% constrainEnzConcs, getConcControlCoeffs, levelComplexConcs, getComplexFamilies
 
 p = parseGECKOargs(varargin, { ...
     'expGrowth',     []; ...
     'foldChange',    []; ...
     'iterPerEnzyme', []; ...
     'modelAdapter',  []; ...
-    'verbose',       []});
+    'verbose',       []; ...
+    'perComplex',    []});
 expGrowth     = p.expGrowth;
 foldChange    = p.foldChange;
 iterPerEnzyme = p.iterPerEnzyme;
 modelAdapter  = p.modelAdapter;
 verbose       = p.verbose;
+perComplex    = p.perComplex;
 
 if isempty(verbose)
     verbose = true;
+end
+if isempty(perComplex)
+    perComplex = false;
 end
 if isempty(modelAdapter)
     modelAdapter = ModelAdapterManager.getDefault();
@@ -133,6 +149,12 @@ proteins = model.ec.enzymes(protConcs);
 
 % Store how many time is predicted a enzyme with the highest coeff
 frequence = zeros(numel(proteins),1);
+
+if perComplex
+    [model, flexEnz] = flexibilizePerComplex(model, proteins, protConcs, ...
+        predGrowth, expGrowth, foldChange, iterPerEnzyme, params, verbose);
+    return
+end
 
 flexBreak=false;
 if any(protConcs)
@@ -265,3 +287,249 @@ flexEnz.oldConcs   = flexEnz.oldConcs(b);
 flexEnz.flexConcs  = flexEnz.flexConcs(b);
 flexEnz.frequence  = flexEnz.frequence(b);
 end
+
+function [model, flexEnz] = flexibilizePerComplex(model, proteins, protConcs, predGrowth, expGrowth, foldChange, iterPerEnzyme, params, verbose)
+% Flexibilize with every complex as one unit, see the perComplex option.
+if isempty(protConcs)
+    error('Protein concentrations have not been defined. Please run readProteomics and constrainEnzConcs')
+end
+limit = 0.75;
+nProt = numel(proteins);
+[~, usageIdx] = ismember(strcat('usage_prot_', proteins), model.rxns);
+bioRxnIdx = getIndexes(model, params.bioRxn, 'rxns');
+families = getComplexFamilies(model);
+
+% Positions in proteins of each unit that is relaxed together: the measured
+% subunits that belong to a complex, or a single enzyme
+units    = {};
+assigned = false(nProt, 1);
+for i = 1:nProt
+    if assigned(i)
+        continue
+    end
+    [~, e] = ismember(proteins{i}, model.ec.enzymes);
+    c = families.owner(e);
+    members = i;
+    if c > 0
+        cplx = families.complexes{c};
+        [~, members] = ismember(cplx.enzymes(cplx.owned), proteins);
+        members = members(members > 0)';
+    end
+    assigned(members) = true;
+    units{end+1, 1} = members; %#ok<AGROW>
+end
+unitFrequence = zeros(numel(units), 1);
+frequence     = zeros(nProt, 1);
+touched       = false(nProt, 1);
+
+% Backstop on the iterations when the number per unit is not limited
+if isinf(iterPerEnzyme)
+    capPerEnzyme = 1000;
+else
+    capPerEnzyme = iterPerEnzyme;
+end
+maxTotalIter = nProt * capPerEnzyme + nProt;
+iterCount    = 0;
+flexBreak    = false;
+changedProtPool = false;
+
+while predGrowth < expGrowth
+    iterCount = iterCount + 1;
+    if iterCount > maxTotalIter
+        printOrange(['WARNING: The global iteration limit has been reached without reaching expGrowth. ' ...
+                     'The target may be unreachable even with relaxed enzyme bounds.\n']);
+        flexBreak = true;
+        break
+    end
+    scores = getUnitScores(model, usageIdx, units, foldChange, limit);
+
+    if ~any(scores > 0)
+        disp('No (more) limiting enzymes have been found. Attempting to increase protein pool exchange...')
+        protPoolIdx = getIndexes(model,'prot_pool_exchange','rxns');
+        oldProtPool = model.ub(protPoolIdx);
+        tempModel = setParam(model,'ub',protPoolIdx,1000);
+        tempModel = setParam(tempModel,'ub',bioRxnIdx,expGrowth);
+        sol = solveLP(tempModel);
+        if (sol.f-predGrowth)>1e-3
+            predGrowth = sol.f;
+            tempModel = setParam(tempModel,'lb',bioRxnIdx,predGrowth);
+            tempModel = setParam(tempModel,'obj',protPoolIdx,-1);
+            sol = solveLP(tempModel);
+            newProtPool = sol.x(protPoolIdx);
+            model.ub(protPoolIdx) = newProtPool;
+            fprintf(['Changing the upper bound of protein pool exchange from %s ',...
+                     'to %s enabled a\ngrowth rate of %s. It can be helpful to set ', ...
+                     'the upper bound of protein\npool exchange to 1000 before ',...
+                     'running flexibilizeEnzConcs.\n'],num2str(oldProtPool), ...
+                     num2str(newProtPool),num2str(predGrowth));
+            changedProtPool = true;
+        else
+            fprintf(['Protein pool exchange was also not limiting. Inability to reach growth ',...
+                    'rate is not related to\nenzyme constraints. Maximum growth rate ',...
+                    'is %s.\n'], num2str(predGrowth))
+        end
+        expGrowth = predGrowth;
+        break
+    end
+
+    [~, unit] = max(scores);
+    members = units{unit};
+    frequence(members(1)) = frequence(members(1)) + 1;
+    unitFrequence(unit)   = unitFrequence(unit) + 1;
+    if unitFrequence(unit) > iterPerEnzyme
+        if numel(members) > 1
+            what = ['complex of ' strjoin(proteins(members)', ', ')];
+        else
+            what = ['Protein ' proteins{members(1)}];
+        end
+        printOrange(['WARNING: Limit has been reached. ' what ' seems to be problematic. Consider changing the kcat.\n']);
+        flexBreak = true;
+        break
+    end
+
+    increase = foldChange * unitFrequence(unit);
+    for i = members
+        touched(i) = true;
+        model.ub(usageIdx(i)) = max(model.ub(usageIdx(i)), model.ec.concs(protConcs(i)) * (1+increase));
+    end
+    sol = solveLP(model);
+    if sol.stat == 1
+        predGrowth = sol.f;
+    else
+        predGrowth = 0;
+    end
+    if verbose
+        disp(['Protein ' proteins{members(1)} ' UB adjusted. Grow: ' num2str(predGrowth)])
+    end
+end
+
+flexIdx  = find(frequence > 0 | touched);
+protFlex = proteins(flexIdx);
+oldConcs = model.ec.concs(protConcs(flexIdx));
+freq     = frequence(flexIdx);
+if isempty(flexIdx)
+    flexConcs = zeros(0, 1);
+elseif flexBreak
+    flexConcs = model.ub(usageIdx(flexIdx));
+else
+    % Not all flexibilized proteins require flexibilization in the end.
+    % Test flux distribution with minimum prot_pool usage
+    modelTemp = setParam(model,'var',params.bioRxn,expGrowth,0.5);
+    modelTemp = setParam(modelTemp,'obj','prot_pool_exchange',-1);
+    sol       = solveLP(modelTemp,1);
+    newConcs  = abs(sol.x(usageIdx(flexIdx)));
+    % One factor per complex: every flexibilized subunit takes the largest
+    % new/old of its complex
+    seen = false(numel(flexIdx), 1);
+    for k = 1:numel(flexIdx)
+        if seen(k)
+            continue
+        end
+        [~, e] = ismember(protFlex{k}, model.ec.enzymes);
+        c = families.owner(e);
+        group = k;
+        if c > 0
+            cplx = families.complexes{c};
+            [~, group] = ismember(cplx.enzymes(cplx.owned), protFlex);
+            group = group(group > 0)';
+        end
+        seen(group) = true;
+        if numel(group) < 2
+            continue
+        end
+        withOld = group(oldConcs(group) > 0);
+        if isempty(withOld)
+            continue
+        end
+        factor = max(newConcs(withOld) ./ oldConcs(withOld));
+        newConcs(withOld) = oldConcs(withOld) * factor;
+    end
+    keepOld = newConcs < oldConcs;
+    model.ub(usageIdx(flexIdx(keepOld)))  = oldConcs(keepOld);
+    model.ub(usageIdx(flexIdx(~keepOld))) = newConcs(~keepOld);
+    protFlex(keepOld) = [];
+    oldConcs(keepOld) = [];
+    freq(keepOld)     = [];
+    flexConcs         = newConcs(~keepOld);
+end
+
+flexEnz.uniprotIDs = protFlex;
+flexEnz.oldConcs   = oldConcs;
+flexEnz.flexConcs  = flexConcs;
+flexEnz.frequence  = freq;
+if changedProtPool
+    flexEnz.uniprotIDs(end+1) = {'prot_pool'};
+    flexEnz.oldConcs(end+1)   = oldProtPool;
+    flexEnz.flexConcs(end+1)  = newProtPool;
+    flexEnz.frequence(end+1)  = 1;
+end
+flexEnz.ratioIncr = flexEnz.flexConcs./flexEnz.oldConcs;
+[~,b] = sort(flexEnz.ratioIncr,'descend');
+flexEnz.ratioIncr  = flexEnz.ratioIncr(b);
+flexEnz.uniprotIDs = flexEnz.uniprotIDs(b);
+flexEnz.oldConcs   = flexEnz.oldConcs(b);
+flexEnz.flexConcs  = flexEnz.flexConcs(b);
+flexEnz.frequence  = flexEnz.frequence(b);
+end
+
+function scores = getUnitScores(model, usageIdx, units, foldChange, limit)
+% Growth gained per fold of raising the usage upper bounds of each unit
+% together. With reduced costs, the sum over the unit's subunits that run
+% above limit of their cap of |reduced cost of the usage reaction| times its
+% upper bound. Unlike the shadow price of the protein metabolite, the
+% reduced cost of the usage reaction leaves out the price of the protein
+% pool, which would otherwise be counted once per subunit. When no such
+% score is positive (no reduced costs, or the protein pool binds and the
+% solver puts the whole price on it), the candidate units are probed one by
+% one with all their upper bounds raised by foldChange and the pool lifted.
+scores = zeros(numel(units), 1);
+sol = solveLP(model);
+if sol.stat ~= 1
+    return
+end
+candidates = zeros(0, 1);
+active     = cell(numel(units), 1);
+for k = 1:numel(units)
+    rx = usageIdx(units{k});
+    ub = model.ub(rx);
+    act = ub > 0;
+    act(act) = sol.x(rx(act)) ./ ub(act) > limit;
+    if any(act)
+        candidates(end+1, 1) = k; %#ok<AGROW>
+        active{k} = rx(act);
+    end
+end
+if isempty(candidates)
+    return
+end
+needed = vertcat(active{candidates});
+if ~isempty(sol.rCost) && all(isfinite(sol.rCost(needed)))
+    for k = candidates'
+        scores(k) = sum(abs(sol.rCost(active{k})) .* model.ub(active{k}));
+    end
+    scores(scores < 1e-12) = 0;
+    if any(scores > 0)
+        return
+    end
+    scores = zeros(numel(units), 1);
+end
+poolIdx = getIndexes(model, 'prot_pool_exchange', 'rxns');
+model.ub(poolIdx) = max(model.ub(poolIdx), 1000);
+base = solveLP(model);
+if base.stat ~= 1
+    return
+end
+for k = candidates'
+    tempModel = model;
+    rx = usageIdx(units{k});
+    tempModel.ub(rx) = tempModel.ub(rx) * foldChange;
+    probe = solveLP(tempModel);
+    if probe.stat == 1
+        gain = probe.f - base.f;
+        if gain > 1e-3
+            scores(k) = gain / (foldChange - 1);
+        end
+    end
+end
+end
+
