@@ -20,7 +20,7 @@ function usageReport = reportEnzymeUsage(ecModel, usageData, varargin)
 %     how many top enzymes by absolute usage to list (default 10). Use 0
 %     or Inf to list all enzymes instead. Enzymes whose reactions carry no
 %     flux are never listed here, as they do not contribute to the
-%     solution.
+%     solution. A negative value raises reportEnzymeUsage:invalidTopAbsUsage.
 %
 % Returns
 % -------
@@ -54,6 +54,9 @@ if isempty(topAbsUsage);  topAbsUsage  = 10;  end
 % values it used to reach the indexing below unclamped: usageData.protID(topUse(1:N))
 % with N > numel(topUse) is an out-of-bounds index, so any model with fewer than 10
 % enzymes (ecTestGEM has 5) crashed on the default call.
+if ~(isnumeric(topAbsUsage) && isscalar(topAbsUsage) && topAbsUsage >= 0)
+    error('reportEnzymeUsage:invalidTopAbsUsage', 'topAbsUsage must be a non-negative number.')
+end
 if topAbsUsage == 0 || isinf(topAbsUsage) || topAbsUsage > numel(usageData.protID)
     topAbsUsage = numel(usageData.protID);
 end
@@ -84,8 +87,8 @@ for i=1:numel(enzIdx)
     if isscalar(find(carriedFlux))
         highUsage.protID(end+1,1)      = highEnzyme(i);
         highUsage.geneID(end+1,1)      = geneIDs(i);
-        highUsage.absUsage(end+1,1)    = usageData.absUsage(enzIdx(i));
-        highUsage.capUsage(end+1,1)    = usageData.capUsage(enzIdx(i));
+        highUsage.absUsage(end+1,1)    = usageData.absUsage(highUsageProt(i));
+        highUsage.capUsage(end+1,1)    = usageData.capUsage(highUsageProt(i));
         highUsage.kcat(end+1,1)        = kcat(carriedFlux);
         highUsage.source(end+1,1)      = ecModel.ec.source(idx(carriedFlux));
         highUsage.rxnID(end+1,1)       = rxns(carriedFlux);
@@ -95,8 +98,8 @@ for i=1:numel(enzIdx)
         % Add one entry for combined usage
         highUsage.protID(end+1,1)      = highEnzyme(i);
         highUsage.geneID(end+1,1)      = geneIDs(i);
-        highUsage.absUsage(end+1,1)    = usageData.absUsage(enzIdx(i));
-        highUsage.capUsage(end+1,1)    = usageData.capUsage(enzIdx(i));
+        highUsage.absUsage(end+1,1)    = usageData.absUsage(highUsageProt(i));
+        highUsage.capUsage(end+1,1)    = usageData.capUsage(highUsageProt(i));
         highUsage.kcat(end+1,1)        = nan;
         highUsage.source{end+1,1}      = '===';
         highUsage.rxnID{end+1,1}       = '===';
@@ -109,7 +112,7 @@ for i=1:numel(enzIdx)
         enzMet = strcat('prot_',highEnzyme{i});
         [~, enzEcIdx] = ismember(enzMet,ecModel.mets);
         indAbsUse = full(transpose(-ecModel.S(enzEcIdx,rIdx)).*enzFlux);
-        indCapUse = (indAbsUse /sum(indAbsUse)) * usageData.capUsage(enzIdx(i));
+        indCapUse = (indAbsUse /sum(indAbsUse)) * usageData.capUsage(highUsageProt(i));
 
         rxnNumber = length(rIdx);
         highUsage.protID(end+1:end+rxnNumber,1)      = highEnzyme(i);
