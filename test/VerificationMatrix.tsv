@@ -2,7 +2,7 @@ Function/File (in src)	Verification	Comments
 BrendaParser/*	Not explicitly tested - The code has existed for a long time	
 change_model/applyComplexData.m	tc0003, tc0004, tc0103, tc0501	
 change_model/applyKcatConstraints.m	tc0011, tc0215, tc0235, tc0238, tc0250	
-change_model/findMetSmiles.m	tc0012	
+change_model/findMetSmiles.m	tc0012, tc0407, tc0408	
 change_model/getComplexData.m	tc0003, tc0004 - File download not covered by test cases but is tested manually and works.	
 change_model/makeEcModel.m	tc0001, tc0002, tc0210, tc0212, tc0233, tc0234	
 change_model/setProtPoolSize.m	tc0005	
@@ -60,7 +60,7 @@ gather_kcats/ecStatsFromBrenda.m	tc0400, tc0401 - not verified against a real BR
 gather_kcats/mergeKcats.m	tc0240	
 get_enzyme_data/calculateMW.m	Not explicitly tested - The code has existed for a long time	
 get_enzyme_data/findECInDB.m	Called from getECfromDatabase - tested when that function is tested; also tc0242, tc0243, tc0244, tc0245, tc0246	
-get_enzyme_data/getECfromDatabase.m	tc0007, tc0404, tc0405, tc0406 - does not test download of the databases - this is tested in the manual workflows for Yeast-GEM and Human-GEM	
+get_enzyme_data/getECfromDatabase.m	tc0007, tc0404, tc0405, tc0406, tc0409 - does not test download of the databases - this is tested in the manual workflows for Yeast-GEM and Human-GEM	
 get_enzyme_data/getECfromGEM.m	tc0006	
 get_enzyme_data/getECstring.m	Called from findECInDB - tested when that function is tested; also tc0246	
 download_databases/loadBRENDAdata.m	Called from fuzzyKcatMatching - tested when that function is tested; also tc0105, tc0220, tc0221, tc0222

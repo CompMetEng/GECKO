@@ -28,8 +28,8 @@ function model = getECfromDatabase(model, varargin)
 %       uses the protein with the lowest index in the database.
 %     - 'ignore' ignores multiplicities and uses the protein with the
 %       lowest index in the database.
-%     - 'add' adds all the multiple proteins as isozymes for the given
-%       reaction.
+%
+%     Any other action raises getECfromDatabase:unsupportedAction.
 % modelAdapter : ModelAdapter
 %     a loaded model adapter (default: the current default model adapter).
 %
@@ -55,6 +55,11 @@ p = parseGECKOargs(varargin, { ...
 ecRxns       = p.ecRxns;
 action       = p.action;
 modelAdapter = p.modelAdapter;
+
+if ~(ischar(action) && any(strcmpi(action,{'display','ignore'})))
+    error('getECfromDatabase:unsupportedAction', ...
+        'action must be ''display'' or ''ignore''.')
+end
 
 if isempty(modelAdapter)
     modelAdapter = ModelAdapterManager.getDefault();
