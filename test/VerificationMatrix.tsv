@@ -26,7 +26,7 @@ gather_kcats/collectKcats.m	tc0079, tc0080, tc0081, tc0083, tc0087, tc0088, tc00
 gather_kcats/assignKcats.m	tc0079, tc0083	
 gather_kcats/updateKcatSources.m	tc0082, tc0087	
 gather_kcats/kcatAssignmentConfig.m	tc0079, tc0081, tc0083, tc0087, tc0088, tc0089, tc0090	
-gather_kcats/loadBrendaMeasurements.m	tc0085	
+gather_kcats/loadBrendaMeasurements.m	tc0085, tc0403	
 gather_kcats/ecTreeEstimate.m	tc0084	
 gather_kcats/kcatsFromECTree.m	tc0086, tc0087	
 gather_kcats/kcatsFromHomologs.m	tc0095, tc0096	
@@ -40,12 +40,12 @@ flux_analysis/ecFVA.m	tc0214
 flux_analysis/ecFSEOF.m	tc0100, tc0236	
 utilities/upgradeGECKOproject.m	tc0094, tc0099	
 gather_kcats/readOpenKineticsPredictorOutput.m	tc0030, tc0069	
-gather_kcats/reviewKcatAssignment.m	Has only been tested by running it manually, not tested by test cases
-gather_kcats/ecStatsFromBrenda.m	Not verified against real BRENDA data in this environment -- see its own TODO comment
+gather_kcats/reviewKcatAssignment.m	tc0402 (the ec-maximum check); the other checks have only been tested by running it manually
+gather_kcats/ecStatsFromBrenda.m	tc0400, tc0401 - not verified against a real BRENDA pull
 gather_kcats/mergeKcats.m	tc0240	
 get_enzyme_data/calculateMW.m	Not explicitly tested - The code has existed for a long time	
 get_enzyme_data/findECInDB.m	Called from getECfromDatabase - tested when that function is tested; also tc0242, tc0243, tc0244, tc0245, tc0246	
-get_enzyme_data/getECfromDatabase.m	tc0007 - does not test download of the databases - this is tested in the manual workflows for Yeast-GEM and Human-GEM	
+get_enzyme_data/getECfromDatabase.m	tc0007, tc0404, tc0405 - does not test download of the databases - this is tested in the manual workflows for Yeast-GEM and Human-GEM	
 get_enzyme_data/getECfromGEM.m	tc0006	
 get_enzyme_data/getECstring.m	Called from findECInDB - tested when that function is tested; also tc0246	
 download_databases/loadBRENDAdata.m	Called from fuzzyKcatMatching - tested when that function is tested; also tc0105, tc0220, tc0221, tc0222
