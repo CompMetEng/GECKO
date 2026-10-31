@@ -16,7 +16,8 @@ function f = calculateFfactor(model, varargin)
 %     attempts to load data/paxDB.tsv). With several samples, the abundance
 %     of a protein is averaged over the samples in which it is measured.
 % enzymes : cell
-%     list of enzymes (default model.ec.enzymes).
+%     list of enzymes (default model.ec.enzymes). An empty cell array {}
+%     means no enzymes (f is 0); [] means the default.
 % modelAdapter : ModelAdapter
 %     a loaded model adapter (default: the current default model adapter).
 %
@@ -51,7 +52,7 @@ if isempty(modelAdapter)
 end
 params = modelAdapter.getParameters();
 
-if isempty(enzymes)
+if isnumeric(enzymes) && isempty(enzymes)
     enzymes = model.ec.enzymes;
 end
 
