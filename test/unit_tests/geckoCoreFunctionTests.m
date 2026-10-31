@@ -1099,6 +1099,44 @@ function testGetEnzymeBottlenecksRejectsInvalidFoldChange_tc0281(testCase)
 end
 
 
+function testGetEnzymeBottlenecksWarnsWhenOnlyThePoolBinds_tc0282(testCase)
+    % Verifies that with every usage upper bound out of reach and a binding
+    % protein pool no enzyme is at its bound: the warning names the pool,
+    % nResolved is 0, every objectiveGain is 0 and the rows are in model order.
+    ecModel = buildBottleneckTestModel(100);
+    usageIdx = startsWith(ecModel.rxns, 'usage_prot_');
+    ecModel.ub(usageIdx) = 1e6;
+
+    lastwarn('');
+    bottlenecks = verifyWarning(testCase, @() getEnzymeBottlenecks(ecModel), ...
+        'getEnzymeBottlenecks:noEnzymeAtBound');
+    verifyEqual(testCase, bottlenecks.Properties.UserData.nResolved, 0)
+    verifyEqual(testCase, bottlenecks.Properties.UserData.activeConstraints, 1)
+    verifyEqual(testCase, bottlenecks.objectiveGain, zeros(height(bottlenecks), 1))
+    verifyEqual(testCase, bottlenecks.uniprot, ecModel.ec.enzymes(1:height(bottlenecks)))
+    verifyTrue(testCase, all(bottlenecks.multipleActive))
+    verifyNotEmpty(testCase, strfind(lastwarn, 'the protein pool exchange is at its bound'))
+end
+
+
+function testGetEnzymeBottlenecksWarnsWhenNoConstraintIsActive_tc0283(testCase)
+    % Verifies that with the growth reaction R5 capped at 10 and the pool and
+    % usage bounds out of reach the warning says that no capacity constraint
+    % is active.
+    ecModel = buildBottleneckTestModel(1e6);
+    usageIdx = startsWith(ecModel.rxns, 'usage_prot_');
+    ecModel.ub(usageIdx) = 1e6;
+    ecModel.ub(strcmp(ecModel.rxns, 'R5')) = 10;
+
+    lastwarn('');
+    bottlenecks = verifyWarning(testCase, @() getEnzymeBottlenecks(ecModel), ...
+        'getEnzymeBottlenecks:noEnzymeAtBound');
+    verifyEqual(testCase, bottlenecks.Properties.UserData.activeConstraints, 0)
+    verifyFalse(testCase, any(bottlenecks.multipleActive))
+    verifyNotEmpty(testCase, strfind(lastwarn, 'no capacity constraint is active'))
+end
+
+
 function ecModel = buildBottleneckTestModel(poolSize, blockR2)
     % Test model with kcat 10 for all enzymes, R4 blocked, R2 blocked unless
     % blockR2 is false, and a protein pool of poolSize.

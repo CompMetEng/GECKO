@@ -47,6 +47,9 @@ function bottlenecks = getEnzymeBottlenecks(model, varargin)
 %     not informative about a single enzyme. The table property
 %     UserData.nResolved holds the number of enzymes that were solved again
 %     and UserData.activeConstraints the number of active constraints.
+%     When no enzyme is at its usage bound a warning (getEnzymeBottlenecks:noEnzymeAtBound)
+%     says that no single enzyme limits the objective; every objectiveGain is then 0 and
+%     the rows are in model order.
 %
 % Examples
 % --------
@@ -113,10 +116,22 @@ for i = find(atCap)'
 end
 
 activeConstraints = nnz(atCap);
+poolActive = false;
 poolIdx = find(strcmp(model.rxns, 'prot_pool_exchange'), 1);
 if ~isempty(poolIdx) && isfinite(model.ub(poolIdx)) && model.ub(poolIdx) > 0 ...
         && abs(sol.x(poolIdx)) >= model.ub(poolIdx) * (1 - 1e-6)
     activeConstraints = activeConstraints + 1;
+    poolActive = true;
+end
+if ~any(atCap)
+    if poolActive
+        state = 'the protein pool exchange is at its bound';
+    else
+        state = 'no capacity constraint is active';
+    end
+    warning('getEnzymeBottlenecks:noEnzymeAtBound', ...
+        ['getEnzymeBottlenecks: no enzyme is at its usage bound, so no single enzyme limits ' ...
+        'the objective; %s. Every objectiveGain is 0 and the rows are in model order.'], state)
 end
 multipleActive = (activeConstraints - double(atCap)) >= 1;
 
