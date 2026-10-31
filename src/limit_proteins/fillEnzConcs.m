@@ -32,6 +32,9 @@ function model = fillEnzConcs(model, protData, varargin)
 %
 % Notes
 % -----
+% A negative abundance of a protein that is an enzyme of the model is
+% contradictory data and raises the error fillEnzConcs:negativeAbundance.
+%
 % To also constrain the model with the content of model.ec.concs, you should
 % run constrainEnzConcs.
 %
@@ -57,5 +60,10 @@ abundances = protData.abundances(:,dataCol);
 model.ec.concs=nan(numel(model.ec.enzymes),1);
 
 [a,b] = ismember(uniprotIDs, model.ec.enzymes);
+if any(abundances(a) < 0)
+    error('fillEnzConcs:negativeAbundance', ...
+        'protData has a negative abundance for %s.', ...
+        strjoin(uniprotIDs(a & abundances < 0), ', '))
+end
 model.ec.concs(b(a)) = abundances(a);
 end
