@@ -946,26 +946,19 @@ function testWriteOpenKineticsPredictorInputReactionSubsetIndex_tc0023(testCase)
 end
 
 
-function testGetEnzymeBottlenecksRanksByShadowPrice_tc0024(testCase)
-    % Verifies getEnzymeBottlenecks solves the model, ranks enzymes by the
-    % absolute shadow price of their prot_<id> mass-balance constraint, and
-    % returns the top N rows. Checks the primal-derived columns (flux,
-    % capUsage, upperBound) exactly, that rows are sorted by non-increasing
-    % |shadowPrice|, and that 'top' limits the row count -- but not the exact
-    % shadow-price value for an enzyme carrying zero flux at the optimum,
-    % since that value is LP-dual-degenerate and can vary with the solver's
-    % platform/presolve path.
-    geckoPath = findGECKOroot;
-    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
-    model = getGeckoTestModel();
-    model.lb(strcmp(model.rxns,'R2')) = 0; model.ub(strcmp(model.rxns,'R2')) = 0;
-    model.lb(strcmp(model.rxns,'R4')) = 0; model.ub(strcmp(model.rxns,'R4')) = 0;
-    ecModel = makeEcModel(model, false, adapter);
-    ecModel = getECfromGEM(ecModel);
-    ecModel.ec.kcat(:) = 10;
-    ecModel.ec.source(:) = {'manual'};
-    ecModel = applyKcatConstraints(ecModel);
-    ecModel = setProtPoolSize(ecModel, 0.5, 0.5, 0.5, adapter);
+function testGetEnzymeBottlenecksRanksByObjectiveGain_tc0024(testCase)
+    % Verifies getEnzymeBottlenecks solves the model and returns the top N
+    % rows with the columns objectiveGain, shadowPrice, flux, capUsage,
+    % upperBound and multipleActive. In this model no usage reaction runs at
+    % its upper bound and the protein pool is the only active constraint, so
+    % no enzyme is solved again, every objectiveGain is 0, the order is the
+    % order of model.ec.enzymes, and every row is marked multipleActive.
+    % Checks the primal-derived columns (flux, capUsage, upperBound) exactly,
+    % and that 'top' limits the row count -- but not the shadow-price value
+    % for an enzyme carrying zero flux at the optimum, since that value is
+    % LP-dual-degenerate and can vary with the solver's platform/presolve
+    % path.
+    ecModel = buildBottleneckTestModel(0.5);
 
     sol = solveLP(ecModel);
     verifyEqual(testCase, sol.stat, 1)
@@ -973,21 +966,158 @@ function testGetEnzymeBottlenecksRanksByShadowPrice_tc0024(testCase)
 
     bottlenecks = getEnzymeBottlenecks(ecModel);
     verifyEqual(testCase, height(bottlenecks), 5)
+    verifyEqual(testCase, bottlenecks.Properties.VariableNames, ...
+        {'uniprot','gene','objectiveGain','shadowPrice','flux','capUsage','upperBound','multipleActive'})
 
-    % Primal-derived values: unique regardless of dual degeneracy.
-    [~, order] = ismember({'P1','P2','P3','P4','P5'}, bottlenecks.uniprot);
-    verifyEqual(testCase, bottlenecks.flux(order), [0;0;0;55.555555555556;69.444444444444], 'AbsTol', 1e-9)
-    verifyEqual(testCase, bottlenecks.capUsage(order), [0;0;0;0.055555555555556;0.069444444444444], 'AbsTol', 1e-9)
-    verifyEqual(testCase, bottlenecks.upperBound(order), repmat(1000, 5, 1), 'AbsTol', 1e-9)
+    verifyEqual(testCase, bottlenecks.uniprot, {'P1';'P2';'P3';'P4';'P5'})
+    verifyEqual(testCase, bottlenecks.objectiveGain, zeros(5, 1))
+    verifyEqual(testCase, bottlenecks.flux, [0;0;0;55.555555555556;69.444444444444], 'AbsTol', 1e-9)
+    verifyEqual(testCase, bottlenecks.capUsage, [0;0;0;0.055555555555556;0.069444444444444], 'AbsTol', 1e-9)
+    verifyEqual(testCase, bottlenecks.upperBound, repmat(1000, 5, 1), 'AbsTol', 1e-9)
+    verifyTrue(testCase, all(bottlenecks.multipleActive))
+    verifyEqual(testCase, bottlenecks.Properties.UserData.nResolved, 0)
+    verifyEqual(testCase, bottlenecks.Properties.UserData.activeConstraints, 1)
 
-    % Sorted by non-increasing |shadow price| --- true whichever degenerate
-    % vertex the solver lands on.
-    verifyTrue(testCase, all(diff(abs(bottlenecks.shadowPrice)) <= 1e-9))
-
-    % top limits the row count to exactly what was asked for, whatever the
-    % tie-break among degenerate rows put there.
     top2 = getEnzymeBottlenecks(ecModel, 'top', 2);
     verifyEqual(testCase, height(top2), 2)
+    verifyEqual(testCase, top2.uniprot, {'P1';'P2'})
+end
+
+
+function testGetEnzymeBottlenecksOrdersByResolvedGain_tc0277(testCase)
+    % Verifies that of two enzymes running at their upper bound, the one
+    % whose bound limits growth is ranked first with the growth gain of a
+    % solve with its bound doubled (positive for a maximised growth
+    % objective), and the one whose raised bound does not change growth (P3,
+    % whose usage is fixed by equal lower and upper bounds) has a gain of 0.
+    % Both enzymes are solved again, so nResolved is 2 and, with two active
+    % constraints, both rows are multipleActive. Only P5 and P3 are asserted
+    % as active; which of P1, P2 and P4 carry flux in the parallel routes is
+    % not unique.
+    ecModel = buildBottleneckTestModel(100, false);
+    ecModel.ub(strcmp(ecModel.rxns, 'usage_prot_P5')) = 20;
+    p3 = strcmp(ecModel.rxns, 'usage_prot_P3');
+    ecModel.lb(p3) = 1;
+    ecModel.ub(p3) = 1;
+
+    base = solveLP(ecModel);
+    verifyEqual(testCase, base.stat, 1)
+    raised = ecModel;
+    raised.ub(strcmp(raised.rxns, 'usage_prot_P5')) = 40;
+    expectedGain = solveLP(raised).f - base.f;
+    verifyGreaterThan(testCase, expectedGain, 1)
+
+    bottlenecks = getEnzymeBottlenecks(ecModel);
+    verifyEqual(testCase, bottlenecks.uniprot{1}, 'P5')
+    verifyEqual(testCase, bottlenecks.objectiveGain(1), expectedGain, 'AbsTol', 1e-9)
+    verifyEqual(testCase, bottlenecks.objectiveGain(2:end), zeros(4, 1))
+    row = strcmp(bottlenecks.uniprot, 'P3');
+    verifyEqual(testCase, bottlenecks.capUsage(row), 1, 'AbsTol', 1e-9)
+    verifyTrue(testCase, all(bottlenecks.multipleActive(1) & bottlenecks.multipleActive(row)))
+    verifyEqual(testCase, bottlenecks.Properties.UserData.nResolved, 2)
+    verifyEqual(testCase, bottlenecks.Properties.UserData.activeConstraints, 2)
+    % rows with equal gain keep the order of model.ec.enzymes
+    verifyEqual(testCase, bottlenecks.uniprot(2:end), {'P1';'P2';'P3';'P4'})
+end
+
+
+function testGetEnzymeBottlenecksRespectsFoldChange_tc0278(testCase)
+    % Verifies the foldChange argument sets the factor by which the upper
+    % bound of an enzyme at its bound is raised: the gain of P4 equals the
+    % growth change of a solve with its bound multiplied by 1.5, by 2
+    % (default) and by 3, and the gain differs between factors.
+    ecModel = buildBottleneckTestModel(100);
+    ecModel.ub(strcmp(ecModel.rxns, 'usage_prot_P4')) = 16;
+    base = solveLP(ecModel).f;
+
+    gains = zeros(1, 3);
+    factors = [1.5 2 3];
+    for i = 1:3
+        raised = ecModel;
+        raised.ub(strcmp(raised.rxns, 'usage_prot_P4')) = 16 * factors(i);
+        expected = solveLP(raised).f - base;
+        b = getEnzymeBottlenecks(ecModel, 'foldChange', factors(i));
+        verifyEqual(testCase, b.uniprot{1}, 'P4')
+        verifyEqual(testCase, b.objectiveGain(1), expected, 'AbsTol', 1e-9)
+        gains(i) = b.objectiveGain(1);
+    end
+    verifyTrue(testCase, all(diff(gains) > 0))
+    default = getEnzymeBottlenecks(ecModel);
+    verifyEqual(testCase, default.objectiveGain(1), gains(2), 'AbsTol', 1e-9)
+end
+
+
+function testGetEnzymeBottlenecksNonBindingEnzymeHasZeroGain_tc0279(testCase)
+    % Verifies an enzyme carrying flux below its upper bound is not solved
+    % again and has objectiveGain 0, while the one enzyme at its bound has a
+    % positive gain. nResolved is 1 and the protein pool is not active, so
+    % the enzyme at its bound is not multipleActive, while every other row
+    % is, because one constraint besides its own is active.
+    ecModel = buildBottleneckTestModel(100);
+    ecModel.ub(strcmp(ecModel.rxns, 'usage_prot_P4')) = 16;
+    ecModel.ub(strcmp(ecModel.rxns, 'usage_prot_P5')) = 40;
+
+    bottlenecks = getEnzymeBottlenecks(ecModel);
+    verifyEqual(testCase, bottlenecks.uniprot{1}, 'P4')
+    verifyGreaterThan(testCase, bottlenecks.objectiveGain(1), 1)
+    verifyFalse(testCase, bottlenecks.multipleActive(1))
+    row = strcmp(bottlenecks.uniprot, 'P5');
+    verifyEqual(testCase, bottlenecks.flux(row), 20, 'AbsTol', 1e-9)
+    verifyEqual(testCase, bottlenecks.capUsage(row), 0.5, 'AbsTol', 1e-9)
+    verifyEqual(testCase, bottlenecks.objectiveGain(row), 0)
+    verifyTrue(testCase, bottlenecks.multipleActive(row))
+    verifyEqual(testCase, bottlenecks.Properties.UserData.nResolved, 1)
+    verifyEqual(testCase, bottlenecks.Properties.UserData.activeConstraints, 1)
+end
+
+
+function testGetEnzymeBottlenecksErrorsWhenNotOptimal_tc0280(testCase)
+    % Verifies getEnzymeBottlenecks raises an error when the model cannot be
+    % solved to optimality (here: the growth reaction is forced above what
+    % the protein pool allows).
+    ecModel = buildBottleneckTestModel(0.5);
+    ecModel.lb(ecModel.c == 1) = 1000;
+    verifyNotEqual(testCase, solveLP(ecModel).stat, 1)
+    try
+        getEnzymeBottlenecks(ecModel);
+        message = '';
+    catch err
+        message = err.message;
+    end
+    verifyTrue(testCase, startsWith(message, 'getEnzymeBottlenecks: solver status'))
+end
+
+
+function testGetEnzymeBottlenecksRejectsInvalidFoldChange_tc0281(testCase)
+    % Verifies foldChange values of 1, below 1, NaN and non-scalar raise
+    % getEnzymeBottlenecks:foldChange.
+    ecModel = buildBottleneckTestModel(100);
+    for value = {1, 0.5, 0, NaN, [2 3]}
+        verifyError(testCase, @() getEnzymeBottlenecks(ecModel, 'foldChange', value{1}), ...
+            'getEnzymeBottlenecks:foldChange')
+    end
+end
+
+
+function ecModel = buildBottleneckTestModel(poolSize, blockR2)
+    % Test model with kcat 10 for all enzymes, R4 blocked, R2 blocked unless
+    % blockR2 is false, and a protein pool of poolSize.
+    if nargin < 2
+        blockR2 = true;
+    end
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    model = getGeckoTestModel();
+    if blockR2
+        model.lb(strcmp(model.rxns,'R2')) = 0; model.ub(strcmp(model.rxns,'R2')) = 0;
+    end
+    model.lb(strcmp(model.rxns,'R4')) = 0; model.ub(strcmp(model.rxns,'R4')) = 0;
+    ecModel = makeEcModel(model, false, adapter);
+    ecModel = getECfromGEM(ecModel);
+    ecModel.ec.kcat(:) = 10;
+    ecModel.ec.source(:) = {'manual'};
+    ecModel = applyKcatConstraints(ecModel);
+    ecModel = setProtPoolSize(ecModel, poolSize, 0.5, 0.5, adapter);
 end
 
 
