@@ -14,7 +14,7 @@ gather_kcats/getStandardKcat.m	tc0256, tc0257, tc0309, tc0310
 gather_kcats/mergeDlkcatAndFuzzyKcats.m	tc0011; tc0241	
 gather_kcats/readDLKcatOutput.m	tcm0001, tcm0002, tc0303, tc0304 - The test doesn't really check the function, only that some output is read	
 gather_kcats/runDLKcat.m	tcm0001, tcm0002 - The test doesn't really check the function, only that we get something
-gather_kcats/assignKcatValues.m	tc0011 - we did not test all possible parameterizations here; also tc0104
+gather_kcats/assignKcatValues.m	tc0011 - we did not test all possible parameterizations here; also tc0104, tc0311
 gather_kcats/writeDLKcatInput.m	partly by tc0011, tc0305
 gather_kcats/getEcRxnKeys.m	tc0070, tc0076	
 gather_kcats/saveKcatSource.m	tc0071, tc0073, tc0076, tc0078	

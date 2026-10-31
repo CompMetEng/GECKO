@@ -196,6 +196,19 @@ function testGetStandardKcatLightModelTwice_tc0310(testCase)
     verifyEqual(testCase, sort(second.ec.kcat), sort(first.ec.kcat))
 end
 
+function testAssignKcatValuesWritesSourceWithMatchDetail_tc0311(testCase)
+    % ec.source is the source in lower case snake_case, followed by the
+    % wildcard level and origin of a BRENDA match in brackets, as geckopy
+    % writes it.
+    [model, ~] = kcatProject();
+    rxns = model.ec.rxns(1:4);
+    kcatList = struct('source', 'x', 'rxns', {rxns}, 'kcats', [5; 6; 7; 8], ...
+        'kcatSource', {{'BRENDA'; 'DLKcat'; 'OKP-CataPro'; 'brenda'}}, ...
+        'wildcardLvl', [0; NaN; NaN; 2], 'origin', [1; NaN; 3; NaN]);
+    model = assignKcatValues(model, kcatList);
+    verifyEqual(testCase, model.ec.source(1:4), {'brenda (wc=0, origin=1)'; 'dlkcat'; 'okp_catapro'; 'brenda (wc=2)'})
+end
+
 function [model, adapter, project] = kcatProject()
     adapter = ModelAdapterManager.getAdapter(fullfile(findGECKOroot, 'test', 'unit_tests', 'ecTestGEM', 'TestGEMAdapter.m'));
     project = tempname;
