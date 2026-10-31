@@ -38,7 +38,9 @@ function [model, foundComplex, proposedComplex] = applyComplexData(model, vararg
 % Notes
 % -----
 % The subunit stoichiometry is assigned per protein ID: the proteins of a
-% complex need not be listed in the order of model.ec.enzymes.
+% complex need not be listed in the order of model.ec.enzymes. A subunit with
+% stoichiometry 0 has no stated stoichiometry; it counts as a subunit with
+% stoichiometry 1.
 %
 % foundComplex and proposedComplex share the following columns: rxn
 % (reaction identifier), complexID and name (Complex Portal identifiers),
@@ -113,9 +115,8 @@ for i=1:size(complexMatrix,1)
     protMatIdx(~isOld)  = lastProt+1 : lastProt+numel(newProts);
     lastProt = lastProt + numel(newProts);
     % Add subunit numbers
-    if all(complexData(i).stochiometry == 0)
-        complexData(i).stochiometry(:) = 1;
-    end
+    % A subunit without a stated stoichiometry (0) counts as one subunit
+    complexData(i).stochiometry(complexData(i).stochiometry == 0) = 1;
     complexMatrix(i,protMatIdx) = complexData(i).stochiometry;
 end
 
