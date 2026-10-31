@@ -33,6 +33,11 @@ function [model, rxnIdx] = assignKcatValues(model,kcatList,varargin)
 %     'median'/'mean', where the selected value need not equal any single
 %     input, it is taken from the first entry instead (arbitrary but
 %     deterministic, since an aggregate has no single "winning" source).
+%     The source is written in lower case snake_case, with the wildcard
+%     level and origin of the entry in brackets when it has them
+%     (kcatList.wildcardLvl and kcatList.origin), for example
+%     'brenda (wc=0, origin=1)'. Functions that compare model.ec.source with
+%     a source name use the part before ' (' (see resolveTunableContext).
 % overwrite : char
 %     whether existing kcat values should be overwritten. Options: 'true',
 %     'false', 'ifHigher'. The last option will overwrite only if the new
@@ -77,6 +82,17 @@ end
 
 % Remove zero kcat values. Only adjusting fields that are used later.
 removeZero                      = kcatList.kcats == 0;
+nEntries                        = numel(removeZero);
+wildcardLvl = nan(nEntries, 1);
+origin      = nan(nEntries, 1);
+if isfield(kcatList,'wildcardLvl') && numel(kcatList.wildcardLvl) == nEntries
+    wildcardLvl = double(kcatList.wildcardLvl(:));
+end
+if isfield(kcatList,'origin') && numel(kcatList.origin) == nEntries
+    origin = double(kcatList.origin(:));
+end
+wildcardLvl(removeZero)         = [];
+origin(removeZero)              = [];
 kcatList.kcats(removeZero)      = [];
 kcatList.rxns(removeZero)       = [];
 if isfield(kcatList,'kcatSource')
@@ -114,7 +130,8 @@ for i=1:numel(idxInModelUnique)
         otherwise
             error('Invalid criteria specified')
     end
-    selectedSource(i)    = kcatList.kcatSource(idxMatch(j));
+    selectedSource{i}    = formatKcatSource(kcatList.kcatSource{idxMatch(j)}, ...
+        wildcardLvl(idxMatch(j)), origin(idxMatch(j)));
 end
 
 % Populate model.ec.kcat
@@ -139,4 +156,18 @@ switch overwrite
         error('Invalid overwrite flag specified')
 end
 rxnIdx = idxInModelUnique;
+end
+
+function text = formatKcatSource(source, wildcardLvl, origin)
+% The provenance text of model.ec.source: the source label in lower case
+% snake_case, followed by the wildcard level and origin of a fuzzy BRENDA
+% match in brackets, e.g. 'brenda (wc=0, origin=1)'.
+text = lower(strtrim(char(source)));
+text = regexprep(text, '[^0-9a-z]+', '_');
+text = regexprep(text, '^_+|_+$', '');
+if ~isnan(wildcardLvl) && ~isnan(origin)
+    text = sprintf('%s (wc=%d, origin=%d)', text, fix(wildcardLvl), fix(origin));
+elseif ~isnan(wildcardLvl)
+    text = sprintf('%s (wc=%d)', text, fix(wildcardLvl));
+end
 end

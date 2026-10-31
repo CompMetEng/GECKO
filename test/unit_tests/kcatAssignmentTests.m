@@ -63,7 +63,7 @@ function testStagesFromToml_tc0081(testCase)
     adapter.params.kcat_assignment = struct('stage', struct('action', 'select', ...
         'sources', {{'dlkcat'}}, 'criteria', 'min'), 'isozymes', false, 'standard', false);
     decisions = collectKcats(base, 'modelAdapter', adapter, 'writeReport', false);
-    verifyEqual(testCase, unique(decisions.source(decisions.kcat > 0)), {'DLKcat'})
+    verifyEqual(testCase, unique(decisions.source(decisions.kcat > 0)), {'dlkcat'})
     verifyEqual(testCase, decisions.kcat(strcmp(decisions.ecRxn, 'R2_EXP_1')), 6.5)
     adapter.params.kcat_assignment.preset = 'gecko_median';
     verifyError(testCase, @() collectKcats(base, 'modelAdapter', adapter), 'kcatAssignment:config')
