@@ -37,6 +37,25 @@ function testMergeKcatsMatchesOkpTaggedSources_tc0301(testCase)
     verifyEqual(testCase, merged.kcatSource, {'OKP-BRENDA'; 'OKP-CataPro'})
 end
 
+function testLoadKcatSourceQuotedRows_tc0302(testCase)
+    % A row of empty quoted fields is blank and a quoted comment is a
+    % comment; a field that opens a quote and does not close it is an error.
+    [model, ~, project] = kcatProject();
+    file = fullfile(project, 'odd.tsv');
+    writeLines(file, {'# source: odd', sprintf('rxn\tenzymes\tkcat\tsource'), ...
+        sprintf('R3\tP4\t25\todd'), '"# a quoted comment"', sprintf('""\t""\t""\t""'), ...
+        sprintf('R5\tP5\t30\todd')});
+    [list, report] = loadKcatSource(model, file);
+    verifyEqual(testCase, numel(report.records.kcat), 2)
+    verifyEmpty(testCase, report.invalid)
+    writeLines(file, {'# source: odd', sprintf('rxn\tenzymes\tkcat\tsource'), ...
+        sprintf('R3\tP4\t25\todd'), '"# a comment that was quoted'});
+    verifyError(testCase, @() loadKcatSource(model, file), 'loadKcatSource:quote')
+    writeLines(file, {'# source: odd', sprintf('rxn\tenzymes\tkcat\tsource'), ...
+        sprintf('"R3\tP4\t25\todd')});
+    verifyError(testCase, @() loadKcatSource(model, file), 'loadKcatSource:quote')
+end
+
 function [model, adapter, project] = kcatProject()
     adapter = ModelAdapterManager.getAdapter(fullfile(findGECKOroot, 'test', 'unit_tests', 'ecTestGEM', 'TestGEMAdapter.m'));
     project = tempname;
