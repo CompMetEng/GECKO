@@ -12,10 +12,10 @@ change_model/applyCustomKcats.m	tc0227, tc0228, tc0229, tc0230
 gather_kcats/fuzzyKcatMatching.m	tc0010, tc0223, tc0224, tc0225, tc0226, tc0231, tc0239	
 gather_kcats/getStandardKcat.m	tc0256, tc0257	
 gather_kcats/mergeDlkcatAndFuzzyKcats.m	tc0011; tc0241	
-gather_kcats/readDLKcatOutput.m	tcm0001, tcm0002 - The test doesn't really check the function, only that some output is read	
+gather_kcats/readDLKcatOutput.m	tcm0001, tcm0002, tc0303, tc0304 - The test doesn't really check the function, only that some output is read	
 gather_kcats/runDLKcat.m	tcm0001, tcm0002 - The test doesn't really check the function, only that we get something
 gather_kcats/assignKcatValues.m	tc0011 - we did not test all possible parameterizations here; also tc0104
-gather_kcats/writeDLKcatInput.m	partly by tc0011
+gather_kcats/writeDLKcatInput.m	partly by tc0011, tc0305
 gather_kcats/getEcRxnKeys.m	tc0070, tc0076	
 gather_kcats/saveKcatSource.m	tc0071, tc0073, tc0076, tc0078	
 gather_kcats/loadKcatSource.m	tc0071, tc0072, tc0073, tc0076, tc0077, tc0078, tc0302	

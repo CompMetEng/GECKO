@@ -14,7 +14,9 @@ function writtenTable = writeDLKcatInput(model, varargin)
 % ecRxns : logical
 %     for which reactions (from model.ec.rxns) DLKcat should predict kcat
 %     values, provided as logical vector with same length as model.ec.rxns
-%     (default: all reactions).
+%     (default: all reactions). A vector without true entries selects no
+%     reaction and gives an empty file. The rows follow the order of
+%     model.ec.rxns.
 % modelAdapter : ModelAdapter
 %     a loaded model adapter (default: the current default model adapter).
 % onlyWithSmiles : logical
@@ -56,7 +58,7 @@ overwrite      = p.overwrite;
 
 if isempty(ecRxnsSel)
     ecRxnsSel = true(numel(model.ec.rxns),1);
-elseif ~logical(ecRxnsSel)
+elseif ~islogical(ecRxnsSel)
     error('ecRxns should be provided as logical vector')
 elseif numel(ecRxnsSel)~=numel(model.ec.rxns)
     error('Length of ecRxns is not the same as model.ec.rxns')
@@ -91,6 +93,12 @@ pairs = extractEnzymeSubstratePairs(model, 'ecRxns', ismember((1:numel(model.ec.
     'modelAdapter', modelAdapter);
 
 % Prepare output
+if isempty(pairs.ecRxn)
+    out = cell(6,0);
+    writeRows(filename, out)
+    writtenTable = out;
+    return
+end
 out(1,:) = model.ec.rxns(pairs.ecRxn);
 out(2,:) = model.ec.genes(pairs.protein);
 out(3,:) = model.metNames(pairs.met);
@@ -109,11 +117,16 @@ end
 out(6,:) = cell(numel(out(1,:)),1);
 out(6,:) = {'NA'};
 
-% Write file
+writeRows(filename, out)
+writtenTable = out;
+end
+
+function writeRows(filename, out)
+% Write the rows (one per column of out); an empty table gives an empty file.
 fID = fopen(filename,'w');
-fprintf(fID,'%s\t%s\t%s\t%s\t%s\t%s\n',out{:});
+if ~isempty(out)
+    fprintf(fID,'%s\t%s\t%s\t%s\t%s\t%s\n',out{:});
+end
 fclose(fID);
 fprintf('Model-specific DLKcat input stored at %s\n',filename);
-
-writtenTable = out;
 end

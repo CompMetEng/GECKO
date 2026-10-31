@@ -56,6 +56,68 @@ function testLoadKcatSourceQuotedRows_tc0302(testCase)
     verifyError(testCase, @() loadKcatSource(model, file), 'loadKcatSource:quote')
 end
 
+function testReadDLKcatOutputKcatFields_tc0303(testCase)
+    % A kcat field that is not a finite number ('inf', '1.2.3', 'NA', 'None')
+    % drops the row before the reactions are checked; a file without a
+    % number raises.
+    [model, adapter, project] = kcatProject();
+    file = fullfile(project, 'DLKcat_out.tsv');
+    head = sprintf('rxns\tgenes\tsubstrates\tsmiles\tsequence\tkcat');
+    row = @(r, s, k) sprintf('%s\tG1\t%s\tsmiles\tseq\t%s', r, s, k);
+    read = @() readDLKcatOutput(model, 'outFile', file, 'modelAdapter', adapter);
+
+    writeLines(file, {head, row('R2_EXP_1', 'm1', '12.5'), row('R2_EXP_2', 'm1', 'inf'), ...
+        row('R2_EXP_2', 'm1', '1.2.3')});
+    kcatList = read();
+    verifyEqual(testCase, kcatList.rxns, {'R2_EXP_1'})
+    verifyEqual(testCase, kcatList.kcats, 12.5)
+
+    writeLines(file, {head, row('R2_EXP_1', 'm1', 'None'), row('R2_EXP_2', 'm1', 'None')});
+    verifyError(testCase, read, 'readDLKcatOutput:noKcats')
+
+    writeLines(file, {head, row('R2_EXP_1', 'm1', '12.5'), row('NOTAREACTION_EXP_1', 'm1', 'NA')});
+    kcatList = read();
+    verifyEqual(testCase, kcatList.rxns, {'R2_EXP_1'})
+
+    writeLines(file, {head, row('R2_EXP_1', 'm1', '12.5'), row('NOTAREACTION_EXP_1', 'm1', '7')});
+    verifyError(testCase, read, 'readDLKcatOutput:unknownReaction')
+end
+
+function testReadDLKcatOutputUnknownSubstrate_tc0304(testCase)
+    % A row with a substrate that is not in the model is left out with a
+    % warning; strict raises.
+    [model, adapter, project] = kcatProject();
+    file = fullfile(project, 'DLKcat_out.tsv');
+    writeLines(file, {sprintf('rxns\tgenes\tsubstrates\tsmiles\tsequence\tkcat'), ...
+        sprintf('R2_EXP_1\tG1\tm1\tsmiles\tseq\t12.5'), sprintf('R2_EXP_2\tG1\tNOTAREALMETABOLITE\tsmiles\tseq\t7')});
+    verifyWarning(testCase, @() readDLKcatOutput(model, 'outFile', file, 'modelAdapter', adapter), ...
+        'readDLKcatOutput:unknownSubstrate')
+    state = warning('off', 'readDLKcatOutput:unknownSubstrate');
+    restore = onCleanup(@() warning(state));
+    kcatList = readDLKcatOutput(model, 'outFile', file, 'modelAdapter', adapter);
+    verifyEqual(testCase, kcatList.rxns, {'R2_EXP_1'})
+    verifyError(testCase, @() readDLKcatOutput(model, 'outFile', file, 'modelAdapter', adapter, ...
+        'strict', true), 'readDLKcatOutput:unknownSubstrate')
+end
+
+function testWriteDLKcatInputEmptySelection_tc0305(testCase)
+    % A selection without a reaction writes an empty file and returns no
+    % rows; the rows of a selection follow model.ec.rxns.
+    [model, adapter, project] = kcatProject();
+    file = fullfile(project, 'DLKcat_in.tsv');
+    none = false(numel(model.ec.rxns), 1);
+    evalc(['written = writeDLKcatInput(model, ''ecRxns'', none, ''modelAdapter'', adapter, ' ...
+        '''onlyWithSmiles'', false, ''filename'', file, ''overwrite'', true);']);
+    verifyEqual(testCase, size(written), [6 0])
+    info = dir(file);
+    verifyEqual(testCase, info.bytes, 0)
+    some = ismember(model.ec.rxns, {'R5', 'R3'});
+    evalc(['written = writeDLKcatInput(model, ''ecRxns'', some, ''modelAdapter'', adapter, ' ...
+        '''onlyWithSmiles'', false, ''filename'', file, ''overwrite'', true);']);
+    order = find(some);
+    verifyEqual(testCase, unique(written(1, :), 'stable'), model.ec.rxns(order)')
+end
+
 function [model, adapter, project] = kcatProject()
     adapter = ModelAdapterManager.getAdapter(fullfile(findGECKOroot, 'test', 'unit_tests', 'ecTestGEM', 'TestGEMAdapter.m'));
     project = tempname;
