@@ -50,6 +50,12 @@ function testSaveEcModelWritesDefaultDescriptionOnlyWhenNone_tc0603(testCase)
     text = fileread(fullfile(project, 'models', 'own.yml'));
     verifyNotEmpty(testCase, strfind(text, '- description: my own description'))
     verifyEmpty(testCase, strfind(text, 'Enzyme-constrained model of'))
+    model.annotation.description = '';
+    model.annotation.note = 'loaded description';
+    saveEcModel(model, 'note.yml', adapter);
+    text = fileread(fullfile(project, 'models', 'note.yml'));
+    verifyNotEmpty(testCase, strfind(text, '- note: loaded description'))
+    verifyEmpty(testCase, strfind(text, 'Enzyme-constrained model of'))
 end
 
 function model = exchangeToyModel()

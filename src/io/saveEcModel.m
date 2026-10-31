@@ -10,9 +10,10 @@ function saveEcModel(ecModel,varargin)
 % A YAML file records its ecModel format (gecko_format, see loadEcModel)
 % and the GECKO release that wrote it (generator) in its metaData, in
 % place of the geckopy_version that earlier geckopy releases wrote.
-% A model without a description (ecModel.annotation.description) gets
-% 'Enzyme-constrained model of <id>' in its metaData; an existing description
-% is kept.
+% A model without a description gets 'Enzyme-constrained model of <id>' in
+% its metaData; an existing description is kept. readYAMLmodel reads the
+% metaData description into ecModel.annotation.note, so a note counts as the
+% description of the model, as does ecModel.annotation.description.
 %
 % The ecModel is saved to the ecModel-specific models/ subfolder. For
 % saving to other locations, writeYAMLmodel or exportModel are more
@@ -91,7 +92,11 @@ switch filename(end-3:end)
         % model_adapter.toml) and the release that wrote it.
         ecModel.annotation.gecko_format = '4';
         ecModel.annotation.generator = ['GECKO ' geckoVersion()];
-        if ~isfield(ecModel.annotation, 'description') || isempty(ecModel.annotation.description)
+        hasDescription = false;
+        for f = {'description', 'note'}
+            hasDescription = hasDescription || (isfield(ecModel.annotation, f{1}) && ~isempty(ecModel.annotation.(f{1})));
+        end
+        if ~hasDescription
             ecModel.annotation.description = ['Enzyme-constrained model of ' ecModel.id];
         end
         if isfield(ecModel.annotation, 'geckopy_version')
