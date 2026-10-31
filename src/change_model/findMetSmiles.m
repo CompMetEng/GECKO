@@ -3,7 +3,10 @@ function [model,noSMILES] = findMetSmiles(model, varargin)
 %
 % Matches are cached in tutorials/***/data/smilesDB.tsv, which is checked
 % first on subsequent runs so repeated queries are avoided. If the model
-% already has a metSmiles field, non-empty entries are left unchanged.
+% already has a metSmiles field, non-empty entries are left unchanged. When
+% the cache holds a name more than once, the last row is used. A metabolite
+% without a name is skipped with a warning (findMetSmiles:emptyName) and
+% gets no SMILES.
 %
 % Parameters
 % ----------
@@ -39,6 +42,10 @@ if isempty(modelAdapter)
 end
 params = modelAdapter.params;
 
+nEmpty = sum(cellfun(@isempty,model.metNames));
+if nEmpty > 0
+    warning('findMetSmiles:emptyName','%d metabolite(s) have no name and get no SMILES.',nEmpty)
+end
 [uniqueNames, ~, uniqueIdx] = unique(regexprep(model.metNames,'^prot_.*',''));
 uniqueSmiles(1:numel(uniqueNames),1) = {''};
 metMatch = false(length(uniqueNames),1);
@@ -49,8 +56,9 @@ if exist(smilesDBfile,'file')==2
     fID = fopen(smilesDBfile,'r');
     raw = textscan(fID,'%s %s','Delimiter','\t','HeaderLines',0);
     fclose(fID);
-    smilesDB.names = raw{1};
-    smilesDB.smile = raw{2};
+    %The last row of a name that occurs more than once is used
+    smilesDB.names = flipud(raw{1});
+    smilesDB.smile = flipud(raw{2});
     [metMatch, metIdx] = ismember(uniqueNames,smilesDB.names);
     uniqueSmiles(metMatch) = smilesDB.smile(metIdx(metMatch));
     if verbose; fprintf('done.\n'); end
