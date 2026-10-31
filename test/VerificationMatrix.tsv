@@ -81,6 +81,9 @@ limit_proteins/flexibilizeProteins.m	Not explicitly tested - The code has existe
 limit_proteins/readProteomics.m	tc0013	
 limit_proteins/flexibilizeProtConcs.m	tc0013	
 limit_proteins/getConcControlCoeffs.m	tc0013	
+limit_proteins/flexibilizeEnzConcs.m	tc0013, tc0273, tc0274, tc0275, tc0276 (perComplex option)	
+limit_proteins/getComplexFamilies.m	tc0262, tc0263, tc0264, tc0265, tc0266	
+limit_proteins/levelComplexConcs.m	tc0267, tc0268, tc0269, tc0270, tc0271, tc0272	
 limit_proteins/updateProtPool.m		
 model_adapter/ModelAdapter.m	Base class for adapters, not explicitly tested.	
 model_adapter/ModelAdapterManager.m	tc0008, tc0067	
