@@ -209,6 +209,22 @@ function testAssignKcatValuesWritesSourceWithMatchDetail_tc0311(testCase)
     verifyEqual(testCase, model.ec.source(1:4), {'brenda (wc=0, origin=1)'; 'dlkcat'; 'okp_catapro'; 'brenda (wc=2)'})
 end
 
+function testResolveTunableContextMatchesSourceBeforeDetail_tc0312(testCase)
+    % A source with a detail is in the group of its name: 'brenda (wc=0,
+    % origin=1)' in brenda and 'combined (sd=0.10, n=2)' in combined, with
+    % that group's width; a source that no group names keeps the default.
+    [model, ~] = kcatProject();
+    model.ec.kcat(1:4) = 10;
+    model.ec.source(1:4) = {'brenda (wc=0, origin=1)'; 'combined (sd=0.10, n=2)'; 'DLKcat'; 'other (x)'};
+    params = struct('kcatSources', {{'brenda', 'combined', 'dlkcat'}}, 'sigma0logSource', [0.2; 0.3; 0.4], ...
+        'sigma0logDefault', 0.5, 'tieIsozymes', false);
+    mask = false(numel(model.ec.rxns), 1);
+    mask(1:4) = true;
+    [~, ~, ~, groups, sigma0log] = resolveTunableContext(model, params, mask);
+    verifyEqual(testCase, groups, {'brenda'; 'combined'; 'dlkcat'; 'unlabelled'})
+    verifyEqual(testCase, sigma0log, [0.2; 0.3; 0.4; 0.5])
+end
+
 function [model, adapter, project] = kcatProject()
     adapter = ModelAdapterManager.getAdapter(fullfile(findGECKOroot, 'test', 'unit_tests', 'ecTestGEM', 'TestGEMAdapter.m'));
     project = tempname;
