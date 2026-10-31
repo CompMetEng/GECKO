@@ -1,6 +1,6 @@
 Function/File (in src)	Verification	Comments
 BrendaParser/*	Not explicitly tested - The code has existed for a long time	
-change_model/applyComplexData.m	tc0003, tc0004, tc0103	
+change_model/applyComplexData.m	tc0003, tc0004, tc0103, tc0501	
 change_model/applyKcatConstraints.m	tc0011, tc0215, tc0235, tc0238, tc0250	
 change_model/findMetSmiles.m	tc0012	
 change_model/getComplexData.m	tc0003, tc0004 - File download not covered by test cases but is tested manually and works.	
@@ -9,6 +9,8 @@ change_model/setProtPoolSize.m	tc0005
 change_model/getKcatAcrossIsoenzymes.m	tc0011, tc0252	
 change_model/getSubsetEcModel.m	tc0258, tc0259	
 change_model/applyCustomKcats.m	tc0227, tc0228, tc0229, tc0230	
+enzyme_usage/getEnzymeUsage.m	tc0507, tc0508	
+enzyme_usage/reportEnzymeUsage.m	tc0508, tc0509	
 gather_kcats/fuzzyKcatMatching.m	tc0010, tc0223, tc0224, tc0225, tc0226, tc0231, tc0239	
 gather_kcats/getStandardKcat.m	tc0256, tc0257	
 gather_kcats/mergeDlkcatAndFuzzyKcats.m	tc0011; tc0241	
@@ -33,11 +35,17 @@ gather_kcats/kcatsFromHomologs.m	tc0095, tc0096
 gather_kcats/extractEnzymeSubstratePairs.m	tc0096, tc0015	
 gather_kcats/convertCustomKcats.m	tc0091, tc0092, tc0094	
 change_model/upgradeEcModel.m	tc0093, tc0094, tc0099	
+io/loadFluxData.m	tc0506	
 io/loadProtData.m	tc0101, tc0102, tc0260	
-change_model/addNewRxnsToEC.m	tc0211, tc0232, tc0237	
+change_model/addNewRxnsToEC.m	tc0211, tc0232, tc0237, tc0500	
 change_model/mapRxnsToConv.m	tc0213	
 flux_analysis/ecFVA.m	tc0214	
 flux_analysis/ecFSEOF.m	tc0100, tc0236	
+limit_proteins/calculateFfactor.m	tc0502	
+limit_proteins/constrainEnzConcs.m	tc0503	
+limit_proteins/constrainFluxData.m	tc0505	
+limit_proteins/fillEnzConcs.m	tc0504	
+limit_proteins/relaxProteomicsGreedy.m	tc0511	
 utilities/upgradeGECKOproject.m	tc0094, tc0099	
 gather_kcats/readOpenKineticsPredictorOutput.m	tc0030, tc0069	
 gather_kcats/reviewKcatAssignment.m	Has only been tested by running it manually, not tested by test cases
@@ -57,7 +65,7 @@ kcat_tuning/findTopLimitations.m	Not explicitly tested - The code has existed fo
 kcat_tuning/sensitivityTuning.m	tcm0001, tc0251, tc0253, tc0254
 kcat_tuning/sigmaFitter.m	tc0020, tc0255
 kcat_tuning/topUsedEnzymes.m	Not explicitly tested - The code has existed for a long time	Not sure this works anymore - written for the old model structure?
-kcat_tuning/truncateValues.m	Not explicitly tested - The code has existed for a long time
+kcat_tuning/truncateValues.m	tc0510	
 limit_proteins/constrainProtConcs.m	tc0013	
 limit_proteins/findLimitingUBs.m	Not explicitly tested - The code has existed for a long time	Probably not relevant anymore, remove?
 limit_proteins/fitGAM.m		
