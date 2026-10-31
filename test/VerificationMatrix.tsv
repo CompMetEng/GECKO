@@ -22,7 +22,7 @@ gather_kcats/loadKcatSource.m	tc0071, tc0072, tc0073, tc0076, tc0077, tc0078
 gather_kcats/kcatsFromBrenda.m	tc0074, tc0078, tc0226	
 gather_kcats/kcatsFromDLKcat.m	tc0074, tc0078 - reads an existing DLKcat output; running DLKcat needs Docker	
 gather_kcats/kcatsFromOKP.m	tc0075 - reads a stored result; submitting needs the OKP service	
-gather_kcats/collectKcats.m	tc0079, tc0080, tc0081, tc0083, tc0087, tc0088, tc0089, tc0090, tc0098	
+gather_kcats/collectKcats.m	tc0079, tc0080, tc0081, tc0083, tc0087, tc0088, tc0089, tc0090, tc0098, tc0300	
 gather_kcats/assignKcats.m	tc0079, tc0083	
 gather_kcats/updateKcatSources.m	tc0082, tc0087	
 gather_kcats/kcatAssignmentConfig.m	tc0079, tc0081, tc0083, tc0087, tc0088, tc0089, tc0090	
@@ -42,7 +42,7 @@ utilities/upgradeGECKOproject.m	tc0094, tc0099
 gather_kcats/readOpenKineticsPredictorOutput.m	tc0030, tc0069	
 gather_kcats/reviewKcatAssignment.m	Has only been tested by running it manually, not tested by test cases
 gather_kcats/ecStatsFromBrenda.m	Not verified against real BRENDA data in this environment -- see its own TODO comment
-gather_kcats/mergeKcats.m	tc0240	
+gather_kcats/mergeKcats.m	tc0240, tc0301	
 get_enzyme_data/calculateMW.m	Not explicitly tested - The code has existed for a long time	
 get_enzyme_data/findECInDB.m	Called from getECfromDatabase - tested when that function is tested; also tc0242, tc0243, tc0244, tc0245, tc0246	
 get_enzyme_data/getECfromDatabase.m	tc0007 - does not test download of the databases - this is tested in the manual workflows for Yeast-GEM and Human-GEM	

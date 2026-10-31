@@ -27,8 +27,11 @@ function mergedKcatList = mergeKcats(kcatLists, sourcePriority, varargin)
 %       wildcardLimit / bottomOriginLimit.
 %
 %     Any other token is matched against each row's source after folding
-%     to lowercase snake_case (e.g. 'dlkcat', 'catapro'). Sources not
-%     listed are dropped.
+%     to lowercase snake_case (e.g. 'dlkcat', 'catapro'). A leading 'okp_'
+%     of the row's folded source (the OKP- tag of OpenKineticsPredictor
+%     rows) is dropped for matching, so 'OKP-BRENDA' routes to the database
+%     tiers and 'OKP-CataPro' matches 'catapro'; the rows keep their
+%     source label. Sources not listed are dropped.
 %
 % Name-Value Arguments
 % --------------------
@@ -170,6 +173,7 @@ if N == 0
 end
 
 token  = cellfun(@normalizeSource, rawSource, 'UniformOutput', false);
+token  = regexprep(token, '^okp_', '');
 isDb   = ismember(token, dbSources);
 hasMeta = ~isnan(wcl) & ~isnan(origin);
 
