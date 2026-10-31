@@ -21,8 +21,10 @@ function [kcatList, report] = loadKcatSource(model, name, varargin)
 %
 % The file is read as UTF-8 (a leading byte-order mark is ignored). The
 % '#' lines before the column header are the header; '#' lines and blank
-% lines further down are skipped. Fields wrapped in double quotes, as a
-% spreadsheet may save them, are unwrapped. kcat and log10_sd must be plain
+% lines further down are skipped, as are rows without a filled field (a row
+% of empty quoted fields included). Fields wrapped in double quotes, as a
+% spreadsheet may save them, are unwrapped; a field that opens a double quote
+% and does not close it is an error. kcat and log10_sd must be plain
 % numbers (12, 0.5, 1e-05); other text, such as '5,5' with a decimal comma,
 % is reported as invalid. A row with more filled fields than there are
 % columns is an error.
@@ -263,7 +265,11 @@ end
 nCol = numel(columns);
 
 trimmed = strtrim(lines);
-skip = cellfun(@isempty, trimmed) | startsWith(trimmed, '#') | startsWith(trimmed, '"#');
+skip = cellfun(@isempty, trimmed) | startsWith(trimmed, '#');
+commentLike = find(startsWith(trimmed, '"#'));
+for q = commentLike(:)'
+    skip(q) = startsWith(unquoteField(trimmed{q}), '#');
+end
 skip(1:k) = true;
 kept = find(~skip);
 L = string(lines(kept));
@@ -289,6 +295,12 @@ for r = find(~regular)'
 end
 F = strtrim(F);
 quoted = find(startsWith(F, '"'));
+unclosed = quoted(~(strlength(F(quoted)) >= 2 & endsWith(F(quoted), '"')));
+if ~isempty(unclosed)
+    badRow = min(mod(unclosed - 1, size(F, 1)) + 1);
+    error('loadKcatSource:quote', '%s, line %d has a field with an opening double quote and no closing one.', ...
+        filename, kept(badRow))
+end
 for q = quoted(:)'
     F(q) = unquoteField(char(F(q)));
 end

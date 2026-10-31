@@ -1422,7 +1422,7 @@ function testReadDLKcatOutputUnrecognizedSubstrateErrorsCleanly_tc0037(testCase)
     fclose(fid);
 
     try
-        readDLKcatOutput(ecModel, 'outFile', outFile, 'modelAdapter', adapter);
+        readDLKcatOutput(ecModel, 'outFile', outFile, 'modelAdapter', adapter, 'strict', true);
         errored = false;
         msg = '';
     catch ME

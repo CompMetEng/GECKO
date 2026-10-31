@@ -198,6 +198,7 @@ for s = 1:numel(config.stages)
         continue
     end
     lists = {};
+    usedFiles = {};
     priority = {};
     for t = 1:numel(st.files)
         token = st.files{t};
@@ -209,8 +210,9 @@ for s = 1:numel(config.stages)
         if isempty(list)
             continue
         end
-        if ~any(cellfun(@(l) isequal(l, list), lists))
+        if ~ismember(name, usedFiles)
             lists{end+1} = list; %#ok<AGROW>
+            usedFiles{end+1} = name; %#ok<AGROW>
         end
         if startsWith(token, 'database_')
             priority{end+1} = token; %#ok<AGROW>
@@ -284,10 +286,12 @@ fprintf('Kcats decided for %d of %d reactions.\n', numel(stage) - nOpen, numel(s
 end
 
 function s = normalizeSource(label)
-% As mergeKcats folds source labels: lower case, other characters as '_'.
+% As mergeKcats folds source labels: lower case, other characters as '_',
+% without a leading okp_ (the tag of OpenKineticsPredictor rows).
 s = lower(strtrim(char(label)));
 s = regexprep(s, '[^0-9a-z]+', '_');
 s = regexprep(s, '^_+|_+$', '');
+s = regexprep(s, '^okp_', '');
 end
 
 function name = sourceFile(token)

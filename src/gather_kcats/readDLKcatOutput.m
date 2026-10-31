@@ -16,6 +16,15 @@ function kcatList = readDLKcatOutput(model, varargin)
 %     the obj.params.path folder specified in the modelAdapter).
 % modelAdapter : ModelAdapter
 %     a loaded model adapter (default: the current default model adapter).
+% strict : logical
+%     raise an error for a substrate that is not in model.metNames
+%     (readDLKcatOutput:unknownSubstrate). By default the rows with such a
+%     substrate are left out with a warning (default false).
+%
+% Rows without a numeric kcat ('NA', 'None', empty, text, 'inf') are left out
+% before the reactions are checked. A file without any such row raises
+% readDLKcatOutput:noKcats. A reaction that is not in model.ec.rxns raises
+% readDLKcatOutput:unknownReaction.
 %
 % Returns
 % -------
@@ -45,9 +54,11 @@ function kcatList = readDLKcatOutput(model, varargin)
 
 p = parseGECKOargs(varargin, { ...
     'outFile',      []; ...
-    'modelAdapter', []});
+    'modelAdapter', []; ...
+    'strict',       false});
 outFile      = p.outFile;
 modelAdapter = p.modelAdapter;
+strict       = p.strict;
 
 if isempty(modelAdapter)
     modelAdapter = ModelAdapterManager.getDefault();
@@ -65,36 +76,46 @@ end
 DLKcatOutput = textscan(fID,'%s %s %s %s %s %s','Delimiter','\t','HeaderLines',1);
 fclose(fID);
 
-% Check that DLKcat output file and model match (not fool proof, but good enough)
 [rxns, genes, subs, kcats] = deal(DLKcatOutput{[1,2,3,6]});
 
+% A row has a kcat when its kcat field is a plain finite number.
+isNumber = ~cellfun(@isempty, regexp(strtrim(kcats), '^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$', 'once'));
+kcatValues = nan(numel(kcats), 1);
+kcatValues(isNumber) = str2double(kcats(isNumber));
+usable = isfinite(kcatValues);
+
 % Check if it contains any kcat values
-if all(cellfun(@isempty,kcats)) || all(strcmpi(kcats,'NA'))
-    error('DLKcat file does not contain any kcat values, please run runDLKcat() first.')
+if ~any(usable)
+    error('readDLKcatOutput:noKcats', 'DLKcat file does not contain any kcat values, please run runDLKcat() first.')
 end
 
-% Check that all substrates are in the model (case-insensitive: an SBML loader can
+% Check that the substrates are in the model (case-insensitive: an SBML loader can
 % normalise metabolite-name capitalisation differently than whatever produced the
-% DLKcat input, and that must not read as a genuinely missing substrate).
+% DLKcat input, and that must not read as a genuinely missing substrate). Rows with
+% another substrate are left out with a warning, or raise an error with 'strict'.
 matchMets = ismember(lower(subs),lower(model.metNames));
 if ~all(matchMets)
     errorText = 'DLKcat was likely run with an input file that was generated from another ecModel, as the following substrates from DLKcat output cannot be found in model.metNames:';
-    error('%s', ravenList(errorText,subs(~matchMets),false))
+    if strict
+        error('readDLKcatOutput:unknownSubstrate', '%s', ravenList(errorText,subs(~matchMets),false))
+    end
+    warning('readDLKcatOutput:unknownSubstrate', 'Rows with a substrate that is not in model.metNames are left out: %s', ...
+        strjoin(unique(subs(~matchMets))', ', '))
+    usable = usable & matchMets;
 end
 
-% Check that all reactions are in model.ec.rxns
+% Check that the reactions of the rows with a kcat are in model.ec.rxns
 matchRxns = ismember(rxns,model.ec.rxns);
-if ~all(matchRxns)
-    errorText = 'DLKcat was likely run with an input file that was generated from another ecModel, as the following reactions from DLKcat output cannot be found in model.metNames:';
-    error('%s', ravenList(errorText,rxns(~matchRxns),false))
+if ~all(matchRxns(usable))
+    errorText = 'DLKcat was likely run with an input file that was generated from another ecModel, as the following reactions from DLKcat output cannot be found in model.ec.rxns:';
+    error('readDLKcatOutput:unknownReaction', '%s', ravenList(errorText,rxns(usable & ~matchRxns),false))
 end
 
-% Filter out entries with no numeric value
-noOutput        = cellfun(@isempty,regexpi(kcats,'[0-9]'));
-kcats           = str2double(kcats(~noOutput));
-rxns(noOutput)  = [];
-genes(noOutput) = [];
-subs(noOutput)  = [];
+% Keep the entries with a numeric value
+kcats = kcatValues(usable);
+rxns  = rxns(usable);
+genes = genes(usable);
+subs  = subs(usable);
 
 % Make kcatList structure
 kcatList.source     = 'DLKcat';
