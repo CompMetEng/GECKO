@@ -16,15 +16,18 @@ function model = getECfromDatabase(model, varargin)
 %     of length model.ec.rxns that specifies which model.ec.eccodes entries
 %     should be queried. Existing values in model.ec.eccodes will be wiped.
 %     Entries that are indicated by false will be kept and not modified by
-%     this function (by default all model.ec.eccodes entries are populated
-%     by this function).
+%     this function, and are not searched for multiplicities. An empty
+%     logical array selects no entry, and the model is returned unchanged.
+%     When ecRxns is omitted or [], all model.ec.eccodes entries are
+%     populated by this function.
 % action : char
 %     response action if multiple proteins with different EC numbers are
 %     found for a given gene in a metabolic reaction (default 'display'):
 %
-%     - 'display' displays all found multiplicities.
-%     - 'ignore' ignore multiplicities and use the protein with the lowest
-%       index in the database.
+%     - 'display' gives a warning that lists all found multiplicities and
+%       uses the protein with the lowest index in the database.
+%     - 'ignore' ignores multiplicities and uses the protein with the
+%       lowest index in the database.
 %     - 'add' adds all the multiple proteins as isozymes for the given
 %       reaction.
 % modelAdapter : ModelAdapter
@@ -61,6 +64,10 @@ if isempty(modelAdapter)
 end
 params = modelAdapter.getParameters();
 
+if islogical(ecRxns) && isempty(ecRxns)
+    return
+end
+
 rxnEnzMat = model.ec.rxnEnzMat;
 genes = modelAdapter.getUniprotCompatibleGenes(model.ec.genes);
 
@@ -96,9 +103,17 @@ eccodes(:)= {''};
 conflicts = cell(1,4);
 
 rxnEnzMat = logical(rxnEnzMat);
+if isempty(ecRxns)
+    selected = true(n,1);
+else
+    selected = logical(ecRxns(:));
+end
 PB = progressReport(n, 'Assigning EC numbers from database');
 for i = 1:n
     PB.count;
+    if ~selected(i)
+        continue
+    end
     gns = genes(rxnEnzMat(i,:).');
     if ~isempty(gns)
         %Find match in Uniprot:
@@ -176,10 +191,11 @@ end
 STR = [STR, '\nIf a wrongly annotated case was found then call the '];
 STR = [STR, 'getECfromDatabase.m function again with the option action'];
 STR = [STR, '= ignore\n\n'];
+STR = [STR, 'The protein with the lowest index in the database was used for each of them.\n\n'];
 STR = [STR, 'If the conflicting proteins are desired to be kept as isozymes'];
 STR = [STR, ' then call the getECfromDatabase.m function'];
 STR = [STR, ' again with the option action = add\n'];
-error(sprintf(STR))
+warning('getECfromDatabase:conflicts', '%s', sprintf(STR))
 end
 
 function [geneIndex,geneHashMap]=hashGeneToProt(proteinDB)
