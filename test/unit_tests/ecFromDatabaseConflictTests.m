@@ -26,6 +26,21 @@ function testGetECfromDatabaseIgnoresConflictOutsideSelection_tc0405(testCase)
     verifyEqual(testCase, ecModel2.ec.eccodes(~selected), repmat({''}, nnz(~selected), 1))
 end
 
+function testGetECfromDatabaseEmptySelectionChangesNothing_tc0406(testCase)
+    % An empty logical selection searches nothing and returns the model as it
+    % is; [] selects every ec reaction.
+    [ecModel, adapter] = conflictModel(testCase);
+    ecModel.ec.eccodes = repmat({'9.9.9.9'}, numel(ecModel.ec.rxns), 1);
+    lastwarn('')
+    same = getECfromDatabase(ecModel, false(0,1), 'display', adapter);
+    verifyEqual(testCase, same, ecModel)
+    verifyEmpty(testCase, lastwarn())
+    warning('off', 'getECfromDatabase:conflicts')
+    cleanup = onCleanup(@() warning('on', 'getECfromDatabase:conflicts')); %#ok<NASGU>
+    all = getECfromDatabase(ecModel, [], 'ignore', adapter);
+    verifyEqual(testCase, all.ec.eccodes{1}, '1.1.1.1')
+end
+
 function [ecModel, adapter] = conflictModel(testCase)
     % ecTestGEM with a second UniProt entry for gene G4 and another EC number.
     geckoPath = findGECKOroot;

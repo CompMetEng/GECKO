@@ -16,8 +16,10 @@ function model = getECfromDatabase(model, varargin)
 %     of length model.ec.rxns that specifies which model.ec.eccodes entries
 %     should be queried. Existing values in model.ec.eccodes will be wiped.
 %     Entries that are indicated by false will be kept and not modified by
-%     this function, and are not searched for multiplicities (by default all
-%     model.ec.eccodes entries are populated by this function).
+%     this function, and are not searched for multiplicities. An empty
+%     logical array selects no entry, and the model is returned unchanged.
+%     When ecRxns is omitted or [], all model.ec.eccodes entries are
+%     populated by this function.
 % action : char
 %     response action if multiple proteins with different EC numbers are
 %     found for a given gene in a metabolic reaction (default 'display'):
@@ -61,6 +63,10 @@ if isempty(modelAdapter)
     end
 end
 params = modelAdapter.getParameters();
+
+if islogical(ecRxns) && isempty(ecRxns)
+    return
+end
 
 rxnEnzMat = model.ec.rxnEnzMat;
 genes = modelAdapter.getUniprotCompatibleGenes(model.ec.genes);
