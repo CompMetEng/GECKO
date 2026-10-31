@@ -1,7 +1,7 @@
 Function/File (in src)	Verification	Comments
 BrendaParser/*	Not explicitly tested - The code has existed for a long time	
 change_model/applyComplexData.m	tc0003, tc0004, tc0103, tc0501	
-change_model/applyKcatConstraints.m	tc0011, tc0215, tc0235, tc0238, tc0250	
+change_model/applyKcatConstraints.m	tc0011, tc0215, tc0235, tc0238, tc0250, tc0512	
 change_model/findMetSmiles.m	tc0012	
 change_model/getComplexData.m	tc0003, tc0004 - File download not covered by test cases but is tested manually and works.	
 change_model/makeEcModel.m	tc0001, tc0002, tc0210, tc0212, tc0233, tc0234	

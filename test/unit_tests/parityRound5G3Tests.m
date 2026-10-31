@@ -208,6 +208,28 @@ function testRelaxProteomicsGreedyEmptyEnzymeSet_tc0511(testCase)
     verifyEqual(testCase, fieldnames(all.relaxed), {'P5'})
 end
 
+function testApplyKcatConstraintsLightUpdateIds_tc0512(testCase)
+    % On a light model the update list takes cobra reaction ids and ec
+    % reaction ids (with the ###_ prefix); an id of neither kind raises.
+    adapter = getAdapter();
+    lecModel = makeEcModel(getGeckoTestModel(), true, adapter);
+    lecModel.ec.kcat(:) = 10;
+    poolRow = strcmp(lecModel.mets, 'prot_pool');
+    all = applyKcatConstraints(lecModel);
+    stale = all;
+    stale.S(poolRow, strcmp(stale.rxns, 'R3')) = 0;
+    byCobra = applyKcatConstraints(stale, 'updateRxns', {'R3'});
+    verifyEqual(testCase, byCobra.S, all.S)
+    ecId = lecModel.ec.rxns(endsWith(lecModel.ec.rxns, '_R3'));
+    byEc = applyKcatConstraints(stale, 'updateRxns', ecId);
+    verifyEqual(testCase, byEc.S, all.S)
+    verifyError(testCase, @() applyKcatConstraints(lecModel, 'updateRxns', {'NOT_A_RXN'}), ...
+        'applyKcatConstraints:unknownReaction')
+    lecModel.rxns{end+1} = lecModel.ec.rxns{1};
+    verifyError(testCase, @() applyKcatConstraints(lecModel, 'updateRxns', lecModel.ec.rxns(1)), ...
+        'applyKcatConstraints:ambiguousReaction')
+end
+
 function adapter = getAdapter()
 geckoPath = findGECKOroot;
 adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));
