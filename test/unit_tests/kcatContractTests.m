@@ -118,6 +118,84 @@ function testWriteDLKcatInputEmptySelection_tc0305(testCase)
     verifyEqual(testCase, unique(written(1, :), 'stable'), model.ec.rxns(order)')
 end
 
+function testKcatAssignmentConfigRejectsInvalidValues_tc0306(testCase)
+    % An empty preset, a criteria that is not one of the lower case names
+    % and a stage whose sources is not a list raise.
+    config = @(a) kcatAssignmentConfig(struct('kcat_assignment', a));
+    verifyError(testCase, @() config(struct('preset', '')), 'kcatAssignment:config')
+    verifyError(testCase, @() config(struct('stage', struct('sources', 'custom'))), 'kcatAssignment:config')
+    verifyError(testCase, @() config(struct('stage', struct('sources', {{'custom'}}, 'criteria', 'Median'))), ...
+        'kcatAssignment:config')
+    verifyError(testCase, @() config(struct('stage', struct('sources', {{'custom'}}, 'criteria', 'med'))), ...
+        'kcatAssignment:config')
+    c = config(struct('stage', struct('sources', {{'custom'}}, 'criteria', 'median')));
+    verifyEqual(testCase, c.stages.criteria, 'median')
+    verifyEqual(testCase, config(struct()).preset, 'brenda_ec_tree')
+end
+
+function testEcTreeEstimateRejectsNaNK_tc0307(testCase)
+    m = struct('ec', {{'1.1.1.1'; '1.1.1.1'}}, 'log10kcat', [1; 2]);
+    verifyError(testCase, @() ecTreeEstimate({'1.1.1.1'}, m, NaN), 'ecTreeEstimate:k')
+end
+
+function testKcatsFromECTreeSubset_tc0308(testCase)
+    % An explicit empty ecRxns selects no reaction; a reaction named twice
+    % gives one row.
+    [model, adapter] = kcatProject();
+    ecs = unique(strtrim(split(strjoin(model.ec.eccodes(~cellfun(@isempty, model.ec.eccodes)), ';'), ';')));
+    ecs = ecs(~cellfun(@isempty, ecs));
+    v = repelem((1:numel(ecs))', 2);
+    m = struct('ec', {repelem(ecs, 2)}, 'log10kcat', v, 'kcat', 10 .^ v, 'release', 'BRENDA release test');
+    withEc = find(~cellfun(@isempty, model.ec.eccodes));
+    verifyGreaterThanOrEqual(testCase, numel(withEc), 2)
+    everything = kcatsFromECTree(model, 'measurements', m, 'save', false, 'modelAdapter', adapter);
+    verifyEqual(testCase, numel(everything.rxns), numel(withEc))
+    none = kcatsFromECTree(model, 'measurements', m, 'save', false, 'modelAdapter', adapter, 'ecRxns', []);
+    verifyEmpty(testCase, none.rxns)
+    twice = kcatsFromECTree(model, 'measurements', m, 'save', false, 'modelAdapter', adapter, ...
+        'ecRxns', [withEc(1); withEc(2); withEc(2)]);
+    verifyEqual(testCase, twice.rxns, model.ec.rxns(withEc(1:2)))
+end
+
+function testGetStandardKcatExchangeAndPseudoReactions_tc0309(testCase)
+    % R7 consumes two metabolites and produces none: an exchange reaction,
+    % without the standard enzyme. R8 is named like a pseudoreaction in
+    % another letter case. R6 is an ordinary reaction without a GPR.
+    adapter = ModelAdapterManager.getAdapter(fullfile(findGECKOroot, 'test', 'unit_tests', 'ecTestGEM', 'TestGEMAdapter.m'));
+    model = loadConventionalGEM('modelAdapter', adapter);
+    toAdd.rxns      = {'R6'; 'R7'; 'R8'};
+    toAdd.rxnNames  = {'R6'; 'R7'; 'Biomass Pseudoreaction'};
+    toAdd.equations = {'m1[c] => m2[c]'; 'm1[c] + m2[c] =>'; 'm1[c] => m2[c]'};
+    toAdd.grRules   = {''; ''; ''};
+    model = addRxns(model, toAdd, 3);
+    ecModel = makeEcModel(model, false, adapter);
+    ecModel = getECfromGEM(ecModel);
+    ecModel.ec.kcat(:) = 10;
+    evalc('ecModel = getStandardKcat(ecModel, ''modelAdapter'', adapter);');
+    verifyTrue(testCase, ismember('R6', ecModel.ec.rxns))
+    verifyFalse(testCase, ismember('R7', ecModel.ec.rxns))
+    verifyFalse(testCase, ismember('R8', ecModel.ec.rxns))
+end
+
+function testGetStandardKcatLightModelTwice_tc0310(testCase)
+    % The standard pseudoenzyme of a light model is not added again, and the
+    % second call gives the first call's result.
+    adapter = ModelAdapterManager.getAdapter(fullfile(findGECKOroot, 'test', 'unit_tests', 'ecTestGEM', 'TestGEMAdapter.m'));
+    model = loadConventionalGEM('modelAdapter', adapter);
+    toAdd.rxns      = {'R6'};
+    toAdd.equations = {'m1[c] => m2[c]'};
+    toAdd.grRules   = {''};
+    model = addRxns(model, toAdd, 3);
+    ecModel = makeEcModel(model, true, adapter);
+    ecModel = getECfromGEM(ecModel);
+    ecModel.ec.kcat(:) = 10;
+    evalc('first = getStandardKcat(ecModel, ''modelAdapter'', adapter);');
+    evalc('second = getStandardKcat(first, ''modelAdapter'', adapter);');
+    verifyEqual(testCase, sum(strcmp(second.ec.enzymes, 'standard')), 1)
+    verifyEqual(testCase, sort(second.ec.rxns), sort(first.ec.rxns))
+    verifyEqual(testCase, sort(second.ec.kcat), sort(first.ec.kcat))
+end
+
 function [model, adapter, project] = kcatProject()
     adapter = ModelAdapterManager.getAdapter(fullfile(findGECKOroot, 'test', 'unit_tests', 'ecTestGEM', 'TestGEMAdapter.m'));
     project = tempname;

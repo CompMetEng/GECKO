@@ -4,8 +4,10 @@ function config = kcatAssignmentConfig(params)
 % Reads [kcat_assignment] and [kcat_sources.*] of model_adapter.toml (or
 % params.kcat_assignment and params.kcat_sources of an adapter class), and
 % expands a preset into its stages, as collectKcats and updateKcatSources
-% use them. Without a preset or stages the preset is brenda_ec_tree.
-% geckopy's kcat_assignment_config gives the same settings.
+% use them. Without a preset or stages the preset is brenda_ec_tree. An
+% empty preset, an unknown criteria (the names are lower case), and a stage
+% whose sources is not a list raise kcatAssignment:config. geckopy's
+% kcat_assignment_config gives the same settings.
 %
 % Parameters
 % ----------
@@ -43,7 +45,10 @@ config.preset = '';
 config.isozymes = getOr(a, 'isozymes', true);
 config.standard = getOr(a, 'standard', true);
 config.sources = struct();
-hasPreset = isfield(a, 'preset') && ~isempty(a.preset);
+hasPreset = isfield(a, 'preset') && ~(isnumeric(a.preset) && isempty(a.preset));
+if hasPreset && (~(ischar(a.preset) || isstring(a.preset)) || strlength(string(a.preset)) == 0)
+    error('kcatAssignment:config', 'The preset of [kcat_assignment] must be the name of a preset.')
+end
 hasStages = isfield(a, 'stage') && ~isempty(a.stage);
 if hasPreset && hasStages
     error('kcatAssignment:config', ['[kcat_assignment] gives both a preset and stages; ' ...
@@ -140,14 +145,19 @@ if ~any(strcmp(stage.action, {'select', 'combine'}))
         '"select" and "combine".'], stage.action)
 end
 sources = getOr(s, 'sources', {});
-if ischar(sources)
-    sources = {sources};
+if ~iscell(sources)
+    error('kcatAssignment:config', 'The sources of a [[kcat_assignment.stage]] must be a list of source names.')
 end
 if isempty(sources)
     error('kcatAssignment:config', 'A [[kcat_assignment.stage]] needs sources.')
 end
 stage.sources = sources(:)';
-stage.criteria = validatestring(getOr(s, 'criteria', 'max'), {'max','min','median','mean'});
+stage.criteria = getOr(s, 'criteria', 'max');
+if ~((ischar(stage.criteria) || isstring(stage.criteria)) && ...
+        any(strcmp(stage.criteria, {'max','min','median','mean'})))
+    error('kcatAssignment:config', 'Unknown criteria of a [[kcat_assignment.stage]]; criteria: max, min, median, mean.')
+end
+stage.criteria = char(stage.criteria);
 stage.topOriginLimit = getOr(s, 'top_origin_limit', 4);
 stage.bottomOriginLimit = getOr(s, 'bottom_origin_limit', 6);
 stage.wildcardLimit = getOr(s, 'wildcard_limit', 3);

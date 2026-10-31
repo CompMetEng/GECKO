@@ -21,8 +21,10 @@ function kcatList = kcatsFromECTree(model, varargin)
 % k : double
 %     shrinkage constant (default 5): the number of measurements at which
 %     an EC's own median and its class count equally.
-% ecRxns : logical
-%     for which model.ec.rxns kcats are estimated (default: all).
+% ecRxns : logical or double
+%     for which model.ec.rxns kcats are estimated, as a logical vector or as
+%     indices (default: all). A reaction named more than once gives one
+%     row. An empty ecRxns given explicitly selects no reaction.
 % measurements : struct
 %     BRENDA measurement table (default: loadBrendaMeasurements with the
 %     model adapter).
@@ -59,6 +61,7 @@ p = parseGECKOargs(varargin, { ...
     'saveAs',       'ec_tree'; ...
     'modelAdapter', []});
 modelAdapter = p.modelAdapter;
+hasSubset = any(strcmp(cellfun(@char, varargin(1:2:end), 'UniformOutput', false), 'ecRxns'));
 if isempty(modelAdapter)
     modelAdapter = ModelAdapterManager.getDefault();
     if isempty(modelAdapter)
@@ -70,7 +73,7 @@ if ~isfield(model.ec, 'eccodes')
 end
 if p.save
     file = fullfile(modelAdapter.params.path, 'data', 'kcats', [char(p.saveAs) '.tsv']);
-    warnSubset(p.ecRxns, numel(model.ec.rxns), file);
+    warnSubset(p.ecRxns, hasSubset, numel(model.ec.rxns), file);
 end
 measurements = p.measurements;
 if isempty(measurements)
@@ -78,8 +81,10 @@ if isempty(measurements)
 end
 
 idx = (1:numel(model.ec.rxns))';
-if ~isempty(p.ecRxns)
-    idx = idx(p.ecRxns(:));
+if hasSubset
+    selected = false(numel(idx), 1);
+    selected(p.ecRxns(:)) = true;
+    idx = idx(selected);
 end
 eccodes = model.ec.eccodes(idx);
 eccodes(cellfun(@(e) ~ischar(e) && ~isstring(e), eccodes)) = {''};
@@ -94,7 +99,7 @@ kcatList.detail  = cellstr("n=" + string(n(found)) + "; depth=" + string(depth(f
 
 if p.save
     parameters = struct('k', p.k);
-    if ~isempty(p.ecRxns)
+    if hasSubset
         parameters.ec_rxns = countRxns(p.ecRxns);
     end
     saveKcatSource(model, kcatList, p.saveAs, 'modelAdapter', modelAdapter, ...
@@ -112,9 +117,9 @@ else
 end
 end
 
-function warnSubset(ecRxns, nRxns, file)
+function warnSubset(ecRxns, hasSubset, nRxns, file)
 % A subset written under the default name replaces the full file.
-if ~isempty(ecRxns) && countRxns(ecRxns) < nRxns && isfile(file)
+if hasSubset && countRxns(ecRxns) < nRxns && isfile(file)
     printOrange(sprintf(['%s is replaced by kcats for %d reactions only. Give saveAs ' ...
         'to keep it.\n'], file, countRxns(ecRxns)));
 end

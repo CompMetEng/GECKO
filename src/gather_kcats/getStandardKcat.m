@@ -15,7 +15,9 @@ function [model, rxnsMissingGPR, standardMW, standardKcat, rxnsNoKcat] = getStan
 % first subSystem will be considered if multiple are annotated to the same
 % reaction.
 %
-% Exchange, transport and pseudoreactions are filtered out, plus any
+% Exchange (RAVEN's getExchangeRxns: no substrate or no product), transport
+% and pseudoreactions (a reaction name that contains 'pseudoreaction' or
+% 'SLIME rxn', in any letter case) are filtered out, plus any
 % reaction identifiers specified in /data/pseudoRxns.tsv in the model
 % adapter folder.
 %
@@ -197,14 +199,14 @@ end
 [~, exchangeRxns]  = getExchangeRxns(model);
 transportRxns = getTransportRxns(model);
 [spontaneousRxns, ~] = modelAdapter.getSpontaneousReactions(model);
-pseudoRxns = contains(model.rxnNames,'pseudoreaction');
-slimeRxns = contains(model.rxnNames,'SLIME rxn');
+pseudoRxns = contains(lower(model.rxnNames),'pseudoreaction');
+slimeRxns = contains(lower(model.rxnNames),'slime rxn');
 rxnsToIgnore = [customRxns; exchangeRxns; find(transportRxns); ...
                 find(spontaneousRxns); find(pseudoRxns); find(slimeRxns)];
 rxnsMissingGPR(ismember(rxnsMissingGPR, rxnsToIgnore)) = [];
 
-% Only add if not geckoLight & getStandardKcat was not run earlier
-if ~any(strcmp(model.mets,'prot_standard'))
+% Only add if getStandardKcat was not run earlier
+if ~any(strcmp(model.mets,'prot_standard')) && ~any(strcmp(model.ec.enzymes,'standard'))
     % Add a new gene to be consistent with ec field named standard
     proteinStdGenes.genes = 'standard';
     if isfield(model,'geneShortNames')

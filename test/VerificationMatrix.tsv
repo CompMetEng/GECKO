@@ -10,7 +10,7 @@ change_model/getKcatAcrossIsoenzymes.m	tc0011, tc0252
 change_model/getSubsetEcModel.m	tc0258, tc0259	
 change_model/applyCustomKcats.m	tc0227, tc0228, tc0229, tc0230	
 gather_kcats/fuzzyKcatMatching.m	tc0010, tc0223, tc0224, tc0225, tc0226, tc0231, tc0239	
-gather_kcats/getStandardKcat.m	tc0256, tc0257	
+gather_kcats/getStandardKcat.m	tc0256, tc0257, tc0309, tc0310	
 gather_kcats/mergeDlkcatAndFuzzyKcats.m	tc0011; tc0241	
 gather_kcats/readDLKcatOutput.m	tcm0001, tcm0002, tc0303, tc0304 - The test doesn't really check the function, only that some output is read	
 gather_kcats/runDLKcat.m	tcm0001, tcm0002 - The test doesn't really check the function, only that we get something
@@ -25,10 +25,10 @@ gather_kcats/kcatsFromOKP.m	tc0075 - reads a stored result; submitting needs the
 gather_kcats/collectKcats.m	tc0079, tc0080, tc0081, tc0083, tc0087, tc0088, tc0089, tc0090, tc0098, tc0300	
 gather_kcats/assignKcats.m	tc0079, tc0083	
 gather_kcats/updateKcatSources.m	tc0082, tc0087	
-gather_kcats/kcatAssignmentConfig.m	tc0079, tc0081, tc0083, tc0087, tc0088, tc0089, tc0090	
+gather_kcats/kcatAssignmentConfig.m	tc0079, tc0081, tc0083, tc0087, tc0088, tc0089, tc0090, tc0306	
 gather_kcats/loadBrendaMeasurements.m	tc0085	
-gather_kcats/ecTreeEstimate.m	tc0084	
-gather_kcats/kcatsFromECTree.m	tc0086, tc0087	
+gather_kcats/ecTreeEstimate.m	tc0084, tc0307	
+gather_kcats/kcatsFromECTree.m	tc0086, tc0087, tc0308	
 gather_kcats/kcatsFromHomologs.m	tc0095, tc0096	
 gather_kcats/extractEnzymeSubstratePairs.m	tc0096, tc0015	
 gather_kcats/convertCustomKcats.m	tc0091, tc0092, tc0094	
