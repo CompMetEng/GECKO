@@ -22,9 +22,9 @@ function testApplyKcatConstraintsAllZeroClearsFullModel_tc0250(testCase)
     verifyEqual(testCase, cleared.S(:, ~metabolic), ecModel.S(:, ~metabolic))
 end
 
-function testApplyKcatConstraintsAllZeroLightIsUnchanged_tc0250light(testCase)
-    % A light ecModel with every kcat 0 is returned unchanged (control: the
-    % behaviour is the same before and after the full-model change).
+function testApplyKcatConstraintsAllZeroClearsLightModel_tc0250light(testCase)
+    % With every kcat 0 the pool coefficients of a light ecModel are cleared,
+    % as the enzyme constraints of a full ecModel are.
     adapter = getAdapter();
     lecModel = makeEcModel(getGeckoTestModel(), true, adapter);
     lecModel.ec.kcat(:) = 10;
@@ -32,8 +32,11 @@ function testApplyKcatConstraintsAllZeroLightIsUnchanged_tc0250light(testCase)
     poolRow = strcmp(lecModel.mets, 'prot_pool');
     verifyGreaterThan(testCase, nnz(lecModel.S(poolRow, :)), 1)
     lecModel.ec.kcat(:) = 0;
-    same = applyKcatConstraints(lecModel);
-    verifyEqual(testCase, same.S, lecModel.S)
+    cleared = applyKcatConstraints(lecModel);
+    poolRow = strcmp(cleared.mets, 'prot_pool');
+    metabolic = ~strcmp(cleared.rxns, 'prot_pool_exchange');
+    verifyEqual(testCase, nnz(cleared.S(poolRow, metabolic)), 0)
+    verifyEqual(testCase, cleared.S(:, ~metabolic), lecModel.S(:, ~metabolic))
 end
 
 function testSensitivityTuningStopsOnGrowthBelowTolerance_tc0251(testCase)
