@@ -33,6 +33,25 @@ function testFillCarbonNumUsesFormulaCarbons_tc0602(testCase)
     verifyEqual(testCase, out.excarbon(strcmp(out.rxns,'EX_a')), 6)
 end
 
+function testSaveEcModelWritesDefaultDescriptionOnlyWhenNone_tc0603(testCase)
+    adapter = ModelAdapterManager.getAdapter(fullfile(findGECKOroot,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));
+    project = tempname;
+    testCase.addTeardown(@() rmdir(project, 's'));
+    copyfile(fullfile(adapter.params.path, 'data'), fullfile(project, 'data'));
+    adapter.params.path = project;
+    mkdir(fullfile(project, 'models'));
+    model = getECfromGEM(makeEcModel(getGeckoTestModel(), false, adapter));
+    model.annotation.description = '';
+    saveEcModel(model, 'default.yml', adapter);
+    text = fileread(fullfile(project, 'models', 'default.yml'));
+    verifyNotEmpty(testCase, strfind(text, ['- description: Enzyme-constrained model of ' model.id]))
+    model.annotation.description = 'my own description';
+    saveEcModel(model, 'own.yml', adapter);
+    text = fileread(fullfile(project, 'models', 'own.yml'));
+    verifyNotEmpty(testCase, strfind(text, '- description: my own description'))
+    verifyEmpty(testCase, strfind(text, 'Enzyme-constrained model of'))
+end
+
 function model = exchangeToyModel()
     model = struct();
     model.id = 'toy';
