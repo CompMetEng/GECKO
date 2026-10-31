@@ -41,6 +41,12 @@ function testGetECfromDatabaseEmptySelectionChangesNothing_tc0406(testCase)
     verifyEqual(testCase, all.ec.eccodes{1}, '1.1.1.1')
 end
 
+function testGetECfromDatabaseRejectsUnsupportedAction_tc0409(testCase)
+    [ecModel, adapter] = conflictModel(testCase);
+    verifyError(testCase, @() getECfromDatabase(ecModel, [], 'add', adapter), 'getECfromDatabase:unsupportedAction')
+    verifyError(testCase, @() getECfromDatabase(ecModel, [], 'other', adapter), 'getECfromDatabase:unsupportedAction')
+end
+
 function [ecModel, adapter] = conflictModel(testCase)
     % ecTestGEM with a second UniProt entry for gene G4 and another EC number.
     geckoPath = findGECKOroot;
