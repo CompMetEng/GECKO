@@ -33,7 +33,7 @@ gather_kcats/kcatsFromHomologs.m	tc0095, tc0096
 gather_kcats/extractEnzymeSubstratePairs.m	tc0096, tc0015	
 gather_kcats/convertCustomKcats.m	tc0091, tc0092, tc0094	
 change_model/upgradeEcModel.m	tc0093, tc0094, tc0099	
-io/loadProtData.m	tc0101, tc0102	
+io/loadProtData.m	tc0101, tc0102, tc0260	
 change_model/addNewRxnsToEC.m	tc0211, tc0232, tc0237	
 change_model/mapRxnsToConv.m	tc0213	
 flux_analysis/ecFVA.m	tc0214	
