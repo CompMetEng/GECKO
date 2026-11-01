@@ -252,6 +252,48 @@ function testsaveECModel_tc0009(testCase)
     verifyEqual(testCase, model, loadedModel)
 end
 
+function testsaveECModelRxnWithoutEnzymes_tc0700(testCase)
+    % An ec reaction without enzymes is written without an enzymes entry;
+    % loadEcModel returns a zero row in rxnEnzMat for it and keeps its id,
+    % kcat and source. The two forms that earlier versions wrote for it, a
+    % content-less "enzymes: !!omap" and "enzymes: !!omap []", load the same.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    ecModel = makeEcModel(getGeckoTestModel(), false, adapter);
+    k = find(full(sum(ecModel.ec.rxnEnzMat ~= 0, 2)) > 0, 1);
+    ecModel.ec.rxnEnzMat(k,:) = 0;
+    ecModel.ec.source{k} = 'standard';
+    file = fullfile(adapter.params.path,'models','ecModel.yml');
+    testCase.addTeardown(@() delete(file));
+    saveEcModel(ecModel, [], adapter);
+    lines = strsplit(fileread(file), newline, 'CollapseDelimiters', false);
+    ecStart = find(strcmp(lines, '- ec-rxns:'), 1);
+    start = ecStart + find(strcmp(strtrim(lines(ecStart+1:end)), ['- id: ' ecModel.ec.rxns{k}]), 1);
+    verifyNotEmpty(testCase, start)
+    % the entry is followed by the next "- !!omap" or by the next section
+    stop = start + find(~startsWith(lines(start+1:end), '    '), 1);
+    entry = lines(start:stop-1);
+    verifyFalse(testCase, any(contains(entry, 'enzymes')))
+    verifyTrue(testCase, any(contains(entry, 'source: standard')))
+    verifyEqual(testCase, nnz(contains(lines, '!!omap []')), 0)
+
+    forms = {'    - enzymes: !!omap', '    - enzymes: !!omap []'};
+    for i = 0:numel(forms)
+        if i > 0
+            old = [lines(1:start), forms(i), lines(start+1:end)];
+            fid = fopen(file, 'w');
+            fprintf(fid, '%s', strjoin(old, newline));
+            fclose(fid);
+        end
+        loaded = loadEcModel([], adapter);
+        verifyEqual(testCase, loaded.ec.rxns, ecModel.ec.rxns)
+        verifyEqual(testCase, loaded.ec.kcat, ecModel.ec.kcat, 'AbsTol', 1e-9)
+        verifyEqual(testCase, loaded.ec.source, ecModel.ec.source)
+        verifyEqual(testCase, full(loaded.ec.rxnEnzMat), full(ecModel.ec.rxnEnzMat))
+        verifyTrue(testCase, all(loaded.ec.rxnEnzMat(k,:) == 0))
+    end
+end
+
 function testfuzzyKcatMatchingMedian_tc0060(testCase)
     % Verifies that kcatAggregation selects which BRENDA aggregate is used.
     % The fixture records a different median from the max for every triple,
