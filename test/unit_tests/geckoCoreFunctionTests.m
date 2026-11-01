@@ -2410,6 +2410,21 @@ function testGECKOInstallerIsOlderVersion_tc0059(testCase)
     verifyFalse(testCase, older('4.0.0b1', '4.0.0b2'))
 end
 
+function testGECKOInstallerIgnoresRavenPrerelease_tc0284(testCase)
+    % The pre-release suffix of the installed RAVEN is ignored when it is
+    % compared with the minimum RAVEN version.
+    older = @(ver, minVer) GECKOInstaller.isOlderVersion( ...
+        GECKOInstaller.releaseOf(ver), minVer);
+    verifyEqual(testCase, GECKOInstaller.releaseOf('3.0.0b2'), '3.0.0')
+    verifyEqual(testCase, GECKOInstaller.releaseOf('3.1'), '3.1.0')
+    verifyFalse(testCase, older('3.0.0b1', '3.0.0'))
+    verifyFalse(testCase, older('3.0.0b2', '3.0.0'))
+    verifyFalse(testCase, older('3.0.0', '3.0.0'))
+    verifyFalse(testCase, older('3.2.1', '3.0.0'))
+    verifyTrue(testCase, older('2.9.9', '3.0.0'))
+    verifyTrue(testCase, older('2.10.0b3', '3.0.0'))
+end
+
 function testEcFSEOFSelectsTargetsByCorrelation_tc0100(testCase)
     % Verifies ecFSEOF classifies a reaction as a target when the absolute
     % flux correlates with the enforced production flux (default
