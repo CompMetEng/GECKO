@@ -80,8 +80,8 @@ model_adapter/adapterParameters.tsv	tc0064, tc0065
 model_adapter/adapterTemplate.toml	tc0068	
 utilities/*	Not explicitly tested - The code has existed for a long time. There are a lot of functions in here, unclear which of them are still useful and functional.	
 io/loadConventionalGEM.m	tc0009
-io/loadEcModel.m	tc0009, tc0099
-io/saveEcModel.m	tc0009, tc0099
+io/loadEcModel.m	tc0009, tc0099, tc0700
+io/saveEcModel.m	tc0009, tc0099, tc0700
 tutorials/tutorial_Human-GEM/HumanGEMAdapter.m	tcm0002 - does not test all aspects of the adapter, but some.	
 tutorials/full_ecModel/model_adapter.toml	tcm0001 - does not test all aspects of the adapter, but some.	
 tutorials/tutorial_yeast-GEM/code/changeMedia_batch.m	Not explicitly tested - The code has existed for a long time	
