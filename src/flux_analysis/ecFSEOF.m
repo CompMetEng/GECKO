@@ -194,8 +194,10 @@ slope_rxns  = slope_rxns(targets);
 corr_rxns   = corr_rxns(targets);
 target_type = target_type(targets);
 
-% Order from highest to lowest score, the product of slope and correlation
-[~,order]   = sort(slope_rxns .* corr_rxns,'descend');
+% Order from highest to lowest score, the product of slope and correlation,
+% rounded to 9 significant digits so that scores equal up to solver noise keep
+% the order of the model
+[~,order]   = sort(round(slope_rxns .* corr_rxns,9,'significant'),'descend');
 target_rxns = target_rxns(order);
 v_matrix    = v_matrix(order,:);
 rxnGeneM    = rxnGeneM(order,:);

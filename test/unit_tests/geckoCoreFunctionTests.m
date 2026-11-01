@@ -184,6 +184,15 @@ function testgetECfromGEM_tc0006(testCase)
     ecModel2 = getECfromGEM(ecModel,ismember(ecModel.ec.rxns, {'001_R2';'001_R3'}));
     expEccodes = {'1.1.1.1';'';'1.1.2.1';'';'';''};
     verifyEqual(testCase,ecModel2.ec.eccodes,expEccodes)
+
+    %without a model.eccodes field: a warning and empty EC numbers
+    ecModel = makeEcModel(model, false, adapter);
+    ecModel = rmfield(ecModel,'eccodes');
+    verifyWarning(testCase,@() getECfromGEM(ecModel),'getECfromGEM:noEccodes')
+    warning('off','getECfromGEM:noEccodes')
+    ecModel2 = getECfromGEM(ecModel);
+    warning('on','getECfromGEM:noEccodes')
+    verifyEqual(testCase,ecModel2.ec.eccodes,repmat({''},6,1))
 end
 
 %For both full and light
@@ -242,7 +251,7 @@ function testsaveECModel_tc0009(testCase)
     delete(fullfile(adapter.params.path,'models','ecModel.yml'));
     verifyEqual(testCase, loadedEcModel.annotation.gecko_format, '4')
     verifyTrue(testCase, startsWith(loadedEcModel.annotation.generator, 'GECKO '))
-    loadedEcModel.annotation = rmfield(loadedEcModel.annotation, {'gecko_format', 'generator'});
+    loadedEcModel.annotation = rmfield(loadedEcModel.annotation, {'gecko_format', 'generator', 'note'});
     verifyEqual(testCase, ecModel, loadedEcModel)
 
     % Test loading of conventional GEM
@@ -250,6 +259,48 @@ function testsaveECModel_tc0009(testCase)
     model=rmfield(model,{'annotation','date','description','version'});
     model.geneShortNames=model.genes;
     verifyEqual(testCase, model, loadedModel)
+end
+
+function testsaveECModelRxnWithoutEnzymes_tc0700(testCase)
+    % An ec reaction without enzymes is written without an enzymes entry;
+    % loadEcModel returns a zero row in rxnEnzMat for it and keeps its id,
+    % kcat and source. The two forms that earlier versions wrote for it, a
+    % content-less "enzymes: !!omap" and "enzymes: !!omap []", load the same.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    ecModel = makeEcModel(getGeckoTestModel(), false, adapter);
+    k = find(full(sum(ecModel.ec.rxnEnzMat ~= 0, 2)) > 0, 1);
+    ecModel.ec.rxnEnzMat(k,:) = 0;
+    ecModel.ec.source{k} = 'standard';
+    file = fullfile(adapter.params.path,'models','ecModel.yml');
+    testCase.addTeardown(@() delete(file));
+    saveEcModel(ecModel, [], adapter);
+    lines = strsplit(fileread(file), newline, 'CollapseDelimiters', false);
+    ecStart = find(strcmp(lines, '- ec-rxns:'), 1);
+    start = ecStart + find(strcmp(strtrim(lines(ecStart+1:end)), ['- id: ' ecModel.ec.rxns{k}]), 1);
+    verifyNotEmpty(testCase, start)
+    % the entry is followed by the next "- !!omap" or by the next section
+    stop = start + find(~startsWith(lines(start+1:end), '    '), 1);
+    entry = lines(start:stop-1);
+    verifyFalse(testCase, any(contains(entry, 'enzymes')))
+    verifyTrue(testCase, any(contains(entry, 'source: standard')))
+    verifyEqual(testCase, nnz(contains(lines, '!!omap []')), 0)
+
+    forms = {'    - enzymes: !!omap', '    - enzymes: !!omap []'};
+    for i = 0:numel(forms)
+        if i > 0
+            old = [lines(1:start), forms(i), lines(start+1:end)];
+            fid = fopen(file, 'w');
+            fprintf(fid, '%s', strjoin(old, newline));
+            fclose(fid);
+        end
+        loaded = loadEcModel([], adapter);
+        verifyEqual(testCase, loaded.ec.rxns, ecModel.ec.rxns)
+        verifyEqual(testCase, loaded.ec.kcat, ecModel.ec.kcat, 'AbsTol', 1e-9)
+        verifyEqual(testCase, loaded.ec.source, ecModel.ec.source)
+        verifyEqual(testCase, full(loaded.ec.rxnEnzMat), full(ecModel.ec.rxnEnzMat))
+        verifyTrue(testCase, all(loaded.ec.rxnEnzMat(k,:) == 0))
+    end
 end
 
 function testfuzzyKcatMatchingMedian_tc0060(testCase)
@@ -1590,7 +1641,7 @@ function testReadDLKcatOutputUnrecognizedSubstrateErrorsCleanly_tc0037(testCase)
     fclose(fid);
 
     try
-        readDLKcatOutput(ecModel, 'outFile', outFile, 'modelAdapter', adapter);
+        readDLKcatOutput(ecModel, 'outFile', outFile, 'modelAdapter', adapter, 'strict', true);
         errored = false;
         msg = '';
     catch ME

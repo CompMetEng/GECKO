@@ -50,7 +50,9 @@ function [model, rxnsAdded, enzAdded] = addNewRxnsToEC(model, newRxns, varargin)
 %    Note that the reversibility defined in the equation will be used to
 %    split to construct irreversible reactions (add _REV) and the rules
 %    defined will be used to expand the model (add _EXP_n).
-% 2. After adding the new reactions, setKcatForReactions or
+% 2. When all the genes of the new reactions already have enzymes, no
+%    newEnzymes are needed.
+% 3. After adding the new reactions, setKcatForReactions or
 %    applyCustomKcats should be run to add the kcat to the reactions, and
 %    subsequently applyKcatConstraints.
 %
@@ -78,8 +80,9 @@ if isempty(modelAdapter)
 end
 params = modelAdapter.getParameters();
 
+enzAdded = {};
 if isempty(newEnzymes)
-    newEnzymes = [];
+    newEnzymes = struct('enzymes', {{}}, 'genes', {{}}, 'mw', []);
 end
 
 % Validate if GECKO version 3
@@ -91,7 +94,7 @@ if model.ec.geckoLight
     error('addNewRxnsToEC only works on non-light ecModels')
 else
     % Check if the new proteins are not already present in the model
-    if ~isempty(newEnzymes)
+    if ~isempty(newEnzymes.enzymes)
         [toRemove,~] = ismember(newEnzymes.enzymes, model.ec.enzymes);
 
         % Remove from the list those enzymes that already present
@@ -213,19 +216,21 @@ else
     model = addRxns(model, newRxns, 3, '', true, true);
 
     % 4. Add protein usage reactions.
-    usageRxns.rxns            = strcat('usage_',proteinMets.mets);
-    usageRxns.rxnNames        = usageRxns.rxns;
-    usageRxns.mets            = cell(numel(usageRxns.rxns),1);
-    usageRxns.stoichCoeffs    = cell(numel(usageRxns.rxns),1);
-    for i=1:numel(usageRxns.mets)
-        usageRxns.mets{i}         = {proteinMets.mets{i}, 'prot_pool'};
-        usageRxns.stoichCoeffs{i} = [1,-1];
+    if ~isempty(newEnzymes.enzymes)
+        usageRxns.rxns            = strcat('usage_',proteinMets.mets);
+        usageRxns.rxnNames        = usageRxns.rxns;
+        usageRxns.mets            = cell(numel(usageRxns.rxns),1);
+        usageRxns.stoichCoeffs    = cell(numel(usageRxns.rxns),1);
+        for i=1:numel(usageRxns.mets)
+            usageRxns.mets{i}         = {proteinMets.mets{i}, 'prot_pool'};
+            usageRxns.stoichCoeffs{i} = [1,-1];
+        end
+        usageRxns.lb              = zeros(numel(usageRxns.rxns),1);
+        usageRxns.ub              = zeros(numel(usageRxns.rxns),1) + 1000;
+        usageRxns.rev             = ones(numel(usageRxns.rxns),1);
+        usageRxns.grRules         = newEnzymes.genes;
+        model = addRxns(model,usageRxns);
     end
-    usageRxns.lb              = zeros(numel(usageRxns.rxns),1);
-    usageRxns.ub              = zeros(numel(usageRxns.rxns),1) + 1000;
-    usageRxns.rev             = ones(numel(usageRxns.rxns),1);
-    usageRxns.grRules         = newEnzymes.genes;
-    model = addRxns(model,usageRxns);
 
     % 5. Update .ec field with enzyme data
     model.ec.enzymes    = [model.ec.enzymes; newEnzymes.enzymes(:)];

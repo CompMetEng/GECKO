@@ -1,8 +1,10 @@
 function measurements = loadBrendaMeasurements(varargin)
 % loadBrendaMeasurements  Load the BRENDA measurement table.
 %
-% Reads measurements.tsv from the BRENDA database folder of the model
-% adapter (next to kcat.tsv, sa.tsv and mw.tsv): one row per wild-type
+% Reads measurements.tsv.xz, or measurements.tsv when there is no .xz file,
+% from the BRENDA database folder of the model adapter (next to kcat.tsv,
+% sa.tsv and mw.tsv). A .xz file is decompressed with the xz command, which
+% has to be on the system path. The table has one row per wild-type
 % BRENDA kcat with an EC number, after the outlier screen, with the
 % substrate, organism, UniProt accession and sequence id of each
 % measurement. geckopy reads the same file (load_brenda_measurements).
@@ -12,7 +14,8 @@ function measurements = loadBrendaMeasurements(varargin)
 % modelAdapter : ModelAdapter
 %     a loaded model adapter (default: the current default model adapter).
 % folder : char
-%     folder with measurements.tsv, instead of the adapter's BRENDA folder.
+%     folder with measurements.tsv.xz or measurements.tsv, instead of the
+%     adapter's BRENDA folder.
 %
 % Returns
 % -------
@@ -43,8 +46,19 @@ if isempty(folder)
     end
     folder = modelAdapter.getBrendaDBFolder();
 end
+xzFile = fullfile(folder, 'measurements.tsv.xz');
 file = fullfile(folder, 'measurements.tsv');
-if ~isfile(file)
+tempFile = '';
+if isfile(xzFile)
+    tempFile = [tempname() '.tsv'];
+    cleanup = onCleanup(@() deleteIfExists(tempFile)); %#ok<NASGU>
+    [status, output] = system(sprintf('xz -dc "%s" > "%s"', xzFile, tempFile));
+    if status ~= 0
+        error('loadBrendaMeasurements:xz', ['Could not decompress %s with the xz command ' ...
+            '(install xz or decompress the file to measurements.tsv): %s'], xzFile, strtrim(output))
+    end
+    file = tempFile;
+elseif ~isfile(file)
     error('loadBrendaMeasurements:missing', ['No BRENDA measurement table (measurements.tsv) in %s. ' ...
         'It comes with the BRENDA files of GECKO (databases folder).'], folder)
 end
@@ -72,6 +86,12 @@ tok = regexp(first, '^#\s*(BRENDA release [^ ]+)', 'tokens', 'once');
 measurements.release = '';
 if ~isempty(tok)
     measurements.release = tok{1};
+end
+end
+
+function deleteIfExists(file)
+if isfile(file)
+    delete(file)
 end
 end
 

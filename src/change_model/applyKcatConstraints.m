@@ -3,9 +3,8 @@ function model = applyKcatConstraints(model,varargin)
 %
 % Existing enzyme constraints are first removed (unless updateRxns is
 % provided), and new constraints are defined based on the content of
-% model.ec.kcat. When every kcat is 0, the existing constraints of a full
-% ecModel are removed and no new ones are written; a light ecModel is
-% returned unchanged.
+% model.ec.kcat. When every kcat is 0, the existing constraints are removed
+% and no new ones are written.
 %
 % Parameters
 % ----------
@@ -18,8 +17,13 @@ function model = applyKcatConstraints(model,varargin)
 %     if not all enzyme constraints should be updated, this can be given as
 %     either a logical vector of length model.ec.rxns, a vector of
 %     model.ec.rxns indices, or a (cell array of) string(s) with
-%     model.ec.rxns identifiers. For light models, these reactions should
-%     match model.rxns.
+%     model.ec.rxns identifiers. For light models, a (cell array of) string(s)
+%     may hold reaction identifiers of model.rxns or of model.ec.rxns (with
+%     the ###_ prefix); a reaction is then updated as a whole, with all its
+%     isozymes. An identifier that is in both or in neither raises the
+%     error applyKcatConstraints:ambiguousReaction or
+%     applyKcatConstraints:unknownReaction. A logical vector or indices
+%     refer to model.rxns for light models.
 %
 % Returns
 % -------
@@ -56,6 +60,23 @@ elseif isnumeric(updateRxns)
     updateRxns = updateRxnsLog;
 elseif iscellstr(updateRxns) || ischar(updateRxns) || isstring(updateRxns)
     updateRxnsIds = convertCharArray(updateRxns);
+    updateRxnsIds = updateRxnsIds(:);
+    if model.ec.geckoLight
+        isCobra = ismember(updateRxnsIds,model.rxns);
+        isEc    = ismember(updateRxnsIds,model.ec.rxns);
+        if any(isCobra & isEc)
+            error('applyKcatConstraints:ambiguousReaction', ...
+                'The identifiers %s are in both model.rxns and model.ec.rxns.', ...
+                strjoin(updateRxnsIds(isCobra & isEc),', '))
+        end
+        if any(~isCobra & ~isEc)
+            error('applyKcatConstraints:unknownReaction', ...
+                'The identifiers %s are in neither model.rxns nor model.ec.rxns.', ...
+                strjoin(updateRxnsIds(~isCobra & ~isEc),', '))
+        end
+        updateRxnsIds = [updateRxnsIds(isCobra); extractAfter(updateRxnsIds(isEc),4)];
+        updateRxnsIds = updateRxnsIds(:);
+    end
     updateRxns = ismember(rxns,updateRxnsIds);
 end
  
@@ -68,12 +89,8 @@ if ~isfield(model,'ec')
            ' not a valid GECKO3 ecModel. First run makeEcModel(model).'])
 end
 if all(model.ec.kcat==0)
-    if model.ec.geckoLight
-        printOrange('WARNING: No kcat values are provided in model.ec.kcat, model remains unchanged.\n');
-        return
-    end
-    % In a full model the existing enzyme constraints of the selected
-    % reactions are still cleared below, and no new ones are written.
+    % The existing enzyme constraints of the selected reactions are still
+    % cleared below, and no new ones are written.
     printOrange('WARNING: No kcat values are provided in model.ec.kcat, existing enzyme constraints are cleared and no new ones are written.\n');
 end
 
