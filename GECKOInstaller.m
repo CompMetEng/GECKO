@@ -10,7 +10,7 @@ classdef GECKOInstaller
             sourceDir = fileparts(which(mfilename));
             paths = GECKOInstaller.GetFilteredSubPaths(sourceDir, GECKOInstaller.FILE_FILTER);
 
-            GECKOInstaller.checkRAVENversion('2.9.1'); % Minimum RAVEN version
+            GECKOInstaller.checkRAVENversion('3.0.0'); % Minimum RAVEN version
 
             % Check unique function names
             if ~exist("checkFunctionUniqueness.m")
@@ -72,7 +72,10 @@ classdef GECKOInstaller
                 if strcmp(currVer,'develop')
                     printOrange('WARNING: Cannot determine your RAVEN version as it is in a development branch.\n');
                 else
-                    wrongVersion = GECKOInstaller.isOlderVersion(currVer, minmVer);
+                    % A pre-release suffix of the installed RAVEN (3.0.0b2) is
+                    % ignored: it satisfies the minimum 3.0.0.
+                    wrongVersion = GECKOInstaller.isOlderVersion( ...
+                        GECKOInstaller.releaseOf(currVer), minmVer);
                 end
             catch
                 warning(['Cannot find RAVEN Toolbox in the MATLAB path, or the version ' ...
@@ -134,6 +137,13 @@ classdef GECKOInstaller
             else
                 older = verNum(firstDiff) < refNum(firstDiff);
             end
+        end
+
+        function release = releaseOf(ver)
+            % releaseOf  The major.minor.patch part of a version string
+            % without its pre-release suffix (3.0.0b2 gives 3.0.0).
+            num = GECKOInstaller.parseVersion(ver);
+            release = sprintf('%d.%d.%d', num);
         end
 
         function [num, isPre] = parseVersion(ver)
