@@ -1,4 +1,7 @@
-<img src="./GECKO.png" width="200px">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="img/gecko-logo-white.png">
+  <img src="img/gecko-logo.png" alt="GECKO" width="400px">
+</picture>
 
 [![Current release](https://img.shields.io/github/release/CompMetEng/GECKO/all.svg)](https://github.com/CompMetEng/GECKO/releases/)
 [![GitHub Discussions](https://img.shields.io/github/discussions-search?query=repo%3ACompMetEng%2FGECKO&label=GitHub%20Discussions)](https://github.com/CompMetEng/GECKO/discussions)

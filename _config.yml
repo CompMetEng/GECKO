@@ -1,5 +1,5 @@
 theme: jekyll-theme-minimal
-logo: GECKO.png
+logo: img/gecko-logo.png
 show_downloads: true
 exclude: [.github, databases, src, test, userData]
 keep_files: ["doc/"]
