@@ -3,10 +3,10 @@
   <img src="img/gecko-logo.png" alt="GECKO" width="400px">
 </picture>
 
-[![Current release](https://img.shields.io/github/release/CompMetEng/GECKO/all.svg)](https://github.com/CompMetEng/GECKO/releases/)
+[![Documentation](https://readthedocs.org/projects/gecko-docs/badge/?version=latest)](https://gecko-docs.readthedocs.io/en/latest/)
 [![GitHub Discussions](https://img.shields.io/github/discussions-search?query=repo%3ACompMetEng%2FGECKO&label=GitHub%20Discussions)](https://github.com/CompMetEng/GECKO/discussions)
-[![Zenodo](https://zenodo.org/badge/DOI/10.5281/zenodo.7699818.svg)](https://doi.org/10.5281/zenodo.7699818)
-[![MATLAB File Exchange](https://www.mathworks.com/matlabcentral/images/matlab-file-exchange.svg)](https://se.mathworks.com/matlabcentral/fileexchange/125960-gecko-toolbox)
+
+**[Documentation](https://gecko-docs.readthedocs.io/en/latest/)** · [Installation](https://gecko-docs.readthedocs.io/en/latest/installation/) · [Guide](https://gecko-docs.readthedocs.io/en/latest/guide/) · [API reference](https://gecko-docs.readthedocs.io/en/latest/api/) · [Migrate](https://gecko-docs.readthedocs.io/en/latest/migrate.html) · [Citations](https://gecko-docs.readthedocs.io/en/latest/references.html)
 
 ## About GECKO
 
@@ -19,7 +19,7 @@ This is GECKO **4.0.0b1**. For the changes from GECKO 3, see [GECKO 3 → GECKO 
 ## Get started
 
 1. Install GECKO as described in the [installation instructions](https://gecko-docs.readthedocs.io/en/latest/installation/).
-2. Open `tutorials/full_ecModel/protocol.m` or `tutorials/light_ecModel/protocol.m` in MATLAB. Each script reconstructs and analyses an ecModel step by step, in its _full_ or _light_ form, and complements the [Nature Protocols](https://doi.org/10.1038/s41596-023-00931-7) paper.
+2. Follow [Getting started](https://gecko-docs.readthedocs.io/en/latest/guide/getting-started.html) and [Building an ecModel](https://gecko-docs.readthedocs.io/en/latest/guide/building-ec-model.html) in the guide, or open `tutorials/full_ecModel/protocol.m` or `tutorials/light_ecModel/protocol.m` in MATLAB. Each script reconstructs and analyses an ecModel step by step, in its _full_ or _light_ form ([GECKO light](https://gecko-docs.readthedocs.io/en/latest/guide/gecko-light.html)), and complements the [Nature Protocols](https://doi.org/10.1038/s41596-023-00931-7) paper.
 
 ## Documentation and support
 
