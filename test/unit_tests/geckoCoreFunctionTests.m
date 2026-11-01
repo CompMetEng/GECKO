@@ -184,6 +184,15 @@ function testgetECfromGEM_tc0006(testCase)
     ecModel2 = getECfromGEM(ecModel,ismember(ecModel.ec.rxns, {'001_R2';'001_R3'}));
     expEccodes = {'1.1.1.1';'';'1.1.2.1';'';'';''};
     verifyEqual(testCase,ecModel2.ec.eccodes,expEccodes)
+
+    %without a model.eccodes field: a warning and empty EC numbers
+    ecModel = makeEcModel(model, false, adapter);
+    ecModel = rmfield(ecModel,'eccodes');
+    verifyWarning(testCase,@() getECfromGEM(ecModel),'getECfromGEM:noEccodes')
+    warning('off','getECfromGEM:noEccodes')
+    ecModel2 = getECfromGEM(ecModel);
+    warning('on','getECfromGEM:noEccodes')
+    verifyEqual(testCase,ecModel2.ec.eccodes,repmat({''},6,1))
 end
 
 %For both full and light
