@@ -184,6 +184,15 @@ function testgetECfromGEM_tc0006(testCase)
     ecModel2 = getECfromGEM(ecModel,ismember(ecModel.ec.rxns, {'001_R2';'001_R3'}));
     expEccodes = {'1.1.1.1';'';'1.1.2.1';'';'';''};
     verifyEqual(testCase,ecModel2.ec.eccodes,expEccodes)
+
+    %without a model.eccodes field: a warning and empty EC numbers
+    ecModel = makeEcModel(model, false, adapter);
+    ecModel = rmfield(ecModel,'eccodes');
+    verifyWarning(testCase,@() getECfromGEM(ecModel),'getECfromGEM:noEccodes')
+    warning('off','getECfromGEM:noEccodes')
+    ecModel2 = getECfromGEM(ecModel);
+    warning('on','getECfromGEM:noEccodes')
+    verifyEqual(testCase,ecModel2.ec.eccodes,repmat({''},6,1))
 end
 
 %For both full and light
@@ -240,6 +249,9 @@ function testsaveECModel_tc0009(testCase)
     saveEcModel(ecModel, [], adapter);
     loadedEcModel = loadEcModel([],adapter);
     delete(fullfile(adapter.params.path,'models','ecModel.yml'));
+    verifyEqual(testCase, loadedEcModel.annotation.gecko_format, '4')
+    verifyTrue(testCase, startsWith(loadedEcModel.annotation.generator, 'GECKO '))
+    loadedEcModel.annotation = rmfield(loadedEcModel.annotation, {'gecko_format', 'generator', 'note'});
     verifyEqual(testCase, ecModel, loadedEcModel)
 
     % Test loading of conventional GEM
@@ -247,6 +259,88 @@ function testsaveECModel_tc0009(testCase)
     model=rmfield(model,{'annotation','date','description','version'});
     model.geneShortNames=model.genes;
     verifyEqual(testCase, model, loadedModel)
+end
+
+function testsaveECModelRxnWithoutEnzymes_tc0700(testCase)
+    % An ec reaction without enzymes is written without an enzymes entry;
+    % loadEcModel returns a zero row in rxnEnzMat for it and keeps its id,
+    % kcat and source. The two forms that earlier versions wrote for it, a
+    % content-less "enzymes: !!omap" and "enzymes: !!omap []", load the same.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    ecModel = makeEcModel(getGeckoTestModel(), false, adapter);
+    k = find(full(sum(ecModel.ec.rxnEnzMat ~= 0, 2)) > 0, 1);
+    ecModel.ec.rxnEnzMat(k,:) = 0;
+    ecModel.ec.source{k} = 'standard';
+    file = fullfile(adapter.params.path,'models','ecModel.yml');
+    testCase.addTeardown(@() delete(file));
+    saveEcModel(ecModel, [], adapter);
+    lines = strsplit(fileread(file), newline, 'CollapseDelimiters', false);
+    ecStart = find(strcmp(lines, '- ec-rxns:'), 1);
+    start = ecStart + find(strcmp(strtrim(lines(ecStart+1:end)), ['- id: ' ecModel.ec.rxns{k}]), 1);
+    verifyNotEmpty(testCase, start)
+    % the entry is followed by the next "- !!omap" or by the next section
+    stop = start + find(~startsWith(lines(start+1:end), '    '), 1);
+    entry = lines(start:stop-1);
+    verifyFalse(testCase, any(contains(entry, 'enzymes')))
+    verifyTrue(testCase, any(contains(entry, 'source: standard')))
+    verifyEqual(testCase, nnz(contains(lines, '!!omap []')), 0)
+
+    forms = {'    - enzymes: !!omap', '    - enzymes: !!omap []'};
+    for i = 0:numel(forms)
+        if i > 0
+            old = [lines(1:start), forms(i), lines(start+1:end)];
+            fid = fopen(file, 'w');
+            fprintf(fid, '%s', strjoin(old, newline));
+            fclose(fid);
+        end
+        loaded = loadEcModel([], adapter);
+        verifyEqual(testCase, loaded.ec.rxns, ecModel.ec.rxns)
+        verifyEqual(testCase, loaded.ec.kcat, ecModel.ec.kcat, 'AbsTol', 1e-9)
+        verifyEqual(testCase, loaded.ec.source, ecModel.ec.source)
+        verifyEqual(testCase, full(loaded.ec.rxnEnzMat), full(ecModel.ec.rxnEnzMat))
+        verifyTrue(testCase, all(loaded.ec.rxnEnzMat(k,:) == 0))
+    end
+end
+
+function testfuzzyKcatMatchingMedian_tc0060(testCase)
+    % Verifies that kcatAggregation selects which BRENDA aggregate is used.
+    % The fixture records a different median from the max for every triple,
+    % so a median run must return the median column throughout, while the
+    % matching itself -- which triple is chosen, at which wildcard level and
+    % origin -- is unchanged.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    model = getGeckoTestModel();
+    ecModel = makeEcModel(model, false, adapter);
+    ecModel = getECfromGEM(ecModel);
+
+    kcatListMax = fuzzyKcatMatching(ecModel, [], adapter);
+    verifyEqual(testCase, kcatListMax.kcats, [1;1;10;10;100;1])
+
+    kcatListMedian = fuzzyKcatMatching(ecModel, 'ecRxns', [], ...
+        'modelAdapter', adapter, 'kcatAggregation', 'median');
+    verifyEqual(testCase, kcatListMedian.kcats, [0.5;0.5;4;4;40;0.5])
+
+    % Only the values change; the matching does not.
+    verifyEqual(testCase, kcatListMedian.rxns, kcatListMax.rxns)
+    verifyEqual(testCase, kcatListMedian.eccodes, kcatListMax.eccodes)
+    verifyEqual(testCase, kcatListMedian.wildcardLvl, kcatListMax.wildcardLvl)
+    verifyEqual(testCase, kcatListMedian.origin, kcatListMax.origin)
+
+    % 'max' is the default, and an unknown value is refused.
+    kcatListExplicitMax = fuzzyKcatMatching(ecModel, 'ecRxns', [], ...
+        'modelAdapter', adapter, 'kcatAggregation', 'max');
+    verifyEqual(testCase, kcatListExplicitMax.kcats, kcatListMax.kcats)
+    verifyError(testCase, @() fuzzyKcatMatching(ecModel, 'ecRxns', [], ...
+        'modelAdapter', adapter, 'kcatAggregation', 'mean'), ...
+        'fuzzyKcatMatching:invalidKcatAggregation')
+
+    % Mixing positional and name-value arguments puts a name where a
+    % value belongs; that has to fail rather than quietly wildcard every
+    % EC number, which is what an unvalidated forceWClvl would do.
+    verifyError(testCase, @() fuzzyKcatMatching(ecModel, [], adapter, ...
+        'kcatAggregation', 'median'), 'fuzzyKcatMatching:invalidForceWClvl')
 end
 
 function testfuzzyKcatMatching_tc0010(testCase)
@@ -903,26 +997,19 @@ function testWriteOpenKineticsPredictorInputReactionSubsetIndex_tc0023(testCase)
 end
 
 
-function testGetEnzymeBottlenecksRanksByShadowPrice_tc0024(testCase)
-    % Verifies getEnzymeBottlenecks solves the model, ranks enzymes by the
-    % absolute shadow price of their prot_<id> mass-balance constraint, and
-    % returns the top N rows. Checks the primal-derived columns (flux,
-    % capUsage, upperBound) exactly, that rows are sorted by non-increasing
-    % |shadowPrice|, and that 'top' limits the row count -- but not the exact
-    % shadow-price value for an enzyme carrying zero flux at the optimum,
-    % since that value is LP-dual-degenerate and can vary with the solver's
-    % platform/presolve path.
-    geckoPath = findGECKOroot;
-    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
-    model = getGeckoTestModel();
-    model.lb(strcmp(model.rxns,'R2')) = 0; model.ub(strcmp(model.rxns,'R2')) = 0;
-    model.lb(strcmp(model.rxns,'R4')) = 0; model.ub(strcmp(model.rxns,'R4')) = 0;
-    ecModel = makeEcModel(model, false, adapter);
-    ecModel = getECfromGEM(ecModel);
-    ecModel.ec.kcat(:) = 10;
-    ecModel.ec.source(:) = {'manual'};
-    ecModel = applyKcatConstraints(ecModel);
-    ecModel = setProtPoolSize(ecModel, 0.5, 0.5, 0.5, adapter);
+function testGetEnzymeBottlenecksRanksByObjectiveGain_tc0024(testCase)
+    % Verifies getEnzymeBottlenecks solves the model and returns the top N
+    % rows with the columns objectiveGain, shadowPrice, flux, capUsage,
+    % upperBound and multipleActive. In this model no usage reaction runs at
+    % its upper bound and the protein pool is the only active constraint, so
+    % no enzyme is solved again, every objectiveGain is 0, the order is the
+    % order of model.ec.enzymes, and every row is marked multipleActive.
+    % Checks the primal-derived columns (flux, capUsage, upperBound) exactly,
+    % and that 'top' limits the row count -- but not the shadow-price value
+    % for an enzyme carrying zero flux at the optimum, since that value is
+    % LP-dual-degenerate and can vary with the solver's platform/presolve
+    % path.
+    ecModel = buildBottleneckTestModel(0.5);
 
     sol = solveLP(ecModel);
     verifyEqual(testCase, sol.stat, 1)
@@ -930,21 +1017,196 @@ function testGetEnzymeBottlenecksRanksByShadowPrice_tc0024(testCase)
 
     bottlenecks = getEnzymeBottlenecks(ecModel);
     verifyEqual(testCase, height(bottlenecks), 5)
+    verifyEqual(testCase, bottlenecks.Properties.VariableNames, ...
+        {'uniprot','gene','objectiveGain','shadowPrice','flux','capUsage','upperBound','multipleActive'})
 
-    % Primal-derived values: unique regardless of dual degeneracy.
-    [~, order] = ismember({'P1','P2','P3','P4','P5'}, bottlenecks.uniprot);
-    verifyEqual(testCase, bottlenecks.flux(order), [0;0;0;55.555555555556;69.444444444444], 'AbsTol', 1e-9)
-    verifyEqual(testCase, bottlenecks.capUsage(order), [0;0;0;0.055555555555556;0.069444444444444], 'AbsTol', 1e-9)
-    verifyEqual(testCase, bottlenecks.upperBound(order), repmat(1000, 5, 1), 'AbsTol', 1e-9)
+    verifyEqual(testCase, bottlenecks.uniprot, {'P1';'P2';'P3';'P4';'P5'})
+    verifyEqual(testCase, bottlenecks.objectiveGain, zeros(5, 1))
+    verifyEqual(testCase, bottlenecks.flux, [0;0;0;55.555555555556;69.444444444444], 'AbsTol', 1e-9)
+    verifyEqual(testCase, bottlenecks.capUsage, [0;0;0;0.055555555555556;0.069444444444444], 'AbsTol', 1e-9)
+    verifyEqual(testCase, bottlenecks.upperBound, repmat(1000, 5, 1), 'AbsTol', 1e-9)
+    verifyTrue(testCase, all(bottlenecks.multipleActive))
+    verifyEqual(testCase, bottlenecks.Properties.UserData.nResolved, 0)
+    verifyEqual(testCase, bottlenecks.Properties.UserData.activeConstraints, 1)
 
-    % Sorted by non-increasing |shadow price| --- true whichever degenerate
-    % vertex the solver lands on.
-    verifyTrue(testCase, all(diff(abs(bottlenecks.shadowPrice)) <= 1e-9))
-
-    % top limits the row count to exactly what was asked for, whatever the
-    % tie-break among degenerate rows put there.
     top2 = getEnzymeBottlenecks(ecModel, 'top', 2);
     verifyEqual(testCase, height(top2), 2)
+    verifyEqual(testCase, top2.uniprot, {'P1';'P2'})
+end
+
+
+function testGetEnzymeBottlenecksOrdersByResolvedGain_tc0277(testCase)
+    % Verifies that of two enzymes running at their upper bound, the one
+    % whose bound limits growth is ranked first with the growth gain of a
+    % solve with its bound doubled (positive for a maximised growth
+    % objective), and the one whose raised bound does not change growth (P3,
+    % whose usage is fixed by equal lower and upper bounds) has a gain of 0.
+    % Both enzymes are solved again, so nResolved is 2 and, with two active
+    % constraints, both rows are multipleActive. Only P5 and P3 are asserted
+    % as active; which of P1, P2 and P4 carry flux in the parallel routes is
+    % not unique.
+    ecModel = buildBottleneckTestModel(100, false);
+    ecModel.ub(strcmp(ecModel.rxns, 'usage_prot_P5')) = 20;
+    p3 = strcmp(ecModel.rxns, 'usage_prot_P3');
+    ecModel.lb(p3) = 1;
+    ecModel.ub(p3) = 1;
+
+    base = solveLP(ecModel);
+    verifyEqual(testCase, base.stat, 1)
+    raised = ecModel;
+    raised.ub(strcmp(raised.rxns, 'usage_prot_P5')) = 40;
+    expectedGain = solveLP(raised).f - base.f;
+    verifyGreaterThan(testCase, expectedGain, 1)
+
+    bottlenecks = getEnzymeBottlenecks(ecModel);
+    verifyEqual(testCase, bottlenecks.uniprot{1}, 'P5')
+    verifyEqual(testCase, bottlenecks.objectiveGain(1), expectedGain, 'AbsTol', 1e-9)
+    verifyEqual(testCase, bottlenecks.objectiveGain(2:end), zeros(4, 1))
+    row = strcmp(bottlenecks.uniprot, 'P3');
+    verifyEqual(testCase, bottlenecks.capUsage(row), 1, 'AbsTol', 1e-9)
+    verifyTrue(testCase, all(bottlenecks.multipleActive(1) & bottlenecks.multipleActive(row)))
+    verifyEqual(testCase, bottlenecks.Properties.UserData.nResolved, 2)
+    verifyEqual(testCase, bottlenecks.Properties.UserData.activeConstraints, 2)
+    % rows with equal gain keep the order of model.ec.enzymes
+    verifyEqual(testCase, bottlenecks.uniprot(2:end), {'P1';'P2';'P3';'P4'})
+end
+
+
+function testGetEnzymeBottlenecksRespectsFoldChange_tc0278(testCase)
+    % Verifies the foldChange argument sets the factor by which the upper
+    % bound of an enzyme at its bound is raised: the gain of P4 equals the
+    % growth change of a solve with its bound multiplied by 1.5, by 2
+    % (default) and by 3, and the gain differs between factors.
+    ecModel = buildBottleneckTestModel(100);
+    ecModel.ub(strcmp(ecModel.rxns, 'usage_prot_P4')) = 16;
+    base = solveLP(ecModel).f;
+
+    gains = zeros(1, 3);
+    factors = [1.5 2 3];
+    for i = 1:3
+        raised = ecModel;
+        raised.ub(strcmp(raised.rxns, 'usage_prot_P4')) = 16 * factors(i);
+        expected = solveLP(raised).f - base;
+        b = getEnzymeBottlenecks(ecModel, 'foldChange', factors(i));
+        verifyEqual(testCase, b.uniprot{1}, 'P4')
+        verifyEqual(testCase, b.objectiveGain(1), expected, 'AbsTol', 1e-9)
+        gains(i) = b.objectiveGain(1);
+    end
+    verifyTrue(testCase, all(diff(gains) > 0))
+    default = getEnzymeBottlenecks(ecModel);
+    verifyEqual(testCase, default.objectiveGain(1), gains(2), 'AbsTol', 1e-9)
+end
+
+
+function testGetEnzymeBottlenecksNonBindingEnzymeHasZeroGain_tc0279(testCase)
+    % Verifies an enzyme carrying flux below its upper bound is not solved
+    % again and has objectiveGain 0, while the one enzyme at its bound has a
+    % positive gain. nResolved is 1 and the protein pool is not active, so
+    % the enzyme at its bound is not multipleActive, while every other row
+    % is, because one constraint besides its own is active.
+    ecModel = buildBottleneckTestModel(100);
+    ecModel.ub(strcmp(ecModel.rxns, 'usage_prot_P4')) = 16;
+    ecModel.ub(strcmp(ecModel.rxns, 'usage_prot_P5')) = 40;
+
+    bottlenecks = getEnzymeBottlenecks(ecModel);
+    verifyEqual(testCase, bottlenecks.uniprot{1}, 'P4')
+    verifyGreaterThan(testCase, bottlenecks.objectiveGain(1), 1)
+    verifyFalse(testCase, bottlenecks.multipleActive(1))
+    row = strcmp(bottlenecks.uniprot, 'P5');
+    verifyEqual(testCase, bottlenecks.flux(row), 20, 'AbsTol', 1e-9)
+    verifyEqual(testCase, bottlenecks.capUsage(row), 0.5, 'AbsTol', 1e-9)
+    verifyEqual(testCase, bottlenecks.objectiveGain(row), 0)
+    verifyTrue(testCase, bottlenecks.multipleActive(row))
+    verifyEqual(testCase, bottlenecks.Properties.UserData.nResolved, 1)
+    verifyEqual(testCase, bottlenecks.Properties.UserData.activeConstraints, 1)
+end
+
+
+function testGetEnzymeBottlenecksErrorsWhenNotOptimal_tc0280(testCase)
+    % Verifies getEnzymeBottlenecks raises an error when the model cannot be
+    % solved to optimality (here: the growth reaction is forced above what
+    % the protein pool allows).
+    ecModel = buildBottleneckTestModel(0.5);
+    ecModel.lb(ecModel.c == 1) = 1000;
+    verifyNotEqual(testCase, solveLP(ecModel).stat, 1)
+    try
+        getEnzymeBottlenecks(ecModel);
+        message = '';
+    catch err
+        message = err.message;
+    end
+    verifyTrue(testCase, startsWith(message, 'getEnzymeBottlenecks: solver status'))
+end
+
+
+function testGetEnzymeBottlenecksRejectsInvalidFoldChange_tc0281(testCase)
+    % Verifies foldChange values of 1, below 1, NaN and non-scalar raise
+    % getEnzymeBottlenecks:foldChange.
+    ecModel = buildBottleneckTestModel(100);
+    for value = {1, 0.5, 0, NaN, [2 3]}
+        verifyError(testCase, @() getEnzymeBottlenecks(ecModel, 'foldChange', value{1}), ...
+            'getEnzymeBottlenecks:foldChange')
+    end
+end
+
+
+function testGetEnzymeBottlenecksWarnsWhenOnlyThePoolBinds_tc0282(testCase)
+    % Verifies that with every usage upper bound out of reach and a binding
+    % protein pool no enzyme is at its bound: the warning names the pool,
+    % nResolved is 0, every objectiveGain is 0 and the rows are in model order.
+    ecModel = buildBottleneckTestModel(100);
+    usageIdx = startsWith(ecModel.rxns, 'usage_prot_');
+    ecModel.ub(usageIdx) = 1e6;
+
+    lastwarn('');
+    bottlenecks = verifyWarning(testCase, @() getEnzymeBottlenecks(ecModel), ...
+        'getEnzymeBottlenecks:noEnzymeAtBound');
+    verifyEqual(testCase, bottlenecks.Properties.UserData.nResolved, 0)
+    verifyEqual(testCase, bottlenecks.Properties.UserData.activeConstraints, 1)
+    verifyEqual(testCase, bottlenecks.objectiveGain, zeros(height(bottlenecks), 1))
+    verifyEqual(testCase, bottlenecks.uniprot, ecModel.ec.enzymes(1:height(bottlenecks)))
+    verifyTrue(testCase, all(bottlenecks.multipleActive))
+    verifyNotEmpty(testCase, strfind(lastwarn, 'the protein pool exchange is at its bound'))
+end
+
+
+function testGetEnzymeBottlenecksWarnsWhenNoConstraintIsActive_tc0283(testCase)
+    % Verifies that with the growth reaction R5 capped at 10 and the pool and
+    % usage bounds out of reach the warning says that no capacity constraint
+    % is active.
+    ecModel = buildBottleneckTestModel(1e6);
+    usageIdx = startsWith(ecModel.rxns, 'usage_prot_');
+    ecModel.ub(usageIdx) = 1e6;
+    ecModel.ub(strcmp(ecModel.rxns, 'R5')) = 10;
+
+    lastwarn('');
+    bottlenecks = verifyWarning(testCase, @() getEnzymeBottlenecks(ecModel), ...
+        'getEnzymeBottlenecks:noEnzymeAtBound');
+    verifyEqual(testCase, bottlenecks.Properties.UserData.activeConstraints, 0)
+    verifyFalse(testCase, any(bottlenecks.multipleActive))
+    verifyNotEmpty(testCase, strfind(lastwarn, 'no capacity constraint is active'))
+end
+
+
+function ecModel = buildBottleneckTestModel(poolSize, blockR2)
+    % Test model with kcat 10 for all enzymes, R4 blocked, R2 blocked unless
+    % blockR2 is false, and a protein pool of poolSize.
+    if nargin < 2
+        blockR2 = true;
+    end
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    model = getGeckoTestModel();
+    if blockR2
+        model.lb(strcmp(model.rxns,'R2')) = 0; model.ub(strcmp(model.rxns,'R2')) = 0;
+    end
+    model.lb(strcmp(model.rxns,'R4')) = 0; model.ub(strcmp(model.rxns,'R4')) = 0;
+    ecModel = makeEcModel(model, false, adapter);
+    ecModel = getECfromGEM(ecModel);
+    ecModel.ec.kcat(:) = 10;
+    ecModel.ec.source(:) = {'manual'};
+    ecModel = applyKcatConstraints(ecModel);
+    ecModel = setProtPoolSize(ecModel, poolSize, 0.5, 0.5, adapter);
 end
 
 
@@ -999,6 +1261,34 @@ function testPfbaEnzymesMinimisesEnzymeUsage_tc0025(testCase)
         raised = true;
     end
     verifyTrue(testCase, raised)
+end
+
+
+function testPfbaEnzymesFractionOfNegativeOptimum_tc0285(testCase)
+    % Verifies that 'fractionOfOptimum' below 1 lets a negative optimum fall
+    % by that fraction of its magnitude. The objective is -R5 with R5 >= 10,
+    % so its optimum is -10; at 0.9 the objective may fall to -11, and the
+    % solution stays feasible with R5 at its lower bound.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    model = getGeckoTestModel();
+    ecModel = makeEcModel(model, false, adapter);
+    ecModel = getECfromGEM(ecModel);
+    ecModel.ec.kcat(:) = 10;
+    ecModel.ec.source(:) = {'manual'};
+    ecModel = applyKcatConstraints(ecModel);
+    ecModel = setProtPoolSize(ecModel, 0.5, 0.5, 0.5, adapter);
+    ecModel = setParam(ecModel, 'lb', 'R5', 10);
+    ecModel = setParam(ecModel, 'obj', 'R5', -1);
+
+    solution = getPfbaEnzymes(ecModel);
+    verifyEqual(testCase, solution.stat, 1)
+    verifyEqual(testCase, solution.objectiveValue, -10, 'RelTol', 1e-5)
+
+    solution = getPfbaEnzymes(ecModel, 'fractionOfOptimum', 0.9);
+    verifyEqual(testCase, solution.stat, 1)
+    verifyEqual(testCase, solution.objectiveValue, -10, 'RelTol', 1e-5)
+    verifyGreaterThanOrEqual(testCase, solution.objectiveValue, -11)
 end
 
 
@@ -1123,6 +1413,35 @@ function testResolveOkpApiKeyResolutionOrder_tc0029(testCase)
 end
 
 
+function testReadOpenKineticsPredictorCatRange_tc0069(testCase)
+    % CatRange's prediction is a class range ('10 to 100 s^-1'), read as its
+    % geometric midpoint, or half the upper bound for the class from 0.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    model = getGeckoTestModel();
+    ecModel = makeEcModel(model, false, adapter);
+    ecModel = getECfromGEM(ecModel);
+    ecModel.metSmiles = repmat({''}, numel(ecModel.mets), 1);
+    ecModel.metSmiles(strcmp(ecModel.mets,'m1c')) = {'C(C1C)O'};
+
+    resultFile = [tempname '.csv'];
+    fid = fopen(resultFile,'w');
+    fprintf(fid,'Predicted kcat range: kcat (1/s),Source kcat,Extra Info kcat,Protein Sequence,Substrate\n');
+    fprintf(fid,'10 to 100 s^-1,Prediction from CatRange,Predicted range: 10 to 100 s^-1,MRAL,C(C1C)O\n');
+    fclose(fid);
+    cleanupFile = onCleanup(@() delete(resultFile));
+    kcatList = readOpenKineticsPredictorOutput(ecModel, 'outFile', resultFile, 'modelAdapter', adapter);
+    verifyEqual(testCase, kcatList.kcats, 10^1.5, 'RelTol', 1e-12)
+    verifyEqual(testCase, kcatList.kcatSource, {'OKP-CatRange'})
+
+    fid = fopen(resultFile,'w');
+    fprintf(fid,'Predicted kcat range: kcat (1/s),Source kcat,Extra Info kcat,Protein Sequence,Substrate\n');
+    fprintf(fid,'0 to 1e-08 s^-1,Prediction from CatRange,,MRAL,C(C1C)O\n');
+    fclose(fid);
+    kcatList = readOpenKineticsPredictorOutput(ecModel, 'outFile', resultFile, 'modelAdapter', adapter);
+    verifyEqual(testCase, kcatList.kcats, 5e-9, 'RelTol', 1e-12)
+end
+
 function testFetchOpenKineticsPredictorUseStoredMatchesReader_tc0030(testCase)
     % Verifies fetchOpenKineticsPredictor's 'useStored' path (parsing an
     % already-downloaded result file, the only path testable without a live
@@ -1198,28 +1517,26 @@ end
 
 function testFuzzyKcatMatchingWildcardExhaustionDoesNotCrash_tc0033(testCase)
     % Verifies that when an EC code has no BRENDA match at any wildcard
-    % level, including the fully wildcarded '-.-.-.-', fuzzyKcatMatching's
-    % escalation loop terminates cleanly and reports "no match" (kcat 0,
-    % origin NaN) instead of erroring.
+    % level, including the fully wildcarded '-.-.-.-' (which matches every
+    % EC number in BRENDA), fuzzyKcatMatching's escalation loop terminates
+    % cleanly and reports "no match" (kcat 0, origin NaN) instead of
+    % erroring. The fixture BRENDA kcat table has no rows, so nothing can match.
     geckoPath = findGECKOroot;
     adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
     model = getGeckoTestModel();
     ecModel = makeEcModel(model, false, adapter);
     ecModel = getECfromGEM(ecModel);
-    % An EC class unrelated, at every wildcard level, to anything in the
-    % fixture BRENDA file below.
     ecModel.ec.eccodes{strcmp(ecModel.ec.rxns, 'R2_EXP_1')} = '9.9.9.9';
 
     scratchDir = fullfile(tempname);
     brendaDir = fullfile(scratchDir, 'data');
     mkdir(brendaDir);
     cleanupDir = onCleanup(@() rmdir(scratchDir, 's'));
-    % Deliberately unrelated to '9.9.9.9' at every wildcard level, so the
-    % escalation loop runs out of levels without ever matching.
+    % No rows at all, so the escalation loop runs out of levels without
+    % ever matching.
     fid = fopen(fullfile(brendaDir, 'kcat.tsv'), 'w');
     fprintf(fid, '# BRENDA release test-fixture - kcat in 1/s\n');
     fprintf(fid, 'ec_code\tsubstrate\torganism\tkcat_max\tkcat_median\tn\treferences\n');
-    fprintf(fid, '5.5.5.5\tm1\ttestus testus\t42\t42\t1\t*\n');
     fclose(fid);
     fid = fopen(fullfile(brendaDir, 'mw.tsv'), 'w');
     fprintf(fid, '# BRENDA release test-fixture - molecular weight in g/mol\n');
@@ -1352,7 +1669,7 @@ function testReadDLKcatOutputUnrecognizedSubstrateErrorsCleanly_tc0037(testCase)
     fclose(fid);
 
     try
-        readDLKcatOutput(ecModel, 'outFile', outFile, 'modelAdapter', adapter);
+        readDLKcatOutput(ecModel, 'outFile', outFile, 'modelAdapter', adapter, 'strict', true);
         errored = false;
         msg = '';
     catch ME
@@ -2119,4 +2436,92 @@ function testGECKOInstallerIsOlderVersion_tc0059(testCase)
     verifyFalse(testCase, older('3.2.6', '3.2.6'))
     verifyFalse(testCase, older('4.0.0', '4.0.0b1'))
     verifyFalse(testCase, older('4.0.0b1', '4.0.0b2'))
+end
+
+function testGECKOInstallerIgnoresRavenPrerelease_tc0284(testCase)
+    % The pre-release suffix of the installed RAVEN is ignored when it is
+    % compared with the minimum RAVEN version.
+    older = @(ver, minVer) GECKOInstaller.isOlderVersion( ...
+        GECKOInstaller.releaseOf(ver), minVer);
+    verifyEqual(testCase, GECKOInstaller.releaseOf('3.0.0b2'), '3.0.0')
+    verifyEqual(testCase, GECKOInstaller.releaseOf('3.1'), '3.1.0')
+    verifyFalse(testCase, older('3.0.0b1', '3.0.0'))
+    verifyFalse(testCase, older('3.0.0b2', '3.0.0'))
+    verifyFalse(testCase, older('3.0.0', '3.0.0'))
+    verifyFalse(testCase, older('3.2.1', '3.0.0'))
+    verifyTrue(testCase, older('2.9.9', '3.0.0'))
+    verifyTrue(testCase, older('2.10.0b3', '3.0.0'))
+end
+
+function testEcFSEOFSelectsTargetsByCorrelation_tc0100(testCase)
+    % Verifies ecFSEOF classifies a reaction as a target when the absolute
+    % flux correlates with the enforced production flux (default
+    % corrThreshold 0.9), as RAVEN's FSEOF does, and does not cut the list to
+    % the top quartile by slope. With R3 enforced, the flux of R5 falls as
+    % the shared enzyme pool goes to R3, and R3 itself follows the enforced
+    % flux; both are targets, the ones without a gene rule are not.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    model = getGeckoTestModel();
+    model.geneShortNames = model.genes;
+    ecModel = makeEcModel(model, false, adapter);
+    ecModel = getECfromGEM(ecModel);
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R2_EXP_1')) = 50;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R2_EXP_2')) = 10;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R2_REV_EXP_1')) = 50;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R2_REV_EXP_2')) = 10;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R3')) = 20;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R5')) = 100;
+    ecModel.ec.source(:) = {'manual'};
+    ecModel = applyKcatConstraints(ecModel);
+    ecModel = setProtPoolSize(ecModel, [], [], [], adapter);
+    adapter.params.bioRxn = 'R5';
+
+    fseof = ecFSEOF(ecModel, 'R3', 'S1', 'nSteps', 6, 'modelAdapter', adapter);
+    targets = sort([fseof.rxnTargets(:,1); fseof.transportTargets(:,1)]);
+    verifyEqual(testCase, targets, {'R3';'R5'})
+    verifyEqual(testCase, numel(fseof.alpha), 6)
+
+    % The slope column is the absolute regression slope, highest score first
+    verifyTrue(testCase, all(cell2mat(fseof.rxnTargets(:,3)) > 0))
+
+    % The default corrThreshold is 0.9
+    sameAsDefault = ecFSEOF(ecModel, 'R3', 'S1', 'nSteps', 6, 'modelAdapter', adapter, 'corrThreshold', 0.9);
+    verifyEqual(testCase, sameAsDefault.rxnTargets, fseof.rxnTargets)
+
+    % The correlation of a reaction cannot exceed 1: a threshold above 1 gives no targets
+    none = ecFSEOF(ecModel, 'R3', 'S1', 'nSteps', 6, 'modelAdapter', adapter, 'corrThreshold', 1.5);
+    verifyEmpty(testCase, none.rxnTargets)
+    verifyEmpty(testCase, none.transportTargets)
+    verifyEmpty(testCase, none.geneTargets)
+end
+
+function testEcFSEOFGeneTargetsComeFromReportedReactions_tc0236(testCase)
+    % The usage reactions of the enzymes are not reported, and they do not enter
+    % the gene targets either: the slope of a gene whose rule is the only gene of
+    % a reported reaction is the slope of that reaction.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    model = getGeckoTestModel();
+    model.geneShortNames = model.genes;
+    ecModel = makeEcModel(model, false, adapter);
+    ecModel = getECfromGEM(ecModel);
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R2_EXP_1')) = 50;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R2_EXP_2')) = 10;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R2_REV_EXP_1')) = 50;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R2_REV_EXP_2')) = 10;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R3')) = 20;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns,'R5')) = 100;
+    ecModel.ec.source(:) = {'manual'};
+    ecModel = applyKcatConstraints(ecModel);
+    ecModel = setProtPoolSize(ecModel, [], [], [], adapter);
+    adapter.params.bioRxn = 'R5';
+
+    fseof = ecFSEOF(ecModel, 'R3', 'S1', 'nSteps', 6, 'modelAdapter', adapter);
+    verifyNotEmpty(testCase, fseof.geneTargets)
+    for i = 1:size(fseof.geneTargets,1)
+        rxnRow = strcmp(fseof.rxnTargets(:,4), fseof.geneTargets{i,1});
+        verifyEqual(testCase, sum(rxnRow), 1)
+        verifyEqual(testCase, fseof.geneTargets{i,3}, fseof.rxnTargets{rxnRow,3}, 'AbsTol', 1e-9)
+    end
 end

@@ -1,0 +1,329 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of loadAdapterParams</title>
+  <meta name="keywords" content="loadAdapterParams">
+  <meta name="description" content="loadAdapterParams  Read model adapter parameters from a TOML file.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">model_adapter</a> &gt; loadAdapterParams.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/model_adapter&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>loadAdapterParams
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>loadAdapterParams  Read model adapter parameters from a TOML file.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function params = loadAdapterParams(tomlFile) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> loadAdapterParams  Read model adapter parameters from a TOML file.
+
+ Reads model_adapter.toml, the configuration file shared by GECKO and
+ geckopy, and returns the parameters with GECKO's field names, so that
+ they can be used as ModelAdapter.params. Keys are translated with
+ adapterParameters.tsv (for instance p_tot becomes Ptot); keys that are
+ not given get the default listed there, which is geckopy's default.
+
+ Parameters
+ ----------
+ tomlFile : char
+     path to model_adapter.toml, or to the project folder that holds it.
+
+ Returns
+ -------
+ params : struct
+     the adapter parameters, as in ModelAdapter.params:
+     - path: the project folder (the folder of the TOML file);
+     - convGEM and spontaneous.file: absolute paths;
+     - evotune.kcatSources and evotune.sigma0logSource: built from the
+       evotune.source_groups and evotune.sigma0_log_source tables, one
+       entry per ec.source value;
+     - fields under [matlab.params] are copied as they are, for
+       parameters that only GECKO uses.
+
+ Examples
+ --------
+     params = loadAdapterParams(fullfile(projectPath,'model_adapter.toml'));
+
+ See also
+ --------
+ <a href="TomlAdapter.html" class="code" title="">TomlAdapter</a>, <a href="readAdapterToml.html" class="code" title="function data = readAdapterToml(filename)">readAdapterToml</a>, <a href="convertAdapterToToml.html" class="code" title="function report = convertAdapterToToml(adapter, tomlFile)">convertAdapterToToml</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="readAdapterToml.html" class="code" title="function data = readAdapterToml(filename)">readAdapterToml</a>	readAdapterToml  Read a model adapter TOML file into a struct.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="TomlAdapter.html" class="code" title="">TomlAdapter</a>	TomlAdapter  Model adapter configured by model_adapter.toml.</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function map = adapterParameterMap()</a></li><li><a href="#_sub2" class="code">function value = parseDefault(text)</a></li><li><a href="#_sub3" class="code">function checkKnownKeys(s, prefix, known, tomlFile)</a></li><li><a href="#_sub4" class="code">function params = sourceGroups(params, data, tomlFile)</a></li><li><a href="#_sub5" class="code">function [found, value] = getDotted(s, key)</a></li><li><a href="#_sub6" class="code">function s = setDotted(s, key, value)</a></li><li><a href="#_sub7" class="code">function s = mergeStruct(s, extra)</a></li><li><a href="#_sub8" class="code">function p = projectFile(projectPath, p)</a></li><li><a href="#_sub9" class="code">function tf = isAbsolute(p)</a></li><li><a href="#_sub10" class="code">function p = getAbsolutePath(p)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function params = loadAdapterParams(tomlFile)</a>
+0002 <span class="comment">% loadAdapterParams  Read model adapter parameters from a TOML file.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Reads model_adapter.toml, the configuration file shared by GECKO and</span>
+0005 <span class="comment">% geckopy, and returns the parameters with GECKO's field names, so that</span>
+0006 <span class="comment">% they can be used as ModelAdapter.params. Keys are translated with</span>
+0007 <span class="comment">% adapterParameters.tsv (for instance p_tot becomes Ptot); keys that are</span>
+0008 <span class="comment">% not given get the default listed there, which is geckopy's default.</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% Parameters</span>
+0011 <span class="comment">% ----------</span>
+0012 <span class="comment">% tomlFile : char</span>
+0013 <span class="comment">%     path to model_adapter.toml, or to the project folder that holds it.</span>
+0014 <span class="comment">%</span>
+0015 <span class="comment">% Returns</span>
+0016 <span class="comment">% -------</span>
+0017 <span class="comment">% params : struct</span>
+0018 <span class="comment">%     the adapter parameters, as in ModelAdapter.params:</span>
+0019 <span class="comment">%     - path: the project folder (the folder of the TOML file);</span>
+0020 <span class="comment">%     - convGEM and spontaneous.file: absolute paths;</span>
+0021 <span class="comment">%     - evotune.kcatSources and evotune.sigma0logSource: built from the</span>
+0022 <span class="comment">%       evotune.source_groups and evotune.sigma0_log_source tables, one</span>
+0023 <span class="comment">%       entry per ec.source value;</span>
+0024 <span class="comment">%     - fields under [matlab.params] are copied as they are, for</span>
+0025 <span class="comment">%       parameters that only GECKO uses.</span>
+0026 <span class="comment">%</span>
+0027 <span class="comment">% Examples</span>
+0028 <span class="comment">% --------</span>
+0029 <span class="comment">%     params = loadAdapterParams(fullfile(projectPath,'model_adapter.toml'));</span>
+0030 <span class="comment">%</span>
+0031 <span class="comment">% See also</span>
+0032 <span class="comment">% --------</span>
+0033 <span class="comment">% TomlAdapter, readAdapterToml, convertAdapterToToml</span>
+0034 
+0035 <span class="keyword">if</span> isfolder(tomlFile)
+0036     tomlFile = fullfile(tomlFile, <span class="string">'model_adapter.toml'</span>);
+0037 <span class="keyword">end</span>
+0038 <span class="keyword">if</span> ~isfile(tomlFile)
+0039     error(<span class="string">'GECKO:loadAdapterParams'</span>, <span class="string">'No model adapter file found at %s'</span>, tomlFile);
+0040 <span class="keyword">end</span>
+0041 tomlFile = char(tomlFile);
+0042 [projectPath, ~, ~] = fileparts(<a href="#_sub10" class="code" title="subfunction p = getAbsolutePath(p)">getAbsolutePath</a>(tomlFile));
+0043 
+0044 data = <a href="readAdapterToml.html" class="code" title="function data = readAdapterToml(filename)">readAdapterToml</a>(tomlFile);
+0045 map = <a href="#_sub1" class="code" title="subfunction map = adapterParameterMap()">adapterParameterMap</a>();
+0046 
+0047 <span class="comment">% Unknown keys are errors, as in geckopy, so that a typo is not ignored.</span>
+0048 known = [map.tomlKey; {<span class="string">'evotune.source_groups'</span>; <span class="string">'evotune.sigma0_log_source'</span>}];
+0049 <a href="#_sub3" class="code" title="subfunction checkKnownKeys(s, prefix, known, tomlFile)">checkKnownKeys</a>(data, <span class="string">''</span>, known, tomlFile);
+0050 
+0051 params = struct();
+0052 params.path = projectPath;
+0053 <span class="keyword">for</span> k = 1:numel(map.tomlKey)
+0054     key = map.tomlKey{k};
+0055     <span class="keyword">if</span> any(strcmp(key, {<span class="string">'evotune.source_groups'</span>, <span class="string">'evotune.sigma0_log_source'</span>}))
+0056         <span class="keyword">continue</span>
+0057     <span class="keyword">end</span>
+0058     [found, value] = <a href="#_sub5" class="code" title="subfunction [found, value] = getDotted(s, key)">getDotted</a>(data, key);
+0059     <span class="keyword">if</span> ~found
+0060         <span class="keyword">if</span> isempty(map.default{k})
+0061             <span class="keyword">continue</span>
+0062         <span class="keyword">end</span>
+0063         value = map.default{k};
+0064     <span class="keyword">end</span>
+0065     <span class="keyword">if</span> isempty(map.matlabField{k})
+0066         field = key; <span class="comment">% a key that only geckopy reads keeps its name</span>
+0067     <span class="keyword">else</span>
+0068         field = map.matlabField{k};
+0069     <span class="keyword">end</span>
+0070     params = <a href="#_sub6" class="code" title="subfunction s = setDotted(s, key, value)">setDotted</a>(params, field, value);
+0071 <span class="keyword">end</span>
+0072 
+0073 <span class="keyword">if</span> ~isfield(params, <span class="string">'complex'</span>)
+0074     params.complex.taxonomicID = []; <span class="comment">% geckopy's default: no Complex Portal query</span>
+0075 <span class="keyword">end</span>
+0076 
+0077 <span class="keyword">for</span> f = {<span class="string">'convGEM'</span>}
+0078     <span class="keyword">if</span> isfield(params, f{1})
+0079         params.(f{1}) = <a href="#_sub8" class="code" title="subfunction p = projectFile(projectPath, p)">projectFile</a>(projectPath, params.(f{1}));
+0080     <span class="keyword">end</span>
+0081 <span class="keyword">end</span>
+0082 <span class="keyword">if</span> isfield(params, <span class="string">'spontaneous'</span>) &amp;&amp; isfield(params.spontaneous, <span class="string">'file'</span>)
+0083     params.spontaneous.file = <a href="#_sub8" class="code" title="subfunction p = projectFile(projectPath, p)">projectFile</a>(projectPath, params.spontaneous.file);
+0084 <span class="keyword">end</span>
+0085 
+0086 params = <a href="#_sub4" class="code" title="subfunction params = sourceGroups(params, data, tomlFile)">sourceGroups</a>(params, data, tomlFile);
+0087 
+0088 <span class="keyword">if</span> isfield(data, <span class="string">'matlab'</span>) &amp;&amp; isfield(data.matlab, <span class="string">'params'</span>)
+0089     params = <a href="#_sub7" class="code" title="subfunction s = mergeStruct(s, extra)">mergeStruct</a>(params, data.matlab.params);
+0090 <span class="keyword">end</span>
+0091 <span class="keyword">end</span>
+0092 
+0093 <a name="_sub1" href="#_subfunctions" class="code">function map = adapterParameterMap()</a>
+0094 <span class="comment">% Reads adapterParameters.tsv into toml keys, MATLAB fields and defaults.</span>
+0095 file = fullfile(fileparts(mfilename(<span class="string">'fullpath'</span>)), <span class="string">'adapterParameters.tsv'</span>);
+0096 fid = fopen(file, <span class="string">'r'</span>);
+0097 cols = textscan(fid, <span class="string">'%s %s %s %s'</span>, <span class="string">'Delimiter'</span>, <span class="string">'\t'</span>, <span class="string">'HeaderLines'</span>, 1, <span class="keyword">...</span>
+0098     <span class="string">'Whitespace'</span>, <span class="string">''</span>, <span class="string">'ReturnOnError'</span>, false);
+0099 fclose(fid);
+0100 map.tomlKey = cols{1};
+0101 map.matlabField = cols{2};
+0102 map.default = cell(size(cols{3}));
+0103 <span class="keyword">for</span> k = 1:numel(cols{3})
+0104     <span class="keyword">if</span> ~isempty(cols{3}{k})
+0105         map.default{k} = <a href="#_sub2" class="code" title="subfunction value = parseDefault(text)">parseDefault</a>(cols{3}{k});
+0106     <span class="keyword">end</span>
+0107 <span class="keyword">end</span>
+0108 <span class="keyword">end</span>
+0109 
+0110 <a name="_sub2" href="#_subfunctions" class="code">function value = parseDefault(text)</a>
+0111 <span class="comment">% A default is written as a TOML value.</span>
+0112 tmp = [tempname <span class="string">'.toml'</span>];
+0113 fid = fopen(tmp, <span class="string">'w'</span>);
+0114 fprintf(fid, <span class="string">'x = %s\n'</span>, text);
+0115 fclose(fid);
+0116 cleanup = onCleanup(@() delete(tmp));
+0117 data = <a href="readAdapterToml.html" class="code" title="function data = readAdapterToml(filename)">readAdapterToml</a>(tmp);
+0118 value = data.x;
+0119 <span class="keyword">if</span> ischar(value) &amp;&amp; isempty(value)
+0120     value = <span class="string">''</span>;
+0121 <span class="keyword">end</span>
+0122 <span class="keyword">end</span>
+0123 
+0124 <a name="_sub3" href="#_subfunctions" class="code">function checkKnownKeys(s, prefix, known, tomlFile)</a>
+0125 fields = fieldnames(s);
+0126 <span class="keyword">for</span> k = 1:numel(fields)
+0127     key = fields{k};
+0128     <span class="keyword">if</span> ~isempty(prefix)
+0129         key = [prefix <span class="string">'.'</span> key];
+0130     <span class="keyword">end</span>
+0131     <span class="keyword">if</span> strcmp(key, <span class="string">'matlab.params'</span>)
+0132         <span class="keyword">continue</span> <span class="comment">% free-form parameters for GECKO only</span>
+0133     <span class="keyword">end</span>
+0134     <span class="keyword">if</span> any(strcmp(key, known)) || any(startsWith(known, [key <span class="string">'.'</span>]))
+0135         <span class="keyword">if</span> isstruct(s.(fields{k})) &amp;&amp; ~any(strcmp(key, known))
+0136             <a href="#_sub3" class="code" title="subfunction checkKnownKeys(s, prefix, known, tomlFile)">checkKnownKeys</a>(s.(fields{k}), key, known, tomlFile);
+0137         <span class="keyword">end</span>
+0138         <span class="keyword">continue</span>
+0139     <span class="keyword">end</span>
+0140     <span class="keyword">if</span> any(startsWith(key, {<span class="string">'evotune.source_groups.'</span>, <span class="string">'evotune.sigma0_log_source.'</span>}))
+0141         <span class="keyword">continue</span>
+0142     <span class="keyword">end</span>
+0143     error(<span class="string">'GECKO:loadAdapterParams'</span>, [<span class="string">'Unknown key &quot;%s&quot; in %s. Parameters that only '</span> <span class="keyword">...</span>
+0144         <span class="string">'GECKO uses go under [matlab.params].'</span>], key, tomlFile);
+0145 <span class="keyword">end</span>
+0146 <span class="keyword">end</span>
+0147 
+0148 <a name="_sub4" href="#_subfunctions" class="code">function params = sourceGroups(params, data, tomlFile)</a>
+0149 <span class="comment">% evotune.source_groups and evotune.sigma0_log_source become the</span>
+0150 <span class="comment">% kcatSources and sigma0logSource lists that evotune reads: one entry per</span>
+0151 <span class="comment">% ec.source value, with its group's prior width.</span>
+0152 groups = struct();
+0153 widths = struct();
+0154 <span class="keyword">if</span> isfield(data, <span class="string">'evotune'</span>) &amp;&amp; isfield(data.evotune, <span class="string">'source_groups'</span>)
+0155     groups = data.evotune.source_groups;
+0156     <span class="keyword">if</span> isfield(data.evotune, <span class="string">'sigma0_log_source'</span>)
+0157         widths = data.evotune.sigma0_log_source;
+0158     <span class="keyword">end</span>
+0159 <span class="keyword">else</span>
+0160     <span class="comment">% geckopy's defaults (EvotuneParams.source_groups, sigma0_log_source).</span>
+0161     groups.dlkcat.sources = {<span class="string">'dlkcat'</span>};
+0162     groups.brenda.sources = {<span class="string">'brenda'</span>};
+0163     groups.custom.sources = {<span class="string">'custom'</span>};
+0164     widths.dlkcat = 0.4;
+0165     widths.brenda = 0.2;
+0166     widths.custom = 0.1;
+0167 <span class="keyword">end</span>
+0168 names = fieldnames(groups);
+0169 <span class="keyword">if</span> ~isempty(setxor(names, fieldnames(widths)))
+0170     error(<span class="string">'GECKO:loadAdapterParams'</span>, [<span class="string">'%s: evotune.sigma0_log_source must have '</span> <span class="keyword">...</span>
+0171         <span class="string">'the same group names as evotune.source_groups'</span>], tomlFile);
+0172 <span class="keyword">end</span>
+0173 kcatSources = {};
+0174 sigma0logSource = [];
+0175 <span class="keyword">for</span> k = 1:numel(names)
+0176     group = groups.(names{k});
+0177     sources = {};
+0178     <span class="keyword">if</span> isfield(group, <span class="string">'sources'</span>)
+0179         sources = group.sources;
+0180         <span class="keyword">if</span> ischar(sources)
+0181             sources = {sources};
+0182         <span class="keyword">end</span>
+0183     <span class="keyword">end</span>
+0184     <span class="keyword">if</span> isfield(group, <span class="string">'match_okp'</span>) &amp;&amp; group.match_okp &amp;&amp; isfield(params, <span class="string">'okp'</span>)
+0185         sources{end+1} = params.okp.method; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0186     <span class="keyword">end</span>
+0187     kcatSources = [kcatSources, sources]; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0188     sigma0logSource = [sigma0logSource; repmat(widths.(names{k}), numel(sources), 1)]; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0189 <span class="keyword">end</span>
+0190 params.evotune.kcatSources = kcatSources;
+0191 params.evotune.sigma0logSource = sigma0logSource;
+0192 <span class="keyword">end</span>
+0193 
+0194 <a name="_sub5" href="#_subfunctions" class="code">function [found, value] = getDotted(s, key)</a>
+0195 parts = strsplit(key, <span class="string">'.'</span>);
+0196 value = s;
+0197 found = true;
+0198 <span class="keyword">for</span> k = 1:numel(parts)
+0199     <span class="keyword">if</span> ~isstruct(value) || ~isfield(value, parts{k})
+0200         found = false;
+0201         value = [];
+0202         <span class="keyword">return</span>
+0203     <span class="keyword">end</span>
+0204     value = value.(parts{k});
+0205 <span class="keyword">end</span>
+0206 <span class="keyword">end</span>
+0207 
+0208 <a name="_sub6" href="#_subfunctions" class="code">function s = setDotted(s, key, value)</a>
+0209 parts = strsplit(key, <span class="string">'.'</span>);
+0210 <span class="keyword">if</span> numel(parts) == 1
+0211     s.(parts{1}) = value;
+0212     <span class="keyword">return</span>
+0213 <span class="keyword">end</span>
+0214 <span class="keyword">if</span> ~isfield(s, parts{1}) || ~isstruct(s.(parts{1}))
+0215     s.(parts{1}) = struct();
+0216 <span class="keyword">end</span>
+0217 s.(parts{1}) = <a href="#_sub6" class="code" title="subfunction s = setDotted(s, key, value)">setDotted</a>(s.(parts{1}), strjoin(parts(2:end), <span class="string">'.'</span>), value);
+0218 <span class="keyword">end</span>
+0219 
+0220 <a name="_sub7" href="#_subfunctions" class="code">function s = mergeStruct(s, extra)</a>
+0221 fields = fieldnames(extra);
+0222 <span class="keyword">for</span> k = 1:numel(fields)
+0223     value = extra.(fields{k});
+0224     <span class="keyword">if</span> isstruct(value) &amp;&amp; isscalar(value) &amp;&amp; isfield(s, fields{k}) &amp;&amp; isstruct(s.(fields{k}))
+0225         s.(fields{k}) = <a href="#_sub7" class="code" title="subfunction s = mergeStruct(s, extra)">mergeStruct</a>(s.(fields{k}), value);
+0226     <span class="keyword">else</span>
+0227         s.(fields{k}) = value;
+0228     <span class="keyword">end</span>
+0229 <span class="keyword">end</span>
+0230 <span class="keyword">end</span>
+0231 
+0232 <a name="_sub8" href="#_subfunctions" class="code">function p = projectFile(projectPath, p)</a>
+0233 <span class="keyword">if</span> isempty(p)
+0234     <span class="keyword">return</span>
+0235 <span class="keyword">end</span>
+0236 <span class="keyword">if</span> ~<a href="#_sub9" class="code" title="subfunction tf = isAbsolute(p)">isAbsolute</a>(p)
+0237     p = fullfile(projectPath, p);
+0238 <span class="keyword">end</span>
+0239 <span class="keyword">end</span>
+0240 
+0241 <a name="_sub9" href="#_subfunctions" class="code">function tf = isAbsolute(p)</a>
+0242 tf = startsWith(p, <span class="string">'/'</span>) || startsWith(p, <span class="string">'\'</span>) || ~isempty(regexp(p, <span class="string">'^[A-Za-z]:'</span>, <span class="string">'once'</span>));
+0243 <span class="keyword">end</span>
+0244 
+0245 <a name="_sub10" href="#_subfunctions" class="code">function p = getAbsolutePath(p)</a>
+0246 <span class="keyword">if</span> ~<a href="#_sub9" class="code" title="subfunction tf = isAbsolute(p)">isAbsolute</a>(p)
+0247     p = fullfile(pwd, p);
+0248 <span class="keyword">end</span>
+0249 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

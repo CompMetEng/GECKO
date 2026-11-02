@@ -1,9 +1,20 @@
 function bottlenecks = getEnzymeBottlenecks(model, varargin)
 % getEnzymeBottlenecks  Top-N enzymes limiting the current objective.
 %
-% Solves the model and ranks every enzyme by the absolute shadow price of
-% its prot_<id> mass-balance constraint --- the enzymes whose extra
-% availability would help the objective the most.
+% Solves the model and ranks every enzyme by the change of the objective
+% after the upper bound of its usage_prot_<id> reaction is raised by
+% foldChange and the model is solved again. The objective is maximised, so
+% the gain is the rise of the maximised objective. Only enzymes whose usage runs at
+% its upper bound are solved again; raising a bound that does not bind
+% cannot change the optimum, so every other enzyme has an objectiveGain of 0
+% without a solve.
+%
+% The shadow price of the prot_<id> mass-balance constraint is reported for
+% reference and does not enter the order: at a degenerate optimum, which is
+% common in enzyme-constrained models, several constraints are active and
+% the solver assigns the dual to one of them depending on the basis.
+% Enzymes with equal objectiveGain (rounded to 9 decimals) keep their order
+% in model.ec.enzymes.
 %
 % Parameters
 % ----------
@@ -16,23 +27,46 @@ function bottlenecks = getEnzymeBottlenecks(model, varargin)
 % --------------------
 % top : double
 %     number of enzymes to return (default 10).
+% foldChange : double
+%     a value how much to increase the usage upper bound of an enzyme that
+%     runs at its upper bound; must be greater than 1 (default 2).
 %
 % Returns
 % -------
 % bottlenecks : table
-%     one row per returned enzyme, sorted by descending absolute shadow
-%     price, with columns uniprot, gene, shadowPrice, flux, capUsage
-%     (abs(flux)/upperBound, NaN if upperBound is 0) and upperBound.
+%     one row per returned enzyme, sorted by descending objectiveGain, with
+%     columns uniprot, gene, objectiveGain (objective after raising the
+%     bound minus the objective of the unchanged model; 0 for enzymes not at
+%     their upper bound, for gains below 1e-10 and for solves that are not
+%     optimal), shadowPrice, flux, capUsage (abs(flux)/upperBound, NaN if
+%     upperBound is 0), upperBound and multipleActive. An enzyme is at its
+%     upper bound when upperBound is above 0 and capUsage is at least
+%     1 - 1e-6. multipleActive is true when at least one other constraint
+%     is active: another enzyme at its upper bound, or prot_pool_exchange at
+%     its upper bound (within 1e-6 relative). Where it is true, the dual is
+%     not informative about a single enzyme. The table property
+%     UserData.nResolved holds the number of enzymes that were solved again
+%     and UserData.activeConstraints the number of active constraints.
+%     When no enzyme is at its usage bound a warning (getEnzymeBottlenecks:noEnzymeAtBound)
+%     says that no single enzyme limits the objective; every objectiveGain is then 0 and
+%     the rows are in model order.
 %
 % Examples
 % --------
 %     bottlenecks = getEnzymeBottlenecks(ecModel);
-%     bottlenecks = getEnzymeBottlenecks(ecModel, 'top', 5);
+%     bottlenecks = getEnzymeBottlenecks(ecModel, 'top', 5, 'foldChange', 3);
 
-p = parseGECKOargs(varargin, {'top', []});
+p = parseGECKOargs(varargin, {'top', []; 'foldChange', []});
 top = p.top;
+foldChange = p.foldChange;
 if isempty(top)
     top = 10;
+end
+if isempty(foldChange)
+    foldChange = 2;
+end
+if ~isnumeric(foldChange) || ~isscalar(foldChange) || ~(foldChange > 1)
+    error('getEnzymeBottlenecks:foldChange', 'foldChange must be greater than 1')
 end
 
 if isfield(model.ec, 'geckoLight') && model.ec.geckoLight
@@ -40,7 +74,7 @@ if isfield(model.ec, 'geckoLight') && model.ec.geckoLight
         'light models have no per-enzyme prot_<id> / usage_prot_<id> machinery.'])
 end
 
-sol = solveLP(model);
+[sol, hs] = solveLP(model);
 if sol.stat ~= 1
     error('getEnzymeBottlenecks: solver status %d; cannot rank bottlenecks.', sol.stat)
 end
@@ -65,8 +99,46 @@ upperBound  = model.ub(rxnIdx);
 capUsage    = abs(flux) ./ upperBound;
 capUsage(upperBound == 0) = NaN;
 
-bottlenecks = table(uniprot, gene, shadowPrice, flux, capUsage, upperBound);
-[~, order] = sort(abs(bottlenecks.shadowPrice), 'descend');
+nEnz = numel(uniprot);
+atCap = upperBound > 0 & capUsage >= 1 - 1e-6;
+base = sol.f;
+objectiveGain = zeros(nEnz, 1);
+for i = find(atCap)'
+    tempModel = model;
+    tempModel.ub(rxnIdx(i)) = upperBound(i) * foldChange;
+    [tempSol, hs] = solveLP(tempModel, 0, [], hs);
+    if tempSol.stat == 1
+        gain = tempSol.f - base;
+        if gain >= 1e-10
+            objectiveGain(i) = gain;
+        end
+    end
+end
+
+activeConstraints = nnz(atCap);
+poolActive = false;
+poolIdx = find(strcmp(model.rxns, 'prot_pool_exchange'), 1);
+if ~isempty(poolIdx) && isfinite(model.ub(poolIdx)) && model.ub(poolIdx) > 0 ...
+        && abs(sol.x(poolIdx)) >= model.ub(poolIdx) * (1 - 1e-6)
+    activeConstraints = activeConstraints + 1;
+    poolActive = true;
+end
+if ~any(atCap)
+    if poolActive
+        state = 'the protein pool exchange is at its bound';
+    else
+        state = 'no capacity constraint is active';
+    end
+    warning('getEnzymeBottlenecks:noEnzymeAtBound', ...
+        ['getEnzymeBottlenecks: no enzyme is at its usage bound, so no single enzyme limits ' ...
+        'the objective; %s. Every objectiveGain is 0 and the rows are in model order.'], state)
+end
+multipleActive = (activeConstraints - double(atCap)) >= 1;
+
+bottlenecks = table(uniprot, gene, objectiveGain, shadowPrice, flux, capUsage, upperBound, multipleActive);
+[~, order] = sortrows([-round(objectiveGain, 9), (1:nEnz)']);
 bottlenecks = bottlenecks(order, :);
 bottlenecks = bottlenecks(1:min(top, height(bottlenecks)), :);
+bottlenecks.Properties.UserData.nResolved = nnz(atCap);
+bottlenecks.Properties.UserData.activeConstraints = activeConstraints;
 end

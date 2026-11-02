@@ -1,0 +1,271 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of writeOpenKineticsPredictorInput</title>
+  <meta name="keywords" content="writeOpenKineticsPredictorInput">
+  <meta name="description" content="writeOpenKineticsPredictorInput  Write input file for OpenKineticsPredictor.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">gather_kcats</a> &gt; writeOpenKineticsPredictorInput.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/gather_kcats&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>writeOpenKineticsPredictorInput
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>writeOpenKineticsPredictorInput  Write input file for OpenKineticsPredictor.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function writeOpenKineticsPredictorInput(model, varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> writeOpenKineticsPredictorInput  Write input file for OpenKineticsPredictor.
+
+ Prepares input for OpenKineticsPredictor: protein sequences and single-
+ substrate SMILES, which allows the use of the following predictors: DLKcat;
+ EITLEM; UniKP; KinForm-H; KinForm-L; CataPro; CatPred.
+
+ The function writes OKP.csv, that can be used as input file at
+ https://predictor.openkinetics.org/
+
+ The OpenKineticsPredictor output file can be used to generate a kcatList
+ through readOpenKineticsPredictorOutput.
+
+ Parameters
+ ----------
+ model : struct
+     ecModel in GECKO 3 format (with ecModel.ec structure).
+
+ Name-Value Arguments
+ --------------------
+ ecRxns : logical
+     logical vector indicating which reactions to include (default: all
+     reactions).
+ modelAdapter : ModelAdapter
+     a loaded model adapter (default: the current default model adapter).
+ onlyWithSmiles : logical
+     only include entries with SMILES (default true).
+ overwrite : logical
+     overwrite existing file (default false).
+
+ Examples
+ --------
+     % optional arguments may be given positionally or as name-value pairs:
+     writeOpenKineticsPredictorInput(model, ecRxns);
+     writeOpenKineticsPredictorInput(model, 'onlyWithSmiles', false);
+
+ See also
+ --------
+ <a href="readOpenKineticsPredictorOutput.html" class="code" title="function kcatList = readOpenKineticsPredictorOutput(model, varargin)">readOpenKineticsPredictorOutput</a>, <a href="writeDLKcatInput.html" class="code" title="function writtenTable = writeDLKcatInput(model, varargin)">writeDLKcatInput</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="submitOpenKineticsPredictor.html" class="code" title="function jobId = submitOpenKineticsPredictor(model, varargin)">submitOpenKineticsPredictor</a>	submitOpenKineticsPredictor  Submit a kcat prediction job to OpenKineticsPredictor.</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function writeOpenKineticsPredictorInput(model, varargin)</a>
+0002 <span class="comment">% writeOpenKineticsPredictorInput  Write input file for OpenKineticsPredictor.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Prepares input for OpenKineticsPredictor: protein sequences and single-</span>
+0005 <span class="comment">% substrate SMILES, which allows the use of the following predictors: DLKcat;</span>
+0006 <span class="comment">% EITLEM; UniKP; KinForm-H; KinForm-L; CataPro; CatPred.</span>
+0007 <span class="comment">%</span>
+0008 <span class="comment">% The function writes OKP.csv, that can be used as input file at</span>
+0009 <span class="comment">% https://predictor.openkinetics.org/</span>
+0010 <span class="comment">%</span>
+0011 <span class="comment">% The OpenKineticsPredictor output file can be used to generate a kcatList</span>
+0012 <span class="comment">% through readOpenKineticsPredictorOutput.</span>
+0013 <span class="comment">%</span>
+0014 <span class="comment">% Parameters</span>
+0015 <span class="comment">% ----------</span>
+0016 <span class="comment">% model : struct</span>
+0017 <span class="comment">%     ecModel in GECKO 3 format (with ecModel.ec structure).</span>
+0018 <span class="comment">%</span>
+0019 <span class="comment">% Name-Value Arguments</span>
+0020 <span class="comment">% --------------------</span>
+0021 <span class="comment">% ecRxns : logical</span>
+0022 <span class="comment">%     logical vector indicating which reactions to include (default: all</span>
+0023 <span class="comment">%     reactions).</span>
+0024 <span class="comment">% modelAdapter : ModelAdapter</span>
+0025 <span class="comment">%     a loaded model adapter (default: the current default model adapter).</span>
+0026 <span class="comment">% onlyWithSmiles : logical</span>
+0027 <span class="comment">%     only include entries with SMILES (default true).</span>
+0028 <span class="comment">% overwrite : logical</span>
+0029 <span class="comment">%     overwrite existing file (default false).</span>
+0030 <span class="comment">%</span>
+0031 <span class="comment">% Examples</span>
+0032 <span class="comment">% --------</span>
+0033 <span class="comment">%     % optional arguments may be given positionally or as name-value pairs:</span>
+0034 <span class="comment">%     writeOpenKineticsPredictorInput(model, ecRxns);</span>
+0035 <span class="comment">%     writeOpenKineticsPredictorInput(model, 'onlyWithSmiles', false);</span>
+0036 <span class="comment">%</span>
+0037 <span class="comment">% See also</span>
+0038 <span class="comment">% --------</span>
+0039 <span class="comment">% readOpenKineticsPredictorOutput, writeDLKcatInput</span>
+0040 
+0041 [geckoPath, ~] = findGECKOroot();
+0042 
+0043 <span class="comment">%% Parse inputs</span>
+0044 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0045     <span class="string">'ecRxns'</span>,         []; <span class="keyword">...</span>
+0046     <span class="string">'modelAdapter'</span>,   []; <span class="keyword">...</span>
+0047     <span class="string">'onlyWithSmiles'</span>, []; <span class="keyword">...</span>
+0048     <span class="string">'overwrite'</span>,      []});
+0049 ecRxns         = p.ecRxns;
+0050 modelAdapter   = p.modelAdapter;
+0051 onlyWithSmiles = p.onlyWithSmiles;
+0052 overwrite      = p.overwrite;
+0053 
+0054 <span class="keyword">if</span> isempty(ecRxns)
+0055     ecRxns = true(numel(model.ec.rxns),1);
+0056 <span class="keyword">elseif</span> ~islogical(ecRxns) || numel(ecRxns) ~= numel(model.ec.rxns)
+0057     error(<span class="string">'ecRxns should be a logical vector with length equal to model.ec.rxns'</span>)
+0058 <span class="keyword">end</span>
+0059 
+0060 <span class="keyword">if</span> isempty(modelAdapter)
+0061     modelAdapter = ModelAdapterManager.getDefault();
+0062     <span class="keyword">if</span> isempty(modelAdapter)
+0063         error(<span class="string">'Either provide a modelAdapter or set the default in ModelAdapterManager.'</span>)
+0064     <span class="keyword">end</span>
+0065 <span class="keyword">end</span>
+0066 params = modelAdapter.params;
+0067 
+0068 <span class="keyword">if</span> isempty(onlyWithSmiles)
+0069     onlyWithSmiles = true;
+0070 <span class="keyword">end</span>
+0071 
+0072 <span class="keyword">if</span> isempty(overwrite)
+0073     overwrite = false;
+0074 <span class="keyword">end</span>
+0075 
+0076 <span class="comment">%% Output files</span>
+0077 filename = fullfile(params.path,<span class="string">'data'</span>,<span class="string">'OKP.csv'</span>);
+0078 <span class="keyword">if</span> ~overwrite &amp;&amp; exist(filename,<span class="string">'file'</span>)
+0079     error(<span class="string">'%s already exists. Set overwrite=true to replace it.'</span>, filename)
+0080 <span class="keyword">end</span>
+0081 
+0082 <span class="comment">%% Map ec.rxns to model.rxns</span>
+0083 <span class="keyword">if</span> model.ec.geckoLight
+0084    origRxns = extractAfter(model.ec.rxns, 4);
+0085 <span class="keyword">else</span>
+0086    origRxns = model.ec.rxns;
+0087 <span class="keyword">end</span>
+0088 
+0089 ecRxnsIdx = find(ecRxns);
+0090 [found, origRxnIdxs] = ismember(origRxns(ecRxnsIdx), model.rxns);
+0091 <span class="keyword">if</span> ~all(found)
+0092     error(<span class="string">'Not all reactions in model.ec.rxns found in model.rxns'</span>)
+0093 <span class="keyword">end</span>
+0094 
+0095 <span class="comment">%% Build reduced stoichiometric matrix (ignore certain metabolites)</span>
+0096 <span class="comment">% Load metabolites to ignore (reuses DLKcat files)</span>
+0097 <span class="keyword">if</span> exist(fullfile(params.path,<span class="string">'data'</span>,<span class="string">'DLKcatIgnoreMets.tsv'</span>),<span class="string">'file'</span>)
+0098     ignoreFile = fullfile(params.path,<span class="string">'data'</span>,<span class="string">'DLKcatIgnoreMets.tsv'</span>);
+0099 <span class="keyword">else</span>
+0100     ignoreFile = fullfile(geckoPath,<span class="string">'databases'</span>,<span class="string">'DLKcatIgnoreMets.tsv'</span>);
+0101 <span class="keyword">end</span>
+0102 fID = fopen(ignoreFile);
+0103 fileData = textscan(fID,<span class="string">'%s %s'</span>,<span class="string">'delimiter'</span>,<span class="string">'\t'</span>);
+0104 fclose(fID);
+0105 [ignoreMets, ignoreSmiles] = deal(fileData{[1,2]});
+0106 
+0107 <span class="comment">% Normalize metabolite names (remove special characters, lowercase)</span>
+0108 metsNorm        = lower(regexprep(model.metNames,<span class="string">'[^0-9a-zA-Z]+'</span>,<span class="string">''</span>));
+0109 ignoreMetsNorm  = lower(regexprep(ignoreMets,<span class="string">'[^0-9a-zA-Z]+'</span>,<span class="string">''</span>));
+0110 ignoreSmiles(cellfun(@isempty,ignoreSmiles)) = [];
+0111 
+0112 <span class="comment">% Mark metabolites to ignore</span>
+0113 ignoreMetsIdx = ismember(metsNorm, ignoreMetsNorm);
+0114 <span class="keyword">if</span> isfield(model,<span class="string">'metSmiles'</span>)
+0115     ignoreMetsIdx = ignoreMetsIdx | ismember(model.metSmiles, ignoreSmiles);
+0116 <span class="keyword">end</span>
+0117 ignoreMetsIdx = ignoreMetsIdx | startsWith(model.mets,<span class="string">'prot_'</span>);
+0118 
+0119 reducedS = model.S;
+0120 reducedS(ignoreMetsIdx,:) = 0;
+0121 
+0122 <span class="comment">%% Remove currency metabolite pairs (reuses DLKcat files)</span>
+0123 <span class="keyword">if</span> exist(fullfile(params.path,<span class="string">'data'</span>,<span class="string">'DLKcatCurrencyMets.tsv'</span>),<span class="string">'file'</span>)
+0124     currencyFile = fullfile(params.path,<span class="string">'data'</span>,<span class="string">'DLKcatCurrencyMets.tsv'</span>);
+0125 <span class="keyword">else</span>
+0126     currencyFile = fullfile(geckoPath,<span class="string">'databases'</span>,<span class="string">'DLKcatCurrencyMets.tsv'</span>);
+0127 <span class="keyword">end</span>
+0128 fID = fopen(currencyFile);
+0129 fileData = textscan(fID,<span class="string">'%s %s'</span>,<span class="string">'delimiter'</span>,<span class="string">'\t'</span>);
+0130 fclose(fID);
+0131 [currencyMets(:,1), currencyMets(:,2)] = deal(fileData{[1,2]});
+0132 currencyMets = lower(regexprep(currencyMets,<span class="string">'[^0-9a-zA-Z]+'</span>,<span class="string">''</span>));
+0133 <span class="keyword">for</span> i=1:size(currencyMets,1)
+0134     subs = strcmp(currencyMets(i,1),metsNorm);
+0135     prod = strcmp(currencyMets(i,2),metsNorm);
+0136     [~,subsRxns]=find(reducedS(subs,:));
+0137     [~,prodRxns]=find(reducedS(prod,:));
+0138     pairRxns = intersect(subsRxns,prodRxns);
+0139     tempRedS=reducedS;
+0140     tempRedS([find(subs);find(prod)],pairRxns) = 0;
+0141     <span class="comment">% Do not remove currency mets if no substrate remains</span>
+0142     rxnsWithRemainingSubstrates = any(tempRedS(:,pairRxns) &lt; 0,1);
+0143     reducedS([find(subs);find(prod)],intersect(pairRxns,pairRxns(rxnsWithRemainingSubstrates))) = 0;
+0144 <span class="keyword">end</span>
+0145 
+0146 
+0147 <span class="comment">%% Extract substrates for selected reactions only</span>
+0148 clearedS = reducedS(:, origRxnIdxs);
+0149 
+0150 <span class="comment">% Find all substrates (negative stoichiometry)</span>
+0151 [substrateIdxs, reactionIdxs] = find(clearedS &lt; 0);
+0152 
+0153 <span class="comment">% Find proteins catalyzing each reaction. reactionIdxs indexes clearedS's</span>
+0154 <span class="comment">% columns, i.e. positions within the requested ecRxnsIdx subset -- map back</span>
+0155 <span class="comment">% through ecRxnsIdx to the absolute model.ec.rxnEnzMat row before indexing it.</span>
+0156 [proteinIdxs, rxnEnzIdxs] = find(model.ec.rxnEnzMat(ecRxnsIdx(reactionIdxs),:)');
+0157 
+0158 <span class="comment">%% Build output: sequence and SMILES</span>
+0159 sequences = model.ec.sequence(proteinIdxs);
+0160 
+0161 <span class="keyword">if</span> isfield(model,<span class="string">'metSmiles'</span>)
+0162     smiles = model.metSmiles(substrateIdxs(rxnEnzIdxs));
+0163 <span class="keyword">else</span>
+0164     smiles = cell(size(sequences));
+0165 <span class="keyword">end</span>
+0166 
+0167 <span class="comment">%% Filter empty entries</span>
+0168 <span class="keyword">if</span> onlyWithSmiles
+0169     valid = ~cellfun(@isempty, sequences) &amp; ~cellfun(@isempty, smiles);
+0170 <span class="keyword">else</span>
+0171     valid = ~cellfun(@isempty, sequences);
+0172     smiles(cellfun(@isempty, smiles)) = {<span class="string">'None'</span>};
+0173 <span class="keyword">end</span>
+0174 
+0175 sequences = sequences(valid);
+0176 smiles = smiles(valid);
+0177 
+0178 <span class="comment">%% Write output file</span>
+0179 <span class="comment">% Sequence and SMILES</span>
+0180 outTable = [sequences(:)'; smiles(:)'];
+0181 
+0182 fID = fopen(filename,<span class="string">'w'</span>);
+0183 fprintf(fID,<span class="string">'Protein Sequence,Substrate\n'</span>);
+0184 fprintf(fID,<span class="string">'%s,%s\n'</span>, outTable{:});
+0185 fclose(fID);
+0186 fprintf(<span class="string">'OpenKineticsPredictor input stored at %s\n'</span>, filename);
+0187 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

@@ -28,7 +28,8 @@ function mergedKcatList = mergeDLKcatAndFuzzyKcats(kcatListDLKcat, kcatListFuzzy
 % --------------------
 % topOriginLimit : double
 %     origin limit for prioritized BRENDA matches. Origin is explained in
-%     more detail below (default 6).
+%     more detail below (default 4: BRENDA matches of origin 5 and 6, from
+%     specific activities, rank after DLKcat; use 6 to rank them above).
 % bottomOriginLimit : double
 %     origin limit for low priority BRENDA matches. Origin is explained in
 %     more detail below (default 6).
@@ -74,7 +75,7 @@ function mergedKcatList = mergeDLKcatAndFuzzyKcats(kcatListDLKcat, kcatListFuzzy
 % mergeKcats, readDLKcatOutput, fuzzyKcatMatching, assignKcatValues
 
 p = parseGECKOargs(varargin, { ...
-    'topOriginLimit',    6; ...
+    'topOriginLimit',    4; ...
     'bottomOriginLimit', 6; ...
     'wildcardLimit',     3});
 topOriginLimit    = p.topOriginLimit;

@@ -1,0 +1,178 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of ModelAdapter</title>
+  <meta name="keywords" content="ModelAdapter">
+  <meta name="description" content="ModelAdapter  Abstract base class for species-specific model adapters.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">model_adapter</a> &gt; ModelAdapter.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/model_adapter&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>ModelAdapter
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>ModelAdapter  Abstract base class for species-specific model adapters.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>This is a script file. </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> ModelAdapter  Abstract base class for species-specific model adapters.
+
+ Defines the interface that every species adapter must implement and
+ provides shared default behaviour for retrieving GECKO parameters,
+ mapping model genes to UniProt, and locating reference databases.
+ Concrete subclasses override these methods for a particular organism.
+
+ Notes
+ -----
+ - params : struct of model-specific GECKO parameters (public property).
+ - getSpontaneousReactions : abstract method that subclasses must define.
+
+ See also
+ --------
+ <a href="ModelAdapterManager.html" class="code" title="">ModelAdapterManager</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="ModelAdapter.html" class="code" title="">ModelAdapter</a>	ModelAdapter  Abstract base class for species-specific model adapters.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="ModelAdapter.html" class="code" title="">ModelAdapter</a>	ModelAdapter  Abstract base class for species-specific model adapters.</li><li><a href="TomlAdapter.html" class="code" title="">TomlAdapter</a>	TomlAdapter  Model adapter configured by model_adapter.toml.</li><li><a href="adapterTemplate.html" class="code" title="">adapterTemplate</a>	KEY_CLASSNAME  Template ModelAdapter to copy and adapt per organism.</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function parameters = getParameters(obj)</a></li><li><a href="#_sub2" class="code">function genes = getUniprotCompatibleGenes(obj,inGenes)</a></li><li><a href="#_sub3" class="code">function genes = getKeggCompatibleGenes(obj,inGenes)</a></li><li><a href="#_sub4" class="code">function uniprotIDs = getUniprotIDsFromTable(obj,modelGenes)</a></li><li><a href="#_sub5" class="code">function folder = getBrendaDBFolder(obj)</a></li><li><a href="#_sub6" class="code">function x = getPhylDistStructPath(obj)</a></li><li><a href="#_sub7" class="code">function ecModel = makeModelAnaerobic(obj,ecModel)</a></li><li><a href="#_sub8" class="code">function ecModel = changeProteinBiomass(obj,ecModel,Ptot)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">% ModelAdapter  Abstract base class for species-specific model adapters.</span>
+0002 <span class="comment">%</span>
+0003 <span class="comment">% Defines the interface that every species adapter must implement and</span>
+0004 <span class="comment">% provides shared default behaviour for retrieving GECKO parameters,</span>
+0005 <span class="comment">% mapping model genes to UniProt, and locating reference databases.</span>
+0006 <span class="comment">% Concrete subclasses override these methods for a particular organism.</span>
+0007 <span class="comment">%</span>
+0008 <span class="comment">% Notes</span>
+0009 <span class="comment">% -----</span>
+0010 <span class="comment">% - params : struct of model-specific GECKO parameters (public property).</span>
+0011 <span class="comment">% - getSpontaneousReactions : abstract method that subclasses must define.</span>
+0012 <span class="comment">%</span>
+0013 <span class="comment">% See also</span>
+0014 <span class="comment">% --------</span>
+0015 <span class="comment">% ModelAdapterManager</span>
+0016 classdef (Abstract) <a href="ModelAdapter.html" class="code" title="">ModelAdapter</a>
+0017     methods (Abstract)
+0018         [spont,spontRxnNames] = getSpontaneousReactions(obj,model);
+0019     <span class="keyword">end</span>
+0020     methods
+0021         <span class="comment">%not really needed, we could access it directly. Not very nice, but practical</span>
+0022         <a name="_sub0" href="#_subfunctions" class="code">function parameters = getParameters(obj)</a>
+0023             parameters = obj.params;
+0024         <span class="keyword">end</span>
+0025 
+0026         <span class="comment">%This allows for changing parameters in an adapter without</span>
+0027         <span class="comment">%creating a new class. May be convenient, although less clean</span>
+0028         <span class="comment">%function obj = setParameters(obj, parameters)</span>
+0029         <span class="comment">%    obj.mParams = parameters;</span>
+0030         <span class="comment">%end</span>
+0031 
+0032         <span class="comment">%The genes returned here should match the gene id set in the parameter params.uniprot.geneIDfield</span>
+0033         <a name="_sub1" href="#_subfunctions" class="code">function genes = getUniprotCompatibleGenes(obj,inGenes)</a>
+0034             genes = inGenes;
+0035         <span class="keyword">end</span>
+0036 
+0037         <span class="comment">%The genes returned here should match the gene id stored in column</span>
+0038         <span class="comment">%2 (databases.kegg.genes) of kegg.tsv. Override when the model</span>
+0039         <span class="comment">%uses identifiers that need transformation before KEGG lookup.</span>
+0040         <a name="_sub2" href="#_subfunctions" class="code">function genes = getKeggCompatibleGenes(obj,inGenes)</a>
+0041             genes = inGenes;
+0042         <span class="keyword">end</span>
+0043 
+0044         <a name="_sub3" href="#_subfunctions" class="code">function uniprotIDs = getUniprotIDsFromTable(obj,modelGenes)</a>
+0045             conversionTable = fullfile(obj.params.path,<span class="string">'data'</span>,<span class="string">'uniprotConversion.tsv'</span>);
+0046             <span class="keyword">if</span> exist(conversionTable,<span class="string">'file'</span>)
+0047                 fID=fopen(conversionTable,<span class="string">'r'</span>);
+0048                 conversionTable = textscan(fID,<span class="string">'%q %q'</span>,<span class="string">'Delimiter'</span>,<span class="string">'\t'</span>,<span class="string">'HeaderLines'</span>,1);
+0049                 fclose(fID);
+0050 
+0051                 modelIDs    = conversionTable{1,1};
+0052                 uniprots    = conversionTable{1,2};
+0053 
+0054                 [a,b] = ismember(modelGenes,modelIDs);
+0055 
+0056                 uniprotIDs  = strings(numel(modelGenes),1);
+0057                 uniprotIDs(a)  = uniprots(b(a));
+0058                 disp(<span class="string">'The model genes are matched to Uniprot via the table at data/uniprotConversion.tsv.'</span>)
+0059             <span class="keyword">else</span>
+0060                 uniprotIDs = modelGenes;
+0061             <span class="keyword">end</span>
+0062         <span class="keyword">end</span>
+0063 
+0064         <a name="_sub4" href="#_subfunctions" class="code">function folder = getBrendaDBFolder(obj)</a>
+0065             <span class="comment">% The project's data/brenda (geckopy brenda-refresh writes</span>
+0066             <span class="comment">% there) when it exists, otherwise GECKO's BRENDA release,</span>
+0067             <span class="comment">% downloaded once (fetchBrendaAsset).</span>
+0068             folder = fullfile(obj.params.path,<span class="string">'data'</span>,<span class="string">'brenda'</span>);
+0069             <span class="keyword">if</span> ~isfolder(folder)
+0070                 folder = fetchBrendaAsset();
+0071             <span class="keyword">end</span>
+0072         <span class="keyword">end</span>
+0073 
+0074         <a name="_sub5" href="#_subfunctions" class="code">function x = getPhylDistStructPath(obj)</a>
+0075             <span class="comment">% RAVEN 3 keeps keggPhylDist.mat under src/reconstruction/kegg</span>
+0076             <span class="comment">% (earlier versions of RAVEN 3 under reconstruction/kegg), RAVEN</span>
+0077             <span class="comment">% 2 under external/kegg.</span>
+0078             ravenRoot = findRAVENroot();
+0079             candidates = {fullfile(ravenRoot,<span class="string">'src'</span>,<span class="string">'reconstruction'</span>,<span class="string">'kegg'</span>,<span class="string">'keggPhylDist.mat'</span>), <span class="keyword">...</span>
+0080                 fullfile(ravenRoot,<span class="string">'reconstruction'</span>,<span class="string">'kegg'</span>,<span class="string">'keggPhylDist.mat'</span>), <span class="keyword">...</span>
+0081                 fullfile(ravenRoot,<span class="string">'external'</span>,<span class="string">'kegg'</span>,<span class="string">'keggPhylDist.mat'</span>)};
+0082             x = candidates{end};
+0083             <span class="keyword">for</span> i = 1:numel(candidates)
+0084                 <span class="keyword">if</span> isfile(candidates{i})
+0085                     x = candidates{i};
+0086                     <span class="keyword">break</span>
+0087                 <span class="keyword">end</span>
+0088             <span class="keyword">end</span>
+0089         <span class="keyword">end</span>
+0090 
+0091         <span class="comment">% Define a model-specific function in the 'code' subfolder of the</span>
+0092         <span class="comment">% project folder, that can constrain the model to anaerobic</span>
+0093         <span class="comment">% conditions, and refer to this function in the modelAdapter. This</span>
+0094         <span class="comment">% function is used when running cmaesKcatTuning.m (via</span>
+0095         <span class="comment">% evotuneScore.m) if the fluxData has anaerobic conditions.</span>
+0096         <a name="_sub6" href="#_subfunctions" class="code">function ecModel = makeModelAnaerobic(obj,ecModel)</a>
+0097             ecModel = ecModel;
+0098             <span class="comment">% Example from full_tutorial:</span>
+0099             <span class="comment">% ecModel = anaerobicModel_GECKO(ecModel);</span>
+0100         <span class="keyword">end</span>
+0101         <span class="comment">% Similarly, define a function that can change protein content in</span>
+0102         <span class="comment">% the biomass composition</span>
+0103         <a name="_sub7" href="#_subfunctions" class="code">function ecModel = changeProteinBiomass(obj,ecModel,Ptot)</a>
+0104             ecModel = ecModel;
+0105             <span class="comment">% Example from full_tutorial:</span>
+0106             <span class="comment">% ecModel = scaleBioMass(ecModel,'protein',Ptot,'carbohydrate',false);</span>
+0107         <span class="keyword">end</span>
+0108     <span class="keyword">end</span>
+0109 
+0110     <span class="comment">%To have the params public is a bit &quot;ugly&quot;, but very practical</span>
+0111     <span class="comment">%if we want to change a parameter</span>
+0112     properties (Access = public)
+0113         params;
+0114     <span class="keyword">end</span>
+0115 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

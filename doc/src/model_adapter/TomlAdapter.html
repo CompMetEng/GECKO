@@ -1,0 +1,191 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of TomlAdapter</title>
+  <meta name="keywords" content="TomlAdapter">
+  <meta name="description" content="TomlAdapter  Model adapter configured by model_adapter.toml.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">model_adapter</a> &gt; TomlAdapter.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/model_adapter&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>TomlAdapter
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>TomlAdapter  Model adapter configured by model_adapter.toml.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>This is a script file. </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> TomlAdapter  Model adapter configured by model_adapter.toml.
+
+ The model adapter for a project whose parameters are in
+ model_adapter.toml, the configuration file that GECKO and geckopy share.
+ No adapter class has to be written: what used to be code in an adapter
+ class is set in the TOML file.
+
+ - Spontaneous reactions: [spontaneous] name_contains (reactions whose
+   name contains the text) and/or file (a TSV of reaction identifiers,
+   optionally with a second 0/1 column).
+ - Anaerobic conditions and protein content during kcat tuning:
+   [matlab] make_model_anaerobic and change_protein_biomass name MATLAB
+   functions, for instance in the project's code folder, which is added
+   to the MATLAB path. Each takes the ecModel (and, for
+   change_protein_biomass, the protein content) and returns the ecModel.
+
+ A project that needs other custom code can keep an adapter class and
+ read its parameters from the TOML file in its constructor:
+
+     obj.params = loadAdapterParams(fullfile(projectPath,'model_adapter.toml'));
+
+ Examples
+ --------
+     adapter = TomlAdapter(fullfile(projectPath,'model_adapter.toml'));
+     % or, as the default adapter:
+     ModelAdapterManager.setDefault(projectPath);
+
+ See also
+ --------
+ <a href="ModelAdapter.html" class="code" title="">ModelAdapter</a>, <a href="ModelAdapterManager.html" class="code" title="">ModelAdapterManager</a>, <a href="loadAdapterParams.html" class="code" title="function params = loadAdapterParams(tomlFile)">loadAdapterParams</a>, <a href="convertAdapterToToml.html" class="code" title="function report = convertAdapterToToml(adapter, tomlFile)">convertAdapterToToml</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="ModelAdapter.html" class="code" title="">ModelAdapter</a>	ModelAdapter  Abstract base class for species-specific model adapters.</li><li><a href="TomlAdapter.html" class="code" title="">TomlAdapter</a>	TomlAdapter  Model adapter configured by model_adapter.toml.</li><li><a href="loadAdapterParams.html" class="code" title="function params = loadAdapterParams(tomlFile)">loadAdapterParams</a>	loadAdapterParams  Read model adapter parameters from a TOML file.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="ModelAdapterManager.html" class="code" title="">ModelAdapterManager</a>	ModelAdapterManager  Resolve and cache the active ModelAdapter.</li><li><a href="TomlAdapter.html" class="code" title="">TomlAdapter</a>	TomlAdapter  Model adapter configured by model_adapter.toml.</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function obj = TomlAdapter(tomlFile)</a></li><li><a href="#_sub2" class="code">function [spont,spontRxnNames] = getSpontaneousReactions(obj,model)</a></li><li><a href="#_sub3" class="code">function ecModel = makeModelAnaerobic(obj,ecModel)</a></li><li><a href="#_sub4" class="code">function ecModel = changeProteinBiomass(obj,ecModel,Ptot)</a></li><li><a href="#_sub5" class="code">function fun = hookName(obj, field)</a></li><li><a href="#_sub6" class="code">function rxns = readSpontaneousFile(file)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">% TomlAdapter  Model adapter configured by model_adapter.toml.</span>
+0002 <span class="comment">%</span>
+0003 <span class="comment">% The model adapter for a project whose parameters are in</span>
+0004 <span class="comment">% model_adapter.toml, the configuration file that GECKO and geckopy share.</span>
+0005 <span class="comment">% No adapter class has to be written: what used to be code in an adapter</span>
+0006 <span class="comment">% class is set in the TOML file.</span>
+0007 <span class="comment">%</span>
+0008 <span class="comment">% - Spontaneous reactions: [spontaneous] name_contains (reactions whose</span>
+0009 <span class="comment">%   name contains the text) and/or file (a TSV of reaction identifiers,</span>
+0010 <span class="comment">%   optionally with a second 0/1 column).</span>
+0011 <span class="comment">% - Anaerobic conditions and protein content during kcat tuning:</span>
+0012 <span class="comment">%   [matlab] make_model_anaerobic and change_protein_biomass name MATLAB</span>
+0013 <span class="comment">%   functions, for instance in the project's code folder, which is added</span>
+0014 <span class="comment">%   to the MATLAB path. Each takes the ecModel (and, for</span>
+0015 <span class="comment">%   change_protein_biomass, the protein content) and returns the ecModel.</span>
+0016 <span class="comment">%</span>
+0017 <span class="comment">% A project that needs other custom code can keep an adapter class and</span>
+0018 <span class="comment">% read its parameters from the TOML file in its constructor:</span>
+0019 <span class="comment">%</span>
+0020 <span class="comment">%     obj.params = loadAdapterParams(fullfile(projectPath,'model_adapter.toml'));</span>
+0021 <span class="comment">%</span>
+0022 <span class="comment">% Examples</span>
+0023 <span class="comment">% --------</span>
+0024 <span class="comment">%     adapter = TomlAdapter(fullfile(projectPath,'model_adapter.toml'));</span>
+0025 <span class="comment">%     % or, as the default adapter:</span>
+0026 <span class="comment">%     ModelAdapterManager.setDefault(projectPath);</span>
+0027 <span class="comment">%</span>
+0028 <span class="comment">% See also</span>
+0029 <span class="comment">% --------</span>
+0030 <span class="comment">% ModelAdapter, ModelAdapterManager, loadAdapterParams, convertAdapterToToml</span>
+0031 classdef <a href="TomlAdapter.html" class="code" title="">TomlAdapter</a> &lt; <a href="ModelAdapter.html" class="code" title="">ModelAdapter</a>
+0032     methods
+0033         <a name="_sub0" href="#_subfunctions" class="code">function obj = TomlAdapter(tomlFile)</a>
+0034             <span class="comment">% TomlAdapter  Load the adapter from model_adapter.toml.</span>
+0035             <span class="comment">%</span>
+0036             <span class="comment">% Parameters</span>
+0037             <span class="comment">% ----------</span>
+0038             <span class="comment">% tomlFile : char</span>
+0039             <span class="comment">%     path to model_adapter.toml, or to the project folder that</span>
+0040             <span class="comment">%     holds it.</span>
+0041             obj.params = <a href="loadAdapterParams.html" class="code" title="function params = loadAdapterParams(tomlFile)">loadAdapterParams</a>(tomlFile);
+0042             codeFolder = fullfile(obj.params.path, <span class="string">'code'</span>);
+0043             <span class="keyword">if</span> isfolder(codeFolder)
+0044                 addpath(codeFolder);
+0045             <span class="keyword">end</span>
+0046         <span class="keyword">end</span>
+0047 
+0048         <a name="_sub1" href="#_subfunctions" class="code">function [spont,spontRxnNames] = getSpontaneousReactions(obj,model)</a>
+0049             <span class="comment">% getSpontaneousReactions  Reactions set as spontaneous in [spontaneous].</span>
+0050             <span class="comment">%</span>
+0051             <span class="comment">% Returns</span>
+0052             <span class="comment">% -------</span>
+0053             <span class="comment">% spont : logical</span>
+0054             <span class="comment">%     true for each reaction of model that is spontaneous.</span>
+0055             <span class="comment">% spontRxnNames : cell</span>
+0056             <span class="comment">%     identifiers of those reactions.</span>
+0057             spont = false(numel(model.rxns),1);
+0058             <span class="keyword">if</span> isfield(obj.params,<span class="string">'spontaneous'</span>)
+0059                 s = obj.params.spontaneous;
+0060                 <span class="keyword">if</span> isfield(s,<span class="string">'name_contains'</span>) &amp;&amp; ~isempty(s.name_contains)
+0061                     spont = spont | contains(model.rxnNames, s.name_contains);
+0062                 <span class="keyword">end</span>
+0063                 <span class="keyword">if</span> isfield(s,<span class="string">'file'</span>) &amp;&amp; ~isempty(s.file)
+0064                     spont = spont | ismember(model.rxns, <a href="#_sub6" class="code" title="subfunction rxns = readSpontaneousFile(file)">readSpontaneousFile</a>(s.file));
+0065                 <span class="keyword">end</span>
+0066             <span class="keyword">end</span>
+0067             spontRxnNames = model.rxns(spont);
+0068         <span class="keyword">end</span>
+0069 
+0070         <a name="_sub2" href="#_subfunctions" class="code">function ecModel = makeModelAnaerobic(obj,ecModel)</a>
+0071             <span class="comment">% makeModelAnaerobic  Run the function named in [matlab] make_model_anaerobic.</span>
+0072             fun = <a href="#_sub5" class="code" title="subfunction fun = hookName(obj, field)">hookName</a>(obj, <span class="string">'makeModelAnaerobic'</span>);
+0073             <span class="keyword">if</span> ~isempty(fun)
+0074                 ecModel = feval(fun, ecModel);
+0075             <span class="keyword">end</span>
+0076         <span class="keyword">end</span>
+0077 
+0078         <a name="_sub3" href="#_subfunctions" class="code">function ecModel = changeProteinBiomass(obj,ecModel,Ptot)</a>
+0079             <span class="comment">% changeProteinBiomass  Run the function named in [matlab] change_protein_biomass.</span>
+0080             fun = <a href="#_sub5" class="code" title="subfunction fun = hookName(obj, field)">hookName</a>(obj, <span class="string">'changeProteinBiomass'</span>);
+0081             <span class="keyword">if</span> ~isempty(fun)
+0082                 ecModel = feval(fun, ecModel, Ptot);
+0083             <span class="keyword">end</span>
+0084         <span class="keyword">end</span>
+0085     <span class="keyword">end</span>
+0086 <span class="keyword">end</span>
+0087 
+0088 <a name="_sub4" href="#_subfunctions" class="code">function fun = hookName(obj, field)</a>
+0089 fun = <span class="string">''</span>;
+0090 <span class="keyword">if</span> isfield(obj.params,<span class="string">'matlab'</span>) &amp;&amp; isfield(obj.params.matlab, field)
+0091     fun = obj.params.matlab.(field);
+0092 <span class="keyword">end</span>
+0093 <span class="keyword">end</span>
+0094 
+0095 <a name="_sub5" href="#_subfunctions" class="code">function rxns = readSpontaneousFile(file)</a>
+0096 <span class="comment">% Reaction identifiers in the first column; with a second column, only</span>
+0097 <span class="comment">% rows where it is 1 or true. The first row is a header.</span>
+0098 fid = fopen(file, <span class="string">'r'</span>);
+0099 <span class="keyword">if</span> fid &lt; 0
+0100     error(<span class="string">'GECKO:TomlAdapter'</span>, <span class="string">'Cannot read the spontaneous reactions file %s'</span>, file);
+0101 <span class="keyword">end</span>
+0102 header = fgetl(fid);
+0103 nCols = numel(strsplit(header, <span class="string">'\t'</span>));
+0104 <span class="keyword">if</span> nCols &gt;= 2
+0105     cols = textscan(fid, [<span class="string">'%q %q'</span> repmat(<span class="string">' %*q'</span>, 1, nCols-2)], <span class="string">'Delimiter'</span>, <span class="string">'\t'</span>);
+0106     keep = ismember(lower(strtrim(cols{2})), {<span class="string">'1'</span>,<span class="string">'true'</span>});
+0107     rxns = cols{1}(keep);
+0108 <span class="keyword">else</span>
+0109     cols = textscan(fid, <span class="string">'%q'</span>, <span class="string">'Delimiter'</span>, <span class="string">'\t'</span>);
+0110     rxns = cols{1};
+0111 <span class="keyword">end</span>
+0112 fclose(fid);
+0113 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

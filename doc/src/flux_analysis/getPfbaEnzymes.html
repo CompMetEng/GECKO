@@ -1,0 +1,210 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of getPfbaEnzymes</title>
+  <meta name="keywords" content="getPfbaEnzymes">
+  <meta name="description" content="getPfbaEnzymes  Parsimonious FBA minimising total enzyme usage.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">flux_analysis</a> &gt; getPfbaEnzymes.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/flux_analysis&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>getPfbaEnzymes
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>getPfbaEnzymes  Parsimonious FBA minimising total enzyme usage.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function solution = getPfbaEnzymes(model, varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> getPfbaEnzymes  Parsimonious FBA minimising total enzyme usage.
+
+ Among all flux distributions at (or within a fraction of) the optimal
+ value of the current objective, finds the one that minimises total
+ enzyme usage: the smallest sum of usage_prot_* fluxes. This is the
+ enzyme-aware analogue of classical pFBA, which minimises total flux
+ instead --- for ecModels this usually picks the most parsimonious
+ *proteome*, not just the most parsimonious fluxes.
+
+ Parameters
+ ----------
+ model : struct
+     a full ecModel in GECKO 3 format (with ecModel.ec structure and
+     usage_prot_&lt;id&gt; reactions). Not supported for gecko-light models.
+
+ Name-Value Arguments
+ --------------------
+ rxnId : char
+     reaction id to use as the objective instead of model.c as given
+     (default: use model.c as given).
+ fractionOfOptimum : double
+     fraction of the optimal objective value to fix before minimising
+     enzyme usage (default 1.0).
+
+ Returns
+ -------
+ solution : struct
+     - x : flux distribution (indexed by model.rxns) at the
+       enzyme-usage-minimising solution.
+     - getEnzymeUsage : the minimised sum of usage_prot_* fluxes.
+     - objectiveValue : the fixed objective's own value at this solution.
+     - stat : solveLP exit flag.
+
+ Examples
+ --------
+     solution = getPfbaEnzymes(ecModel);
+     solution = getPfbaEnzymes(ecModel, 'fractionOfOptimum', 0.9);
+
+ Notes
+ -----
+ usage_prot_&lt;id&gt; reactions must be forward-only (lb=0), the standard
+ GECKO 3 layout; if any has a negative lower bound (reverse flux enabled),
+ getPfbaEnzymes errors instead of building an objective that would fail to
+ minimise |flux| for that reaction.
+
+ See also
+ --------
+ getEnzymeBottlenecks</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function solution = getPfbaEnzymes(model, varargin)</a>
+0002 <span class="comment">% getPfbaEnzymes  Parsimonious FBA minimising total enzyme usage.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Among all flux distributions at (or within a fraction of) the optimal</span>
+0005 <span class="comment">% value of the current objective, finds the one that minimises total</span>
+0006 <span class="comment">% enzyme usage: the smallest sum of usage_prot_* fluxes. This is the</span>
+0007 <span class="comment">% enzyme-aware analogue of classical pFBA, which minimises total flux</span>
+0008 <span class="comment">% instead --- for ecModels this usually picks the most parsimonious</span>
+0009 <span class="comment">% *proteome*, not just the most parsimonious fluxes.</span>
+0010 <span class="comment">%</span>
+0011 <span class="comment">% Parameters</span>
+0012 <span class="comment">% ----------</span>
+0013 <span class="comment">% model : struct</span>
+0014 <span class="comment">%     a full ecModel in GECKO 3 format (with ecModel.ec structure and</span>
+0015 <span class="comment">%     usage_prot_&lt;id&gt; reactions). Not supported for gecko-light models.</span>
+0016 <span class="comment">%</span>
+0017 <span class="comment">% Name-Value Arguments</span>
+0018 <span class="comment">% --------------------</span>
+0019 <span class="comment">% rxnId : char</span>
+0020 <span class="comment">%     reaction id to use as the objective instead of model.c as given</span>
+0021 <span class="comment">%     (default: use model.c as given).</span>
+0022 <span class="comment">% fractionOfOptimum : double</span>
+0023 <span class="comment">%     fraction of the optimal objective value to fix before minimising</span>
+0024 <span class="comment">%     enzyme usage (default 1.0).</span>
+0025 <span class="comment">%</span>
+0026 <span class="comment">% Returns</span>
+0027 <span class="comment">% -------</span>
+0028 <span class="comment">% solution : struct</span>
+0029 <span class="comment">%     - x : flux distribution (indexed by model.rxns) at the</span>
+0030 <span class="comment">%       enzyme-usage-minimising solution.</span>
+0031 <span class="comment">%     - getEnzymeUsage : the minimised sum of usage_prot_* fluxes.</span>
+0032 <span class="comment">%     - objectiveValue : the fixed objective's own value at this solution.</span>
+0033 <span class="comment">%     - stat : solveLP exit flag.</span>
+0034 <span class="comment">%</span>
+0035 <span class="comment">% Examples</span>
+0036 <span class="comment">% --------</span>
+0037 <span class="comment">%     solution = getPfbaEnzymes(ecModel);</span>
+0038 <span class="comment">%     solution = getPfbaEnzymes(ecModel, 'fractionOfOptimum', 0.9);</span>
+0039 <span class="comment">%</span>
+0040 <span class="comment">% Notes</span>
+0041 <span class="comment">% -----</span>
+0042 <span class="comment">% usage_prot_&lt;id&gt; reactions must be forward-only (lb=0), the standard</span>
+0043 <span class="comment">% GECKO 3 layout; if any has a negative lower bound (reverse flux enabled),</span>
+0044 <span class="comment">% getPfbaEnzymes errors instead of building an objective that would fail to</span>
+0045 <span class="comment">% minimise |flux| for that reaction.</span>
+0046 <span class="comment">%</span>
+0047 <span class="comment">% See also</span>
+0048 <span class="comment">% --------</span>
+0049 <span class="comment">% getEnzymeBottlenecks</span>
+0050 
+0051 p = parseGECKOargs(varargin, {<span class="string">'rxnId'</span>, []; <span class="string">'fractionOfOptimum'</span>, []});
+0052 rxnId             = p.rxnId;
+0053 fractionOfOptimum = p.fractionOfOptimum;
+0054 <span class="keyword">if</span> isempty(fractionOfOptimum)
+0055     fractionOfOptimum = 1.0;
+0056 <span class="keyword">end</span>
+0057 
+0058 <span class="keyword">if</span> isfield(model.ec, <span class="string">'geckoLight'</span>) &amp;&amp; model.ec.geckoLight
+0059     error([<span class="string">'getPfbaEnzymes requires a full ecModel, not gecko-light: light models have no '</span> <span class="keyword">...</span>
+0060         <span class="string">'usage_prot_&lt;id&gt; reactions.'</span>])
+0061 <span class="keyword">end</span>
+0062 
+0063 <span class="keyword">if</span> ~isempty(rxnId)
+0064     rxnIdx = find(strcmp(model.rxns, rxnId));
+0065     <span class="keyword">if</span> isempty(rxnIdx)
+0066         error(<span class="string">'getPfbaEnzymes: reaction %s not found in model.rxns.'</span>, rxnId)
+0067     <span class="keyword">end</span>
+0068     model.c = zeros(numel(model.rxns), 1);
+0069     model.c(rxnIdx) = 1;
+0070 <span class="keyword">end</span>
+0071 <span class="keyword">if</span> ~any(model.c)
+0072     error(<span class="string">'getPfbaEnzymes: model.c is empty; nothing to fix before minimising enzyme usage.'</span>)
+0073 <span class="keyword">end</span>
+0074 
+0075 usageIdx = find(startsWith(model.rxns, <span class="string">'usage_prot_'</span>));
+0076 <span class="keyword">if</span> isempty(usageIdx)
+0077     error(<span class="string">'getPfbaEnzymes: no usage_prot_&lt;id&gt; reactions found. This is done by makeEcModel.'</span>)
+0078 <span class="keyword">end</span>
+0079 <span class="keyword">if</span> any(model.lb(usageIdx) &lt; 0)
+0080     error([<span class="string">'getPfbaEnzymes does not support usage_prot_&lt;id&gt; reactions with a negative lower '</span> <span class="keyword">...</span>
+0081         <span class="string">'bound (reverse flux enabled): minimising raw flux would not minimise |flux| for '</span> <span class="keyword">...</span>
+0082         <span class="string">'those reactions.'</span>])
+0083 <span class="keyword">end</span>
+0084 
+0085 solOrig = solveLP(model);
+0086 <span class="keyword">if</span> solOrig.stat ~= 1
+0087     error(<span class="string">'getPfbaEnzymes: solver status %d on the original objective; cannot fix it as a constraint.'</span>, solOrig.stat)
+0088 <span class="keyword">end</span>
+0089 
+0090 <span class="comment">% Fix the objective as a constraint, same &quot;fake metabolite&quot; technique</span>
+0091 <span class="comment">% solveLP's own minFlux=1 option uses (see solveLP.m).</span>
+0092 target = fractionOfOptimum * solOrig.f;
+0093 <span class="keyword">if</span> target &gt; 0
+0094     target = target * 0.999999;
+0095 <span class="keyword">else</span>
+0096     target = target * 1.000001;
+0097 <span class="keyword">end</span>
+0098 fixModel = model;
+0099 fixModel.S(end+1, :) = model.c';
+0100 fixModel.mets{end+1, 1} = <span class="string">'getPfbaEnzymes_objective'</span>;
+0101 <span class="keyword">if</span> size(fixModel.b, 2) == 1
+0102     fixModel.b = [fixModel.b fixModel.b];
+0103 <span class="keyword">end</span>
+0104 fixModel.b(end+1, :) = [target inf];
+0105 
+0106 fixModel.c = zeros(numel(fixModel.rxns), 1);
+0107 fixModel.c(usageIdx) = -1;
+0108 
+0109 solution = solveLP(fixModel);
+0110 <span class="keyword">if</span> solution.stat ~= 1
+0111     error(<span class="string">'getPfbaEnzymes: minimising enzyme usage was infeasible at fractionOfOptimum=%g.'</span>, fractionOfOptimum)
+0112 <span class="keyword">end</span>
+0113 
+0114 solution.enzymeUsage    = -solution.f;
+0115 solution.objectiveValue = model.c' * solution.x;
+0116 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

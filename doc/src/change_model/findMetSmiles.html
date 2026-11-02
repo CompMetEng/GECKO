@@ -1,0 +1,192 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of findMetSmiles</title>
+  <meta name="keywords" content="findMetSmiles">
+  <meta name="description" content="findMetSmiles  Query PubChem by metabolite names to obtain SMILES.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">change_model</a> &gt; findMetSmiles.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/change_model&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>findMetSmiles
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>findMetSmiles  Query PubChem by metabolite names to obtain SMILES.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function [model,noSMILES] = findMetSmiles(model, varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> findMetSmiles  Query PubChem by metabolite names to obtain SMILES.
+
+ Matches are cached in tutorials/***/data/smilesDB.tsv, which is checked
+ first on subsequent runs so repeated queries are avoided. If the model
+ already has a metSmiles field, non-empty entries are left unchanged.
+
+ Parameters
+ ----------
+ model : struct
+     a model whose metNames field is used to find the relevant SMILES.
+
+ Name-Value Arguments
+ --------------------
+ modelAdapter : ModelAdapter
+     a loaded model adapter (default: the current default model adapter).
+ verbose : logical
+     whether progress should be reported (default true).
+
+ Returns
+ -------
+ model : struct
+     model with model.metSmiles specified.
+ noSMILES : cell
+     metabolite names for which no SMILES could be found.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [model,noSMILES] = findMetSmiles(model, varargin)</a>
+0002 <span class="comment">% findMetSmiles  Query PubChem by metabolite names to obtain SMILES.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Matches are cached in tutorials/***/data/smilesDB.tsv, which is checked</span>
+0005 <span class="comment">% first on subsequent runs so repeated queries are avoided. If the model</span>
+0006 <span class="comment">% already has a metSmiles field, non-empty entries are left unchanged.</span>
+0007 <span class="comment">%</span>
+0008 <span class="comment">% Parameters</span>
+0009 <span class="comment">% ----------</span>
+0010 <span class="comment">% model : struct</span>
+0011 <span class="comment">%     a model whose metNames field is used to find the relevant SMILES.</span>
+0012 <span class="comment">%</span>
+0013 <span class="comment">% Name-Value Arguments</span>
+0014 <span class="comment">% --------------------</span>
+0015 <span class="comment">% modelAdapter : ModelAdapter</span>
+0016 <span class="comment">%     a loaded model adapter (default: the current default model adapter).</span>
+0017 <span class="comment">% verbose : logical</span>
+0018 <span class="comment">%     whether progress should be reported (default true).</span>
+0019 <span class="comment">%</span>
+0020 <span class="comment">% Returns</span>
+0021 <span class="comment">% -------</span>
+0022 <span class="comment">% model : struct</span>
+0023 <span class="comment">%     model with model.metSmiles specified.</span>
+0024 <span class="comment">% noSMILES : cell</span>
+0025 <span class="comment">%     metabolite names for which no SMILES could be found.</span>
+0026 <span class="comment">%</span>
+0027 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0028     <span class="string">'modelAdapter'</span>, []; <span class="keyword">...</span>
+0029     <span class="string">'verbose'</span>,      true});
+0030 modelAdapter = p.modelAdapter;
+0031 verbose      = p.verbose;
+0032 <span class="keyword">if</span> isempty(verbose); verbose = true; <span class="keyword">end</span>
+0033 
+0034 <span class="keyword">if</span> isempty(modelAdapter)
+0035     modelAdapter = ModelAdapterManager.getDefault();
+0036     <span class="keyword">if</span> isempty(modelAdapter)
+0037         error(<span class="string">'Either send in a modelAdapter or set the default model adapter in the ModelAdapterManager.'</span>)
+0038     <span class="keyword">end</span>
+0039 <span class="keyword">end</span>
+0040 params = modelAdapter.params;
+0041 
+0042 [uniqueNames, ~, uniqueIdx] = unique(regexprep(model.metNames,<span class="string">'^prot_.*'</span>,<span class="string">''</span>));
+0043 uniqueSmiles(1:numel(uniqueNames),1) = {<span class="string">''</span>};
+0044 metMatch = false(length(uniqueNames),1);
+0045 metMatch(strcmp(uniqueNames,<span class="string">''</span>)) = 1; <span class="comment">% No need trying to match empty fields</span>
+0046 <span class="keyword">if</span> verbose; fprintf(<span class="string">'Check for local SMILES database... '</span>); <span class="keyword">end</span>
+0047 smilesDBfile = (fullfile(params.path,<span class="string">'data'</span>,<span class="string">'smilesDB.tsv'</span>));
+0048 <span class="keyword">if</span> exist(smilesDBfile,<span class="string">'file'</span>)==2
+0049     fID = fopen(smilesDBfile,<span class="string">'r'</span>);
+0050     raw = textscan(fID,<span class="string">'%s %s'</span>,<span class="string">'Delimiter'</span>,<span class="string">'\t'</span>,<span class="string">'HeaderLines'</span>,0);
+0051     fclose(fID);
+0052     smilesDB.names = raw{1};
+0053     smilesDB.smile = raw{2};
+0054     [metMatch, metIdx] = ismember(uniqueNames,smilesDB.names);
+0055     uniqueSmiles(metMatch) = smilesDB.smile(metIdx(metMatch));
+0056     <span class="keyword">if</span> verbose; fprintf(<span class="string">'done.\n'</span>); <span class="keyword">end</span>
+0057 <span class="keyword">else</span>
+0058     <span class="keyword">if</span> verbose; fprintf(<span class="string">'not found.\n'</span>); <span class="keyword">end</span>
+0059 <span class="keyword">end</span>
+0060 
+0061 <span class="keyword">if</span> any(~metMatch)
+0062     PB = progressReport(numel(uniqueNames), <span class="string">'Querying PubChem for SMILES by metabolite names'</span>);
+0063     webOptions = weboptions(<span class="string">'Timeout'</span>, 30);
+0064     <span class="keyword">for</span> i = 1:numel(uniqueNames)
+0065         PB.count;
+0066         <span class="keyword">if</span> metMatch(i)
+0067             <span class="keyword">continue</span>;
+0068         <span class="keyword">end</span>
+0069         retry = 0;
+0070         <span class="keyword">while</span> retry &lt; 10
+0071             <span class="keyword">try</span>
+0072                 smileResult       = webread([<span class="string">'https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/'</span> uniqueNames{i} <span class="string">'/property/CanonicalSMILES/TXT'</span>], webOptions);
+0073                 <span class="comment">%Sometimes multiple lines are given, with alternative SMILES. Only</span>
+0074                 <span class="comment">%keep the first suggestion.</span>
+0075                 smileResult       = regexp(smileResult,<span class="string">'(^\S*)\n'</span>,<span class="string">'once'</span>,<span class="string">'tokens'</span>);
+0076                 uniqueSmiles{i,1} = smileResult{1,1};
+0077                 retry = 15; <span class="comment">% success: no retry</span>
+0078             <span class="keyword">catch</span> exception
+0079                 <span class="comment">%Sometimes the call fails, for example since the server is busy. In those cases</span>
+0080                 <span class="comment">%we will try 10 times. Some errors however are because the metabolite</span>
+0081                 <span class="comment">%name does no exist in the database (404) or some other error (the metabolite contains</span>
+0082                 <span class="comment">%a slash or similar, 400 or 500). In those cases we can</span>
+0083                 <span class="comment">%immediately give up.</span>
+0084                 <span class="keyword">if</span> (strcmp(exception.identifier, <span class="string">'MATLAB:webservices:HTTP404StatusCodeError'</span>) || <span class="keyword">...</span>
+0085                         strcmp(exception.identifier, <span class="string">'MATLAB:webservices:HTTP400StatusCodeError'</span>) || <span class="keyword">...</span>
+0086                         strcmp(exception.identifier, <span class="string">'MATLAB:webservices:HTTP500StatusCodeError'</span>))
+0087                     uniqueSmiles(i) = {<span class="string">''</span>};
+0088                     retry = 15;
+0089                 <span class="keyword">else</span>
+0090                     retry = retry + 1;
+0091                 <span class="keyword">end</span>
+0092             <span class="keyword">end</span>
+0093         <span class="keyword">if</span> retry == 10
+0094             error(<span class="string">'Cannot reach PubChem. Check your internet connection and try again.'</span>)
+0095         <span class="keyword">end</span>
+0096         <span class="keyword">end</span>
+0097         <span class="comment">% Append one line each time, in case internet connection is lost</span>
+0098         <span class="comment">% halfway. Open &amp; close file each time to avoid leaving the file</span>
+0099         <span class="comment">% open when breaking the function.</span>
+0100         out = [uniqueNames(i), uniqueSmiles(i)];
+0101         fID = fopen(smilesDBfile,<span class="string">'a'</span>);
+0102         fprintf(fID,<span class="string">'%s\t%s\n'</span>,out{:});
+0103         fclose(fID);
+0104     <span class="keyword">end</span>
+0105     PB.done;
+0106     <span class="keyword">if</span> verbose
+0107         fprintf(<span class="string">'Model-specific SMILES database stored at %s\n'</span>,smilesDBfile);
+0108     <span class="keyword">end</span>
+0109 <span class="keyword">end</span>
+0110 newSmiles = uniqueSmiles(uniqueIdx);
+0111 noSMILES = cellfun(@isempty,uniqueSmiles);
+0112 successRatio = 1-(numel(find(noSMILES))/numel(uniqueSmiles));
+0113 fprintf(<span class="string">'SMILES could be found for %s%% of the unique metabolite names.\n'</span>,num2str(successRatio*100,<span class="string">'%.0f'</span>))
+0114 noSMILES = uniqueNames(noSMILES);
+0115 
+0116 <span class="keyword">if</span> ~isfield(model,<span class="string">'metSmiles'</span>) || all(cellfun(@isempty,model.metSmiles))
+0117     model.metSmiles = newSmiles;
+0118 <span class="keyword">else</span>
+0119     emptySmiles = cellfun(@isempty,model.metSmiles);
+0120     model.metSmiles(emptySmiles) = newSmiles(emptySmiles);
+0121 <span class="keyword">end</span>
+0122 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

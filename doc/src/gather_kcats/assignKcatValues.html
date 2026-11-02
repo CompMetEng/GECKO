@@ -1,0 +1,244 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of assignKcatValues</title>
+  <meta name="keywords" content="assignKcatValues">
+  <meta name="description" content="assignKcatValues  Select one kcat value per reaction and write to model.ec.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">gather_kcats</a> &gt; assignKcatValues.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/gather_kcats&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>assignKcatValues
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>assignKcatValues  Select one kcat value per reaction and write to model.ec.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function [model, rxnIdx] = assignKcatValues(model,kcatList,varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> assignKcatValues  Select one kcat value per reaction and write to model.ec.
+
+ From a kcatList with predicted or suggested kcat values, where each
+ reaction may have multiple entries, one kcat value is selected and written
+ to model.ec.kcat. Zero values are discarded from the start. By default,
+ the maximum value is chosen, but alternatives are available. The kcatList
+ structure is an output of e.g. readDLKcatOutput, readGotEnzymesOutput,
+ readManualKcatList.
+
+ Parameters
+ ----------
+ model : struct
+     an ecModel in GECKO 3 format (with ecModel.ec structure).
+ kcatList : struct
+     structure array with separate entries for each kcat value, with the
+     following fields:
+
+     - source : e.g. 'DLKcat' or 'gotenzymes'.
+     - rxns : reaction identifiers, matching model.ec.rxns.
+     - genes : gene identifiers, matching model.ec.genes.
+     - substrates : substrate names, matching model.metNames.
+     - kcats : predicted kcat value in /sec.
+     - kcatSource : optional, the source of each entry; entries with a zero
+       kcat are discarded together with their source.
+
+ Name-Value Arguments
+ --------------------
+ criteria : char
+     which kcat value should be selected if multiple values are provided.
+     Options: 'max', 'min', 'median', 'mean' (default 'max'). The written
+     model.ec.source is taken from the matching entry for 'max'/'min'; for
+     'median'/'mean', where the selected value need not equal any single
+     input, it is taken from the first entry instead (arbitrary but
+     deterministic, since an aggregate has no single &quot;winning&quot; source).
+ overwrite : char
+     whether existing kcat values should be overwritten. Options: 'true',
+     'false', 'ifHigher'. The last option will overwrite only if the new
+     kcat value is higher (default 'true').
+
+ Returns
+ -------
+ model : struct
+     ecModel with updated model.ec.kcat and model.ec.source.
+ rxnIdx : double
+     list of reaction indices (matching model.ec.rxns), to indicate which
+     kcat values have been changed.
+
+ Examples
+ --------
+     % optional arguments may be given positionally or as name-value pairs:
+     [model, rxnIdx] = assignKcatValues(model, kcatList);
+     [model, rxnIdx] = assignKcatValues(model, kcatList, 'criteria', 'mean');
+
+ See also
+ --------
+ <a href="readDLKcatOutput.html" class="code" title="function kcatList = readDLKcatOutput(model, varargin)">readDLKcatOutput</a>, <a href="mergeDLKcatAndFuzzyKcats.html" class="code" title="function mergedKcatList = mergeDLKcatAndFuzzyKcats(kcatListDLKcat, kcatListFuzzy, varargin)">mergeDLKcatAndFuzzyKcats</a>, applyKcatConstraints</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="collectKcats.html" class="code" title="function [decisions, report, ecModel] = collectKcats(model, varargin)">collectKcats</a>	collectKcats  Decide one kcat per reaction from the kcat source files.</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [model, rxnIdx] = assignKcatValues(model,kcatList,varargin)</a>
+0002 <span class="comment">% assignKcatValues  Select one kcat value per reaction and write to model.ec.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% From a kcatList with predicted or suggested kcat values, where each</span>
+0005 <span class="comment">% reaction may have multiple entries, one kcat value is selected and written</span>
+0006 <span class="comment">% to model.ec.kcat. Zero values are discarded from the start. By default,</span>
+0007 <span class="comment">% the maximum value is chosen, but alternatives are available. The kcatList</span>
+0008 <span class="comment">% structure is an output of e.g. readDLKcatOutput, readGotEnzymesOutput,</span>
+0009 <span class="comment">% readManualKcatList.</span>
+0010 <span class="comment">%</span>
+0011 <span class="comment">% Parameters</span>
+0012 <span class="comment">% ----------</span>
+0013 <span class="comment">% model : struct</span>
+0014 <span class="comment">%     an ecModel in GECKO 3 format (with ecModel.ec structure).</span>
+0015 <span class="comment">% kcatList : struct</span>
+0016 <span class="comment">%     structure array with separate entries for each kcat value, with the</span>
+0017 <span class="comment">%     following fields:</span>
+0018 <span class="comment">%</span>
+0019 <span class="comment">%     - source : e.g. 'DLKcat' or 'gotenzymes'.</span>
+0020 <span class="comment">%     - rxns : reaction identifiers, matching model.ec.rxns.</span>
+0021 <span class="comment">%     - genes : gene identifiers, matching model.ec.genes.</span>
+0022 <span class="comment">%     - substrates : substrate names, matching model.metNames.</span>
+0023 <span class="comment">%     - kcats : predicted kcat value in /sec.</span>
+0024 <span class="comment">%     - kcatSource : optional, the source of each entry; entries with a zero</span>
+0025 <span class="comment">%       kcat are discarded together with their source.</span>
+0026 <span class="comment">%</span>
+0027 <span class="comment">% Name-Value Arguments</span>
+0028 <span class="comment">% --------------------</span>
+0029 <span class="comment">% criteria : char</span>
+0030 <span class="comment">%     which kcat value should be selected if multiple values are provided.</span>
+0031 <span class="comment">%     Options: 'max', 'min', 'median', 'mean' (default 'max'). The written</span>
+0032 <span class="comment">%     model.ec.source is taken from the matching entry for 'max'/'min'; for</span>
+0033 <span class="comment">%     'median'/'mean', where the selected value need not equal any single</span>
+0034 <span class="comment">%     input, it is taken from the first entry instead (arbitrary but</span>
+0035 <span class="comment">%     deterministic, since an aggregate has no single &quot;winning&quot; source).</span>
+0036 <span class="comment">% overwrite : char</span>
+0037 <span class="comment">%     whether existing kcat values should be overwritten. Options: 'true',</span>
+0038 <span class="comment">%     'false', 'ifHigher'. The last option will overwrite only if the new</span>
+0039 <span class="comment">%     kcat value is higher (default 'true').</span>
+0040 <span class="comment">%</span>
+0041 <span class="comment">% Returns</span>
+0042 <span class="comment">% -------</span>
+0043 <span class="comment">% model : struct</span>
+0044 <span class="comment">%     ecModel with updated model.ec.kcat and model.ec.source.</span>
+0045 <span class="comment">% rxnIdx : double</span>
+0046 <span class="comment">%     list of reaction indices (matching model.ec.rxns), to indicate which</span>
+0047 <span class="comment">%     kcat values have been changed.</span>
+0048 <span class="comment">%</span>
+0049 <span class="comment">% Examples</span>
+0050 <span class="comment">% --------</span>
+0051 <span class="comment">%     % optional arguments may be given positionally or as name-value pairs:</span>
+0052 <span class="comment">%     [model, rxnIdx] = assignKcatValues(model, kcatList);</span>
+0053 <span class="comment">%     [model, rxnIdx] = assignKcatValues(model, kcatList, 'criteria', 'mean');</span>
+0054 <span class="comment">%</span>
+0055 <span class="comment">% See also</span>
+0056 <span class="comment">% --------</span>
+0057 <span class="comment">% readDLKcatOutput, mergeDLKcatAndFuzzyKcats, applyKcatConstraints</span>
+0058 
+0059 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0060     <span class="string">'criteria'</span>,  []; <span class="keyword">...</span>
+0061     <span class="string">'overwrite'</span>, []});
+0062 criteria  = p.criteria;
+0063 overwrite = p.overwrite;
+0064 
+0065 <span class="keyword">if</span> isempty(overwrite)
+0066     overwrite = <span class="string">'true'</span>;
+0067 <span class="keyword">elseif</span> islogical(overwrite)
+0068     <span class="keyword">if</span> overwrite
+0069         overwrite = <span class="string">'true'</span>;
+0070     <span class="keyword">else</span>
+0071         overwrite = <span class="string">'false'</span>;
+0072     <span class="keyword">end</span>
+0073 <span class="keyword">end</span>
+0074 <span class="keyword">if</span> isempty(criteria)
+0075     criteria = <span class="string">'max'</span>;
+0076 <span class="keyword">end</span>
+0077 
+0078 <span class="comment">% Remove zero kcat values. Only adjusting fields that are used later.</span>
+0079 removeZero                      = kcatList.kcats == 0;
+0080 kcatList.kcats(removeZero)      = [];
+0081 kcatList.rxns(removeZero)       = [];
+0082 <span class="keyword">if</span> isfield(kcatList,<span class="string">'kcatSource'</span>)
+0083     kcatList.kcatSource(removeZero) = [];
+0084 <span class="keyword">end</span>
+0085 
+0086 <span class="comment">% Map to model.ec.rxns</span>
+0087 [sanityCheck,idxInModel] = ismember(kcatList.rxns,model.ec.rxns);
+0088 <span class="keyword">if</span> ~all(sanityCheck)
+0089     error(<span class="string">'Not all reactions in kcatList are found in model.ec.rxns'</span>)
+0090 <span class="keyword">end</span>
+0091 <span class="comment">% Make vector with single kcat value per reaction</span>
+0092 idxInModelUnique = unique(idxInModel);
+0093 selectedKcats    = zeros(numel(idxInModelUnique),1);
+0094 selectedSource   = cell(numel(selectedKcats),1);
+0095 <span class="keyword">if</span> ~isfield(kcatList,<span class="string">'kcatSource'</span>)
+0096     kcatList.kcatSource = cell(numel(kcatList.kcats),1);
+0097     kcatList.kcatSource(:) = {kcatList.source};
+0098 <span class="keyword">end</span>
+0099 <span class="keyword">for</span> i=1:numel(idxInModelUnique)
+0100     ind = idxInModelUnique(i);
+0101     idxMatch = find(idxInModel == ind);
+0102     <span class="comment">% Choose the maximum number</span>
+0103     <span class="keyword">switch</span> criteria
+0104         <span class="keyword">case</span> <span class="string">'max'</span>
+0105             [selectedKcats(i),j] = max(kcatList.kcats(idxMatch));
+0106         <span class="keyword">case</span> <span class="string">'min'</span>
+0107             [selectedKcats(i),j] = min(kcatList.kcats(idxMatch));
+0108         <span class="keyword">case</span> <span class="string">'median'</span>
+0109             selectedKcats(i) = median(kcatList.kcats(idxMatch));
+0110             j = 1;
+0111         <span class="keyword">case</span> <span class="string">'mean'</span>
+0112             selectedKcats(i) = mean(kcatList.kcats(idxMatch));
+0113             j = 1;
+0114         <span class="keyword">otherwise</span>
+0115             error(<span class="string">'Invalid criteria specified'</span>)
+0116     <span class="keyword">end</span>
+0117     selectedSource(i)    = kcatList.kcatSource(idxMatch(j));
+0118 <span class="keyword">end</span>
+0119 
+0120 <span class="comment">% Populate model.ec.kcat</span>
+0121 <span class="keyword">switch</span> overwrite
+0122     <span class="keyword">case</span> <span class="string">'true'</span>
+0123         model.ec.kcat(idxInModelUnique) = selectedKcats;
+0124         model.ec.source(idxInModelUnique) = selectedSource;
+0125     <span class="keyword">case</span> <span class="string">'false'</span>
+0126         emptyKcats = find(model.ec.kcat == 0);
+0127         [idxInModelUnique,whickKcats] = intersect(idxInModelUnique,emptyKcats,<span class="string">'stable'</span>);
+0128         model.ec.kcat(idxInModelUnique) = selectedKcats(whickKcats);
+0129         model.ec.source(idxInModelUnique) = selectedSource(whickKcats);
+0130         
+0131     <span class="keyword">case</span> <span class="string">'ifHigher'</span>
+0132         higherKcats = model.ec.kcat(idxInModelUnique) &lt; selectedKcats;
+0133         selectedKcats(~higherKcats) = [];
+0134         selectedSource(~higherKcats) = [];
+0135         idxInModelUnique(~higherKcats) = [];
+0136         model.ec.kcat(idxInModelUnique) = selectedKcats;
+0137         model.ec.source(idxInModelUnique) = selectedSource;
+0138     <span class="keyword">otherwise</span>
+0139         error(<span class="string">'Invalid overwrite flag specified'</span>)
+0140 <span class="keyword">end</span>
+0141 rxnIdx = idxInModelUnique;
+0142 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

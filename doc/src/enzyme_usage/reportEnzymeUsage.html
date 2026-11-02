@@ -1,0 +1,285 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of reportEnzymeUsage</title>
+  <meta name="keywords" content="reportEnzymeUsage">
+  <meta name="description" content="reportEnzymeUsage  Summarize the results from getEnzymeUsage.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">enzyme_usage</a> &gt; reportEnzymeUsage.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/enzyme_usage&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>reportEnzymeUsage
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>reportEnzymeUsage  Summarize the results from getEnzymeUsage.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function usageReport = reportEnzymeUsage(ecModel, usageData, varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> reportEnzymeUsage  Summarize the results from getEnzymeUsage.
+
+ Ranks the enzymes from getEnzymeUsage into two tables: those with the
+ highest capacity usage, and those with the highest absolute usage.
+
+ Parameters
+ ----------
+ ecModel : struct
+     a GECKO3 ecModel.
+ usageData : struct
+     output from getEnzymeUsage.
+
+ Name-Value Arguments
+ --------------------
+ highCapUsage : double
+     minimum fraction of enzyme capacity usage to be listed as high usage
+     (default 0.9, i.e. at least 90% capacity usage).
+ topAbsUsage : double
+     how many top enzymes by absolute usage to list (default 10). Use 0
+     or Inf to list all enzymes instead. Enzymes whose reactions carry no
+     flux are never listed here, as they do not contribute to the
+     solution.
+
+ Returns
+ -------
+ usageReport : struct
+     highCapUsage : table
+         enzymes at or above the highCapUsage threshold.
+     topAbsUsage : table
+         the topAbsUsage enzymes with the highest absolute usage.
+     totalUsageFlux : double
+         total protein pool used, i.e. the upper bound of prot_pool_exchange.
+
+ Examples
+ --------
+     % optional arguments may be given positionally or as name-value pairs:
+     usageReport = reportEnzymeUsage(ecModel, usageData, highCapUsage, topAbsUsage);
+     usageReport = reportEnzymeUsage(ecModel, usageData, 'topAbsUsage', 20);
+
+ See also
+ --------
+ <a href="getEnzymeUsage.html" class="code" title="function usageData = getEnzymeUsage(ecModel,fluxes,varargin)">getEnzymeUsage</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function usageReport = reportEnzymeUsage(ecModel, usageData, varargin)</a>
+0002 <span class="comment">% reportEnzymeUsage  Summarize the results from getEnzymeUsage.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Ranks the enzymes from getEnzymeUsage into two tables: those with the</span>
+0005 <span class="comment">% highest capacity usage, and those with the highest absolute usage.</span>
+0006 <span class="comment">%</span>
+0007 <span class="comment">% Parameters</span>
+0008 <span class="comment">% ----------</span>
+0009 <span class="comment">% ecModel : struct</span>
+0010 <span class="comment">%     a GECKO3 ecModel.</span>
+0011 <span class="comment">% usageData : struct</span>
+0012 <span class="comment">%     output from getEnzymeUsage.</span>
+0013 <span class="comment">%</span>
+0014 <span class="comment">% Name-Value Arguments</span>
+0015 <span class="comment">% --------------------</span>
+0016 <span class="comment">% highCapUsage : double</span>
+0017 <span class="comment">%     minimum fraction of enzyme capacity usage to be listed as high usage</span>
+0018 <span class="comment">%     (default 0.9, i.e. at least 90% capacity usage).</span>
+0019 <span class="comment">% topAbsUsage : double</span>
+0020 <span class="comment">%     how many top enzymes by absolute usage to list (default 10). Use 0</span>
+0021 <span class="comment">%     or Inf to list all enzymes instead. Enzymes whose reactions carry no</span>
+0022 <span class="comment">%     flux are never listed here, as they do not contribute to the</span>
+0023 <span class="comment">%     solution.</span>
+0024 <span class="comment">%</span>
+0025 <span class="comment">% Returns</span>
+0026 <span class="comment">% -------</span>
+0027 <span class="comment">% usageReport : struct</span>
+0028 <span class="comment">%     highCapUsage : table</span>
+0029 <span class="comment">%         enzymes at or above the highCapUsage threshold.</span>
+0030 <span class="comment">%     topAbsUsage : table</span>
+0031 <span class="comment">%         the topAbsUsage enzymes with the highest absolute usage.</span>
+0032 <span class="comment">%     totalUsageFlux : double</span>
+0033 <span class="comment">%         total protein pool used, i.e. the upper bound of prot_pool_exchange.</span>
+0034 <span class="comment">%</span>
+0035 <span class="comment">% Examples</span>
+0036 <span class="comment">% --------</span>
+0037 <span class="comment">%     % optional arguments may be given positionally or as name-value pairs:</span>
+0038 <span class="comment">%     usageReport = reportEnzymeUsage(ecModel, usageData, highCapUsage, topAbsUsage);</span>
+0039 <span class="comment">%     usageReport = reportEnzymeUsage(ecModel, usageData, 'topAbsUsage', 20);</span>
+0040 <span class="comment">%</span>
+0041 <span class="comment">% See also</span>
+0042 <span class="comment">% --------</span>
+0043 <span class="comment">% getEnzymeUsage</span>
+0044 
+0045 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0046     <span class="string">'highCapUsage'</span>, []; <span class="keyword">...</span>
+0047     <span class="string">'topAbsUsage'</span>,  []});
+0048 highCapUsage = p.highCapUsage;
+0049 topAbsUsage  = p.topAbsUsage;
+0050 <span class="keyword">if</span> isempty(highCapUsage); highCapUsage = 0.9; <span class="keyword">end</span>
+0051 <span class="keyword">if</span> isempty(topAbsUsage);  topAbsUsage  = 10;  <span class="keyword">end</span>
+0052 <span class="comment">% 0 or Inf means &quot;all enzymes&quot;, per the docstring above -- and any topAbsUsage at or</span>
+0053 <span class="comment">% above the enzyme count means the same thing in practice, but unlike those two special</span>
+0054 <span class="comment">% values it used to reach the indexing below unclamped: usageData.protID(topUse(1:N))</span>
+0055 <span class="comment">% with N &gt; numel(topUse) is an out-of-bounds index, so any model with fewer than 10</span>
+0056 <span class="comment">% enzymes (ecTestGEM has 5) crashed on the default call.</span>
+0057 <span class="keyword">if</span> topAbsUsage == 0 || isinf(topAbsUsage) || topAbsUsage &gt; numel(usageData.protID)
+0058     topAbsUsage = numel(usageData.protID);
+0059 <span class="keyword">end</span>
+0060 
+0061 usageReport = {};
+0062 
+0063 <span class="comment">% Highest capacity usage</span>
+0064 highUsageProt = find(usageData.capUsage &gt; highCapUsage);
+0065 highEnzyme    = usageData.protID(highUsageProt);
+0066 [~,enzIdx]    = ismember(highEnzyme,ecModel.ec.enzymes);
+0067 geneIDs       = ecModel.ec.genes(enzIdx);
+0068 
+0069 highUsage.protID     = {};
+0070 highUsage.geneID     = {};
+0071 highUsage.absUsage   = [];
+0072 highUsage.capUsage   = [];
+0073 highUsage.kcat       = [];
+0074 highUsage.source     = {};
+0075 highUsage.rxnID      = {};
+0076 highUsage.rxnNames   = {};
+0077 highUsage.grRules    = {};
+0078 
+0079 <span class="keyword">for</span> i=1:numel(enzIdx)
+0080     [rxns, kcat, idx, rxnNames, grRules] = getReactionsFromEnzyme(ecModel,ecModel.ec.enzymes(enzIdx(i)));
+0081     <span class="comment">% See if all reactions carried flux</span>
+0082     [~,rIdx] = ismember(rxns,ecModel.rxns);
+0083     carriedFlux = usageData.fluxes(rIdx) &gt; 1e-7;
+0084     <span class="keyword">if</span> isscalar(find(carriedFlux))
+0085         highUsage.protID(end+1,1)      = highEnzyme(i);
+0086         highUsage.geneID(end+1,1)      = geneIDs(i);
+0087         highUsage.absUsage(end+1,1)    = usageData.absUsage(enzIdx(i));
+0088         highUsage.capUsage(end+1,1)    = usageData.capUsage(enzIdx(i));
+0089         highUsage.kcat(end+1,1)        = kcat(carriedFlux);
+0090         highUsage.source(end+1,1)      = ecModel.ec.source(idx(carriedFlux));
+0091         highUsage.rxnID(end+1,1)       = rxns(carriedFlux);
+0092         highUsage.rxnNames(end+1,1)    = rxnNames(carriedFlux);
+0093         highUsage.grRules(end+1,1)     = grRules(carriedFlux);
+0094     <span class="keyword">else</span>
+0095         <span class="comment">% Add one entry for combined usage</span>
+0096         highUsage.protID(end+1,1)      = highEnzyme(i);
+0097         highUsage.geneID(end+1,1)      = geneIDs(i);
+0098         highUsage.absUsage(end+1,1)    = usageData.absUsage(enzIdx(i));
+0099         highUsage.capUsage(end+1,1)    = usageData.capUsage(enzIdx(i));
+0100         highUsage.kcat(end+1,1)        = nan;
+0101         highUsage.source{end+1,1}      = <span class="string">'==='</span>;
+0102         highUsage.rxnID{end+1,1}       = <span class="string">'==='</span>;
+0103         highUsage.rxnNames{end+1,1}    = <span class="string">'involved in multiple rxns, usage combined, individual rxns below'</span>;
+0104         highUsage.grRules{end+1,1}     = <span class="string">'==='</span>;
+0105         <span class="comment">% Recalculate reaction-specific usage</span>
+0106 
+0107         rIdx = rIdx(carriedFlux);
+0108         enzFlux = usageData.fluxes(rIdx);
+0109         enzMet = strcat(<span class="string">'prot_'</span>,highEnzyme{i});
+0110         [~, enzEcIdx] = ismember(enzMet,ecModel.mets);
+0111         indAbsUse = full(transpose(-ecModel.S(enzEcIdx,rIdx)).*enzFlux);
+0112         indCapUse = (indAbsUse /sum(indAbsUse)) * usageData.capUsage(enzIdx(i));
+0113 
+0114         rxnNumber = length(rIdx);
+0115         highUsage.protID(end+1:end+rxnNumber,1)      = highEnzyme(i);
+0116         highUsage.geneID(end+1:end+rxnNumber,1)      = geneIDs(i);
+0117         highUsage.absUsage(end+1:end+rxnNumber,1)    = indAbsUse;
+0118         highUsage.capUsage(end+1:end+rxnNumber,1)    = indCapUse;
+0119         highUsage.kcat(end+1:end+rxnNumber,1)        = kcat(carriedFlux);
+0120         highUsage.source(end+1:end+rxnNumber,1)      = ecModel.ec.source(idx(carriedFlux));
+0121         highUsage.rxnID(end+1:end+rxnNumber,1)       = rxns(carriedFlux);
+0122         highUsage.rxnNames(end+1:end+rxnNumber,1)    = rxnNames(carriedFlux);
+0123         highUsage.grRules(end+1:end+rxnNumber,1)     = grRules(carriedFlux);
+0124     <span class="keyword">end</span>    
+0125 <span class="keyword">end</span>
+0126 
+0127 usageReport.highCapUsage = struct2table(highUsage);
+0128 
+0129 <span class="comment">% Highest absolute usage</span>
+0130 [~,topUse]          = sort(usageData.absUsage,<span class="string">'descend'</span>);
+0131 topEnzyme           = usageData.protID(topUse(1:topAbsUsage));
+0132 [~,b]       = ismember(topEnzyme,ecModel.ec.enzymes);
+0133 geneIDs     = ecModel.ec.genes(b);
+0134 topUsage.protID     = {};
+0135 topUsage.geneID     = {};
+0136 topUsage.absUsage   = [];
+0137 topUsage.percUsage  = [];
+0138 topUsage.kcat       = [];
+0139 topUsage.source     = {};
+0140 topUsage.rxnID      = {};
+0141 topUsage.rxnNames   = {};
+0142 topUsage.grRules    = {};
+0143 
+0144 protPool = ecModel.ub(strcmp(ecModel.rxns,<span class="string">'prot_pool_exchange'</span>));
+0145 
+0146 <span class="keyword">for</span> i=1:numel(topEnzyme)
+0147     [rxns, kcat, idx, rxnNames, grRules] = getReactionsFromEnzyme(ecModel,topEnzyme{i});
+0148     <span class="comment">% See if all reactions carried flux</span>
+0149     [~,rIdx] = ismember(rxns,ecModel.rxns);
+0150     carriedFlux = usageData.fluxes(rIdx) &gt; 1e-7;
+0151     <span class="keyword">if</span> ~any(carriedFlux)
+0152         <span class="comment">% None of this enzyme's reactions carry flux -- skip it rather than</span>
+0153         <span class="comment">% padding the table with a placeholder row for an enzyme that is not</span>
+0154         <span class="comment">% actually active.</span>
+0155         <span class="keyword">continue</span>
+0156     <span class="keyword">elseif</span> isscalar(find(carriedFlux))
+0157         topUsage.protID(end+1,1)      = topEnzyme(i);
+0158         topUsage.geneID(end+1,1)      = geneIDs(i);
+0159         topUsage.absUsage(end+1,1)    = usageData.absUsage(topUse(i));
+0160         topUsage.percUsage(end+1,1)   = topUsage.absUsage(<span class="keyword">end</span>,1)/protPool*100;
+0161         topUsage.kcat(end+1,1)        = kcat(carriedFlux);
+0162         topUsage.source(end+1,1)      = ecModel.ec.source(idx(carriedFlux));
+0163         topUsage.rxnID(end+1,1)       = rxns(carriedFlux);
+0164         topUsage.rxnNames(end+1,1)    = rxnNames(carriedFlux);
+0165         topUsage.grRules(end+1,1)     = grRules(carriedFlux);
+0166     <span class="keyword">else</span>
+0167         <span class="comment">% Add one entry for combined usage</span>
+0168         topUsage.protID(end+1,1)      = topEnzyme(i);
+0169         topUsage.geneID(end+1,1)      = geneIDs(i);
+0170         topUsage.absUsage(end+1,1)    = usageData.absUsage(topUse(i));
+0171         topUsage.percUsage(end+1,1)   = topUsage.absUsage(<span class="keyword">end</span>,1)/protPool*100;
+0172         topUsage.kcat(end+1,1)        = nan;
+0173         topUsage.source{end+1,1}      = <span class="string">'==='</span>;
+0174         topUsage.rxnID{end+1,1}       = <span class="string">'==='</span>;
+0175         topUsage.rxnNames{end+1,1}    = <span class="string">'involved in multiple rxns, usage combined, individual rxns below'</span>;
+0176         topUsage.grRules{end+1,1}     = <span class="string">'==='</span>;
+0177         <span class="comment">% Recalculate reaction-specific usage</span>
+0178         rIdx = rIdx(carriedFlux);
+0179         enzFlux = usageData.fluxes(rIdx);
+0180         enzMet = strcat(<span class="string">'prot_'</span>,topEnzyme{i});
+0181         [~, enzIdx] = ismember(enzMet,ecModel.mets);
+0182         indUse = full(transpose(-ecModel.S(enzIdx,rIdx)).*enzFlux);
+0183         rxnNumber = length(rIdx);
+0184         topUsage.protID(end+1:end+rxnNumber,1)      = topEnzyme(i);
+0185         topUsage.geneID(end+1:end+rxnNumber,1)      = geneIDs(i);
+0186         topUsage.absUsage(end+1:end+rxnNumber,1)    = indUse;
+0187         topUsage.percUsage(end+1:end+rxnNumber,1)   = topUsage.absUsage(end-(rxnNumber-1):<span class="keyword">end</span>,1)/protPool*100;
+0188         topUsage.kcat(end+1:end+rxnNumber,1)        = kcat(carriedFlux);
+0189         topUsage.source(end+1:end+rxnNumber,1)      = ecModel.ec.source(idx(carriedFlux));
+0190         topUsage.rxnID(end+1:end+rxnNumber,1)       = rxns(carriedFlux);
+0191         topUsage.rxnNames(end+1:end+rxnNumber,1)    = rxnNames(carriedFlux);
+0192         topUsage.grRules(end+1:end+rxnNumber,1)     = grRules(carriedFlux);
+0193     <span class="keyword">end</span>
+0194 <span class="keyword">end</span>
+0195 usageReport.topAbsUsage     = struct2table(topUsage);
+0196 usageReport.totalUsageFlux  = protPool;
+0197 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

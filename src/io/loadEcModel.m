@@ -7,6 +7,11 @@ function model = loadEcModel(varargin)
 % providing the appropriate filename. If loading models from other
 % locations, one can directly use readYAMLmodel.
 %
+% An ecModel whose protein usage and pool reactions run in the GECKO 3
+% direction is upgraded in the loaded model with upgradeEcModel, with a
+% warning. An ecModel format (gecko_format in the file's metaData, see
+% saveEcModel) above 4 is an error.
+%
 % Name-Value Arguments
 % --------------------
 % filename : char
@@ -20,7 +25,7 @@ function model = loadEcModel(varargin)
 % Returns
 % -------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 %
 % Examples
 % --------
@@ -47,7 +52,6 @@ end
 params = modelAdapter.getParameters();
 if isempty(filename)
     filename = 'ecModel.yml';
-else
 end
 
 if ~endsWith(filename,{'yml','yaml'})
@@ -62,5 +66,22 @@ if endsWith(filename,{'yml','yaml'})
     model = readYAMLmodel(filename);
 elseif endsWith(filename,{'xml','sbml'})
     model = importModel(filename);
+end
+
+if isfield(model, 'annotation') && isfield(model.annotation, 'gecko_format') ...
+        && str2double(model.annotation.gecko_format) > 4
+    writer = 'an unknown release';
+    if isfield(model.annotation, 'generator')
+        writer = model.annotation.generator;
+    end
+    error('loadEcModel:format', ['%s has ecModel format %s (written by %s); ' ...
+        'this GECKO reads format 4 and older. Update GECKO to load it.'], ...
+        filename, model.annotation.gecko_format, writer)
+end
+[model, changed] = upgradeEcModel(model);
+if ~isempty(changed)
+    warning('loadEcModel:upgraded', ['%s has %d protein usage and pool reactions in the GECKO 3 ' ...
+        'direction; they are turned forward in the loaded model. upgradeGECKOproject upgrades the ' ...
+        'files of the project.'], filename, numel(changed))
 end
 end

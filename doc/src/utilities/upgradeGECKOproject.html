@@ -1,0 +1,409 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of upgradeGECKOproject</title>
+  <meta name="keywords" content="upgradeGECKOproject">
+  <meta name="description" content="upgradeGECKOproject  Bring a GECKO 3 project to the GECKO 4 layout.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">utilities</a> &gt; upgradeGECKOproject.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/utilities&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>upgradeGECKOproject
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>upgradeGECKOproject  Bring a GECKO 3 project to the GECKO 4 layout.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function report = upgradeGECKOproject(projectPath, varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> upgradeGECKOproject  Bring a GECKO 3 project to the GECKO 4 layout.
+
+ Lists, and with 'dryRun', false carries out, the steps that bring a
+ project made with GECKO 3 (or an earlier GECKO 4) to the current layout:
+
+ 1. adapter: an adapter class without model_adapter.toml gets one
+    (convertAdapterToToml). Methods the class overrides are listed: they
+    need carrying over by hand. The class itself stays.
+ 2. custom kcats: data/customKcats.tsv becomes data/kcats/custom.tsv
+    (convertCustomKcats).
+ 3. stored predictions: data/DLKcat.tsv and stored OpenKineticsPredictor
+    results become kcat source files (kcatsFromDLKcat, kcatsFromOKP with
+    'useStored'), without running anything.
+ Steps 2 and 3 need the full ecModel the custom kcats and predictions are
+ for ('ecModel'); without it they are listed and skipped.
+ 4. saved ecModels: models/*.yml ecModels made with GECKO 3 get their
+    protein usage and pool reactions turned forward (upgradeEcModel).
+ 5. project_format = 4 is written to model_adapter.toml.
+ 6. scripts: lines of the project's .m files that call renamed or replaced
+    functions are listed, not changed.
+
+ A file that is replaced or converted is first moved to
+ legacy/&lt;yyyy-mm-dd&gt;/ in the project, keeping its place in the folder
+ tree. Steps that are already done are left out, so the function can run
+ again. geckopy has the same as `geckopy upgrade` (upgrade_project).
+
+ Parameters
+ ----------
+ projectPath : char
+     the project folder.
+
+ Name-Value Arguments
+ --------------------
+ dryRun : logical
+     only list the steps (default true).
+ ecModel : struct
+     the ecModel the stored predictions were made for (step 3).
+
+ Returns
+ -------
+ report : table
+     one row per step: step, status ('to do', 'done', 'skipped', 'failed',
+     'by hand') and note; script lines are listed one per row.
+
+ Examples
+ --------
+     upgradeGECKOproject(projectPath)                    % see what it would do
+     upgradeGECKOproject(projectPath, 'dryRun', false, 'ecModel', ecModel)
+
+ See also
+ --------
+ convertAdapterToToml, convertCustomKcats, upgradeEcModel, <a href="createGECKOproject.html" class="code" title="function createGECKOproject(varargin)">createGECKOproject</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="findGECKOroot.html" class="code" title="function [geckoPath, prevDir] = findGECKOroot()">findGECKOroot</a>	findGECKOroot  Find the root of the GECKO directory.</li><li><a href="parseGECKOargs.html" class="code" title="function args = parseGECKOargs(rawArgs, spec)">parseGECKOargs</a>	parseGECKOargs  Resolve optional arguments passed positionally or by name.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function add(step, status, note)</a></li><li><a href="#_sub2" class="code">function keepOriginal(file)</a></li><li><a href="#_sub3" class="code">function adapter = projectAdapter(projectPath)</a></li><li><a href="#_sub4" class="code">function file = adapterClass(projectPath)</a></li><li><a href="#_sub5" class="code">function method = okpMethod(projectPath, outName)</a></li><li><a href="#_sub6" class="code">function r = relative(file, projectPath)</a></li><li><a href="#_sub7" class="code">function checkOptions(args, names, functionName)</a></li><li><a href="#_sub8" class="code">function v = geckoVersion()</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function report = upgradeGECKOproject(projectPath, varargin)</a>
+0002 <span class="comment">% upgradeGECKOproject  Bring a GECKO 3 project to the GECKO 4 layout.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Lists, and with 'dryRun', false carries out, the steps that bring a</span>
+0005 <span class="comment">% project made with GECKO 3 (or an earlier GECKO 4) to the current layout:</span>
+0006 <span class="comment">%</span>
+0007 <span class="comment">% 1. adapter: an adapter class without model_adapter.toml gets one</span>
+0008 <span class="comment">%    (convertAdapterToToml). Methods the class overrides are listed: they</span>
+0009 <span class="comment">%    need carrying over by hand. The class itself stays.</span>
+0010 <span class="comment">% 2. custom kcats: data/customKcats.tsv becomes data/kcats/custom.tsv</span>
+0011 <span class="comment">%    (convertCustomKcats).</span>
+0012 <span class="comment">% 3. stored predictions: data/DLKcat.tsv and stored OpenKineticsPredictor</span>
+0013 <span class="comment">%    results become kcat source files (kcatsFromDLKcat, kcatsFromOKP with</span>
+0014 <span class="comment">%    'useStored'), without running anything.</span>
+0015 <span class="comment">% Steps 2 and 3 need the full ecModel the custom kcats and predictions are</span>
+0016 <span class="comment">% for ('ecModel'); without it they are listed and skipped.</span>
+0017 <span class="comment">% 4. saved ecModels: models/*.yml ecModels made with GECKO 3 get their</span>
+0018 <span class="comment">%    protein usage and pool reactions turned forward (upgradeEcModel).</span>
+0019 <span class="comment">% 5. project_format = 4 is written to model_adapter.toml.</span>
+0020 <span class="comment">% 6. scripts: lines of the project's .m files that call renamed or replaced</span>
+0021 <span class="comment">%    functions are listed, not changed.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% A file that is replaced or converted is first moved to</span>
+0024 <span class="comment">% legacy/&lt;yyyy-mm-dd&gt;/ in the project, keeping its place in the folder</span>
+0025 <span class="comment">% tree. Steps that are already done are left out, so the function can run</span>
+0026 <span class="comment">% again. geckopy has the same as `geckopy upgrade` (upgrade_project).</span>
+0027 <span class="comment">%</span>
+0028 <span class="comment">% Parameters</span>
+0029 <span class="comment">% ----------</span>
+0030 <span class="comment">% projectPath : char</span>
+0031 <span class="comment">%     the project folder.</span>
+0032 <span class="comment">%</span>
+0033 <span class="comment">% Name-Value Arguments</span>
+0034 <span class="comment">% --------------------</span>
+0035 <span class="comment">% dryRun : logical</span>
+0036 <span class="comment">%     only list the steps (default true).</span>
+0037 <span class="comment">% ecModel : struct</span>
+0038 <span class="comment">%     the ecModel the stored predictions were made for (step 3).</span>
+0039 <span class="comment">%</span>
+0040 <span class="comment">% Returns</span>
+0041 <span class="comment">% -------</span>
+0042 <span class="comment">% report : table</span>
+0043 <span class="comment">%     one row per step: step, status ('to do', 'done', 'skipped', 'failed',</span>
+0044 <span class="comment">%     'by hand') and note; script lines are listed one per row.</span>
+0045 <span class="comment">%</span>
+0046 <span class="comment">% Examples</span>
+0047 <span class="comment">% --------</span>
+0048 <span class="comment">%     upgradeGECKOproject(projectPath)                    % see what it would do</span>
+0049 <span class="comment">%     upgradeGECKOproject(projectPath, 'dryRun', false, 'ecModel', ecModel)</span>
+0050 <span class="comment">%</span>
+0051 <span class="comment">% See also</span>
+0052 <span class="comment">% --------</span>
+0053 <span class="comment">% convertAdapterToToml, convertCustomKcats, upgradeEcModel, createGECKOproject</span>
+0054 
+0055 <a href="#_sub7" class="code" title="subfunction checkOptions(args, names, functionName)">checkOptions</a>(varargin, {<span class="string">'dryRun'</span>,<span class="string">'ecModel'</span>}, <span class="string">'upgradeGECKOproject'</span>);
+0056 p = <a href="parseGECKOargs.html" class="code" title="function args = parseGECKOargs(rawArgs, spec)">parseGECKOargs</a>(varargin, {<span class="string">'dryRun'</span>, true; <span class="string">'ecModel'</span>, []});
+0057 projectPath = char(projectPath);
+0058 <span class="keyword">if</span> ~isfolder(projectPath)
+0059     error(<span class="string">'upgradeGECKOproject:path'</span>, <span class="string">'No folder %s.'</span>, projectPath)
+0060 <span class="keyword">end</span>
+0061 apply = ~p.dryRun;
+0062 legacy = fullfile(projectPath, <span class="string">'legacy'</span>, char(datetime(<span class="string">'now'</span>, <span class="string">'Format'</span>, <span class="string">'yyyy-MM-dd'</span>)));
+0063 toml = fullfile(projectPath, <span class="string">'model_adapter.toml'</span>);
+0064 rows = cell(0, 3);
+0065     <a name="_sub1" href="#_subfunctions" class="code">function add(step, status, note)</a>
+0066         rows(end+1, :) = {step, status, note};
+0067     <span class="keyword">end</span>
+0068     <a name="_sub2" href="#_subfunctions" class="code">function keepOriginal(file)</a>
+0069         <span class="comment">% Move a file to legacy/&lt;date&gt;/, at its place in the folder tree.</span>
+0070         rel = file(numel(projectPath)+2:end);
+0071         target = fullfile(legacy, rel);
+0072         <span class="keyword">if</span> ~isfolder(fileparts(target))
+0073             mkdir(fileparts(target));
+0074         <span class="keyword">end</span>
+0075         movefile(file, target);
+0076     <span class="keyword">end</span>
+0077 status = <span class="string">'to do'</span>;
+0078 <span class="keyword">if</span> apply
+0079     status = <span class="string">'done'</span>;
+0080 <span class="keyword">end</span>
+0081 
+0082 <span class="comment">% 1. Adapter class -&gt; model_adapter.toml</span>
+0083 <span class="keyword">if</span> ~isfile(toml)
+0084     classFile = <a href="#_sub4" class="code" title="subfunction file = adapterClass(projectPath)">adapterClass</a>(projectPath);
+0085     <span class="keyword">if</span> isempty(classFile)
+0086         <a href="#_sub1" class="code" title="subfunction add(step, status, note)">add</a>(<span class="string">'adapter'</span>, <span class="string">'by hand'</span>, <span class="string">'no model_adapter.toml and no adapter class; see createGECKOproject'</span>);
+0087     <span class="keyword">else</span>
+0088         note = sprintf(<span class="string">'%s -&gt; model_adapter.toml'</span>, <a href="#_sub6" class="code" title="subfunction r = relative(file, projectPath)">relative</a>(classFile, projectPath));
+0089         <span class="keyword">if</span> apply
+0090             r = convertAdapterToToml(classFile, toml);
+0091             <span class="keyword">if</span> ~isempty(r.methods)
+0092                 <a href="#_sub1" class="code" title="subfunction add(step, status, note)">add</a>(<span class="string">'adapter methods'</span>, <span class="string">'by hand'</span>, [<span class="string">'carry over: '</span> strjoin(r.methods, <span class="string">', '</span>)]);
+0093             <span class="keyword">end</span>
+0094         <span class="keyword">end</span>
+0095         <a href="#_sub1" class="code" title="subfunction add(step, status, note)">add</a>(<span class="string">'adapter'</span>, status, note);
+0096     <span class="keyword">end</span>
+0097 <span class="keyword">end</span>
+0098 
+0099 <span class="comment">% 2. customKcats.tsv -&gt; data/kcats/custom.tsv</span>
+0100 custom = fullfile(projectPath, <span class="string">'data'</span>, <span class="string">'customKcats.tsv'</span>);
+0101 customOut = fullfile(projectPath, <span class="string">'data'</span>, <span class="string">'kcats'</span>, <span class="string">'custom.tsv'</span>);
+0102 <span class="keyword">if</span> isfile(custom) &amp;&amp; ~isfile(customOut)
+0103     note = <span class="string">'data/customKcats.tsv -&gt; data/kcats/custom.tsv'</span>;
+0104     <span class="keyword">if</span> isempty(p.ecModel)
+0105         <a href="#_sub1" class="code" title="subfunction add(step, status, note)">add</a>(<span class="string">'custom kcats'</span>, <span class="string">'skipped'</span>, [note <span class="string">'; give the ecModel they are for (''ecModel'')'</span>]);
+0106     <span class="keyword">else</span>
+0107         <span class="keyword">if</span> apply
+0108             [~, r] = convertCustomKcats(p.ecModel, <span class="string">'customKcats'</span>, custom, <span class="string">'outFile'</span>, customOut, <span class="keyword">...</span>
+0109                 <span class="string">'modelAdapter'</span>, <a href="#_sub3" class="code" title="subfunction adapter = projectAdapter(projectPath)">projectAdapter</a>(projectPath));
+0110             <a href="#_sub2" class="code" title="subfunction keepOriginal(file)">keepOriginal</a>(custom);
+0111             note = sprintf(<span class="string">'%s (%d rows)'</span>, note, r.rows);
+0112         <span class="keyword">end</span>
+0113         <a href="#_sub1" class="code" title="subfunction add(step, status, note)">add</a>(<span class="string">'custom kcats'</span>, status, note);
+0114     <span class="keyword">end</span>
+0115 <span class="keyword">end</span>
+0116 
+0117 <span class="comment">% 3. Stored predictions -&gt; kcat source files</span>
+0118 stored = {};
+0119 <span class="keyword">if</span> isfile(fullfile(projectPath, <span class="string">'data'</span>, <span class="string">'DLKcat.tsv'</span>)) &amp;&amp; ~isfile(fullfile(projectPath, <span class="string">'data'</span>, <span class="string">'kcats'</span>, <span class="string">'dlkcat.tsv'</span>))
+0120     stored{end+1} = <span class="string">'dlkcat'</span>;
+0121 <span class="keyword">end</span>
+0122 okpFiles = dir(fullfile(projectPath, <span class="string">'data'</span>, <span class="string">'OKP_output*.csv'</span>));
+0123 <span class="keyword">for</span> k = 1:numel(okpFiles)
+0124     method = <a href="#_sub5" class="code" title="subfunction method = okpMethod(projectPath, outName)">okpMethod</a>(projectPath, okpFiles(k).name);
+0125     <span class="keyword">if</span> ~isempty(method)
+0126         name = [<span class="string">'okp_'</span> lower(regexprep(regexprep(method, <span class="string">'[^A-Za-z0-9]+'</span>, <span class="string">'_'</span>), <span class="string">'^_+|_+$'</span>, <span class="string">''</span>))];
+0127         <span class="keyword">if</span> ~isfile(fullfile(projectPath, <span class="string">'data'</span>, <span class="string">'kcats'</span>, [name <span class="string">'.tsv'</span>]))
+0128             stored{end+1} = method; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0129         <span class="keyword">end</span>
+0130     <span class="keyword">end</span>
+0131 <span class="keyword">end</span>
+0132 stored = unique(stored, <span class="string">'stable'</span>);
+0133 <span class="keyword">if</span> ~isempty(stored)
+0134     note = [<span class="string">'stored predictions -&gt; data/kcats: '</span> strjoin(stored, <span class="string">', '</span>)];
+0135     <span class="keyword">if</span> isempty(p.ecModel)
+0136         <a href="#_sub1" class="code" title="subfunction add(step, status, note)">add</a>(<span class="string">'predictions'</span>, <span class="string">'skipped'</span>, [note <span class="string">'; give the ecModel they were made for (''ecModel'')'</span>]);
+0137     <span class="keyword">else</span>
+0138         <span class="keyword">if</span> apply
+0139             adapter = <a href="#_sub3" class="code" title="subfunction adapter = projectAdapter(projectPath)">projectAdapter</a>(projectPath);
+0140             <span class="keyword">for</span> k = 1:numel(stored)
+0141                 <span class="keyword">try</span>
+0142                     <span class="keyword">if</span> strcmp(stored{k}, <span class="string">'dlkcat'</span>)
+0143                         kcatsFromDLKcat(p.ecModel, <span class="string">'modelAdapter'</span>, adapter);
+0144                     <span class="keyword">else</span>
+0145                         kcatsFromOKP(p.ecModel, <span class="string">'method'</span>, stored{k}, <span class="string">'useStored'</span>, true, <span class="string">'modelAdapter'</span>, adapter);
+0146                     <span class="keyword">end</span>
+0147                     <a href="#_sub1" class="code" title="subfunction add(step, status, note)">add</a>(<span class="string">'predictions'</span>, status, [<span class="string">'stored predictions -&gt; data/kcats: '</span> stored{k}]);
+0148                 <span class="keyword">catch</span> err
+0149                     <a href="#_sub1" class="code" title="subfunction add(step, status, note)">add</a>(<span class="string">'predictions'</span>, <span class="string">'failed'</span>, sprintf(<span class="string">'%s: %s'</span>, stored{k}, err.message));
+0150                 <span class="keyword">end</span>
+0151             <span class="keyword">end</span>
+0152         <span class="keyword">else</span>
+0153             <a href="#_sub1" class="code" title="subfunction add(step, status, note)">add</a>(<span class="string">'predictions'</span>, status, note);
+0154         <span class="keyword">end</span>
+0155     <span class="keyword">end</span>
+0156 <span class="keyword">end</span>
+0157 
+0158 <span class="comment">% 4. Saved ecModels: protein reactions turned forward</span>
+0159 models = dir(fullfile(projectPath, <span class="string">'models'</span>, <span class="string">'*.yml'</span>));
+0160 <span class="keyword">for</span> k = 1:numel(models)
+0161     file = fullfile(models(k).folder, models(k).name);
+0162     <span class="keyword">if</span> ~contains(fileread(file), <span class="string">'prot_pool'</span>)
+0163         <span class="keyword">continue</span>
+0164     <span class="keyword">end</span>
+0165     <span class="keyword">try</span>
+0166         model = readYAMLmodel(file);
+0167     <span class="keyword">catch</span> err
+0168         <a href="#_sub1" class="code" title="subfunction add(step, status, note)">add</a>(<span class="string">'saved ecModel'</span>, <span class="string">'failed'</span>, sprintf(<span class="string">'%s: %s'</span>, <a href="#_sub6" class="code" title="subfunction r = relative(file, projectPath)">relative</a>(file, projectPath), err.message));
+0169         <span class="keyword">continue</span>
+0170     <span class="keyword">end</span>
+0171     <span class="keyword">if</span> isfield(model.annotation, <span class="string">'gecko_format'</span>) &amp;&amp; str2double(model.annotation.gecko_format) &gt; 4
+0172         <a href="#_sub1" class="code" title="subfunction add(step, status, note)">add</a>(<span class="string">'saved ecModel'</span>, <span class="string">'failed'</span>, sprintf(<span class="string">'%s: ecModel format %s is newer than this GECKO'</span>, <span class="keyword">...</span>
+0173             <a href="#_sub6" class="code" title="subfunction r = relative(file, projectPath)">relative</a>(file, projectPath), model.annotation.gecko_format));
+0174         <span class="keyword">continue</span>
+0175     <span class="keyword">end</span>
+0176     [model, changed] = upgradeEcModel(model);
+0177     <span class="keyword">if</span> isempty(changed)
+0178         <span class="keyword">continue</span>
+0179     <span class="keyword">end</span>
+0180     <span class="keyword">if</span> apply
+0181         model.annotation.generator = [<span class="string">'GECKO '</span> <a href="#_sub8" class="code" title="subfunction v = geckoVersion()">geckoVersion</a>()];
+0182         <a href="#_sub2" class="code" title="subfunction keepOriginal(file)">keepOriginal</a>(file);
+0183         writeYAMLmodel(model, file);
+0184     <span class="keyword">end</span>
+0185     <a href="#_sub1" class="code" title="subfunction add(step, status, note)">add</a>(<span class="string">'saved ecModel'</span>, status, sprintf(<span class="string">'%s: %d protein reactions turned forward'</span>, <span class="keyword">...</span>
+0186         <a href="#_sub6" class="code" title="subfunction r = relative(file, projectPath)">relative</a>(file, projectPath), numel(changed)));
+0187 <span class="keyword">end</span>
+0188 
+0189 <span class="comment">% 5. project_format in model_adapter.toml</span>
+0190 adapterRow = strcmp(rows(:, 1), <span class="string">'adapter'</span>) &amp; ~strcmp(rows(:, 2), <span class="string">'by hand'</span>);
+0191 <span class="keyword">if</span> isfile(toml) || any(adapterRow)
+0192     <span class="keyword">if</span> ~isfile(toml) || isempty(regexp(fileread(toml), <span class="string">'(?m)^\s*project_format\s*='</span>, <span class="string">'once'</span>))
+0193         <span class="keyword">if</span> apply
+0194             text = fileread(toml);
+0195             fid = fopen(toml, <span class="string">'w'</span>, <span class="string">'n'</span>, <span class="string">'UTF-8'</span>);
+0196             fprintf(fid, <span class="string">'project_format = 4\n%s'</span>, text);
+0197             fclose(fid);
+0198         <span class="keyword">end</span>
+0199         <a href="#_sub1" class="code" title="subfunction add(step, status, note)">add</a>(<span class="string">'project format'</span>, status, <span class="string">'project_format = 4 in model_adapter.toml'</span>);
+0200     <span class="keyword">end</span>
+0201 <span class="keyword">end</span>
+0202 
+0203 <span class="comment">% 6. Scripts that call renamed or replaced functions</span>
+0204 renamed = { <span class="keyword">...</span>
+0205     <span class="string">'enzymeUsage'</span>, <span class="string">'getEnzymeUsage'</span>; <span class="string">'pfbaEnzymes'</span>, <span class="string">'getPfbaEnzymes'</span>; <span class="keyword">...</span>
+0206     <span class="string">'selectKcatValue'</span>, <span class="string">'assignKcatValues'</span>; <span class="string">'startGECKOproject'</span>, <span class="string">'createGECKOproject'</span>; <span class="keyword">...</span>
+0207     <span class="string">'updateGECKOdoc'</span>, <span class="string">'buildGECKOdoc'</span>; <span class="string">'copyECtoGEM'</span>, <span class="string">'applyECcodes'</span>; <span class="keyword">...</span>
+0208     <span class="string">'addCarbonNum'</span>, <span class="string">'fillCarbonNum'</span>; <span class="string">'updateprior'</span>, <span class="string">'updatePrior'</span>; <span class="keyword">...</span>
+0209     <span class="string">'mergeDLKcatAndFuzzyKcats'</span>, <span class="string">'mergeKcats'</span>; <span class="keyword">...</span>
+0210     <span class="string">'fuzzyKcatMatching'</span>, <span class="string">'kcatsFromBrenda (or kcatsFromECTree), then assignKcats'</span>; <span class="keyword">...</span>
+0211     <span class="string">'readDLKcatOutput'</span>, <span class="string">'kcatsFromDLKcat, then assignKcats'</span>; <span class="keyword">...</span>
+0212     <span class="string">'readOpenKineticsPredictorOutput'</span>, <span class="string">'kcatsFromOKP, then assignKcats'</span>; <span class="keyword">...</span>
+0213     <span class="string">'writeOpenKineticsPredictorInput'</span>, <span class="string">'kcatsFromOKP'</span>; <span class="keyword">...</span>
+0214     <span class="string">'applyCustomKcats'</span>, <span class="string">'data/kcats/custom.tsv and assignKcats'</span>};
+0215 scripts = dir(fullfile(projectPath, <span class="string">'**'</span>, <span class="string">'*.m'</span>));
+0216 <span class="keyword">for</span> k = 1:numel(scripts)
+0217     file = fullfile(scripts(k).folder, scripts(k).name);
+0218     <span class="keyword">if</span> startsWith(file, fullfile(projectPath, <span class="string">'legacy'</span>))
+0219         <span class="keyword">continue</span>
+0220     <span class="keyword">end</span>
+0221     lines = strsplit(fileread(file), {<span class="string">'\r\n'</span>, <span class="string">'\n'</span>});
+0222     <span class="keyword">for</span> r = 1:size(renamed, 1)
+0223         hit = find(~cellfun(@isempty, regexp(lines, [<span class="string">'(?&lt;![\w.])'</span> renamed{r, 1} <span class="string">'\s*\('</span>], <span class="string">'once'</span>)));
+0224         <span class="keyword">for</span> h = hit(:)'
+0225             <a href="#_sub1" class="code" title="subfunction add(step, status, note)">add</a>(<span class="string">'script'</span>, <span class="string">'by hand'</span>, sprintf(<span class="string">'%s:%d: %s -&gt; %s'</span>, <a href="#_sub6" class="code" title="subfunction r = relative(file, projectPath)">relative</a>(file, projectPath), h, <span class="keyword">...</span>
+0226                 renamed{r, 1}, renamed{r, 2}));
+0227         <span class="keyword">end</span>
+0228     <span class="keyword">end</span>
+0229 <span class="keyword">end</span>
+0230 
+0231 report = cell2table(rows, <span class="string">'VariableNames'</span>, {<span class="string">'step'</span>, <span class="string">'status'</span>, <span class="string">'note'</span>});
+0232 <span class="keyword">if</span> isempty(rows)
+0233     fprintf(<span class="string">'%s has the current GECKO 4 layout.\n'</span>, projectPath);
+0234 <span class="keyword">else</span>
+0235     disp(report)
+0236     <span class="keyword">if</span> ~apply &amp;&amp; any(strcmp(rows(:, 2), <span class="string">'to do'</span>))
+0237         fprintf(<span class="string">'Run upgradeGECKOproject(projectPath, ''dryRun'', false) to carry out the steps; originals go to %s.\n'</span>, legacy);
+0238     <span class="keyword">end</span>
+0239 <span class="keyword">end</span>
+0240 <span class="keyword">end</span>
+0241 
+0242 <a name="_sub3" href="#_subfunctions" class="code">function adapter = projectAdapter(projectPath)</a>
+0243 <span class="comment">% The project's adapter: from model_adapter.toml, or its adapter class.</span>
+0244 <span class="keyword">if</span> isfile(fullfile(projectPath, <span class="string">'model_adapter.toml'</span>))
+0245     adapter = TomlAdapter(projectPath);
+0246 <span class="keyword">else</span>
+0247     adapter = ModelAdapterManager.getAdapter(<a href="#_sub4" class="code" title="subfunction file = adapterClass(projectPath)">adapterClass</a>(projectPath));
+0248     adapter.params.path = projectPath;
+0249 <span class="keyword">end</span>
+0250 <span class="keyword">end</span>
+0251 
+0252 <a name="_sub4" href="#_subfunctions" class="code">function file = adapterClass(projectPath)</a>
+0253 <span class="comment">% The adapter class in the project folder, or '' when there is none.</span>
+0254 file = <span class="string">''</span>;
+0255 candidates = dir(fullfile(projectPath, <span class="string">'*.m'</span>));
+0256 <span class="keyword">for</span> k = 1:numel(candidates)
+0257     f = fullfile(candidates(k).folder, candidates(k).name);
+0258     <span class="keyword">if</span> ~isempty(regexp(fileread(f), <span class="string">'(?m)^\s*classdef\s+\w+\s*&lt;\s*ModelAdapter'</span>, <span class="string">'once'</span>))
+0259         file = f;
+0260         <span class="keyword">return</span>
+0261     <span class="keyword">end</span>
+0262 <span class="keyword">end</span>
+0263 <span class="keyword">end</span>
+0264 
+0265 <a name="_sub5" href="#_subfunctions" class="code">function method = okpMethod(projectPath, outName)</a>
+0266 <span class="comment">% The OKP method of a stored result: from its own job file</span>
+0267 <span class="comment">% (OKP_job_&lt;tag&gt;.txt), or from OKP_job.txt for the shared OKP_output.csv.</span>
+0268 method = <span class="string">''</span>;
+0269 <span class="keyword">if</span> strcmp(outName, <span class="string">'OKP_output.csv'</span>)
+0270     jobFile = fullfile(projectPath, <span class="string">'data'</span>, <span class="string">'OKP_job.txt'</span>);
+0271 <span class="keyword">else</span>
+0272     jobFile = fullfile(projectPath, <span class="string">'data'</span>, [<span class="string">'OKP_job_'</span> regexprep(outName, <span class="string">'^OKP_output_|\.csv$'</span>, <span class="string">''</span>) <span class="string">'.txt'</span>]);
+0273 <span class="keyword">end</span>
+0274 <span class="keyword">if</span> ~isfile(jobFile)
+0275     <span class="keyword">return</span>
+0276 <span class="keyword">end</span>
+0277 tok = regexp(fileread(jobFile), <span class="string">'(?m)^method:\s*(\S+)'</span>, <span class="string">'tokens'</span>, <span class="string">'once'</span>);
+0278 <span class="keyword">if</span> ~isempty(tok)
+0279     method = tok{1};
+0280 <span class="keyword">end</span>
+0281 <span class="keyword">end</span>
+0282 
+0283 <a name="_sub6" href="#_subfunctions" class="code">function r = relative(file, projectPath)</a>
+0284 r = file(numel(projectPath)+2:end);
+0285 <span class="keyword">end</span>
+0286 
+0287 <a name="_sub7" href="#_subfunctions" class="code">function checkOptions(args, names, functionName)</a>
+0288 <span class="comment">% Options are name-value pairs with known names, so a misspelled option is</span>
+0289 <span class="comment">% an error instead of being taken as a positional argument.</span>
+0290 id = [functionName <span class="string">':arguments'</span>];
+0291 given = args(1:2:end);
+0292 <span class="keyword">if</span> mod(numel(args), 2) ~= 0 || ~all(cellfun(@(x) ischar(x) || (isstring(x) &amp;&amp; isscalar(x)), given))
+0293     error(id, <span class="string">'Options of %s are name-value pairs. Options: %s.'</span>, functionName, strjoin(names, <span class="string">', '</span>))
+0294 <span class="keyword">end</span>
+0295 unknown = setdiff(cellfun(@char, given, <span class="string">'UniformOutput'</span>, false), names);
+0296 <span class="keyword">if</span> ~isempty(unknown)
+0297     error(id, <span class="string">'Unknown option of %s: %s. Options: %s.'</span>, functionName, strjoin(unknown, <span class="string">', '</span>), <span class="keyword">...</span>
+0298         strjoin(names, <span class="string">', '</span>))
+0299 <span class="keyword">end</span>
+0300 <span class="keyword">end</span>
+0301 
+0302 <a name="_sub8" href="#_subfunctions" class="code">function v = geckoVersion()</a>
+0303 file = fullfile(<a href="findGECKOroot.html" class="code" title="function [geckoPath, prevDir] = findGECKOroot()">findGECKOroot</a>, <span class="string">'version.txt'</span>);
+0304 <span class="keyword">if</span> isfile(file)
+0305     v = strtrim(fileread(file));
+0306 <span class="keyword">else</span>
+0307     v = <span class="string">'unknown'</span>;
+0308 <span class="keyword">end</span>
+0309 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

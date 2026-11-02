@@ -2,7 +2,10 @@
 % fillCarbonNum  Add a carbon number field to the model.
 %
 % Adds a model.excarbon field with the carbon number of each exchange
-% reaction, used to weight the RMSE during evotune kcat tuning.
+% reaction, used to weight the RMSE during evotune kcat tuning. An exchange
+% whose metabolite has no usable formula gets the carbon number 1. A model
+% without a metFormulas field, or with only empty formulas, gives every
+% exchange the carbon number 1 and a warning (GECKO:fillCarbonNum:noFormulas).
 %
 % Parameters
 % ----------
@@ -17,6 +20,11 @@
 %     ecModel with an added model.excarbon field.
 
 % get carbonnum for each exchange rxn to further calculation of error
+if ~isfield(model,'metFormulas') || all(cellfun(@isempty,model.metFormulas))
+    warning('GECKO:fillCarbonNum:noFormulas', ...
+        'The model has no metabolite formulas; every exchange reaction gets the carbon number 1.')
+    model.metFormulas = repmat({''},numel(model.mets),1);
+end
 model.excarbon = zeros(length(model.rxns),1);
 [EXrxn, EXrxnIdx] = getExchangeRxns(model);
 [CarbonNum,EXfors] = getcarbonnum(model,EXrxn);

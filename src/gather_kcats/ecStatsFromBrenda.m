@@ -1,41 +1,61 @@
-function ecStats = ecStatsFromBrenda(KCATcell,SAcell)
+function ecStats = ecStatsFromBrenda(KCATcell,SAcell,KCATmedianCell)
 % ecStatsFromBrenda  Summarise loadBRENDAdata's output per EC number, for
 % reviewKcatAssignment's ecStats argument.
 %
-% TODO: verify against a real BRENDA pull before relying on this. Ported
-% from geckopy's ec_stats_from_brenda without being able to run it
-% against real BRENDA data in this environment. In particular,
-% loadBRENDAdata's KCATcell only carries the BRENDA *max* aggregate per
-% (EC, substrate, organism) triple (column 4 of kcat.tsv) -- the median
-% column is read internally but discarded before KCATcell is returned --
-% so kcatMedian below is always NaN, and reviewKcatAssignment's
-% "ec-maximum" check (which needs a finite kcatMedian) will never fire
-% until loadBRENDAdata is extended to also expose it.
+% loadBRENDAdata returns one aggregate of kcat.tsv per call, so the maximum
+% view and the median view come from two calls:
+%
+%     [KCATcell, SAcell] = loadBRENDAdata('kcatAggregation', 'max');
+%     KCATmedianCell     = loadBRENDAdata('kcatAggregation', 'median');
+%     ecStats = ecStatsFromBrenda(KCATcell, SAcell, KCATmedianCell);
+%
+% geckopy's ec_stats_from_brenda gives the same statistics. The EC numbers
+% keep the case they have in the BRENDA files.
 %
 % Parameters
 % ----------
 % KCATcell : cell
-%     as returned by loadBRENDAdata's first output: {ecCode, substrate,
-%     organism, kcatMax}.
+%     first output of loadBRENDAdata with kcatAggregation 'max': {ecCode,
+%     substrate, organism, kcatMax}.
 % SAcell : cell
-%     as returned by loadBRENDAdata's second output: {ecCode, organism,
-%     kcatFromSA, mw}.
+%     second output of loadBRENDAdata with kcatAggregation 'max': {ecCode,
+%     organism, kcatFromSA, mw}.
+% KCATmedianCell : cell
+%     first output of loadBRENDAdata with kcatAggregation 'median'
+%     (optional). Without it kcatMedian is NaN, so reviewKcatAssignment
+%     cannot flag 'ec-maximum', and a warning is given.
 %
 % Returns
 % -------
 % ecStats : containers.Map
-%     EC code -> struct(nKcat,kcatMax,kcatMedian,values,nSa), keyed by
-%     the same (uppercased) EC strings BRENDA uses.
+%     EC code -> struct(nKcat,kcatMax,kcatMedian,values,nSa). nKcat and
+%     kcatMax are the number and the maximum of the kcat rows of the
+%     maximum view, kcatMedian is the median over the rows of the median
+%     view, values holds the kcat values of both views rounded to six
+%     decimals, and nSa is the number of specific-activity rows.
 %
 % See also
 % --------
 % reviewKcatAssignment, loadBRENDAdata
-ecCol  = upper(KCATcell{1});
+ecCol  = KCATcell{1};
 maxCol = KCATcell{4};
+
+hasMedian = nargin >= 3 && ~isempty(KCATmedianCell) && ~isempty(KCATmedianCell{1});
+if nargin < 3
+    warning('ecStatsFromBrenda:noMedianView', ...
+        ['No median view of the kcat rows was given, so kcatMedian is NaN ' ...
+         'and reviewKcatAssignment cannot flag ec-maximum.'])
+end
+medEcCol = {};
+medCol   = [];
+if hasMedian
+    medEcCol = KCATmedianCell{1};
+    medCol   = KCATmedianCell{4};
+end
 
 saEcCol = {};
 if ~isempty(SAcell) && numel(SAcell) >= 1 && ~isempty(SAcell{1})
-    saEcCol = upper(SAcell{1});
+    saEcCol = SAcell{1};
 end
 
 ecList = unique([ecCol(:); saEcCol(:)]);
@@ -46,12 +66,21 @@ for i = 1:numel(ecList)
     nKcat = sum(rows);
     if nKcat > 0
         kcatMax = max(maxCol(rows));
-        values  = unique(round(maxCol(rows),6));
+        values  = round(maxCol(rows),6);
     else
         kcatMax = NaN;
         values  = [];
     end
+    kcatMedian = NaN;
+    if hasMedian
+        medRows = strcmp(medEcCol,ec);
+        if any(medRows)
+            kcatMedian = median(medCol(medRows),'omitnan');
+            values = [values(:); round(medCol(medRows),6)];
+        end
+    end
+    values = unique(values(:));
     nSa = sum(strcmp(saEcCol,ec));
-    ecStats(ec) = struct('nKcat',nKcat,'kcatMax',kcatMax,'kcatMedian',NaN,'values',values,'nSa',nSa);
+    ecStats(ec) = struct('nKcat',nKcat,'kcatMax',kcatMax,'kcatMedian',kcatMedian,'values',values,'nSa',nSa);
 end
 end

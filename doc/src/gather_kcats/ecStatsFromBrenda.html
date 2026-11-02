@@ -1,0 +1,134 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of ecStatsFromBrenda</title>
+  <meta name="keywords" content="ecStatsFromBrenda">
+  <meta name="description" content="ecStatsFromBrenda  Summarise loadBRENDAdata's output per EC number, for">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">gather_kcats</a> &gt; ecStatsFromBrenda.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/gather_kcats&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>ecStatsFromBrenda
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>ecStatsFromBrenda  Summarise loadBRENDAdata's output per EC number, for</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function ecStats = ecStatsFromBrenda(KCATcell,SAcell) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> ecStatsFromBrenda  Summarise loadBRENDAdata's output per EC number, for
+ reviewKcatAssignment's ecStats argument.
+
+ TODO: verify against a real BRENDA pull before relying on this. Ported
+ from geckopy's ec_stats_from_brenda without being able to run it
+ against real BRENDA data in this environment. In particular,
+ loadBRENDAdata's KCATcell only carries the BRENDA *max* aggregate per
+ (EC, substrate, organism) triple (column 4 of kcat.tsv) -- the median
+ column is read internally but discarded before KCATcell is returned --
+ so kcatMedian below is always NaN, and reviewKcatAssignment's
+ &quot;ec-maximum&quot; check (which needs a finite kcatMedian) will never fire
+ until loadBRENDAdata is extended to also expose it.
+
+ Parameters
+ ----------
+ KCATcell : cell
+     as returned by loadBRENDAdata's first output: {ecCode, substrate,
+     organism, kcatMax}.
+ SAcell : cell
+     as returned by loadBRENDAdata's second output: {ecCode, organism,
+     kcatFromSA, mw}.
+
+ Returns
+ -------
+ ecStats : containers.Map
+     EC code -&gt; struct(nKcat,kcatMax,kcatMedian,values,nSa), keyed by
+     the same (uppercased) EC strings BRENDA uses.
+
+ See also
+ --------
+ <a href="reviewKcatAssignment.html" class="code" title="function findings = reviewKcatAssignment(rxnIds,kcats,sources,ecCodes,varargin)">reviewKcatAssignment</a>, loadBRENDAdata</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function ecStats = ecStatsFromBrenda(KCATcell,SAcell)</a>
+0002 <span class="comment">% ecStatsFromBrenda  Summarise loadBRENDAdata's output per EC number, for</span>
+0003 <span class="comment">% reviewKcatAssignment's ecStats argument.</span>
+0004 <span class="comment">%</span>
+0005 <span class="comment">% TODO: verify against a real BRENDA pull before relying on this. Ported</span>
+0006 <span class="comment">% from geckopy's ec_stats_from_brenda without being able to run it</span>
+0007 <span class="comment">% against real BRENDA data in this environment. In particular,</span>
+0008 <span class="comment">% loadBRENDAdata's KCATcell only carries the BRENDA *max* aggregate per</span>
+0009 <span class="comment">% (EC, substrate, organism) triple (column 4 of kcat.tsv) -- the median</span>
+0010 <span class="comment">% column is read internally but discarded before KCATcell is returned --</span>
+0011 <span class="comment">% so kcatMedian below is always NaN, and reviewKcatAssignment's</span>
+0012 <span class="comment">% &quot;ec-maximum&quot; check (which needs a finite kcatMedian) will never fire</span>
+0013 <span class="comment">% until loadBRENDAdata is extended to also expose it.</span>
+0014 <span class="comment">%</span>
+0015 <span class="comment">% Parameters</span>
+0016 <span class="comment">% ----------</span>
+0017 <span class="comment">% KCATcell : cell</span>
+0018 <span class="comment">%     as returned by loadBRENDAdata's first output: {ecCode, substrate,</span>
+0019 <span class="comment">%     organism, kcatMax}.</span>
+0020 <span class="comment">% SAcell : cell</span>
+0021 <span class="comment">%     as returned by loadBRENDAdata's second output: {ecCode, organism,</span>
+0022 <span class="comment">%     kcatFromSA, mw}.</span>
+0023 <span class="comment">%</span>
+0024 <span class="comment">% Returns</span>
+0025 <span class="comment">% -------</span>
+0026 <span class="comment">% ecStats : containers.Map</span>
+0027 <span class="comment">%     EC code -&gt; struct(nKcat,kcatMax,kcatMedian,values,nSa), keyed by</span>
+0028 <span class="comment">%     the same (uppercased) EC strings BRENDA uses.</span>
+0029 <span class="comment">%</span>
+0030 <span class="comment">% See also</span>
+0031 <span class="comment">% --------</span>
+0032 <span class="comment">% reviewKcatAssignment, loadBRENDAdata</span>
+0033 ecCol  = upper(KCATcell{1});
+0034 maxCol = KCATcell{4};
+0035 
+0036 saEcCol = {};
+0037 <span class="keyword">if</span> ~isempty(SAcell) &amp;&amp; numel(SAcell) &gt;= 1 &amp;&amp; ~isempty(SAcell{1})
+0038     saEcCol = upper(SAcell{1});
+0039 <span class="keyword">end</span>
+0040 
+0041 ecList = unique([ecCol(:); saEcCol(:)]);
+0042 ecStats = containers.Map(<span class="string">'KeyType'</span>,<span class="string">'char'</span>,<span class="string">'ValueType'</span>,<span class="string">'any'</span>);
+0043 <span class="keyword">for</span> i = 1:numel(ecList)
+0044     ec = char(ecList{i});
+0045     rows = strcmp(ecCol,ec);
+0046     nKcat = sum(rows);
+0047     <span class="keyword">if</span> nKcat &gt; 0
+0048         kcatMax = max(maxCol(rows));
+0049         values  = unique(round(maxCol(rows),6));
+0050     <span class="keyword">else</span>
+0051         kcatMax = NaN;
+0052         values  = [];
+0053     <span class="keyword">end</span>
+0054     nSa = sum(strcmp(saEcCol,ec));
+0055     ecStats(ec) = struct(<span class="string">'nKcat'</span>,nKcat,<span class="string">'kcatMax'</span>,kcatMax,<span class="string">'kcatMedian'</span>,NaN,<span class="string">'values'</span>,values,<span class="string">'nSa'</span>,nSa);
+0056 <span class="keyword">end</span>
+0057 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

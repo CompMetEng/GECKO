@@ -1,0 +1,169 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of loadBrendaMeasurements</title>
+  <meta name="keywords" content="loadBrendaMeasurements">
+  <meta name="description" content="loadBrendaMeasurements  Load the BRENDA measurement table.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">gather_kcats</a> &gt; loadBrendaMeasurements.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/gather_kcats&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>loadBrendaMeasurements
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>loadBrendaMeasurements  Load the BRENDA measurement table.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function measurements = loadBrendaMeasurements(varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> loadBrendaMeasurements  Load the BRENDA measurement table.
+
+ Reads measurements.tsv from the BRENDA database folder of the model
+ adapter (next to kcat.tsv, sa.tsv and mw.tsv): one row per wild-type
+ BRENDA kcat with an EC number, after the outlier screen, with the
+ substrate, organism, UniProt accession and sequence id of each
+ measurement. geckopy reads the same file (load_brenda_measurements).
+
+ Name-Value Arguments
+ --------------------
+ modelAdapter : ModelAdapter
+     a loaded model adapter (default: the current default model adapter).
+ folder : char
+     folder with measurements.tsv, instead of the adapter's BRENDA folder.
+
+ Returns
+ -------
+ measurements : struct
+     one field per column of the file (ec, substrate, substrate_inchikey,
+     organism, taxid, uniprot, seq_id, temperature, ph and pmid as cell
+     arrays of char; kcat as double), plus log10kcat and release (the
+     release line of the file, e.g. 'BRENDA release 2026.1').
+
+ Examples
+ --------
+     measurements = loadBrendaMeasurements();
+
+ See also
+ --------
+ <a href="kcatsFromECTree.html" class="code" title="function kcatList = kcatsFromECTree(model, varargin)">kcatsFromECTree</a>, <a href="ecTreeEstimate.html" class="code" title="function [log10kcat, n, depth, ecUsed] = ecTreeEstimate(eccodes, measurements, k)">ecTreeEstimate</a>, loadBRENDAdata</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="kcatsFromECTree.html" class="code" title="function kcatList = kcatsFromECTree(model, varargin)">kcatsFromECTree</a>	kcatsFromECTree  Estimate kcats from the EC tree and keep them as a source file.</li><li><a href="kcatsFromHomologs.html" class="code" title="function kcatList = kcatsFromHomologs(model, varargin)">kcatsFromHomologs</a>	kcatsFromHomologs  Estimate kcats from measured homologs and keep them as a source file.</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function checkOptions(args, names, functionName)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function measurements = loadBrendaMeasurements(varargin)</a>
+0002 <span class="comment">% loadBrendaMeasurements  Load the BRENDA measurement table.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Reads measurements.tsv from the BRENDA database folder of the model</span>
+0005 <span class="comment">% adapter (next to kcat.tsv, sa.tsv and mw.tsv): one row per wild-type</span>
+0006 <span class="comment">% BRENDA kcat with an EC number, after the outlier screen, with the</span>
+0007 <span class="comment">% substrate, organism, UniProt accession and sequence id of each</span>
+0008 <span class="comment">% measurement. geckopy reads the same file (load_brenda_measurements).</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% Name-Value Arguments</span>
+0011 <span class="comment">% --------------------</span>
+0012 <span class="comment">% modelAdapter : ModelAdapter</span>
+0013 <span class="comment">%     a loaded model adapter (default: the current default model adapter).</span>
+0014 <span class="comment">% folder : char</span>
+0015 <span class="comment">%     folder with measurements.tsv, instead of the adapter's BRENDA folder.</span>
+0016 <span class="comment">%</span>
+0017 <span class="comment">% Returns</span>
+0018 <span class="comment">% -------</span>
+0019 <span class="comment">% measurements : struct</span>
+0020 <span class="comment">%     one field per column of the file (ec, substrate, substrate_inchikey,</span>
+0021 <span class="comment">%     organism, taxid, uniprot, seq_id, temperature, ph and pmid as cell</span>
+0022 <span class="comment">%     arrays of char; kcat as double), plus log10kcat and release (the</span>
+0023 <span class="comment">%     release line of the file, e.g. 'BRENDA release 2026.1').</span>
+0024 <span class="comment">%</span>
+0025 <span class="comment">% Examples</span>
+0026 <span class="comment">% --------</span>
+0027 <span class="comment">%     measurements = loadBrendaMeasurements();</span>
+0028 <span class="comment">%</span>
+0029 <span class="comment">% See also</span>
+0030 <span class="comment">% --------</span>
+0031 <span class="comment">% kcatsFromECTree, ecTreeEstimate, loadBRENDAdata</span>
+0032 
+0033 <a href="#_sub1" class="code" title="subfunction checkOptions(args, names, functionName)">checkOptions</a>(varargin, {<span class="string">'modelAdapter'</span>,<span class="string">'folder'</span>}, <span class="string">'loadBrendaMeasurements'</span>);
+0034 p = parseGECKOargs(varargin, {<span class="string">'modelAdapter'</span>, []; <span class="string">'folder'</span>, []});
+0035 folder = p.folder;
+0036 <span class="keyword">if</span> isempty(folder)
+0037     modelAdapter = p.modelAdapter;
+0038     <span class="keyword">if</span> isempty(modelAdapter)
+0039         modelAdapter = ModelAdapterManager.getDefault();
+0040         <span class="keyword">if</span> isempty(modelAdapter)
+0041             error(<span class="string">'Either send in a modelAdapter or set the default model adapter in the ModelAdapterManager.'</span>)
+0042         <span class="keyword">end</span>
+0043     <span class="keyword">end</span>
+0044     folder = modelAdapter.getBrendaDBFolder();
+0045 <span class="keyword">end</span>
+0046 file = fullfile(folder, <span class="string">'measurements.tsv'</span>);
+0047 <span class="keyword">if</span> ~isfile(file)
+0048     error(<span class="string">'loadBrendaMeasurements:missing'</span>, [<span class="string">'No BRENDA measurement table (measurements.tsv) in %s. '</span> <span class="keyword">...</span>
+0049         <span class="string">'It comes with the BRENDA files of GECKO (databases folder).'</span>], folder)
+0050 <span class="keyword">end</span>
+0051 fid = fopen(file, <span class="string">'r'</span>, <span class="string">'n'</span>, <span class="string">'UTF-8'</span>);
+0052 first = fgetl(fid);
+0053 header = strsplit(fgetl(fid), <span class="string">'\t'</span>);
+0054 data = textscan(fid, repmat(<span class="string">'%s'</span>, 1, numel(header)), <span class="string">'Delimiter'</span>, <span class="string">'\t'</span>, <span class="string">'Whitespace'</span>, <span class="string">''</span>, <span class="keyword">...</span>
+0055     <span class="string">'ReturnOnError'</span>, false);
+0056 fclose(fid);
+0057 <span class="keyword">if</span> ~all(ismember({<span class="string">'ec'</span>, <span class="string">'kcat'</span>}, header))
+0058     error(<span class="string">'loadBrendaMeasurements:columns'</span>, <span class="string">'%s lacks the columns ec and kcat.'</span>, file)
+0059 <span class="keyword">end</span>
+0060 measurements = struct();
+0061 <span class="keyword">for</span> c = 1:numel(header)
+0062     measurements.(matlab.lang.makeValidName(header{c})) = data{c};
+0063 <span class="keyword">end</span>
+0064 measurements.kcat = str2double(measurements.kcat);
+0065 keep = measurements.kcat &gt; 0 &amp; ~cellfun(@isempty, measurements.ec);
+0066 <span class="keyword">for</span> f = fieldnames(measurements)'
+0067     measurements.(f{1}) = measurements.(f{1})(keep);
+0068 <span class="keyword">end</span>
+0069 measurements.ec = strtrim(measurements.ec);
+0070 measurements.log10kcat = log10(measurements.kcat);
+0071 tok = regexp(first, <span class="string">'^#\s*(BRENDA release [^ ]+)'</span>, <span class="string">'tokens'</span>, <span class="string">'once'</span>);
+0072 measurements.release = <span class="string">''</span>;
+0073 <span class="keyword">if</span> ~isempty(tok)
+0074     measurements.release = tok{1};
+0075 <span class="keyword">end</span>
+0076 <span class="keyword">end</span>
+0077 
+0078 <a name="_sub1" href="#_subfunctions" class="code">function checkOptions(args, names, functionName)</a>
+0079 <span class="comment">% Options are name-value pairs with known names, so a misspelled option is</span>
+0080 <span class="comment">% an error instead of being taken as a positional argument.</span>
+0081 id = [functionName <span class="string">':arguments'</span>];
+0082 given = args(1:2:end);
+0083 <span class="keyword">if</span> mod(numel(args), 2) ~= 0 || ~all(cellfun(@(x) ischar(x) || (isstring(x) &amp;&amp; isscalar(x)), given))
+0084     error(id, <span class="string">'Options of %s are name-value pairs. Options: %s.'</span>, functionName, strjoin(names, <span class="string">', '</span>))
+0085 <span class="keyword">end</span>
+0086 unknown = setdiff(cellfun(@char, given, <span class="string">'UniformOutput'</span>, false), names);
+0087 <span class="keyword">if</span> ~isempty(unknown)
+0088     error(id, <span class="string">'Unknown option of %s: %s. Options: %s.'</span>, functionName, strjoin(unknown, <span class="string">', '</span>), <span class="keyword">...</span>
+0089         strjoin(names, <span class="string">', '</span>))
+0090 <span class="keyword">end</span>
+0091 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

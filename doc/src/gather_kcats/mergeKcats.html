@@ -1,0 +1,414 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of mergeKcats</title>
+  <meta name="keywords" content="mergeKcats">
+  <meta name="description" content="mergeKcats  Merge any number of kcatLists, keeping the highest-priority">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">gather_kcats</a> &gt; mergeKcats.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/gather_kcats&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>mergeKcats
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>mergeKcats  Merge any number of kcatLists, keeping the highest-priority</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function mergedKcatList = mergeKcats(kcatLists, sourcePriority, varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> mergeKcats  Merge any number of kcatLists, keeping the highest-priority
+ source for each reaction.
+
+ Generalizes mergeDLKcatAndFuzzyKcats: instead of two fixed inputs (DLKcat
+ + fuzzy BRENDA) it accepts a cell array of kcatLists, each of which may
+ itself mix several sources (for example the output of
+ fetchOpenKineticsPredictor, carrying BRENDA, Sabio-RK and CataPro values
+ in its kcatSource field). A caller-supplied sourcePriority decides which
+ source wins for each reaction.
+
+ Parameters
+ ----------
+ kcatLists : cell
+     cell array of kcatList structs (as produced by fuzzyKcatMatching,
+     readDLKcatOutput, fetchOpenKineticsPredictor, ...).
+ sourcePriority : cell
+     cell array of tier tokens / source labels, best first. Three
+     reserved tier tokens may be used instead of a literal source label:
+
+     - 'database_exact'  an exact experimental-database measurement
+       (a BRENDA/Sabio-RK row with no fuzzy metadata, i.e. a direct OKP
+       hit, no wildcards).
+     - 'database_top'    a fuzzy BRENDA match with wildcardLvl==0 and
+       origin&lt;=topOriginLimit.
+     - 'database_bottom' weaker fuzzy BRENDA matches within
+       wildcardLimit / bottomOriginLimit.
+
+     Any other token is matched against each row's source after folding
+     to lowercase snake_case (e.g. 'dlkcat', 'catapro'). Sources not
+     listed are dropped.
+
+ Name-Value Arguments
+ --------------------
+ topOriginLimit : double
+     origin limit for database_top (default 4). Origins 5 and 6 are specific
+     activity times molecular weight kcats, which do not always beat a
+     prediction; they rank after the other sources and are used where
+     nothing else exists, or above DLKcat with topOriginLimit 6.
+ bottomOriginLimit : double
+     origin limit for database_bottom (default 6).
+ wildcardLimit : double
+     maximum wildcards for database_bottom's wildcard branch (default 3).
+ databaseSources : cell
+     source labels treated as experimental databases, i.e. routed to the
+     database_* tiers (default {'brenda','sabio_rk'}).
+
+ Returns
+ -------
+ mergedKcatList : struct
+     merged kcatList, keeping only the winning rows per reaction; see
+     Notes below for its fields. Row order follows the order of the input
+     lists (each list's surviving rows, in turn), so a two-list call
+     behaves like the legacy mergeDLKcatAndFuzzyKcats.
+
+ Notes
+ -----
+ The mergedKcatList structure has the following fields:
+
+ - source : 'merged'.
+ - kcatSource : per-row provenance, preserved verbatim from the input
+   lists.
+ - rxns : reaction identifiers.
+ - genes : gene identifiers (where provided by the input lists).
+ - substrates : substrate names (where provided by the input lists).
+ - kcats : selected kcat value in /sec.
+ - eccodes : as used to query BRENDA (where applicable).
+ - wildcardLvl : wildcard level of the source match (where applicable).
+ - origin : specificity level of the source match (where applicable).
+
+ The origin parameter:
+
+ - 1 : correct organism, correct substrate, kcat.
+ - 2 : any organism, correct substrate, kcat.
+ - 3 : correct organism, any substrate, kcat.
+ - 4 : any organism, any substrate, kcat.
+ - 5 : correct organism, specific activity.
+ - 6 : any organism, specific activity.
+
+ Examples
+ --------
+     % optional arguments may be given positionally or as name-value pairs:
+     mergedKcatList = mergeKcats({kcatListFuzzy, kcatListDLKcat}, ...
+         {'database_top', 'dlkcat', 'database_bottom'});
+     mergedKcatList = mergeKcats({kcatListFuzzy, kcatListOKP}, ...
+         {'database_exact', 'database_top', 'database_bottom'}, 'wildcardLimit', 2);
+
+ See also
+ --------
+ <a href="mergeDLKcatAndFuzzyKcats.html" class="code" title="function mergedKcatList = mergeDLKcatAndFuzzyKcats(kcatListDLKcat, kcatListFuzzy, varargin)">mergeDLKcatAndFuzzyKcats</a>, <a href="readDLKcatOutput.html" class="code" title="function kcatList = readDLKcatOutput(model, varargin)">readDLKcatOutput</a>, <a href="fuzzyKcatMatching.html" class="code" title="function kcatList = fuzzyKcatMatching(model, varargin)">fuzzyKcatMatching</a>, <a href="assignKcatValues.html" class="code" title="function [model, rxnIdx] = assignKcatValues(model,kcatList,varargin)">assignKcatValues</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="collectKcats.html" class="code" title="function [decisions, report, ecModel] = collectKcats(model, varargin)">collectKcats</a>	collectKcats  Decide one kcat per reaction from the kcat source files.</li><li><a href="mergeDLKcatAndFuzzyKcats.html" class="code" title="function mergedKcatList = mergeDLKcatAndFuzzyKcats(kcatListDLKcat, kcatListFuzzy, varargin)">mergeDLKcatAndFuzzyKcats</a>	mergeDLKcatAndFuzzyKcats  Merge DLKcat and BRENDA fuzzy matching results.</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function s = normalizeSource(label)</a></li><li><a href="#_sub2" class="code">function v = getColCell(s, name, n)</a></li><li><a href="#_sub3" class="code">function v = getColNum(s, name, n)</a></li><li><a href="#_sub4" class="code">function v = getRowSource(s, n)</a></li><li><a href="#_sub5" class="code">function mergedKcatList = emptyMergedList()</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function mergedKcatList = mergeKcats(kcatLists, sourcePriority, varargin)</a>
+0002 <span class="comment">% mergeKcats  Merge any number of kcatLists, keeping the highest-priority</span>
+0003 <span class="comment">% source for each reaction.</span>
+0004 <span class="comment">%</span>
+0005 <span class="comment">% Generalizes mergeDLKcatAndFuzzyKcats: instead of two fixed inputs (DLKcat</span>
+0006 <span class="comment">% + fuzzy BRENDA) it accepts a cell array of kcatLists, each of which may</span>
+0007 <span class="comment">% itself mix several sources (for example the output of</span>
+0008 <span class="comment">% fetchOpenKineticsPredictor, carrying BRENDA, Sabio-RK and CataPro values</span>
+0009 <span class="comment">% in its kcatSource field). A caller-supplied sourcePriority decides which</span>
+0010 <span class="comment">% source wins for each reaction.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Parameters</span>
+0013 <span class="comment">% ----------</span>
+0014 <span class="comment">% kcatLists : cell</span>
+0015 <span class="comment">%     cell array of kcatList structs (as produced by fuzzyKcatMatching,</span>
+0016 <span class="comment">%     readDLKcatOutput, fetchOpenKineticsPredictor, ...).</span>
+0017 <span class="comment">% sourcePriority : cell</span>
+0018 <span class="comment">%     cell array of tier tokens / source labels, best first. Three</span>
+0019 <span class="comment">%     reserved tier tokens may be used instead of a literal source label:</span>
+0020 <span class="comment">%</span>
+0021 <span class="comment">%     - 'database_exact'  an exact experimental-database measurement</span>
+0022 <span class="comment">%       (a BRENDA/Sabio-RK row with no fuzzy metadata, i.e. a direct OKP</span>
+0023 <span class="comment">%       hit, no wildcards).</span>
+0024 <span class="comment">%     - 'database_top'    a fuzzy BRENDA match with wildcardLvl==0 and</span>
+0025 <span class="comment">%       origin&lt;=topOriginLimit.</span>
+0026 <span class="comment">%     - 'database_bottom' weaker fuzzy BRENDA matches within</span>
+0027 <span class="comment">%       wildcardLimit / bottomOriginLimit.</span>
+0028 <span class="comment">%</span>
+0029 <span class="comment">%     Any other token is matched against each row's source after folding</span>
+0030 <span class="comment">%     to lowercase snake_case (e.g. 'dlkcat', 'catapro'). Sources not</span>
+0031 <span class="comment">%     listed are dropped.</span>
+0032 <span class="comment">%</span>
+0033 <span class="comment">% Name-Value Arguments</span>
+0034 <span class="comment">% --------------------</span>
+0035 <span class="comment">% topOriginLimit : double</span>
+0036 <span class="comment">%     origin limit for database_top (default 4). Origins 5 and 6 are specific</span>
+0037 <span class="comment">%     activity times molecular weight kcats, which do not always beat a</span>
+0038 <span class="comment">%     prediction; they rank after the other sources and are used where</span>
+0039 <span class="comment">%     nothing else exists, or above DLKcat with topOriginLimit 6.</span>
+0040 <span class="comment">% bottomOriginLimit : double</span>
+0041 <span class="comment">%     origin limit for database_bottom (default 6).</span>
+0042 <span class="comment">% wildcardLimit : double</span>
+0043 <span class="comment">%     maximum wildcards for database_bottom's wildcard branch (default 3).</span>
+0044 <span class="comment">% databaseSources : cell</span>
+0045 <span class="comment">%     source labels treated as experimental databases, i.e. routed to the</span>
+0046 <span class="comment">%     database_* tiers (default {'brenda','sabio_rk'}).</span>
+0047 <span class="comment">%</span>
+0048 <span class="comment">% Returns</span>
+0049 <span class="comment">% -------</span>
+0050 <span class="comment">% mergedKcatList : struct</span>
+0051 <span class="comment">%     merged kcatList, keeping only the winning rows per reaction; see</span>
+0052 <span class="comment">%     Notes below for its fields. Row order follows the order of the input</span>
+0053 <span class="comment">%     lists (each list's surviving rows, in turn), so a two-list call</span>
+0054 <span class="comment">%     behaves like the legacy mergeDLKcatAndFuzzyKcats.</span>
+0055 <span class="comment">%</span>
+0056 <span class="comment">% Notes</span>
+0057 <span class="comment">% -----</span>
+0058 <span class="comment">% The mergedKcatList structure has the following fields:</span>
+0059 <span class="comment">%</span>
+0060 <span class="comment">% - source : 'merged'.</span>
+0061 <span class="comment">% - kcatSource : per-row provenance, preserved verbatim from the input</span>
+0062 <span class="comment">%   lists.</span>
+0063 <span class="comment">% - rxns : reaction identifiers.</span>
+0064 <span class="comment">% - genes : gene identifiers (where provided by the input lists).</span>
+0065 <span class="comment">% - substrates : substrate names (where provided by the input lists).</span>
+0066 <span class="comment">% - kcats : selected kcat value in /sec.</span>
+0067 <span class="comment">% - eccodes : as used to query BRENDA (where applicable).</span>
+0068 <span class="comment">% - wildcardLvl : wildcard level of the source match (where applicable).</span>
+0069 <span class="comment">% - origin : specificity level of the source match (where applicable).</span>
+0070 <span class="comment">%</span>
+0071 <span class="comment">% The origin parameter:</span>
+0072 <span class="comment">%</span>
+0073 <span class="comment">% - 1 : correct organism, correct substrate, kcat.</span>
+0074 <span class="comment">% - 2 : any organism, correct substrate, kcat.</span>
+0075 <span class="comment">% - 3 : correct organism, any substrate, kcat.</span>
+0076 <span class="comment">% - 4 : any organism, any substrate, kcat.</span>
+0077 <span class="comment">% - 5 : correct organism, specific activity.</span>
+0078 <span class="comment">% - 6 : any organism, specific activity.</span>
+0079 <span class="comment">%</span>
+0080 <span class="comment">% Examples</span>
+0081 <span class="comment">% --------</span>
+0082 <span class="comment">%     % optional arguments may be given positionally or as name-value pairs:</span>
+0083 <span class="comment">%     mergedKcatList = mergeKcats({kcatListFuzzy, kcatListDLKcat}, ...</span>
+0084 <span class="comment">%         {'database_top', 'dlkcat', 'database_bottom'});</span>
+0085 <span class="comment">%     mergedKcatList = mergeKcats({kcatListFuzzy, kcatListOKP}, ...</span>
+0086 <span class="comment">%         {'database_exact', 'database_top', 'database_bottom'}, 'wildcardLimit', 2);</span>
+0087 <span class="comment">%</span>
+0088 <span class="comment">% See also</span>
+0089 <span class="comment">% --------</span>
+0090 <span class="comment">% mergeDLKcatAndFuzzyKcats, readDLKcatOutput, fuzzyKcatMatching, assignKcatValues</span>
+0091 
+0092 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0093     <span class="string">'topOriginLimit'</span>,    4; <span class="keyword">...</span>
+0094     <span class="string">'bottomOriginLimit'</span>, 6; <span class="keyword">...</span>
+0095     <span class="string">'wildcardLimit'</span>,     3; <span class="keyword">...</span>
+0096     <span class="string">'databaseSources'</span>,   {<span class="string">'brenda'</span>,<span class="string">'sabio_rk'</span>}});
+0097 topOriginLimit    = p.topOriginLimit;
+0098 bottomOriginLimit = p.bottomOriginLimit;
+0099 wildcardLimit     = p.wildcardLimit;
+0100 databaseSources   = p.databaseSources;
+0101 
+0102 <span class="keyword">if</span> (topOriginLimit &lt; 1) || (topOriginLimit &gt; 6)
+0103     error(<span class="string">'topOriginLimit should be between 1 and 6.'</span>);
+0104 <span class="keyword">end</span>
+0105 <span class="keyword">if</span> (bottomOriginLimit &lt; 1) || (bottomOriginLimit &gt; 6)
+0106     error(<span class="string">'bottomOriginLimit should be between 1 and 6.'</span>);
+0107 <span class="keyword">end</span>
+0108 <span class="keyword">if</span> (wildcardLimit &lt; 0) || (wildcardLimit &gt; 3)
+0109     error(<span class="string">'wildcardLimit should be between 0 and 3.'</span>);
+0110 <span class="keyword">end</span>
+0111 <span class="keyword">if</span> isempty(sourcePriority)
+0112     error(<span class="string">'sourcePriority must be a non-empty cell array.'</span>);
+0113 <span class="keyword">end</span>
+0114 <span class="keyword">if</span> ~iscell(kcatLists)
+0115     error(<span class="string">'kcatLists must be a cell array of kcatList structs.'</span>);
+0116 <span class="keyword">end</span>
+0117 
+0118 dbSources = cellfun(@<a href="#_sub1" class="code" title="subfunction s = normalizeSource(label)">normalizeSource</a>, databaseSources, <span class="string">'UniformOutput'</span>, false);
+0119 
+0120 <span class="comment">% Rank map: normalised priority token -&gt; rank (1 = best). First wins.</span>
+0121 rankMap = containers.Map(<span class="string">'KeyType'</span>,<span class="string">'char'</span>,<span class="string">'ValueType'</span>,<span class="string">'double'</span>);
+0122 <span class="keyword">for</span> r = 1:numel(sourcePriority)
+0123     key = <a href="#_sub1" class="code" title="subfunction s = normalizeSource(label)">normalizeSource</a>(sourcePriority{r});
+0124     <span class="keyword">if</span> ~isKey(rankMap, key)
+0125         rankMap(key) = r;
+0126     <span class="keyword">end</span>
+0127 <span class="keyword">end</span>
+0128 
+0129 <span class="comment">% Concatenate all lists, normalising missing fields per row.</span>
+0130 rxns = {}; kcats = []; genes = {}; substrates = {};
+0131 eccodes = {}; wcl = []; origin = []; rawSource = {};
+0132 <span class="keyword">for</span> k = 1:numel(kcatLists)
+0133     s = kcatLists{k};
+0134     <span class="keyword">if</span> isempty(s) || ~isfield(s,<span class="string">'rxns'</span>) || isempty(s.rxns)
+0135         <span class="keyword">continue</span>
+0136     <span class="keyword">end</span>
+0137     n          = numel(s.rxns);
+0138     rxns       = [rxns;       s.rxns(:)];
+0139     kcats      = [kcats;      double(s.kcats(:))];
+0140     genes      = [genes;      <a href="#_sub2" class="code" title="subfunction v = getColCell(s, name, n)">getColCell</a>(s, <span class="string">'genes'</span>, n)];
+0141     substrates = [substrates; <a href="#_sub2" class="code" title="subfunction v = getColCell(s, name, n)">getColCell</a>(s, <span class="string">'substrates'</span>, n)];
+0142     eccodes    = [eccodes;    <a href="#_sub2" class="code" title="subfunction v = getColCell(s, name, n)">getColCell</a>(s, <span class="string">'eccodes'</span>, n)];
+0143     wcl        = [wcl;        <a href="#_sub3" class="code" title="subfunction v = getColNum(s, name, n)">getColNum</a>(s, <span class="string">'wildcardLvl'</span>, n)];
+0144     origin     = [origin;     <a href="#_sub3" class="code" title="subfunction v = getColNum(s, name, n)">getColNum</a>(s, <span class="string">'origin'</span>, n)];
+0145     rawSource  = [rawSource;  <a href="#_sub4" class="code" title="subfunction v = getRowSource(s, n)">getRowSource</a>(s, n)];
+0146 <span class="keyword">end</span>
+0147 
+0148 N = numel(rxns);
+0149 <span class="keyword">if</span> N == 0
+0150     mergedKcatList = <a href="#_sub5" class="code" title="subfunction mergedKcatList = emptyMergedList()">emptyMergedList</a>();
+0151     <span class="keyword">return</span>
+0152 <span class="keyword">end</span>
+0153 
+0154 <span class="comment">% Drop rows without a usable turnover number. This also removes the</span>
+0155 <span class="comment">% kcats==0 rows fuzzyKcatMatching emits for unmatched reactions, so a</span>
+0156 <span class="comment">% remaining NaN-metadata database row is unambiguously an exact OKP hit.</span>
+0157 valid          = kcats &gt; 0;
+0158 rxns           = rxns(valid);
+0159 kcats          = kcats(valid);
+0160 genes          = genes(valid);
+0161 substrates     = substrates(valid);
+0162 eccodes        = eccodes(valid);
+0163 wcl            = wcl(valid);
+0164 origin         = origin(valid);
+0165 rawSource      = rawSource(valid);
+0166 N              = numel(rxns);
+0167 <span class="keyword">if</span> N == 0
+0168     mergedKcatList = <a href="#_sub5" class="code" title="subfunction mergedKcatList = emptyMergedList()">emptyMergedList</a>();
+0169     <span class="keyword">return</span>
+0170 <span class="keyword">end</span>
+0171 
+0172 token  = cellfun(@<a href="#_sub1" class="code" title="subfunction s = normalizeSource(label)">normalizeSource</a>, rawSource, <span class="string">'UniformOutput'</span>, false);
+0173 isDb   = ismember(token, dbSources);
+0174 hasMeta = ~isnan(wcl) &amp; ~isnan(origin);
+0175 
+0176 <span class="comment">% Tier per row ('' marks a database row that fails the quality gate).</span>
+0177 tier = token;
+0178 dbIdx = find(isDb);
+0179 <span class="keyword">for</span> ii = dbIdx'
+0180     <span class="keyword">if</span> ~hasMeta(ii)
+0181         tier{ii} = <span class="string">'database_exact'</span>;
+0182     <span class="keyword">elseif</span> wcl(ii) == 0 &amp;&amp; origin(ii) &lt;= topOriginLimit
+0183         tier{ii} = <span class="string">'database_top'</span>;
+0184     <span class="keyword">elseif</span> (wcl(ii) == 0 &amp;&amp; origin(ii) &gt; topOriginLimit &amp;&amp; origin(ii) &lt;= bottomOriginLimit) || <span class="keyword">...</span>
+0185            (wcl(ii) &gt; 0  &amp;&amp; wcl(ii) &lt;= wildcardLimit       &amp;&amp; origin(ii) &lt;= bottomOriginLimit)
+0186         tier{ii} = <span class="string">'database_bottom'</span>;
+0187     <span class="keyword">else</span>
+0188         tier{ii} = <span class="string">''</span>;
+0189     <span class="keyword">end</span>
+0190 <span class="keyword">end</span>
+0191 
+0192 <span class="comment">% Rank per row (NaN if the tier is not listed in sourcePriority).</span>
+0193 rankPerRow = nan(N,1);
+0194 <span class="keyword">for</span> ii = 1:N
+0195     <span class="keyword">if</span> ~isempty(tier{ii}) &amp;&amp; isKey(rankMap, tier{ii})
+0196         rankPerRow(ii) = rankMap(tier{ii});
+0197     <span class="keyword">end</span>
+0198 <span class="keyword">end</span>
+0199 
+0200 <span class="comment">% Warn about non-database sources that were dropped for not being listed.</span>
+0201 droppedTokens = unique(token(~isDb &amp; isnan(rankPerRow)));
+0202 <span class="keyword">if</span> ~isempty(droppedTokens)
+0203     warning(<span class="string">'Dropping rows from source(s) not listed in sourcePriority: %s'</span>, <span class="keyword">...</span>
+0204         strjoin(droppedTokens', <span class="string">', '</span>));
+0205 <span class="keyword">end</span>
+0206 
+0207 <span class="comment">% For each reaction keep all rows of its best (lowest-rank) tier.</span>
+0208 keep = false(N,1);
+0209 validRank = ~isnan(rankPerRow);
+0210 uRxns = unique(rxns(validRank));
+0211 <span class="keyword">for</span> k = 1:numel(uRxns)
+0212     ri = find(strcmp(rxns, uRxns{k}) &amp; validRank);
+0213     minR = min(rankPerRow(ri));
+0214     keep(ri(rankPerRow(ri) == minR)) = true;
+0215 <span class="keyword">end</span>
+0216 
+0217 mergedKcatList             = struct();
+0218 mergedKcatList.source      = <span class="string">'merged'</span>;
+0219 mergedKcatList.kcatSource  = rawSource(keep);
+0220 mergedKcatList.rxns        = rxns(keep);
+0221 mergedKcatList.genes       = genes(keep);
+0222 mergedKcatList.substrates  = substrates(keep);
+0223 mergedKcatList.kcats       = kcats(keep);
+0224 mergedKcatList.eccodes     = eccodes(keep);
+0225 mergedKcatList.wildcardLvl = wcl(keep);
+0226 mergedKcatList.origin      = origin(keep);
+0227 <span class="keyword">end</span>
+0228 
+0229 <span class="comment">% ------------------------------------------------------------------------- %</span>
+0230 <a name="_sub1" href="#_subfunctions" class="code">function s = normalizeSource(label)</a>
+0231 <span class="comment">% Fold a source label to lowercase snake_case ('Sabio-RK' -&gt; 'sabio_rk').</span>
+0232 s = lower(strtrim(char(label)));
+0233 s = regexprep(s, <span class="string">'[^0-9a-z]+'</span>, <span class="string">'_'</span>);
+0234 s = regexprep(s, <span class="string">'^_+|_+$'</span>, <span class="string">''</span>);
+0235 <span class="keyword">end</span>
+0236 
+0237 <a name="_sub2" href="#_subfunctions" class="code">function v = getColCell(s, name, n)</a>
+0238 <span class="keyword">if</span> isfield(s, name) &amp;&amp; ~isempty(s.(name))
+0239     v = s.(name)(:);
+0240     <span class="keyword">if</span> numel(v) == 1 &amp;&amp; n &gt; 1
+0241         v = repmat(v, n, 1);
+0242     <span class="keyword">end</span>
+0243 <span class="keyword">else</span>
+0244     v = repmat({[]}, n, 1);
+0245 <span class="keyword">end</span>
+0246 <span class="keyword">end</span>
+0247 
+0248 <a name="_sub3" href="#_subfunctions" class="code">function v = getColNum(s, name, n)</a>
+0249 <span class="keyword">if</span> isfield(s, name) &amp;&amp; ~isempty(s.(name))
+0250     v = double(s.(name)(:));
+0251 <span class="keyword">else</span>
+0252     v = nan(n, 1);
+0253 <span class="keyword">end</span>
+0254 <span class="keyword">end</span>
+0255 
+0256 <a name="_sub4" href="#_subfunctions" class="code">function v = getRowSource(s, n)</a>
+0257 <span class="keyword">if</span> isfield(s, <span class="string">'kcatSource'</span>) &amp;&amp; ~isempty(s.kcatSource)
+0258     v = s.kcatSource(:);
+0259 <span class="keyword">elseif</span> isfield(s, <span class="string">'source'</span>)
+0260     v = repmat({char(s.source)}, n, 1);
+0261 <span class="keyword">else</span>
+0262     v = repmat({<span class="string">''</span>}, n, 1);
+0263 <span class="keyword">end</span>
+0264 <span class="keyword">end</span>
+0265 
+0266 <a name="_sub5" href="#_subfunctions" class="code">function mergedKcatList = emptyMergedList()</a>
+0267 mergedKcatList             = struct();
+0268 mergedKcatList.source      = <span class="string">'merged'</span>;
+0269 mergedKcatList.kcatSource  = {};
+0270 mergedKcatList.rxns        = {};
+0271 mergedKcatList.genes       = {};
+0272 mergedKcatList.substrates  = {};
+0273 mergedKcatList.kcats       = [];
+0274 mergedKcatList.eccodes     = {};
+0275 mergedKcatList.wildcardLvl = [];
+0276 mergedKcatList.origin      = [];
+0277 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of getKcatAcrossIsozymes</title>
+  <meta name="keywords" content="getKcatAcrossIsozymes">
+  <meta name="description" content="getKcatAcrossIsozymes  Fill missing kcats from isozymes of the same reaction.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">change_model</a> &gt; getKcatAcrossIsozymes.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/change_model&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>getKcatAcrossIsozymes
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>getKcatAcrossIsozymes  Fill missing kcats from isozymes of the same reaction.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function model = getKcatAcrossIsozymes(model) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> getKcatAcrossIsozymes  Fill missing kcats from isozymes of the same reaction.
+
+ For reactions without kcat value (0 in model.ec.kcat), isozymes are found
+ (being based on the same reaction in the conventional GEM), that do have a
+ kcat value assigned. The mean kcat value of these isozymes is then used to
+ fill in model.ec.kcat. Only isozymes with a kcat above 0 enter the mean: a
+ NaN or negative kcat of an isozyme is left out, and an entry whose kcat is
+ NaN is not filled.
+
+ Parameters
+ ----------
+ model : struct
+     an ecModel in full GECKO 3 format (with ecModel.ec structure), not
+     GECKO light.
+
+ Returns
+ -------
+ model : struct
+     an ecModel with kcat values assigned to isozymes in model.ec.kcat.
+
+ Examples
+ --------
+     model = getKcatAcrossIsozymes(model);
+
+ See also
+ --------
+ <a href="applyKcatConstraints.html" class="code" title="function model = applyKcatConstraints(model,varargin)">applyKcatConstraints</a>, <a href="setKcatForReactions.html" class="code" title="function ecModel = setKcatForReactions(ecModel,rxnIds,kcat)">setKcatForReactions</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function model = getKcatAcrossIsozymes(model)</a>
+0002 <span class="comment">% getKcatAcrossIsozymes  Fill missing kcats from isozymes of the same reaction.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% For reactions without kcat value (0 in model.ec.kcat), isozymes are found</span>
+0005 <span class="comment">% (being based on the same reaction in the conventional GEM), that do have a</span>
+0006 <span class="comment">% kcat value assigned. The mean kcat value of these isozymes is then used to</span>
+0007 <span class="comment">% fill in model.ec.kcat. Only isozymes with a kcat above 0 enter the mean: a</span>
+0008 <span class="comment">% NaN or negative kcat of an isozyme is left out, and an entry whose kcat is</span>
+0009 <span class="comment">% NaN is not filled.</span>
+0010 <span class="comment">%</span>
+0011 <span class="comment">% Parameters</span>
+0012 <span class="comment">% ----------</span>
+0013 <span class="comment">% model : struct</span>
+0014 <span class="comment">%     an ecModel in full GECKO 3 format (with ecModel.ec structure), not</span>
+0015 <span class="comment">%     GECKO light.</span>
+0016 <span class="comment">%</span>
+0017 <span class="comment">% Returns</span>
+0018 <span class="comment">% -------</span>
+0019 <span class="comment">% model : struct</span>
+0020 <span class="comment">%     an ecModel with kcat values assigned to isozymes in model.ec.kcat.</span>
+0021 <span class="comment">%</span>
+0022 <span class="comment">% Examples</span>
+0023 <span class="comment">% --------</span>
+0024 <span class="comment">%     model = getKcatAcrossIsozymes(model);</span>
+0025 <span class="comment">%</span>
+0026 <span class="comment">% See also</span>
+0027 <span class="comment">% --------</span>
+0028 <span class="comment">% applyKcatConstraints, setKcatForReactions</span>
+0029 
+0030 <span class="keyword">if</span> model.ec.geckoLight
+0031     error(<span class="string">'Provided model is a GECKO light version, this function is not relevant for such models'</span>)
+0032 <span class="keyword">end</span>
+0033 <span class="keyword">if</span> all(model.ec.kcat==0)
+0034     printOrange(<span class="string">'WARNING: No kcat values are provided in model.ec.kcat, model remains unchanged.\n'</span>);
+0035     <span class="keyword">return</span>
+0036 <span class="keyword">end</span>
+0037 
+0038 noKcats     = model.ec.kcat==0;
+0039 hasKcat     = model.ec.kcat&gt;0; <span class="comment">% NaN and negative kcats are not isozyme values</span>
+0040 rxnIDs      = regexprep(model.ec.rxns,<span class="string">'_EXP_\d+'</span>,<span class="string">''</span>);
+0041 noKcatID    = rxnIDs(noKcats);
+0042 yesKcatID   = rxnIDs(hasKcat);
+0043 yesKcatVal  = model.ec.kcat(hasKcat);
+0044 
+0045 noKcatVal   = cellfun(@(x) strcmp(x, yesKcatID), noKcatID, <span class="string">'UniformOutput'</span>, false);
+0046 noKcatVal   = cell2mat(cellfun(@(x) mean(yesKcatVal(x)), noKcatVal, <span class="string">'UniformOutput'</span>, false));
+0047 
+0048 newKcat     = find(~isnan(noKcatVal));
+0049 newKcatIdx  = find(noKcats);
+0050 newKcatIdx  = newKcatIdx(newKcat);
+0051 newKcat     = noKcatVal(newKcat);
+0052 
+0053 model.ec.kcat(newKcatIdx) = newKcat;
+0054 model.ec.source(newKcatIdx) = {<span class="string">'isozymes'</span>};
+0055 <span class="keyword">end</span>
+0056</pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

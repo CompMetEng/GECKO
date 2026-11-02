@@ -26,7 +26,8 @@ function findings = reviewKcatAssignment(rxnIds,kcats,sources,ecCodes,varargin)
 % ----------
 % rxnIds, kcats, sources, ecCodes : cell/double
 %     ec.rxns, ec.kcat, ec.source, ec.eccodes (or the equivalent
-%     subset), all the same length.
+%     subset), all the same length. The source labels 'custom' and
+%     'standard' are recognised without regard to letter case.
 %
 % Name-Value Arguments
 % --------------------

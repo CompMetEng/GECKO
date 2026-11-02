@@ -1,0 +1,188 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of ecFVA</title>
+  <meta name="keywords" content="ecFVA">
+  <meta name="description" content="ecFVA  Run flux variability analysis on an ecModel.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">flux_analysis</a> &gt; ecFVA.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/flux_analysis&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>ecFVA
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>ecFVA  Run flux variability analysis on an ecModel.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function [minFlux, maxFlux] = ecFVA(ecModel, model, varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> ecFVA  Run flux variability analysis on an ecModel.
+
+ Flux variability analysis is performed on the ecModel, and isozymic
+ reactions are combined to construct output minFlux and maxFlux vectors,
+ which follow the same order of model.rxns. The output from this function
+ does not include enzyme usage reactions; to observe these, one could
+ consider running flux variability directly on the ecModel.
+
+ Parameters
+ ----------
+ ecModel : struct
+     an ecModel in GECKO 3 format (with ecModel.ec structure).
+ model : struct
+     non-ecModel variant of the ecModel, to which the minFlux and maxFlux
+     will be mapped.
+
+ Name-Value Arguments
+ --------------------
+ runParallel : logical
+     speed up calculations by parallel processing. Requires the MATLAB
+     Parallel Computing Toolbox. If this is not installed, the
+     calculations will not be parallelized, regardless of what is
+     indicated as runParallel (default true).
+
+ Returns
+ -------
+ minFlux : double
+     vector of minimum flux rates, corresponding to model.rxns.
+ maxFlux : double
+     vector of maximum flux rates, corresponding to model.rxns.
+
+ Examples
+ --------
+     [minFlux, maxFlux] = ecFVA(ecModel, model);
+
+ See also
+ --------
+ mapRxnsToConv, <a href="plotEcFVA.html" class="code" title="function plotEcFVA(minFlux, maxFlux)">plotEcFVA</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [minFlux, maxFlux] = ecFVA(ecModel, model, varargin)</a>
+0002 <span class="comment">% ecFVA  Run flux variability analysis on an ecModel.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Flux variability analysis is performed on the ecModel, and isozymic</span>
+0005 <span class="comment">% reactions are combined to construct output minFlux and maxFlux vectors,</span>
+0006 <span class="comment">% which follow the same order of model.rxns. The output from this function</span>
+0007 <span class="comment">% does not include enzyme usage reactions; to observe these, one could</span>
+0008 <span class="comment">% consider running flux variability directly on the ecModel.</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% Parameters</span>
+0011 <span class="comment">% ----------</span>
+0012 <span class="comment">% ecModel : struct</span>
+0013 <span class="comment">%     an ecModel in GECKO 3 format (with ecModel.ec structure).</span>
+0014 <span class="comment">% model : struct</span>
+0015 <span class="comment">%     non-ecModel variant of the ecModel, to which the minFlux and maxFlux</span>
+0016 <span class="comment">%     will be mapped.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% Name-Value Arguments</span>
+0019 <span class="comment">% --------------------</span>
+0020 <span class="comment">% runParallel : logical</span>
+0021 <span class="comment">%     speed up calculations by parallel processing. Requires the MATLAB</span>
+0022 <span class="comment">%     Parallel Computing Toolbox. If this is not installed, the</span>
+0023 <span class="comment">%     calculations will not be parallelized, regardless of what is</span>
+0024 <span class="comment">%     indicated as runParallel (default true).</span>
+0025 <span class="comment">%</span>
+0026 <span class="comment">% Returns</span>
+0027 <span class="comment">% -------</span>
+0028 <span class="comment">% minFlux : double</span>
+0029 <span class="comment">%     vector of minimum flux rates, corresponding to model.rxns.</span>
+0030 <span class="comment">% maxFlux : double</span>
+0031 <span class="comment">%     vector of maximum flux rates, corresponding to model.rxns.</span>
+0032 <span class="comment">%</span>
+0033 <span class="comment">% Examples</span>
+0034 <span class="comment">% --------</span>
+0035 <span class="comment">%     [minFlux, maxFlux] = ecFVA(ecModel, model);</span>
+0036 <span class="comment">%</span>
+0037 <span class="comment">% See also</span>
+0038 <span class="comment">% --------</span>
+0039 <span class="comment">% mapRxnsToConv, plotEcFVA</span>
+0040 
+0041 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0042     <span class="string">'runParallel'</span>, true});
+0043 runParallel = p.runParallel;
+0044 
+0045 rxnIDs = regexprep(ecModel.rxns,<span class="string">'(_REV)?(_EXP_\d+)?$'</span>,<span class="string">''</span>);
+0046 [rxnIDmap, convRxnID] = findgroups(rxnIDs);
+0047 
+0048 N = numel(convRxnID);
+0049 maxFluxByGroup = nan(N,1);
+0050 minFluxByGroup = nan(N,1);
+0051 
+0052 <span class="comment">% nW == 0 forces parfor to run as a plain for loop (no pool required or</span>
+0053 <span class="comment">% created); nW == Inf lets Parallel Computing Toolbox manage the pool.</span>
+0054 <span class="comment">% Falls back to serial automatically when the toolbox isn't installed,</span>
+0055 <span class="comment">% rather than erroring the way an unconditional gcp/parpool call would.</span>
+0056 nW = parallelWorkersRAVEN(runParallel);
+0057 
+0058 PB = progressReport(N, <span class="string">'Running ecFVA'</span>);
+0059 
+0060 parfor (i=1:N, nW)
+0061     tmpModel = ecModel;
+0062     tmpModel.c = zeros(numel(tmpModel.rxns),1);
+0063 
+0064     rxnsToOptim = find(rxnIDmap == i);
+0065     rxnsOptIDs  = ecModel.rxns(rxnsToOptim);
+0066     rxnsToMin = endsWith(rxnsOptIDs,<span class="string">'_REV'</span>) | contains(rxnsOptIDs,<span class="string">'_REV_EXP_'</span>);
+0067     rxnsToMax = rxnsToOptim(~rxnsToMin);
+0068     rxnsToMin = rxnsToOptim(rxnsToMin);
+0069 
+0070     tmpModel.c(rxnsToMax) = 1;
+0071     tmpModel.c(rxnsToMin) = -1;
+0072     solMax=solveLP(tmpModel);
+0073     <span class="keyword">if</span> ~isempty(solMax.x)
+0074         <span class="comment">% Exact bound for this canonical reaction, read directly off this</span>
+0075         <span class="comment">% group's own solve (the &quot;diagonal&quot;): forward minus reverse</span>
+0076         <span class="comment">% variants from the one LP that jointly optimised them, not the</span>
+0077         <span class="comment">% best value each variant happened to reach in whichever group's</span>
+0078         <span class="comment">% solve maximised it -- an &quot;envelope&quot; that can combine values from</span>
+0079         <span class="comment">% different, not necessarily jointly feasible, flux distributions.</span>
+0080         maxFluxByGroup(i) = sum(solMax.x(rxnsToMax)) - sum(solMax.x(rxnsToMin));
+0081     <span class="keyword">end</span>
+0082     tmpModel.c(rxnsToMax) = -1;
+0083     tmpModel.c(rxnsToMin) = 1;
+0084     solMin=solveLP(tmpModel);
+0085     <span class="keyword">if</span> ~isempty(solMin.x)
+0086         minFluxByGroup(i) = sum(solMin.x(rxnsToMax)) - sum(solMin.x(rxnsToMin));
+0087     <span class="keyword">end</span>
+0088     count(PB);
+0089 <span class="keyword">end</span>
+0090 PB.done;
+0091 
+0092 <span class="comment">% Reorder from canonical-id order to model.rxns order. No min/max swap</span>
+0093 <span class="comment">% correction is needed here (unlike a row-reduced envelope): both bounds</span>
+0094 <span class="comment">% come from the same group's LP over the same feasible region with only</span>
+0095 <span class="comment">% the objective direction flipped, so minFluxByGroup(i) &lt;= maxFluxByGroup(i)</span>
+0096 <span class="comment">% always holds whenever both solves succeeded.</span>
+0097 [mapCheck, origIdx] = ismember(model.rxns, convRxnID);
+0098 <span class="keyword">if</span> ~all(mapCheck)
+0099     error(<span class="string">'Not all reactions from model.rxns can be found in the ecModel. Are you sure that ecModel is derived from model?'</span>)
+0100 <span class="keyword">end</span>
+0101 minFlux = minFluxByGroup(origIdx);
+0102 maxFlux = maxFluxByGroup(origIdx);
+0103 
+0104 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

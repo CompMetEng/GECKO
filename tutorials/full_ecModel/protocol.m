@@ -23,14 +23,14 @@
 %% Installation
 % - Install RAVEN & GECKO
 %   - Install RAVEN by following the installation instructions:
-%     https://github.com/SysBioChalmers/RAVEN/wiki/Installation
+%     https://raven-docs.readthedocs.io/en/latest/installation/raven.html
 %   - Simplest, RAVEN can be installed as MATLAB Add-On:
 %     https://se.mathworks.com/help/matlab/matlab_env/get-add-ons.html
 %   - The installation of Gurobi as LP solver is highly recommended
 checkRaven; % Confirm that RAVEN is functional. On RAVEN 2, run checkInstallation.
 
 %   - Install GECKO by following the installation instructions:
-%     https://github.com/SysBioChalmers/GECKO/wiki/Installation-and-upgrade
+%     https://gecko-docs.readthedocs.io/en/latest/installation/
 %   - As RAVEN, GECKO can also be installed as MATLAB Add-On (link above)
 %   - Add the appropriate GECKO (sub)folders to MATLAB path. GECKOInstaller
 %     is located in the GECKO root folder: navigate there first if it is
@@ -54,17 +54,19 @@ GECKOInstaller.install
 % STEP 3-7 Modify the model adapter
 % In the Nature Protocols paper is explained how to decide on the organism-
 % and model-specific parameters in the model adapter, which for this
-% tutorial is located at tutorials/full_ecModel/YeastGEMAdapter.m.
+% tutorial is located at tutorials/full_ecModel/model_adapter.toml. The
+% same file configures geckopy, the Python version of GECKO.
 
 %% STAGE 1: Expansion from a starting metabolic model to an ecModel structure
 % STEP 8 Set modelAdapter
-adapterLocation = fullfile(findGECKOroot,'tutorials','full_ecModel','YeastGEMAdapter.m');
+adapterLocation = fullfile(findGECKOroot,'tutorials','full_ecModel');
 ModelAdapter = ModelAdapterManager.setDefault(adapterLocation);
 
-% With the above line, we set the YeastGEMAdapter as the default adapter
-% from here onwards, which means that any GECKO function that requires a
-% model adapter as input will use YeastGEMAdapter. This is until you have
-% set a new default adapter, or closed MATLAB.
+% With the above line, we set the model adapter of this project folder,
+% read from its model_adapter.toml, as the default adapter from here
+% onwards, which means that any GECKO function that requires a model
+% adapter as input will use it. This is until you have set a new default
+% adapter, or closed MATLAB.
 
 % We can also load the ModelAdapter into the MATLAB Workspace, so that you
 % can quickly see its content, for instance the parameters.
@@ -126,7 +128,11 @@ saveEcModel(ecModel,'ecYeastGEM_stage1.yml');
 % STEP 15 Different kcat sources
 % Decide which kcat source to use. In the steps below, all options are
 % shown. Not all are required, it is up to the user to decide which ones
-% they want to use.
+% they want to use. Each source is kept as a file in data/kcats (brenda.tsv,
+% dlkcat.tsv, okp_<method>.tsv, custom.tsv), which assignKcats combines in
+% STEP 26-31. [kcat_assignment] in model_adapter.toml sets how; this
+% tutorial uses the gecko_classic preset. updateKcatSources(ecModel)
+% gathers all sources that the configuration needs in one call.
 
 % STEP 16-17 Gather EC numbers, required for BRENDA as kcat source
 % Requires EC numbers, which are here first taken from the starting model,
@@ -140,9 +146,9 @@ ecModel         = getECfromDatabase(ecModel,'ecRxns',noEC);
 ecModel         = getECfromDatabase(ecModel);
 
 % STEP 18-19 Gather kcat values from BRENDA
-kcatList_fuzzy  = fuzzyKcatMatching(ecModel);
-% Now we have a kcatList, which will be used to update ecModel in a later
-% step.
+% Fuzzy matching against the BRENDA data (see fuzzyKcatMatching), kept as
+% data/kcats/brenda.tsv. The kcatList is returned as well.
+kcatList_fuzzy  = kcatsFromBrenda(ecModel);
 
 % STEP 20-22 Gather metabolite SMILES, required for DLKcat as kcat source
 % Metabolite SMILES are gathered from PubChem.
@@ -163,36 +169,54 @@ kcatList_fuzzy  = fuzzyKcatMatching(ecModel);
 %runDLKcat();
 
 % STEP 25 Load DLKcat output
-kcatList_DLKcat = readDLKcatOutput(ecModel);
+% The DLKcat output in data/DLKcat.tsv, kept as data/kcats/dlkcat.tsv.
+kcatList_DLKcat = kcatsFromDLKcat(ecModel);
 
-% STEP 26 Combine kcat from BRENDA and DLKcat
-% For each reaction, the first source in the priority list that has a kcat
-% is used: BRENDA matches without EC wildcard and with origin up to 6
-% ('database_top'), then DLKcat, then any remaining BRENDA match
-% ('database_bottom'). See doc mergeKcats for the tier definitions.
-kcatList_merged = mergeKcats({kcatList_fuzzy, kcatList_DLKcat}, ...
-    {'database_top', 'dlkcat', 'database_bottom'});
+% STEP 26-31 Assign kcat values
+% assignKcats combines the kcat source files and applies the result to
+% ecModel. With the gecko_classic preset of this tutorial:
+% STEP 26 For each reaction, the first source in the priority list that
+%   has a kcat is used: custom kcats, then BRENDA matches without EC
+%   wildcard and with origin up to 6 ('database_top'), then DLKcat, then
+%   any remaining BRENDA match ('database_bottom'). See doc mergeKcats for
+%   the tier definitions.
+% STEP 27 The kcats are written to ecModel.ec.kcat.
+% STEP 28 Custom kcat values. During the development of yeast-GEM ecModels
+%   (through GECKO 1 & 2), various kcat values have been manually curated,
+%   to result in a model that is able to validate a wide range of
+%   phenotypes. These curations are summarized under data/customKcats.tsv.
+%   A data/kcats/custom.tsv file (see saveKcatSource) is used instead when
+%   it exists.
+% STEP 29 Reactions without a kcat take one from their isozymes.
+% STEP 30 Get standard kcat. Assign a protein cost to reactions without
+%   gene assocation, see below.
+% STEP 31 Apply kcat constraints from ecModel.ec.kcat to ecModel.S, see
+%   below.
+% The decision per reaction is in output/<model id>_kcatDecisions.tsv:
+% which stage and source gave its kcat, and how many values there were.
+% collectKcats gives the same decisions without changing ecModel.
+[ecModel, kcatDecisions] = assignKcats(ecModel);
 
-% STEP 27 Take kcatList and populate edModel.ec.kcat
-ecModel  = assignKcatValues(ecModel, kcatList_merged);
+% Choosing a kcat strategy. This tutorial reproduces the published
+% ecYeastGEM with gecko_classic. For a new ecModel, the preset in
+% model_adapter.toml chooses how kcats are found:
+% - brenda_ec_tree (the default): the organism's own BRENDA value, else
+%   the median of the EC number's measurements (kcatsFromECTree); the
+%   OpenKineticsPredictor (OKP) methods combined for reactions without an
+%   EC number.
+% - ec_tree_okp: the EC tree and the OKP methods combined for every
+%   reaction, weighted by how reliable each is.
+% - okp: the OKP methods combined only, for when the model's EC numbers are
+%   not trusted.
+% Custom kcats (data/kcats/custom.tsv) come first in every preset. Compare
+% presets with collectKcats before choosing; kcatAssignmentConfig shows what
+% a preset does. An old data/customKcats.tsv becomes data/kcats/custom.tsv
+% with convertCustomKcats(ecModel), and upgradeGECKOproject(projectPath)
+% lists all steps from a GECKO 3 project to this layout.
 
-% STEP 28 Apply custom kcat values
-% During the development of yeast-GEM ecModels (through GECKO 1 & 2),
-% various kcat values have been manually curated, to result in a model that
-% is able to validate a wide range of phenotypes. These curations are
-% summarized under /data/customKcats.tsv, and applied here.
-[ecModel, rxnUpdated, notMatch] = applyCustomKcats(ecModel);
-
-% To modify the S-matrix, to actually implement the kcat/MW constraints,
-% applyKcatConstraints should be run. This is done in STEP 31.
-
-% STEP 29 Get kcat values across isozymes
-ecModel = getKcatAcrossIsozymes(ecModel);
-
-% STEP 30 Get standard kcat
-% Assign a protein cost to reactions without gene assocation. These
-% reactions are identified as those without a corresponding entry in
-% ecModel.grRules. The following reactions are exempted:
+% About STEP 30: the standard kcat (getStandardKcat) is assigned to
+% reactions without gene assocation. These reactions are identified as
+% those without a corresponding entry in ecModel.grRules. The following reactions are exempted:
 % A Exchange reactions: exchanging a metabolite across the model boundary,
 %   not representing a real enzymatic reaction.
 % B Transport reactions: transporting a metabolite with the same name from
@@ -208,20 +232,17 @@ ecModel = getKcatAcrossIsozymes(ecModel);
 %   correctly identify all non-enzyme reactions that should be ignored by
 %   getStandardKcat, /data/pseudoRxns.tsv can be specified in the adapter
 %   folder, containing the relevant reaction identifiers.
-[ecModel, rxnsMissingGPR, standardMW, standardKcat] = getStandardKcat(ecModel);
 
-% STEP 31 Apply kcat constraints from ecModel.ec.kcat to ecModel.S
-% While STEP 27-30 add or modify values in ecModel.ec.kcat, these
-% contraints are not yet applied to the S-matrix: the enzyme is not yet set
-% as pseudo- substrate with the -MW/kcat stoichiometry. Now,
-% applyKcatConstraints will take the values from ecModel.ec.kcat, considers
+% About STEP 31: while STEP 27-30 add or modify values in ecModel.ec.kcat,
+% these contraints are not yet applied to the S-matrix: the enzyme is not
+% yet set as pseudo- substrate with the -MW/kcat stoichiometry. Then,
+% applyKcatConstraints takes the values from ecModel.ec.kcat, considers
 % any complex/subunit data that is tracked in ecModel.ec.rxnEnzMat,
 % together with the MW in ecModel.ec.mw, and uses this to modify the enzyme
 % usage coefficients directly in ecModel.S. Any time a change is made to
 % the .kcat, .rxnEnzMat or .mw fields, the applyKcatConstraints function
 % should be run again to reapply the new constraints onto the metabolic
-% model.
-ecModel = applyKcatConstraints(ecModel);
+% model. assignKcats ran it already.
 
 % STEP 32 Set upper bound of protein pool
 % The protein pool exchange is constrained by the total protein content
@@ -335,11 +356,11 @@ struct2table(tunedKcats)
 % As example, the kcat of 5'-phosphoribosylformyl glycinamidine synthetase
 % (reaction r_0079) was increased from 0.05 to 0.5 by sensitivityTuning.
 % Inspecting the kcat source might help to determine if this is reasonable.
-rxnIdx = find(strcmp(kcatList_merged.rxns,'r_0079'));
+rxnIdx = find(strcmp(kcatList_fuzzy.rxns,'r_0079'));
 doc fuzzyKcatMatching % To check the meaning of wildcardLvl and origin.
-kcatList_merged.wildcardLvl(rxnIdx) % 0: no EC number wildcard.
-kcatList_merged.origin(rxnIdx) % 4: any organism, any substrate, kcat.
-kcatList_merged.eccodes(rxnIdx) % EC number 6.3.5.3.
+kcatList_fuzzy.wildcardLvl(rxnIdx) % 0: no EC number wildcard.
+kcatList_fuzzy.origin(rxnIdx) % 4: any organism, any substrate, kcat.
+kcatList_fuzzy.eccodes(rxnIdx) % EC number 6.3.5.3.
 
 % On BRENDA https://www.brenda-enzymes.org/enzyme.php?ecno=6.3.5.3#TURNOVER%20NUMBER%20[1/s]
 % the kcat value is from E. coli with NH4+ as substrate. The reaction
@@ -457,7 +478,7 @@ ecModel = loadEcModel('ecYeastGEM.yml');
 
 % STEP 67-68 Simulate Crabtree effect with protein pool
 % We will below run a custom plotCrabtree function that is kept in the code
-% subfolder, which YeastGEMAdapter adds to the MATLAB path.
+% subfolder, which the model adapter adds to the MATLAB path.
 [fluxes, gRate] = plotCrabtree(ecModel);
 % fluxes has all the predicted fluxes, while gRate is a vector with the
 % corresponding growth rates that were simulated, as visualized on the

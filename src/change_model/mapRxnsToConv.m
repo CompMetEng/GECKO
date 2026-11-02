@@ -43,11 +43,12 @@ fluxes = fluxVect;
 rxnIDs = ecModel.rxns;
 
 % Invert flux of _REV reactions
-revRxns = endsWith(rxnIDs,'_REV') | contains(rxnIDs,'_REV_EXP_');
+% The suffixes are added in the order _REV, _EXP_n, so strip _EXP_n first and
+% then _REV, each only at the end of the id (an id like R_REVX is left intact).
+rxnIDs = regexprep(rxnIDs,'_EXP_\d+$','');
+revRxns = endsWith(rxnIDs,'_REV');
 fluxes(revRxns,:) = -fluxes(revRxns,:);
-rxnIDs(revRxns) = replace(rxnIDs(revRxns),'_REV','');
-% Remove _EXP_. suffixes
-rxnIDs = regexprep(rxnIDs,'_EXP_\d+','');
+rxnIDs(revRxns) = regexprep(rxnIDs(revRxns),'_REV$','');
 
 % Map and sum fluxes to converted reaction IDs
 [rxnIDmap, convRxnID] = findgroups(rxnIDs);

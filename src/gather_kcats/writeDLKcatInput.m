@@ -14,7 +14,9 @@ function writtenTable = writeDLKcatInput(model, varargin)
 % ecRxns : logical
 %     for which reactions (from model.ec.rxns) DLKcat should predict kcat
 %     values, provided as logical vector with same length as model.ec.rxns
-%     (default: all reactions).
+%     (default: all reactions). A vector without true entries selects no
+%     reaction and gives an empty file. The rows follow the order of
+%     model.ec.rxns.
 % modelAdapter : ModelAdapter
 %     a loaded model adapter (default: the current default model adapter).
 % onlyWithSmiles : logical
@@ -40,9 +42,7 @@ function writtenTable = writeDLKcatInput(model, varargin)
 %
 % See also
 % --------
-% runDLKcat, readDLKcatOutput
-
-[geckoPath, ~] = findGECKOroot();
+% runDLKcat, readDLKcatOutput, extractEnzymeSubstratePairs
 
 p = parseGECKOargs(varargin, { ...
     'ecRxns',         []; ...
@@ -58,7 +58,7 @@ overwrite      = p.overwrite;
 
 if isempty(ecRxnsSel)
     ecRxnsSel = true(numel(model.ec.rxns),1);
-elseif ~logical(ecRxnsSel)
+elseif ~islogical(ecRxnsSel)
     error('ecRxns should be provided as logical vector')
 elseif numel(ecRxnsSel)~=numel(model.ec.rxns)
     error('Length of ecRxns is not the same as model.ec.rxns')
@@ -89,95 +89,26 @@ if isempty(overwrite) || ~overwrite % If is true
     end
 end
 
-if ~model.ec.geckoLight
-   origRxns = model.ec.rxns;
-else
-   origRxns = extractAfter(model.ec.rxns,4);
-end
-origRxnsToInclude = origRxns(ecRxnsSel);
-
-% Map back to original reactions, to extract substrates
-[sanityCheck,origRxnIdxs] = ismember(origRxnsToInclude,model.rxns);
-if ~all(sanityCheck)
-    error('Not all reactions in model.ec.rxns are found in model.rxns')
-end
-
-% Ignore selected metabolites (metal ions, proteins etc.). First check by
-% name (case insensitive, without white spaces and special characters),
-% then also try to match with metSmiles (if available).
-metsNoSpecialChars = lower(regexprep(model.metNames,'[^0-9a-zA-Z]+',''));
-if exist(fullfile(params.path,'data','DLKcatIgnoreMets.tsv'),'file')
-    fID        = fopen(fullfile(params.path,'data','DLKcatIgnoreMets.tsv'));
-else
-    fID        = fopen(fullfile(geckoPath,'databases','DLKcatIgnoreMets.tsv'));
-end
-fileData   = textscan(fID,'%s %s','delimiter','\t');
-fclose(fID);
-[ignoreMets, ignoreSmiles] = deal(fileData{[1,2]});
-ignoreMets = lower(regexprep(ignoreMets,'[^0-9a-zA-Z]+',''));
-ignoreSmiles(cellfun(@isempty,ignoreSmiles)) = [];
-
-ignoreMetsIdx  = logical(ismember(metsNoSpecialChars,ignoreMets));
-if isfield(model,'metSmiles')
-    ignoreMetsIdx = ignoreMetsIdx | logical(ismember(model.metSmiles,ignoreSmiles));
-end
-% Also leave out protein-usage pseudometabolites
-ignoreMetsIdx = ignoreMetsIdx | startsWith(model.mets,'prot_');
-reducedS = model.S;
-reducedS(ignoreMetsIdx,:) = 0;
-
-% Ignore currency metabolites if they occur in pairs. First check by
-% name (case insensitive, without white spaces and special characters),
-% then also try to match with metSmiles (if available).
-if exist(fullfile(params.path,'data','DLKcatCurrencyMets.tsv'),'file')
-    fID = fopen(fullfile(params.path,'data','DLKcatCurrencyMets.tsv'));
-else
-    fID = fopen(fullfile(geckoPath,'databases','DLKcatCurrencyMets.tsv'));
-end
-fileData = textscan(fID,'%s %s','delimiter','\t');
-fclose(fID);
-[currencyMets(:,1), currencyMets(:,2)] = deal(fileData{[1,2]});
-currencyMets = lower(regexprep(currencyMets,'[^0-9a-zA-Z]+',''));
-
-for i=1:size(currencyMets,1)
-    subs = strcmp(currencyMets(i,1),metsNoSpecialChars);
-    prod = strcmp(currencyMets(i,2),metsNoSpecialChars);
-    [~,subsRxns]=find(reducedS(subs,:));
-    [~,prodRxns]=find(reducedS(prod,:));
-    pairRxns = intersect(subsRxns,prodRxns);
-    tempRedS=reducedS;
-    tempRedS([find(subs);find(prod)],pairRxns) = 0;
-    % Do not remove currency mets if no substrate remains
-    rxnsWithRemainingSubstrates = any(tempRedS(:,pairRxns) < 0,1);
-    reducedS([find(subs);find(prod)],intersect(pairRxns,pairRxns(rxnsWithRemainingSubstrates))) = 0;
-end
-
-% origRxnIdxs already selects exactly the model.rxns columns for the requested
-% ecRxns subset (one column per requested reaction, via origRxns(ecRxns) above), so
-% clearedRedS needs no further filtering here.
-clearedRedS = reducedS(:,origRxnIdxs);
-
-% Enumerate all substrates for each reaction. clearedRedS has one column per entry
-% of ecRxnsSel, in that same order, so `reactions` here indexes *that subset*, not
-% model.ec.rxns directly --- translate back to a real model.ec.rxns index before
-% using it against model.ec.rxns / model.ec.rxnEnzMat, which are always full-length.
-[substrates, reactions] = find(clearedRedS<0);
-globalEcRxns = ecRxnsSel(reactions);
-
-% Enumerate all proteins for each reaction
-[proteins, enzRows] = find(transpose(model.ec.rxnEnzMat(globalEcRxns,:)));
+pairs = extractEnzymeSubstratePairs(model, 'ecRxns', ismember((1:numel(model.ec.rxns))', ecRxnsSel), ...
+    'modelAdapter', modelAdapter);
 
 % Prepare output
-out(1,:) = model.ec.rxns(globalEcRxns(enzRows));
-out(2,:) = model.ec.genes(proteins);
-out(3,:) = model.metNames(substrates(enzRows));
+if isempty(pairs.ecRxn)
+    out = cell(6,0);
+    writeRows(filename, out)
+    writtenTable = out;
+    return
+end
+out(1,:) = model.ec.rxns(pairs.ecRxn);
+out(2,:) = model.ec.genes(pairs.protein);
+out(3,:) = model.metNames(pairs.met);
 if isfield(model,'metSmiles')
-    out(4,:) = model.metSmiles(substrates(enzRows));
+    out(4,:) = model.metSmiles(pairs.met);
 else
-    out(4,:) = cell(numel(substrates(enzRows)),1);
+    out(4,:) = cell(numel(pairs.met),1);
 end
 
-out(5,:) = model.ec.sequence(proteins);
+out(5,:) = model.ec.sequence(pairs.protein);
 if onlyWithSmiles
     out(:,cellfun(@isempty,out(4,:))) = [];
 else
@@ -186,11 +117,16 @@ end
 out(6,:) = cell(numel(out(1,:)),1);
 out(6,:) = {'NA'};
 
-% Write file
+writeRows(filename, out)
+writtenTable = out;
+end
+
+function writeRows(filename, out)
+% Write the rows (one per column of out); an empty table gives an empty file.
 fID = fopen(filename,'w');
-fprintf(fID,'%s\t%s\t%s\t%s\t%s\t%s\n',out{:});
+if ~isempty(out)
+    fprintf(fID,'%s\t%s\t%s\t%s\t%s\t%s\n',out{:});
+end
 fclose(fID);
 fprintf('Model-specific DLKcat input stored at %s\n',filename);
-
-writtenTable = out;
 end

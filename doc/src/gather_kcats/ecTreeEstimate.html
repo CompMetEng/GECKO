@@ -1,0 +1,212 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of ecTreeEstimate</title>
+  <meta name="keywords" content="ecTreeEstimate">
+  <meta name="description" content="ecTreeEstimate  EC-tree kcat estimates for EC numbers.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">gather_kcats</a> &gt; ecTreeEstimate.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/gather_kcats&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>ecTreeEstimate
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>ecTreeEstimate  EC-tree kcat estimates for EC numbers.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function [log10kcat, n, depth, ecUsed] = ecTreeEstimate(eccodes, measurements, k) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> ecTreeEstimate  EC-tree kcat estimates for EC numbers.
+
+ For each EC number, the median log10 kcat of its measurements is pulled
+ toward the estimate of its parent class with weight n / (n + k), where n
+ is the number of measurements: the global median, then the 2-digit
+ class, the 3-digit class and the full EC number, in that order. A
+ well-measured EC keeps its own median; a sparsely measured one leans on
+ its class. geckopy has the same (geckopy.gather_kcats.ec_tree.ECTree).
+
+ Parameters
+ ----------
+ eccodes : cell
+     per query one or more EC numbers separated by ';'. The one with most
+     measurements of its full EC is used (the first on a tie).
+ measurements : struct
+     BRENDA measurement table with fields ec and log10kcat (see
+     loadBrendaMeasurements).
+ k : double
+     shrinkage constant (default 5): the number of measurements at which
+     an EC's own median and its class count equally.
+
+ Returns
+ -------
+ log10kcat : double
+     the estimates; the global median for queries without measurements.
+ n : double
+     number of measurements of the full EC number used.
+ depth : double
+     deepest EC level with measurements: 4, 3, 2, or 0 when there are
+     none (or no EC number).
+ ecUsed : cell
+     the EC number used.
+
+ Examples
+ --------
+     m = loadBrendaMeasurements();
+     [v, n, depth] = ecTreeEstimate({'1.1.1.1'; '2.7.1.1;2.7.1.2'}, m);
+     kcat = 10.^v;
+
+ See also
+ --------
+ <a href="kcatsFromECTree.html" class="code" title="function kcatList = kcatsFromECTree(model, varargin)">kcatsFromECTree</a>, <a href="loadBrendaMeasurements.html" class="code" title="function measurements = loadBrendaMeasurements(varargin)">loadBrendaMeasurements</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="kcatsFromECTree.html" class="code" title="function kcatList = kcatsFromECTree(model, varargin)">kcatsFromECTree</a>	kcatsFromECTree  Estimate kcats from the EC tree and keep them as a source file.</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function p = parentEC(ec, d)</a></li><li><a href="#_sub2" class="code">function [c, med] = countOf(level, key)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [log10kcat, n, depth, ecUsed] = ecTreeEstimate(eccodes, measurements, k)</a>
+0002 <span class="comment">% ecTreeEstimate  EC-tree kcat estimates for EC numbers.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% For each EC number, the median log10 kcat of its measurements is pulled</span>
+0005 <span class="comment">% toward the estimate of its parent class with weight n / (n + k), where n</span>
+0006 <span class="comment">% is the number of measurements: the global median, then the 2-digit</span>
+0007 <span class="comment">% class, the 3-digit class and the full EC number, in that order. A</span>
+0008 <span class="comment">% well-measured EC keeps its own median; a sparsely measured one leans on</span>
+0009 <span class="comment">% its class. geckopy has the same (geckopy.gather_kcats.ec_tree.ECTree).</span>
+0010 <span class="comment">%</span>
+0011 <span class="comment">% Parameters</span>
+0012 <span class="comment">% ----------</span>
+0013 <span class="comment">% eccodes : cell</span>
+0014 <span class="comment">%     per query one or more EC numbers separated by ';'. The one with most</span>
+0015 <span class="comment">%     measurements of its full EC is used (the first on a tie).</span>
+0016 <span class="comment">% measurements : struct</span>
+0017 <span class="comment">%     BRENDA measurement table with fields ec and log10kcat (see</span>
+0018 <span class="comment">%     loadBrendaMeasurements).</span>
+0019 <span class="comment">% k : double</span>
+0020 <span class="comment">%     shrinkage constant (default 5): the number of measurements at which</span>
+0021 <span class="comment">%     an EC's own median and its class count equally.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Returns</span>
+0024 <span class="comment">% -------</span>
+0025 <span class="comment">% log10kcat : double</span>
+0026 <span class="comment">%     the estimates; the global median for queries without measurements.</span>
+0027 <span class="comment">% n : double</span>
+0028 <span class="comment">%     number of measurements of the full EC number used.</span>
+0029 <span class="comment">% depth : double</span>
+0030 <span class="comment">%     deepest EC level with measurements: 4, 3, 2, or 0 when there are</span>
+0031 <span class="comment">%     none (or no EC number).</span>
+0032 <span class="comment">% ecUsed : cell</span>
+0033 <span class="comment">%     the EC number used.</span>
+0034 <span class="comment">%</span>
+0035 <span class="comment">% Examples</span>
+0036 <span class="comment">% --------</span>
+0037 <span class="comment">%     m = loadBrendaMeasurements();</span>
+0038 <span class="comment">%     [v, n, depth] = ecTreeEstimate({'1.1.1.1'; '2.7.1.1;2.7.1.2'}, m);</span>
+0039 <span class="comment">%     kcat = 10.^v;</span>
+0040 <span class="comment">%</span>
+0041 <span class="comment">% See also</span>
+0042 <span class="comment">% --------</span>
+0043 <span class="comment">% kcatsFromECTree, loadBrendaMeasurements</span>
+0044 
+0045 <span class="keyword">if</span> nargin &lt; 3 || isempty(k)
+0046     k = 5;
+0047 <span class="keyword">end</span>
+0048 <span class="keyword">if</span> ~(isnumeric(k) &amp;&amp; isscalar(k) &amp;&amp; k &gt; 0)
+0049     error(<span class="string">'ecTreeEstimate:k'</span>, <span class="string">'k must be a positive number.'</span>)
+0050 <span class="keyword">end</span>
+0051 <span class="keyword">if</span> ischar(eccodes) || isstring(eccodes)
+0052     eccodes = cellstr(eccodes);
+0053 <span class="keyword">end</span>
+0054 ec = measurements.ec(:);
+0055 v = measurements.log10kcat(:);
+0056 globalMedian = median(v);
+0057 lv = cell(4, 1);
+0058 <span class="keyword">for</span> d = [2 3 4]
+0059     <span class="keyword">if</span> d == 4
+0060         key = ec;
+0061     <span class="keyword">else</span>
+0062         key = cellfun(@(e) <a href="#_sub1" class="code" title="subfunction p = parentEC(ec, d)">parentEC</a>(e, d), ec, <span class="string">'UniformOutput'</span>, false);
+0063     <span class="keyword">end</span>
+0064     [keys, ~, g] = unique(key);
+0065     lv{d} = struct(<span class="string">'keys'</span>, {keys}, <span class="string">'median'</span>, accumarray(g, v, [], @median), <span class="keyword">...</span>
+0066         <span class="string">'n'</span>, accumarray(g, 1));
+0067 <span class="keyword">end</span>
+0068 
+0069 nq = numel(eccodes);
+0070 log10kcat = repmat(globalMedian, nq, 1);
+0071 n = zeros(nq, 1);
+0072 depth = zeros(nq, 1);
+0073 ecUsed = repmat({<span class="string">''</span>}, nq, 1);
+0074 <span class="keyword">for</span> q = 1:nq
+0075     ecs = strtrim(strsplit(char(eccodes{q}), <span class="string">';'</span>));
+0076     ecs = ecs(~cellfun(@isempty, ecs));
+0077     <span class="keyword">if</span> isempty(ecs)
+0078         <span class="keyword">continue</span>
+0079     <span class="keyword">end</span>
+0080     best = ecs{1};
+0081     bestN = -1;
+0082     <span class="keyword">for</span> e = 1:numel(ecs)
+0083         c = <a href="#_sub2" class="code" title="subfunction [c, med] = countOf(level, key)">countOf</a>(lv{4}, ecs{e});
+0084         <span class="keyword">if</span> c &gt; bestN
+0085             best = ecs{e};
+0086             bestN = c;
+0087         <span class="keyword">end</span>
+0088     <span class="keyword">end</span>
+0089     value = globalMedian;
+0090     <span class="keyword">for</span> d = [2 3 4]
+0091         <span class="keyword">if</span> d == 4
+0092             key = best;
+0093         <span class="keyword">else</span>
+0094             key = <a href="#_sub1" class="code" title="subfunction p = parentEC(ec, d)">parentEC</a>(best, d);
+0095         <span class="keyword">end</span>
+0096         [c, med] = <a href="#_sub2" class="code" title="subfunction [c, med] = countOf(level, key)">countOf</a>(lv{d}, key);
+0097         <span class="keyword">if</span> c &gt; 0
+0098             w = c / (c + k);
+0099             value = w * med + (1 - w) * value;
+0100             depth(q) = d;
+0101         <span class="keyword">end</span>
+0102     <span class="keyword">end</span>
+0103     log10kcat(q) = value;
+0104     n(q) = bestN;
+0105     ecUsed{q} = best;
+0106 <span class="keyword">end</span>
+0107 <span class="keyword">end</span>
+0108 
+0109 <a name="_sub1" href="#_subfunctions" class="code">function p = parentEC(ec, d)</a>
+0110 parts = strsplit(ec, <span class="string">'.'</span>);
+0111 p = strjoin(parts(1:min(d, numel(parts))), <span class="string">'.'</span>);
+0112 <span class="keyword">end</span>
+0113 
+0114 <a name="_sub2" href="#_subfunctions" class="code">function [c, med] = countOf(level, key)</a>
+0115 [found, i] = ismember(key, level.keys);
+0116 c = 0;
+0117 med = NaN;
+0118 <span class="keyword">if</span> found
+0119     c = level.n(i);
+0120     med = level.median(i);
+0121 <span class="keyword">end</span>
+0122 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

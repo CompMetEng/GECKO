@@ -1,0 +1,770 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of fuzzyKcatMatching</title>
+  <meta name="keywords" content="fuzzyKcatMatching">
+  <meta name="description" content="fuzzyKcatMatching  Match model EC numbers and substrates to BRENDA kcats.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">gather_kcats</a> &gt; fuzzyKcatMatching.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/gather_kcats&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>fuzzyKcatMatching
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>fuzzyKcatMatching  Match model EC numbers and substrates to BRENDA kcats.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function kcatList = fuzzyKcatMatching(model, varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> fuzzyKcatMatching  Match model EC numbers and substrates to BRENDA kcats.
+
+ Matches the model EC numbers and substrates to the BRENDA database, to
+ return the corresponding kcats for each reaction. If no exact match is
+ found, less specific kcat values are found from (a) evolutionary closely
+ related organism; (b) different substrate; (c) calculated from specific
+ activities; (d) wildcards in the EC number. The model organism is provided
+ in the model adapter as obj.params.org_name, and evolutionary distance to
+ other organisms is determined via KEGG phylogeny. If an organism name
+ occurs multiple times in KEGG, the first instance will be used when
+ determining evolutionary distance.
+
+ Parameters
+ ----------
+ model : struct
+     an ecModel in GECKO 3 format (with ecModel.ec structure).
+
+ Name-Value Arguments
+ --------------------
+ ecRxns : logical or double
+     for which reactions (from model.ec.rxns) kcat values should be found,
+     provided as a logical vector with the same length as model.ec.rxns
+     (the reactions are returned in model order), or as indices into
+     model.ec.rxns (the reactions are returned in the order given, and an
+     index given twice is returned twice). The literal [] selects all
+     reactions, which is the default; any other empty selection, such as
+     find(mask) without true entries, selects none and returns an empty
+     kcatList.
+ modelAdapter : ModelAdapter
+     a loaded model adapter (default: the current default model adapter).
+ forceWClvl : double
+     number of extra levels, from the right, replaced by a wildcard (on top
+     of any wildcard already in the code; default 0).
+
+ Returns
+ -------
+ kcatList : struct
+     structure array with list of BRENDA derived kcat values, with separate
+     entries for each kcat value.
+
+ Notes
+ -----
+ The kcatList structure has the following fields:
+
+ - source : 'brenda'.
+ - rxns : reaction identifiers.
+ - substrates : substrate names.
+ - kcats : proposed kcat value in /sec.
+ - eccodes : as used to query BRENDA.
+ - wildcardLvl : which level of EC wild-card was necessary to find a match
+   (0: w.x.y.z; 1: w.x.y.-; 2: w.x.-.-; 3: w.-.-.-; 4: -.-.-.-, which
+   matches every EC number in BRENDA).
+ - origin : which level of specificity was necessary to find a match
+   (1: correct organism, correct substrate, kcat; 2: any organism, correct
+   substrate, kcat; 3: correct organism, any substrate, kcat; 4: any
+   organism, any substrate, kcat; 5: correct organism, specific activity;
+   6: any organism, specific activity). Levels are tried in the order
+   1, 2, 3, 5, 4, 6: a specific activity from the correct organism is
+   preferred over a kcat from any organism with any substrate. When a
+   reaction has multiple EC numbers, the EC with the fewest wildcards and
+   the earliest-tried level is selected, and among those the highest kcat
+   (the first one when several EC numbers share it); the wildcardLvl and
+   origin are those of the selected EC.
+
+ If a wildcard is used, origin levels 1 and 2 are ignored. The last digits
+ in the E.C. number indicate the substrate specificity, so if this should
+ be ignored, then correct substrate matches should not be prioritized.
+
+ Examples
+ --------
+     % optional arguments may be given positionally or as name-value pairs:
+     kcatList = fuzzyKcatMatching(model);
+     kcatList = fuzzyKcatMatching(model, 'forceWClvl', 1);
+
+ See also
+ --------
+ <a href="mergeDLKcatAndFuzzyKcats.html" class="code" title="function mergedKcatList = mergeDLKcatAndFuzzyKcats(kcatListDLKcat, kcatListFuzzy, varargin)">mergeDLKcatAndFuzzyKcats</a>, <a href="assignKcatValues.html" class="code" title="function [model, rxnIdx] = assignKcatValues(model,kcatList,varargin)">assignKcatValues</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="kcatsFromBrenda.html" class="code" title="function kcatList = kcatsFromBrenda(model, varargin)">kcatsFromBrenda</a>	kcatsFromBrenda  Gather kcats from BRENDA and keep them as a source file.</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function eccodes = forceWildcards(eccodes,forceWClvl)</a></li><li><a href="#_sub2" class="code">function [kcat,dir,tot] =iterativeMatch(EC,subs,substrCoeff,i,KCATcell,dir,tot,</a></li><li><a href="#_sub3" class="code">function [kcat,origin,matches] = mainMatch(EC,subs,substrCoeff,KCATcell,</a></li><li><a href="#_sub4" class="code">function [kcat,matches] = matchKcat(EC,subs,substrCoeff,KCATcell,organism,</a></li><li><a href="#_sub5" class="code">function EC_indexes = extract_string_matches(EC,EC_cell,wild,ECIndexIds,EcIndexIndices)</a></li><li><a href="#_sub6" class="code">function EC_indexes = extract_indexes(EC_indCellStringMatches,subs_cell,orgs_cell,subs,</a></li><li><a href="#_sub7" class="code">function org_index = find_inKEGG(org_name,names)</a></li><li><a href="#_sub8" class="code">function phylDistStruct =  KEGG_struct(phylpath)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function kcatList = fuzzyKcatMatching(model, varargin)</a>
+0002 <span class="comment">% fuzzyKcatMatching  Match model EC numbers and substrates to BRENDA kcats.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Matches the model EC numbers and substrates to the BRENDA database, to</span>
+0005 <span class="comment">% return the corresponding kcats for each reaction. If no exact match is</span>
+0006 <span class="comment">% found, less specific kcat values are found from (a) evolutionary closely</span>
+0007 <span class="comment">% related organism; (b) different substrate; (c) calculated from specific</span>
+0008 <span class="comment">% activities; (d) wildcards in the EC number. The model organism is provided</span>
+0009 <span class="comment">% in the model adapter as obj.params.org_name, and evolutionary distance to</span>
+0010 <span class="comment">% other organisms is determined via KEGG phylogeny. If an organism name</span>
+0011 <span class="comment">% occurs multiple times in KEGG, the first instance will be used when</span>
+0012 <span class="comment">% determining evolutionary distance.</span>
+0013 <span class="comment">%</span>
+0014 <span class="comment">% Parameters</span>
+0015 <span class="comment">% ----------</span>
+0016 <span class="comment">% model : struct</span>
+0017 <span class="comment">%     an ecModel in GECKO 3 format (with ecModel.ec structure).</span>
+0018 <span class="comment">%</span>
+0019 <span class="comment">% Name-Value Arguments</span>
+0020 <span class="comment">% --------------------</span>
+0021 <span class="comment">% ecRxns : logical or double</span>
+0022 <span class="comment">%     for which reactions (from model.ec.rxns) kcat values should be found,</span>
+0023 <span class="comment">%     provided as a logical vector with the same length as model.ec.rxns</span>
+0024 <span class="comment">%     (the reactions are returned in model order), or as indices into</span>
+0025 <span class="comment">%     model.ec.rxns (the reactions are returned in the order given, and an</span>
+0026 <span class="comment">%     index given twice is returned twice). The literal [] selects all</span>
+0027 <span class="comment">%     reactions, which is the default; any other empty selection, such as</span>
+0028 <span class="comment">%     find(mask) without true entries, selects none and returns an empty</span>
+0029 <span class="comment">%     kcatList.</span>
+0030 <span class="comment">% modelAdapter : ModelAdapter</span>
+0031 <span class="comment">%     a loaded model adapter (default: the current default model adapter).</span>
+0032 <span class="comment">% forceWClvl : double</span>
+0033 <span class="comment">%     number of extra levels, from the right, replaced by a wildcard (on top</span>
+0034 <span class="comment">%     of any wildcard already in the code; default 0).</span>
+0035 <span class="comment">%</span>
+0036 <span class="comment">% Returns</span>
+0037 <span class="comment">% -------</span>
+0038 <span class="comment">% kcatList : struct</span>
+0039 <span class="comment">%     structure array with list of BRENDA derived kcat values, with separate</span>
+0040 <span class="comment">%     entries for each kcat value.</span>
+0041 <span class="comment">%</span>
+0042 <span class="comment">% Notes</span>
+0043 <span class="comment">% -----</span>
+0044 <span class="comment">% The kcatList structure has the following fields:</span>
+0045 <span class="comment">%</span>
+0046 <span class="comment">% - source : 'brenda'.</span>
+0047 <span class="comment">% - rxns : reaction identifiers.</span>
+0048 <span class="comment">% - substrates : substrate names.</span>
+0049 <span class="comment">% - kcats : proposed kcat value in /sec.</span>
+0050 <span class="comment">% - eccodes : as used to query BRENDA.</span>
+0051 <span class="comment">% - wildcardLvl : which level of EC wild-card was necessary to find a match</span>
+0052 <span class="comment">%   (0: w.x.y.z; 1: w.x.y.-; 2: w.x.-.-; 3: w.-.-.-; 4: -.-.-.-, which</span>
+0053 <span class="comment">%   matches every EC number in BRENDA).</span>
+0054 <span class="comment">% - origin : which level of specificity was necessary to find a match</span>
+0055 <span class="comment">%   (1: correct organism, correct substrate, kcat; 2: any organism, correct</span>
+0056 <span class="comment">%   substrate, kcat; 3: correct organism, any substrate, kcat; 4: any</span>
+0057 <span class="comment">%   organism, any substrate, kcat; 5: correct organism, specific activity;</span>
+0058 <span class="comment">%   6: any organism, specific activity). Levels are tried in the order</span>
+0059 <span class="comment">%   1, 2, 3, 5, 4, 6: a specific activity from the correct organism is</span>
+0060 <span class="comment">%   preferred over a kcat from any organism with any substrate. When a</span>
+0061 <span class="comment">%   reaction has multiple EC numbers, the EC with the fewest wildcards and</span>
+0062 <span class="comment">%   the earliest-tried level is selected, and among those the highest kcat</span>
+0063 <span class="comment">%   (the first one when several EC numbers share it); the wildcardLvl and</span>
+0064 <span class="comment">%   origin are those of the selected EC.</span>
+0065 <span class="comment">%</span>
+0066 <span class="comment">% If a wildcard is used, origin levels 1 and 2 are ignored. The last digits</span>
+0067 <span class="comment">% in the E.C. number indicate the substrate specificity, so if this should</span>
+0068 <span class="comment">% be ignored, then correct substrate matches should not be prioritized.</span>
+0069 <span class="comment">%</span>
+0070 <span class="comment">% Examples</span>
+0071 <span class="comment">% --------</span>
+0072 <span class="comment">%     % optional arguments may be given positionally or as name-value pairs:</span>
+0073 <span class="comment">%     kcatList = fuzzyKcatMatching(model);</span>
+0074 <span class="comment">%     kcatList = fuzzyKcatMatching(model, 'forceWClvl', 1);</span>
+0075 <span class="comment">%</span>
+0076 <span class="comment">% See also</span>
+0077 <span class="comment">% --------</span>
+0078 <span class="comment">% mergeDLKcatAndFuzzyKcats, assignKcatValues</span>
+0079 
+0080 <span class="comment">% Validators reject a name that landed in a positional slot, which</span>
+0081 <span class="comment">% happens when positional and name-value arguments are mixed. Without</span>
+0082 <span class="comment">% them `while forceWClvl &gt; 0` on a char array is all-true and silently</span>
+0083 <span class="comment">% wildcards every EC number.</span>
+0084 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0085     <span class="string">'ecRxns'</span>,          [], @(x) assert(isempty(x) || isnumeric(x) || <span class="keyword">...</span>
+0086                                 islogical(x), <span class="keyword">...</span>
+0087                                 <span class="string">'fuzzyKcatMatching:invalidEcRxns'</span>, <span class="keyword">...</span>
+0088                                 <span class="string">'ecRxns must be numeric or logical.'</span>); <span class="keyword">...</span>
+0089     <span class="string">'modelAdapter'</span>,    [], @(x) assert(isempty(x) || isa(x,<span class="string">'ModelAdapter'</span>), <span class="keyword">...</span>
+0090                                 <span class="string">'fuzzyKcatMatching:invalidModelAdapter'</span>, <span class="keyword">...</span>
+0091                                 <span class="string">'modelAdapter must be a ModelAdapter.'</span>); <span class="keyword">...</span>
+0092     <span class="string">'forceWClvl'</span>,      [], @(x) assert(isempty(x) || (isnumeric(x) &amp;&amp; <span class="keyword">...</span>
+0093                                 isscalar(x) &amp;&amp; x &gt;= 0), <span class="keyword">...</span>
+0094                                 <span class="string">'fuzzyKcatMatching:invalidForceWClvl'</span>, <span class="keyword">...</span>
+0095                                 <span class="string">'forceWClvl must be a nonnegative scalar.'</span>); <span class="keyword">...</span>
+0096     <span class="string">'kcatAggregation'</span>, [], @(x) assert(isempty(x) || any(strcmpi(x, <span class="keyword">...</span>
+0097                                 {<span class="string">'max'</span>,<span class="string">'median'</span>})), <span class="keyword">...</span>
+0098                                 <span class="string">'fuzzyKcatMatching:invalidKcatAggregation'</span>, <span class="keyword">...</span>
+0099                                 <span class="string">'kcatAggregation must be ''max'' or ''median''.'</span>)});
+0100 ecRxns          = p.ecRxns;
+0101 modelAdapter    = p.modelAdapter;
+0102 forceWClvl      = p.forceWClvl;
+0103 kcatAggregation = p.kcatAggregation;
+0104 
+0105 <span class="comment">% Get indices: [] selects all reactions, a logical vector the true entries (in</span>
+0106 <span class="comment">% model order) and indices are used as given (order and repeats kept).</span>
+0107 <span class="keyword">if</span> isnumeric(ecRxns) &amp;&amp; isequal(size(ecRxns),[0 0])
+0108     ecRxns = (1:numel(model.ec.rxns)).';
+0109 <span class="keyword">elseif</span> islogical(ecRxns)
+0110     ecRxns = find(ecRxns(:));
+0111 <span class="keyword">else</span>
+0112     ecRxns = ecRxns(:);
+0113     <span class="keyword">if</span> any(ecRxns &lt; 1 | ecRxns &gt; numel(model.ec.rxns) | ecRxns ~= round(ecRxns))
+0114         error(<span class="string">'fuzzyKcatMatching:invalidEcRxns'</span>, <span class="keyword">...</span>
+0115             <span class="string">'ecRxns must hold indices of model.ec.rxns.'</span>);
+0116     <span class="keyword">end</span>
+0117 <span class="keyword">end</span>
+0118 
+0119 <span class="keyword">if</span> isempty(modelAdapter)
+0120     modelAdapter = ModelAdapterManager.getDefault();
+0121     <span class="keyword">if</span> isempty(modelAdapter)
+0122         error(<span class="string">'Either send in a modelAdapter or set the default model adapter in the ModelAdapterManager.'</span>)
+0123     <span class="keyword">end</span>
+0124 <span class="keyword">end</span>
+0125 params = modelAdapter.params;
+0126 
+0127 <span class="keyword">if</span> isempty(forceWClvl)
+0128     forceWClvl = 0;
+0129 <span class="keyword">end</span>
+0130 
+0131 <span class="keyword">if</span> ~isfield(model.ec,<span class="string">'eccodes'</span>)
+0132     error(<span class="string">'No EC codes defined in model.ec.eccodes. First run getECfromGEM() and/or getECfromDatabase().'</span>)
+0133 <span class="keyword">end</span>
+0134 eccodes      = model.ec.eccodes(ecRxns);
+0135 <span class="keyword">if</span> isempty(ecRxns)
+0136     <span class="comment">%No reactions selected: nothing to match, and BRENDA is not read</span>
+0137     kcatList.source      = <span class="string">'brenda'</span>;
+0138     kcatList.rxns        = cell(0,1);
+0139     kcatList.substrates  = cell(0,1);
+0140     kcatList.kcats       = zeros(0,1);
+0141     kcatList.eccodes     = cell(0,1);
+0142     kcatList.wildcardLvl = NaN(0,1);
+0143     kcatList.origin      = NaN(0,1);
+0144     <span class="keyword">return</span>
+0145 <span class="keyword">end</span>
+0146 substrates   = cell(numel(ecRxns),1);
+0147 substrCoeffs = cell(numel(ecRxns),1);
+0148 
+0149 <span class="comment">%Need to remove the prefix of GECKO light rxn names in the ec structure</span>
+0150 <span class="keyword">if</span> ~model.ec.geckoLight
+0151     rxnNames = model.ec.rxns;
+0152 <span class="keyword">else</span>
+0153     rxnNames = extractAfter(model.ec.rxns, 4);
+0154 <span class="keyword">end</span>
+0155 [~,originalRxns] = ismember(rxnNames(ecRxns),model.rxns);
+0156 <span class="keyword">for</span> i = 1:length(ecRxns)
+0157     sel = find(model.S(:,originalRxns(i)) &lt; 0);
+0158     substrates{i}  = model.metNames(sel); 
+0159     substrCoeffs{i} = -model.S(sel,originalRxns(i));
+0160 <span class="keyword">end</span>
+0161 
+0162 <span class="comment">%Load BRENDA data:</span>
+0163 kcatAggregation = resolveKcatAggregation(kcatAggregation, modelAdapter);
+0164 [KCATcell, SAcell] = loadBRENDAdata(<span class="string">'modelAdapter'</span>, modelAdapter, <span class="keyword">...</span>
+0165     <span class="string">'kcatAggregation'</span>, kcatAggregation);
+0166 
+0167 <span class="comment">%Creates a Structure with KEGG codes for organisms, names and taxonomical</span>
+0168 <span class="comment">%distance matrix and extract the organism index in the KEGG struct</span>
+0169 phylDistStruct =  <a href="#_sub8" class="code" title="subfunction phylDistStruct =  KEGG_struct(phylpath)">KEGG_struct</a>(modelAdapter.getPhylDistStructPath());
+0170 <span class="comment">%Get the KEGG code for the model's organism</span>
+0171 org_name       = params.org_name;
+0172 org_index      = <a href="#_sub7" class="code" title="subfunction org_index = find_inKEGG(org_name,names)">find_inKEGG</a>(org_name,phylDistStruct.names);
+0173 <span class="comment">%build an index for genus in the phyl dist struct</span>
+0174 <span class="comment">%first just extract the genus (i.e. the first part of the name)</span>
+0175 phylDistStruct.genus = lower(regexprep(phylDistStruct.names,<span class="string">'\s.*'</span>,<span class="string">''</span>));
+0176 <span class="comment">%create a map for the genuses</span>
+0177 phylDistStruct.uniqueGenusList = unique(phylDistStruct.genus);
+0178 phylDistStruct.genusHashMap = containers.Map(phylDistStruct.uniqueGenusList,1:length(phylDistStruct.uniqueGenusList));
+0179 phylDistStruct.uniqueGenusIndices = cell(length(phylDistStruct.uniqueGenusList),1);
+0180 
+0181 <span class="comment">%Then for each genus create a list with indices to the names</span>
+0182 <span class="keyword">for</span> i = 1:length(phylDistStruct.genus)
+0183     matchInd = cell2mat(values(phylDistStruct.genusHashMap,phylDistStruct.genus(i)));
+0184     phylDistStruct.uniqueGenusIndices{matchInd} = [phylDistStruct.uniqueGenusIndices{matchInd};i];
+0185 <span class="keyword">end</span>
+0186 
+0187 <span class="comment">%Allocate output</span>
+0188 kcats = zeros(length(eccodes),1);
+0189 mM = length(eccodes);
+0190 
+0191 <span class="comment">%Create empty kcatInfo</span>
+0192 <span class="comment">%Not returned as an output; used only internally to construct</span>
+0193 <span class="comment">%kcatList.wildcardLvl and kcatList.origin.</span>
+0194 kcatInfo.info.org_s   = zeros(mM,1);
+0195 kcatInfo.info.rest_s  = zeros(mM,1);
+0196 kcatInfo.info.org_ns  = zeros(mM,1);
+0197 kcatInfo.info.rest_ns = zeros(mM,1);
+0198 kcatInfo.info.org_sa  = zeros(mM,1);
+0199 kcatInfo.info.rest_sa = zeros(mM,1);
+0200 kcatInfo.info.wcLevel = NaN(mM,1);
+0201 kcatInfo.stats.queries  = 0;
+0202 kcatInfo.stats.org_s    = 0;
+0203 kcatInfo.stats.rest_s   = 0;
+0204 kcatInfo.stats.org_ns   = 0;
+0205 kcatInfo.stats.rest_ns  = 0;
+0206 kcatInfo.stats.org_sa   = 0;
+0207 kcatInfo.stats.rest_sa  = 0;
+0208 kcatInfo.stats.wc0      = 0;
+0209 kcatInfo.stats.wc1      = 0;
+0210 kcatInfo.stats.wc2      = 0;
+0211 kcatInfo.stats.wc3      = 0;
+0212 kcatInfo.stats.wc4      = 0;
+0213 kcatInfo.stats.matrix   = zeros(6,5);
+0214 
+0215 <span class="comment">%build an EC index to speed things up a bit - many of the ECs appear</span>
+0216 <span class="comment">%many times - unnecessary to compare them all</span>
+0217 <span class="comment">%so, here, each EC string appears only once, and you get a vector with</span>
+0218 <span class="comment">%indices to the rows in KCATcell</span>
+0219 [ECIndexIds,~,ic] = unique(KCATcell{1});
+0220 EcIndexIndices = cell(length(ECIndexIds),1);
+0221 <span class="keyword">for</span> i = 1:length(EcIndexIndices)
+0222     EcIndexIndices{i} = find(ic == i).';
+0223 <span class="keyword">end</span>
+0224 
+0225 <span class="comment">%Apply force wildcard level</span>
+0226 eccodes = <a href="#_sub1" class="code" title="subfunction eccodes = forceWildcards(eccodes,forceWClvl)">forceWildcards</a>(eccodes,forceWClvl);
+0227 
+0228 PB = progressReport(mM, <span class="string">'Gathering kcat values by fuzzy matching to BRENDA database'</span>);
+0229 <span class="comment">%Main loop:</span>
+0230 <span class="keyword">for</span> i = 1:mM
+0231     PB.count;
+0232     <span class="comment">%Match:</span>
+0233     EC = eccodes{i};
+0234     <span class="keyword">if</span> ~isempty(EC)
+0235         EC = strsplit(EC,<span class="string">';'</span>);
+0236         <span class="comment">%Try to match direct reaction:</span>
+0237         <span class="keyword">if</span> ~isempty(substrates{i})
+0238             [kcats(i), kcatInfo.info,kcatInfo.stats] = <a href="#_sub2" class="code" title="subfunction [kcat,dir,tot] =iterativeMatch(EC,subs,substrCoeff,i,KCATcell,dir,tot,">iterativeMatch</a>(EC,substrates{i},substrCoeffs{i},i,KCATcell,<span class="keyword">...</span>
+0239                 kcatInfo.info,kcatInfo.stats,org_name,<span class="keyword">...</span>
+0240                 phylDistStruct,org_index,SAcell,ECIndexIds,EcIndexIndices,kcatAggregation);
+0241         <span class="keyword">end</span>
+0242     <span class="keyword">end</span>
+0243 <span class="keyword">end</span>
+0244 
+0245 kcatList.source      = <span class="string">'brenda'</span>;
+0246 kcatList.rxns        = model.ec.rxns(ecRxns);
+0247 kcatList.substrates  = substrates;
+0248 kcatList.kcats       = kcats;
+0249 kcatList.eccodes     = eccodes;
+0250 kcatList.wildcardLvl = kcatInfo.info.wcLevel;
+0251 kcatList.origin      = NaN(numel(model.ec.rxns(ecRxns)),1);
+0252 <span class="comment">% This can be refactored, iterativeMatch and their nested functions can</span>
+0253 <span class="comment">% just directly report the origin number.</span>
+0254 origin = [kcatInfo.info.org_s kcatInfo.info.rest_s kcatInfo.info.org_ns kcatInfo.info.rest_ns kcatInfo.info.org_sa kcatInfo.info.rest_sa];
+0255 <span class="keyword">for</span> i=1:6
+0256     kcatList.origin(find(origin(:,i))) = i;
+0257 <span class="keyword">end</span>
+0258 <span class="keyword">end</span>
+0259 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0260 <span class="comment">%Replaces the rightmost level of each EC code that is not a wildcard yet with</span>
+0261 <span class="comment">%a wildcard, forceWClvl times, so that level 4 gives -.-.-.- . The codes of one</span>
+0262 <span class="comment">%entry are separated by ';'. A code that does not have four levels is kept.</span>
+0263 <a name="_sub1" href="#_subfunctions" class="code">function eccodes = forceWildcards(eccodes,forceWClvl)</a>
+0264 <span class="keyword">if</span> forceWClvl &lt;= 0
+0265     <span class="keyword">return</span>
+0266 <span class="keyword">end</span>
+0267 <span class="keyword">for</span> i = 1:numel(eccodes)
+0268     <span class="keyword">if</span> isempty(eccodes{i})
+0269         <span class="keyword">continue</span>
+0270     <span class="keyword">end</span>
+0271     codes = strsplit(eccodes{i},<span class="string">';'</span>);
+0272     <span class="keyword">for</span> j = 1:numel(codes)
+0273         parts = strsplit(codes{j},<span class="string">'.'</span>);
+0274         <span class="keyword">if</span> numel(parts) ~= 4
+0275             <span class="keyword">continue</span>
+0276         <span class="keyword">end</span>
+0277         <span class="keyword">for</span> k = 1:forceWClvl
+0278             last = find(~strcmp(parts,<span class="string">'-'</span>),1,<span class="string">'last'</span>);
+0279             <span class="keyword">if</span> isempty(last)
+0280                 <span class="keyword">break</span>
+0281             <span class="keyword">end</span>
+0282             parts{last} = <span class="string">'-'</span>;
+0283         <span class="keyword">end</span>
+0284         codes{j} = strjoin(parts,<span class="string">'.'</span>);
+0285     <span class="keyword">end</span>
+0286     eccodes{i} = strjoin(codes,<span class="string">';'</span>);
+0287 <span class="keyword">end</span>
+0288 <span class="keyword">end</span>
+0289 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0290 <a name="_sub2" href="#_subfunctions" class="code">function [kcat,dir,tot] =iterativeMatch(EC,subs,substrCoeff,i,KCATcell,dir,tot,</a><span class="keyword">...</span>
+0291     name,phylDist,org_index,SAcell,ECIndexIds,EcIndexIndices,kcatAggregation)
+0292 <span class="comment">%Will iteratively try to match the EC number to some registry in BRENDA,</span>
+0293 <span class="comment">%using each time one additional wildcard.</span>
+0294 
+0295 kcat    = zeros(size(EC));
+0296 origin  = zeros(size(EC));
+0297 matches = zeros(size(EC));
+0298 wc_num  = ones(size(EC)).*1000;
+0299 <span class="keyword">for</span> k = 1:length(EC)
+0300     success  = false;
+0301     <span class="keyword">while</span> ~success
+0302         <span class="comment">%Atempt match:</span>
+0303         [kcat(k),origin(k),matches(k)] = <a href="#_sub3" class="code" title="subfunction [kcat,origin,matches] = mainMatch(EC,subs,substrCoeff,KCATcell,">mainMatch</a>(EC{k},subs,substrCoeff,KCATcell,<span class="keyword">...</span>
+0304             name,phylDist,<span class="keyword">...</span>
+0305             org_index,SAcell,ECIndexIds,EcIndexIndices,kcatAggregation);
+0306         <span class="comment">%If any match found, ends. If not, introduces one extra wild card and</span>
+0307         <span class="comment">%tries again:</span>
+0308         <span class="keyword">if</span> origin(k) &gt; 0
+0309             success   = true;
+0310             wc_num(k) = sum(EC{k}==<span class="string">'-'</span>);
+0311         <span class="keyword">else</span>
+0312             wild_num = sum(EC{k}==<span class="string">'-'</span>);
+0313             <span class="keyword">if</span> numel(strsplit(EC{k},<span class="string">'.'</span>)) ~= 4
+0314                 <span class="comment">%An EC code without four levels (for example '1.1.1') cannot be</span>
+0315                 <span class="comment">%escalated level by level: stop with the no-match values, as</span>
+0316                 <span class="comment">%geckopy does.</span>
+0317                 success = true;
+0318             <span class="keyword">elseif</span> wild_num &gt;= 4
+0319                 <span class="comment">%Already fully wildcarded ('-.-.-.-') and still no match --</span>
+0320                 <span class="comment">%stop here instead of computing dot_pos(4-wild_num) with</span>
+0321                 <span class="comment">%wild_num==4, an out-of-range index. kcat(k)/origin(k) keep</span>
+0322                 <span class="comment">%their zero-initialised &quot;no match&quot; values.</span>
+0323                 success = true;
+0324             <span class="keyword">elseif</span> wild_num == 3
+0325                 <span class="comment">%Last escalation: '-.-.-.-' matches every EC number in BRENDA</span>
+0326                 EC{k} = <span class="string">'-.-.-.-'</span>;
+0327             <span class="keyword">else</span>
+0328                 dot_pos  = [2 strfind(EC{k},<span class="string">'.'</span>)];
+0329                 wc_text  = <span class="string">'-.-.-.-'</span>;
+0330                 EC{k}    = [EC{k}(1:dot_pos(4-wild_num)) wc_text(1:2*wild_num+1)];
+0331             <span class="keyword">end</span>
+0332         <span class="keyword">end</span>
+0333     <span class="keyword">end</span>
+0334 <span class="keyword">end</span>
+0335 
+0336 <span class="keyword">if</span> sum(origin) &gt; 0
+0337     <span class="comment">%For more than one EC: Choose the maximum value among the ones with the</span>
+0338     <span class="comment">%less amount of wildcards and the better origin:</span>
+0339     best_pos    = (wc_num == min(wc_num));
+0340     new_origin  = origin(best_pos);
+0341     best_origin = min(new_origin(new_origin~=0));
+0342     <span class="comment">%Intersect with the wildcard filter above -- comparing origin==best_origin</span>
+0343     <span class="comment">%against the full (unfiltered) origin vector would let an EC with a worse</span>
+0344     <span class="comment">%(higher) wildcard count back in whenever it happens to share best_origin,</span>
+0345     <span class="comment">%defeating the wildcard-count filter entirely.</span>
+0346     best_pos    = best_pos &amp; (origin == best_origin);
+0347     <span class="comment">%Highest kcat among those, the first one if several share it</span>
+0348     best_idx   = find(best_pos);
+0349     [~,j]      = max(kcat(best_idx));
+0350     max_pos    = best_idx(j);
+0351     wc_num     = wc_num(max_pos);
+0352     origin     = origin(max_pos);
+0353     matches    = matches(max_pos);
+0354     kcat       = kcat(max_pos);
+0355 
+0356     <span class="comment">%Update dir and tot:</span>
+0357     dir.org_s(i)   = matches*(origin == 1);
+0358     dir.rest_s(i)  = matches*(origin == 2);
+0359     dir.org_ns(i)  = matches*(origin == 3);
+0360     dir.org_sa(i)  = matches*(origin == 4);
+0361     dir.rest_ns(i) = matches*(origin == 5);
+0362     dir.rest_sa(i) = matches*(origin == 6);
+0363     dir.wcLevel(i) = wc_num;
+0364     tot.org_s        = tot.org_s   + (origin == 1);
+0365     tot.rest_s       = tot.rest_s  + (origin == 2);
+0366     tot.org_ns       = tot.org_ns  + (origin == 3);
+0367     tot.org_sa       = tot.org_sa  + (origin == 4);
+0368     tot.rest_ns      = tot.rest_ns + (origin == 5);
+0369     tot.rest_sa      = tot.rest_sa + (origin == 6);
+0370     tot.wc0          = tot.wc0     + (wc_num == 0);
+0371     tot.wc1          = tot.wc1     + (wc_num == 1);
+0372     tot.wc2          = tot.wc2     + (wc_num == 2);
+0373     tot.wc3          = tot.wc3     + (wc_num == 3);
+0374     tot.wc4          = tot.wc4     + (wc_num == 4);
+0375     tot.queries      = tot.queries + 1;
+0376     tot.matrix(origin,wc_num+1) = tot.matrix(origin,wc_num+1) + 1;
+0377 <span class="keyword">end</span>
+0378 
+0379 <span class="keyword">end</span>
+0380 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0381 
+0382 <a name="_sub3" href="#_subfunctions" class="code">function [kcat,origin,matches] = mainMatch(EC,subs,substrCoeff,KCATcell,</a><span class="keyword">...</span>
+0383     name,phylDist,org_index,SAcell,ECIndexIds,EcIndexIndices,kcatAggregation)
+0384 
+0385 <span class="comment">%First make the string matching. This takes time, so we only want to do</span>
+0386 <span class="comment">%this once:</span>
+0387 <span class="comment">%Relaxes matching if wild cards are present:</span>
+0388 wild     = false;
+0389 wild_pos = strfind(EC,<span class="string">'-'</span>);
+0390 <span class="keyword">if</span> ~isempty(wild_pos)
+0391     EC   = EC(1:wild_pos(1)-1);
+0392     wild = true;
+0393 <span class="keyword">end</span>
+0394 stringMatchesEC_cell = <a href="#_sub5" class="code" title="subfunction EC_indexes = extract_string_matches(EC,EC_cell,wild,ECIndexIds,EcIndexIndices)">extract_string_matches</a>(EC,KCATcell{1},wild,ECIndexIds,EcIndexIndices);
+0395 
+0396 <span class="comment">% Matching function prioritizing organism and substrate specificity when</span>
+0397 <span class="comment">% available.</span>
+0398 
+0399 origin = 0;
+0400 <span class="comment">%First try to match organism and substrate:</span>
+0401 [kcat,matches] = <a href="#_sub4" class="code" title="subfunction [kcat,matches] = matchKcat(EC,subs,substrCoeff,KCATcell,organism,">matchKcat</a>(EC,subs,substrCoeff,KCATcell,name,true,false,<span class="keyword">...</span>
+0402     phylDist,org_index,SAcell,stringMatchesEC_cell,[],kcatAggregation);
+0403 <span class="keyword">if</span> matches &gt; 0 &amp;&amp; ~wild <span class="comment">% If wildcard, ignore substrate match</span>
+0404     origin = 1;
+0405     <span class="comment">%If no match, try the closest organism but match the substrate:</span>
+0406 <span class="keyword">else</span>
+0407     [kcat,matches] = <a href="#_sub4" class="code" title="subfunction [kcat,matches] = matchKcat(EC,subs,substrCoeff,KCATcell,organism,">matchKcat</a>(EC,subs,substrCoeff,KCATcell,<span class="string">''</span>,true,false,<span class="keyword">...</span>
+0408         phylDist,org_index,SAcell,stringMatchesEC_cell,[],kcatAggregation);
+0409     <span class="keyword">if</span> matches &gt; 0 &amp;&amp; ~wild <span class="comment">% If wildcard, ignore substrate match</span>
+0410         origin = 2;
+0411         <span class="comment">%If no match, try to match organism but with any substrate:</span>
+0412     <span class="keyword">else</span>
+0413         [kcat,matches] = <a href="#_sub4" class="code" title="subfunction [kcat,matches] = matchKcat(EC,subs,substrCoeff,KCATcell,organism,">matchKcat</a>(EC,subs,substrCoeff,KCATcell,name,false,false,<span class="keyword">...</span>
+0414             phylDist,org_index,SAcell,stringMatchesEC_cell,[],kcatAggregation);
+0415         <span class="keyword">if</span> matches &gt; 0
+0416             origin = 3;
+0417             <span class="comment">%If no match, try to match organism but for any substrate (SA*MW):</span>
+0418         <span class="keyword">else</span>
+0419             <span class="comment">%create matching index for SA, has not been needed until now</span>
+0420             stringMatchesSA = <a href="#_sub5" class="code" title="subfunction EC_indexes = extract_string_matches(EC,EC_cell,wild,ECIndexIds,EcIndexIndices)">extract_string_matches</a>(EC,SAcell{1},wild,[],[]);
+0421 
+0422             [kcat,matches] = <a href="#_sub4" class="code" title="subfunction [kcat,matches] = matchKcat(EC,subs,substrCoeff,KCATcell,organism,">matchKcat</a>(EC,subs,substrCoeff,KCATcell,name,false,<span class="keyword">...</span>
+0423                 true,phylDist,org_index,<span class="keyword">...</span>
+0424                 SAcell,stringMatchesEC_cell,stringMatchesSA,kcatAggregation);
+0425             <span class="keyword">if</span> matches &gt; 0
+0426                 origin = 4;
+0427                 <span class="comment">%If no match, try any organism and any substrate:</span>
+0428             <span class="keyword">else</span>
+0429                 [kcat,matches] = <a href="#_sub4" class="code" title="subfunction [kcat,matches] = matchKcat(EC,subs,substrCoeff,KCATcell,organism,">matchKcat</a>(EC,subs,substrCoeff,KCATcell,<span class="string">''</span>,false,<span class="keyword">...</span>
+0430                     false,phylDist,<span class="keyword">...</span>
+0431                     org_index,SAcell,stringMatchesEC_cell,stringMatchesSA,kcatAggregation);
+0432                 <span class="keyword">if</span> matches &gt; 0
+0433                     origin = 5;
+0434                     <span class="comment">%Again if no match, look for any org and SA*MW</span>
+0435                 <span class="keyword">else</span>
+0436                     [kcat,matches] = <a href="#_sub4" class="code" title="subfunction [kcat,matches] = matchKcat(EC,subs,substrCoeff,KCATcell,organism,">matchKcat</a>(EC,subs,substrCoeff,KCATcell,<span class="string">''</span>,<span class="keyword">...</span>
+0437                         false,true,phylDist,<span class="keyword">...</span>
+0438                         org_index,SAcell,stringMatchesEC_cell,stringMatchesSA,kcatAggregation);
+0439                     <span class="keyword">if</span> matches &gt; 0
+0440                         origin = 6;
+0441                     <span class="keyword">end</span>
+0442                 <span class="keyword">end</span>
+0443 
+0444             <span class="keyword">end</span>
+0445         <span class="keyword">end</span>
+0446     <span class="keyword">end</span>
+0447 <span class="keyword">end</span>
+0448 <span class="keyword">end</span>
+0449 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0450 <a name="_sub4" href="#_subfunctions" class="code">function [kcat,matches] = matchKcat(EC,subs,substrCoeff,KCATcell,organism,</a><span class="keyword">...</span>
+0451     substrate,SA,phylDist,<span class="keyword">...</span>
+0452     org_index,SAcell,KCATcellMatches,SAcellMatches,kcatAggregation)
+0453 
+0454 <span class="comment">%Will go through BRENDA and will record any match. Afterwards, it will</span>
+0455 <span class="comment">%return the maximum value and the number of matches attained.</span>
+0456 kcat    = [];
+0457 matches = 0;
+0458 
+0459 <span class="keyword">if</span> SA
+0460     <span class="comment">%SAcell{1},wild,[],[]</span>
+0461     EC_indexes = <a href="#_sub6" class="code" title="subfunction EC_indexes = extract_indexes(EC_indCellStringMatches,subs_cell,orgs_cell,subs,">extract_indexes</a>(SAcellMatches,[],SAcell{2},subs,substrate,<span class="keyword">...</span>
+0462         organism,org_index,phylDist);
+0463 
+0464     kcat       = SAcell{3}(EC_indexes);
+0465     org_cell   = SAcell{2}(EC_indexes);
+0466     MW_BRENDA  = SAcell{4}(EC_indexes);
+0467 
+0468 <span class="keyword">else</span>
+0469     <span class="comment">%KCATcell{1},wild,ECIndexIds,EcIndexIndices</span>
+0470     EC_indexes = <a href="#_sub6" class="code" title="subfunction EC_indexes = extract_indexes(EC_indCellStringMatches,subs_cell,orgs_cell,subs,">extract_indexes</a>(KCATcellMatches,KCATcell{2},KCATcell{3},<span class="keyword">...</span>
+0471         subs,substrate,organism,org_index,<span class="keyword">...</span>
+0472         phylDist);
+0473     <span class="keyword">if</span> substrate
+0474         <span class="keyword">for</span> j = 1:length(EC_indexes)
+0475             indx = EC_indexes(j);
+0476             <span class="keyword">for</span> k = 1:length(subs)
+0477                 <span class="keyword">if</span> (isempty(subs{k}))
+0478                     <span class="keyword">break</span>;
+0479                 <span class="keyword">end</span>
+0480                 <span class="comment">%l = logical(strcmpi(model.metNames,subs{k}).*(model.S(:,i)~=0)); %I don't understand the .* (model.S(:,i)~=0) part, it shouldn't be needed?/JG;</span>
+0481                 <span class="keyword">if</span> ~isempty(subs{k}) &amp;&amp; strcmpi(subs{k},KCATcell{2}(indx))
+0482                     <span class="keyword">if</span> KCATcell{4}(indx) &gt; 0
+0483                         coeff = substrCoeff(k);
+0484                         kCatTmp = KCATcell{4}(indx);
+0485                         kcat  = [kcat;kCatTmp/coeff];
+0486                     <span class="keyword">end</span>
+0487                 <span class="keyword">end</span>
+0488             <span class="keyword">end</span>
+0489         <span class="keyword">end</span>
+0490     <span class="keyword">else</span>
+0491         kcat = KCATcell{4}(EC_indexes);
+0492     <span class="keyword">end</span>
+0493 <span class="keyword">end</span>
+0494 <span class="comment">%Collapse the matched entries to one value, by the chosen aggregation:</span>
+0495 <span class="keyword">if</span> isempty(kcat)
+0496     kcat = 0;
+0497 <span class="keyword">else</span>
+0498     matches = length(kcat);
+0499     <span class="keyword">if</span> strcmpi(kcatAggregation,<span class="string">'median'</span>)
+0500         kcat = median(kcat);
+0501     <span class="keyword">else</span>
+0502         kcat = max(kcat);
+0503     <span class="keyword">end</span>
+0504 <span class="keyword">end</span>
+0505 <span class="comment">%Avoid SA*Mw values over the diffusion limit rate  [Bar-Even et al. 2011]</span>
+0506 <span class="keyword">if</span> kcat&gt;(1E7)
+0507     kcat = 1E7;
+0508 <span class="keyword">end</span>
+0509 <span class="keyword">end</span>
+0510 
+0511 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0512 <span class="comment">%Make the string matches of the ECs. This is heavy, so only do it once!</span>
+0513 <span class="comment">%</span>
+0514 <a name="_sub5" href="#_subfunctions" class="code">function EC_indexes = extract_string_matches(EC,EC_cell,wild,ECIndexIds,EcIndexIndices)</a>
+0515 EC_indexes = [];
+0516 EC_indexesOld = [];
+0517 <span class="keyword">if</span> wild
+0518     <span class="keyword">if</span> (~isempty(ECIndexIds)) <span class="comment">%In some cases the EC_cell is not from KCatCell</span>
+0519         <span class="comment">% startsWith, not contains: EC is a truncated prefix like '1.' (everything</span>
+0520         <span class="comment">% before the first wildcard dash), and an anchored match is what the</span>
+0521         <span class="comment">% non-optimized branch below already does (strfind(...)==1). contains()</span>
+0522         <span class="comment">% would match that same '1.' substring anywhere in the string, not just at</span>
+0523         <span class="comment">% the start -- '4.2.1.1' contains '1.' between its third and fourth levels,</span>
+0524         <span class="comment">% so a '1.-.-.-' wildcard query for enzyme class 1 would also match entries</span>
+0525         <span class="comment">% from unrelated classes whose EC code happens to contain the same two</span>
+0526         <span class="comment">% characters.</span>
+0527         X = find(startsWith(ECIndexIds, EC));
+0528         <span class="keyword">for</span> j = 1:length(X)
+0529             EC_indexes = [EC_indexes,EcIndexIndices{X(j)}];
+0530         <span class="keyword">end</span>
+0531     <span class="keyword">elseif</span> isempty(EC) <span class="comment">%Not optimized, fully wildcarded: every entry matches</span>
+0532         EC_indexes = 1:length(EC_cell);
+0533     <span class="keyword">else</span> <span class="comment">%Not optimized</span>
+0534         <span class="keyword">for</span> j=1:length(EC_cell)
+0535             <span class="keyword">if</span> strfind(EC_cell{j},EC)==1
+0536                 EC_indexes = [EC_indexes,j];
+0537             <span class="keyword">end</span>
+0538         <span class="keyword">end</span>
+0539     <span class="keyword">end</span>
+0540 <span class="keyword">else</span>
+0541     <span class="keyword">if</span> (~isempty(ECIndexIds)) <span class="comment">%In some cases the EC_cell is not from KCatCell</span>
+0542         mtch = find(strcmpi(EC,ECIndexIds));
+0543         <span class="keyword">if</span> (~isempty(mtch))
+0544             EC_indexes = EcIndexIndices{mtch};
+0545         <span class="keyword">end</span>
+0546     <span class="keyword">else</span> <span class="comment">%%Not optimized</span>
+0547         <span class="keyword">if</span> ~isempty(EC_cell)
+0548             EC_indexes = transpose(find(strcmpi(EC,EC_cell)));
+0549         <span class="keyword">end</span>
+0550     <span class="keyword">end</span>
+0551 <span class="keyword">end</span>
+0552 
+0553 <span class="keyword">end</span>
+0554 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0555 <span class="comment">%Extract the indexes of the entries in the BRENDA data that meet the</span>
+0556 <span class="comment">%conditions specified by the search criteria</span>
+0557 <a name="_sub6" href="#_subfunctions" class="code">function EC_indexes = extract_indexes(EC_indCellStringMatches,subs_cell,orgs_cell,subs,</a><span class="keyword">...</span>
+0558     substrate,organism, org_index,<span class="keyword">...</span>
+0559     phylDist)
+0560 
+0561 EC_indexes = EC_indCellStringMatches;<span class="comment">%reuse so the string comparisons are not run many times</span>
+0562 
+0563 <span class="comment">%If substrate=true then it will extract only the substrates appereances</span>
+0564 <span class="comment">%indexes in the EC subset from the BRENDA cell array</span>
+0565 
+0566 <span class="keyword">if</span> substrate
+0567     <span class="keyword">if</span> (~isempty(EC_indexes)) <span class="comment">%optimization</span>
+0568         Subs_indexes = [];
+0569         <span class="keyword">for</span> l = 1:length(subs)
+0570             <span class="keyword">if</span> (isempty(subs{l}))
+0571                 <span class="keyword">break</span>;
+0572             <span class="keyword">end</span>
+0573             Subs_indexes = horzcat(Subs_indexes,EC_indexes(strcmpi(subs(l),<span class="keyword">...</span>
+0574                 subs_cell(EC_indexes))));
+0575         <span class="keyword">end</span>
+0576         EC_indexes = Subs_indexes;
+0577     <span class="keyword">end</span>
+0578 <span class="keyword">end</span>
+0579 
+0580 EC_orgs = orgs_cell(EC_indexes);
+0581 <span class="comment">%If specific organism values are requested looks for all the organism</span>
+0582 <span class="comment">%repetitions on the subset BRENDA cell array(EC_indexes)</span>
+0583 <span class="keyword">if</span> string(organism) ~= <span class="string">''</span>
+0584     EC_indexes = EC_indexes(strcmpi(string(organism),EC_orgs));
+0585 
+0586     <span class="comment">%If KEGG code was assigned to the organism (model) then it will look for</span>
+0587     <span class="comment">%the Kcat value for the closest organism</span>
+0588 <span class="keyword">elseif</span> org_index~=<span class="string">'*'</span> <span class="comment">%&amp;&amp; org_index~=''</span>
+0589     KEGG_indexes = [];temp = [];
+0590 
+0591     <span class="comment">%For relating a phyl dist between the modelled organism and the organisms</span>
+0592     <span class="comment">%on the BRENDA cell array it should search for a KEGG code for each of</span>
+0593     <span class="comment">%these</span>
+0594     <span class="keyword">for</span> j=1:length(EC_indexes)
+0595         <span class="comment">%Assigns a KEGG index for those found on the KEGG struct</span>
+0596         orgs_index = find(strcmpi(orgs_cell(EC_indexes(j)),phylDist.names),1);
+0597         <span class="keyword">if</span> ~isempty(orgs_index)
+0598             KEGG_indexes = [KEGG_indexes; orgs_index];
+0599             temp         = [temp;EC_indexes(j)];
+0600             <span class="comment">%For values related to organisms without KEGG code, then it will</span>
+0601             <span class="comment">%look for KEGG code for the first organism with the same genus</span>
+0602         <span class="keyword">else</span>
+0603             org = orgs_cell{EC_indexes(j)};
+0604             orgGenus = lower(regexprep(org,<span class="string">'\s.*'</span>,<span class="string">''</span>));
+0605             <span class="keyword">if</span> isKey(phylDist.genusHashMap,orgGenus) <span class="comment">%annoyingly, this seems to be needed</span>
+0606                 matchInd = cell2mat(values(phylDist.genusHashMap,{orgGenus}));
+0607                 matches = phylDist.uniqueGenusIndices{matchInd};
+0608                 k = matches(1);
+0609                 KEGG_indexes = [KEGG_indexes;k];
+0610                 temp         = [temp;EC_indexes(j)];
+0611             <span class="keyword">end</span>
+0612         <span class="keyword">end</span>
+0613     <span class="keyword">end</span>
+0614     <span class="comment">%Update the EC_indexes cell array</span>
+0615     EC_indexes = temp;
+0616     <span class="comment">%Looks for the taxonomically closest organism and saves the index of</span>
+0617     <span class="comment">%its appearences in the BRENDA cell</span>
+0618     <span class="keyword">if</span> ~isempty(EC_indexes)
+0619         distances = phylDist.distMat(org_index,KEGG_indexes);
+0620         EC_indexes = EC_indexes(distances == min(distances));
+0621     <span class="keyword">end</span>
+0622 <span class="keyword">end</span>
+0623 <span class="keyword">end</span>
+0624 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0625 <a name="_sub7" href="#_subfunctions" class="code">function org_index = find_inKEGG(org_name,names)</a>
+0626 org_index      = find(strcmpi(org_name,names));
+0627 <span class="keyword">if</span> numel(org_index)&gt;1
+0628     org_index = org_index(1);
+0629 <span class="keyword">elseif</span> isempty(org_index)
+0630     org_name    = regexprep(org_name,<span class="string">'\s.*'</span>,<span class="string">''</span>);
+0631     org_index   = find(strcmpi(org_name,names));
+0632     <span class="keyword">if</span> numel(org_index)&gt;1
+0633         org_index = org_index(1);
+0634     <span class="keyword">elseif</span> isempty(org_index)
+0635         org_index = <span class="string">'*'</span>;
+0636     <span class="keyword">end</span>
+0637 <span class="keyword">end</span>
+0638 <span class="keyword">end</span>
+0639 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0640 <a name="_sub8" href="#_subfunctions" class="code">function phylDistStruct =  KEGG_struct(phylpath)</a>
+0641 load(phylpath)
+0642 phylDistStruct.ids   = transpose(phylDistStruct.ids);
+0643 phylDistStruct.names = transpose(phylDistStruct.names);
+0644 phylDistStruct.names = regexprep(phylDistStruct.names,<span class="string">'\s*\(.*'</span>,<span class="string">''</span>);
+0645 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

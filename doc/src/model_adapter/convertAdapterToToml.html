@@ -1,0 +1,316 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of convertAdapterToToml</title>
+  <meta name="keywords" content="convertAdapterToToml">
+  <meta name="description" content="convertAdapterToToml  Write the parameters of an adapter class to model_adapter.toml.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">model_adapter</a> &gt; convertAdapterToToml.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/model_adapter&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>convertAdapterToToml
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>convertAdapterToToml  Write the parameters of an adapter class to model_adapter.toml.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function report = convertAdapterToToml(adapter, tomlFile) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> convertAdapterToToml  Write the parameters of an adapter class to model_adapter.toml.
+
+ Converts an existing ModelAdapter class (GECKO 3 or 4 style) to
+ model_adapter.toml, the configuration file shared by GECKO and geckopy.
+ Parameter names are translated with adapterParameters.tsv (for instance
+ Ptot becomes p_tot), paths inside the project folder are written
+ relative to it, and parameters without a geckopy name are kept under
+ [matlab.params], so that loadAdapterParams gives back the same params.
+
+ Methods that the adapter class overrides cannot be written to TOML.
+ They are listed in the report, with how to carry them over:
+ - getSpontaneousReactions: set [spontaneous] name_contains or file;
+ - makeModelAnaerobic, changeProteinBiomass: set [matlab]
+   make_model_anaerobic or change_protein_biomass to a function name;
+ - other methods: keep the adapter class and let its constructor call
+   loadAdapterParams.
+
+ Parameters
+ ----------
+ adapter : ModelAdapter or char
+     an adapter object, or the path to its .m file.
+ tomlFile : char, optional
+     file to write (default: model_adapter.toml in the adapter's
+     params.path). An existing file is not overwritten.
+
+ Returns
+ -------
+ report : struct
+     - file: the file written;
+     - unmapped: parameters written under [matlab.params];
+     - methods: overridden methods that need carrying over by hand.
+
+ Examples
+ --------
+     report = convertAdapterToToml(fullfile(projectPath,'MyGEMAdapter.m'));
+     adapter = TomlAdapter(projectPath);
+
+ See also
+ --------
+ <a href="TomlAdapter.html" class="code" title="">TomlAdapter</a>, <a href="loadAdapterParams.html" class="code" title="function params = loadAdapterParams(tomlFile)">loadAdapterParams</a>, <a href="writeAdapterToml.html" class="code" title="function writeAdapterToml(data, filename, header)">writeAdapterToml</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="writeAdapterToml.html" class="code" title="function writeAdapterToml(data, filename, header)">writeAdapterToml</a>	writeAdapterToml  Write a struct as a model adapter TOML file.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function map = readMap()</a></li><li><a href="#_sub2" class="code">function names = overriddenMethods(adapter)</a></li><li><a href="#_sub3" class="code">function extra = unusedFields(s, prefix, used)</a></li><li><a href="#_sub4" class="code">function names = flattenNames(s, prefix)</a></li><li><a href="#_sub5" class="code">function p = relativePath(p, projectPath)</a></li><li><a href="#_sub6" class="code">function [found, value] = getDotted(s, key)</a></li><li><a href="#_sub7" class="code">function s = setDotted(s, key, value)</a></li><li><a href="#_sub8" class="code">function v = getOr(s, field, default)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function report = convertAdapterToToml(adapter, tomlFile)</a>
+0002 <span class="comment">% convertAdapterToToml  Write the parameters of an adapter class to model_adapter.toml.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Converts an existing ModelAdapter class (GECKO 3 or 4 style) to</span>
+0005 <span class="comment">% model_adapter.toml, the configuration file shared by GECKO and geckopy.</span>
+0006 <span class="comment">% Parameter names are translated with adapterParameters.tsv (for instance</span>
+0007 <span class="comment">% Ptot becomes p_tot), paths inside the project folder are written</span>
+0008 <span class="comment">% relative to it, and parameters without a geckopy name are kept under</span>
+0009 <span class="comment">% [matlab.params], so that loadAdapterParams gives back the same params.</span>
+0010 <span class="comment">%</span>
+0011 <span class="comment">% Methods that the adapter class overrides cannot be written to TOML.</span>
+0012 <span class="comment">% They are listed in the report, with how to carry them over:</span>
+0013 <span class="comment">% - getSpontaneousReactions: set [spontaneous] name_contains or file;</span>
+0014 <span class="comment">% - makeModelAnaerobic, changeProteinBiomass: set [matlab]</span>
+0015 <span class="comment">%   make_model_anaerobic or change_protein_biomass to a function name;</span>
+0016 <span class="comment">% - other methods: keep the adapter class and let its constructor call</span>
+0017 <span class="comment">%   loadAdapterParams.</span>
+0018 <span class="comment">%</span>
+0019 <span class="comment">% Parameters</span>
+0020 <span class="comment">% ----------</span>
+0021 <span class="comment">% adapter : ModelAdapter or char</span>
+0022 <span class="comment">%     an adapter object, or the path to its .m file.</span>
+0023 <span class="comment">% tomlFile : char, optional</span>
+0024 <span class="comment">%     file to write (default: model_adapter.toml in the adapter's</span>
+0025 <span class="comment">%     params.path). An existing file is not overwritten.</span>
+0026 <span class="comment">%</span>
+0027 <span class="comment">% Returns</span>
+0028 <span class="comment">% -------</span>
+0029 <span class="comment">% report : struct</span>
+0030 <span class="comment">%     - file: the file written;</span>
+0031 <span class="comment">%     - unmapped: parameters written under [matlab.params];</span>
+0032 <span class="comment">%     - methods: overridden methods that need carrying over by hand.</span>
+0033 <span class="comment">%</span>
+0034 <span class="comment">% Examples</span>
+0035 <span class="comment">% --------</span>
+0036 <span class="comment">%     report = convertAdapterToToml(fullfile(projectPath,'MyGEMAdapter.m'));</span>
+0037 <span class="comment">%     adapter = TomlAdapter(projectPath);</span>
+0038 <span class="comment">%</span>
+0039 <span class="comment">% See also</span>
+0040 <span class="comment">% --------</span>
+0041 <span class="comment">% TomlAdapter, loadAdapterParams, writeAdapterToml</span>
+0042 
+0043 <span class="keyword">if</span> ischar(adapter) || isstring(adapter)
+0044     adapter = ModelAdapterManager.getAdapter(char(adapter));
+0045 <span class="keyword">end</span>
+0046 params = adapter.params;
+0047 <span class="keyword">if</span> isfield(params,<span class="string">'path'</span>) &amp;&amp; isstruct(params.path)
+0048     params.path = params.path.Name; <span class="comment">% a struct path, as some old adapters keep it</span>
+0049 <span class="keyword">end</span>
+0050 projectPath = <span class="string">''</span>;
+0051 <span class="keyword">if</span> isfield(params,<span class="string">'path'</span>)
+0052     projectPath = char(params.path);
+0053 <span class="keyword">end</span>
+0054 <span class="keyword">if</span> nargin &lt; 2 || isempty(tomlFile)
+0055     tomlFile = fullfile(projectPath, <span class="string">'model_adapter.toml'</span>);
+0056 <span class="keyword">end</span>
+0057 <span class="keyword">if</span> isfile(tomlFile)
+0058     error(<span class="string">'GECKO:convertAdapterToToml'</span>, <span class="string">'%s exists already; it is not overwritten.'</span>, tomlFile);
+0059 <span class="keyword">end</span>
+0060 
+0061 map = <a href="#_sub1" class="code" title="subfunction map = readMap()">readMap</a>();
+0062 data = struct();
+0063 used = {};
+0064 <span class="keyword">for</span> k = 1:numel(map.tomlKey)
+0065     field = map.matlabField{k};
+0066     <span class="keyword">if</span> isempty(field) || any(strcmp(field, {<span class="string">'evotune.kcatSources'</span>,<span class="string">'evotune.sigma0logSource'</span>}))
+0067         <span class="keyword">continue</span>
+0068     <span class="keyword">end</span>
+0069     [found, value] = <a href="#_sub6" class="code" title="subfunction [found, value] = getDotted(s, key)">getDotted</a>(params, field);
+0070     <span class="keyword">if</span> ~found || (isempty(value) &amp;&amp; ~ischar(value))
+0071         <span class="keyword">if</span> found
+0072             used{end+1} = field; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0073         <span class="keyword">end</span>
+0074         <span class="keyword">continue</span>
+0075     <span class="keyword">end</span>
+0076     used{end+1} = field; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0077     <span class="keyword">if</span> any(strcmp(map.tomlKey{k}, {<span class="string">'conv_gem'</span>,<span class="string">'spontaneous.file'</span>}))
+0078         value = <a href="#_sub5" class="code" title="subfunction p = relativePath(p, projectPath)">relativePath</a>(char(value), projectPath);
+0079     <span class="keyword">end</span>
+0080     data = <a href="#_sub7" class="code" title="subfunction s = setDotted(s, key, value)">setDotted</a>(data, map.tomlKey{k}, value);
+0081 <span class="keyword">end</span>
+0082 used{end+1} = <span class="string">'path'</span>;
+0083 
+0084 <span class="comment">% Trust tiers: one group per ec.source value.</span>
+0085 <span class="keyword">if</span> isfield(params,<span class="string">'evotune'</span>) &amp;&amp; isfield(params.evotune,<span class="string">'kcatSources'</span>)
+0086     used = [used, {<span class="string">'evotune.kcatSources'</span>,<span class="string">'evotune.sigma0logSource'</span>}];
+0087     sources = params.evotune.kcatSources;
+0088     widths = params.evotune.sigma0logSource;
+0089     groups = struct();
+0090     sigma0 = struct();
+0091     <span class="keyword">for</span> k = 1:numel(sources)
+0092         name = matlab.lang.makeValidName(sources{k});
+0093         groups.(name).sources = sources(k);
+0094         sigma0.(name) = widths(k);
+0095     <span class="keyword">end</span>
+0096     data.evotune.source_groups = groups;
+0097     data.evotune.sigma0_log_source = sigma0;
+0098 <span class="keyword">end</span>
+0099 
+0100 <span class="comment">% Everything else is kept for GECKO under [matlab.params].</span>
+0101 extra = <a href="#_sub3" class="code" title="subfunction extra = unusedFields(s, prefix, used)">unusedFields</a>(params, <span class="string">''</span>, used);
+0102 report.unmapped = {};
+0103 <span class="keyword">if</span> ~isempty(fieldnames(extra))
+0104     data.matlab.params = extra;
+0105     report.unmapped = <a href="#_sub4" class="code" title="subfunction names = flattenNames(s, prefix)">flattenNames</a>(extra, <span class="string">''</span>);
+0106 <span class="keyword">end</span>
+0107 
+0108 report.methods = <a href="#_sub2" class="code" title="subfunction names = overriddenMethods(adapter)">overriddenMethods</a>(adapter);
+0109 report.file = tomlFile;
+0110 
+0111 header = {sprintf(<span class="string">'Model adapter for %s, converted from %s.'</span>, <span class="keyword">...</span>
+0112     <a href="#_sub8" class="code" title="subfunction v = getOr(s, field, default)">getOr</a>(params,<span class="string">'org_name'</span>,<span class="string">'this project'</span>), class(adapter)), <span class="keyword">...</span>
+0113     <span class="string">'Shared by GECKO (MATLAB) and geckopy; see adapterParameters.tsv in GECKO for every key.'</span>};
+0114 <a href="writeAdapterToml.html" class="code" title="function writeAdapterToml(data, filename, header)">writeAdapterToml</a>(data, tomlFile, header);
+0115 
+0116 fprintf(<span class="string">'Wrote %s.\n'</span>, tomlFile);
+0117 <span class="keyword">if</span> ~isempty(report.unmapped)
+0118     fprintf(<span class="string">'Kept for GECKO only, under [matlab.params]: %s\n'</span>, strjoin(report.unmapped, <span class="string">', '</span>));
+0119 <span class="keyword">end</span>
+0120 <span class="keyword">if</span> ~isempty(report.methods)
+0121     printOrange(sprintf([<span class="string">'%s overrides methods that a TOML file cannot hold: %s.\n'</span> <span class="keyword">...</span>
+0122         <span class="string">'Set [spontaneous] for getSpontaneousReactions, [matlab] function names for\n'</span> <span class="keyword">...</span>
+0123         <span class="string">'makeModelAnaerobic and changeProteinBiomass, or keep the class and let its\n'</span> <span class="keyword">...</span>
+0124         <span class="string">'constructor call loadAdapterParams.\n'</span>], class(adapter), strjoin(report.methods, <span class="string">', '</span>)));
+0125 <span class="keyword">end</span>
+0126 <span class="keyword">end</span>
+0127 
+0128 <a name="_sub1" href="#_subfunctions" class="code">function map = readMap()</a>
+0129 file = fullfile(fileparts(mfilename(<span class="string">'fullpath'</span>)), <span class="string">'adapterParameters.tsv'</span>);
+0130 fid = fopen(file, <span class="string">'r'</span>);
+0131 cols = textscan(fid, <span class="string">'%s %s %s %s'</span>, <span class="string">'Delimiter'</span>, <span class="string">'\t'</span>, <span class="string">'HeaderLines'</span>, 1, <span class="string">'Whitespace'</span>, <span class="string">''</span>);
+0132 fclose(fid);
+0133 map.tomlKey = cols{1};
+0134 map.matlabField = cols{2};
+0135 <span class="keyword">end</span>
+0136 
+0137 <a name="_sub2" href="#_subfunctions" class="code">function names = overriddenMethods(adapter)</a>
+0138 <span class="comment">% Methods defined by the adapter class itself rather than ModelAdapter.</span>
+0139 names = {};
+0140 mc = metaclass(adapter);
+0141 <span class="keyword">for</span> k = 1:numel(mc.MethodList)
+0142     m = mc.MethodList(k);
+0143     <span class="keyword">if</span> strcmp(m.DefiningClass.Name, mc.Name) &amp;&amp; ~strcmp(m.Name, mc.Name) &amp;&amp; ~m.Static
+0144         names{end+1} = m.Name; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0145     <span class="keyword">end</span>
+0146 <span class="keyword">end</span>
+0147 names = sort(names);
+0148 <span class="keyword">end</span>
+0149 
+0150 <a name="_sub3" href="#_subfunctions" class="code">function extra = unusedFields(s, prefix, used)</a>
+0151 extra = struct();
+0152 fields = fieldnames(s);
+0153 <span class="keyword">for</span> k = 1:numel(fields)
+0154     name = fields{k};
+0155     <span class="keyword">if</span> ~isempty(prefix)
+0156         name = [prefix <span class="string">'.'</span> name];
+0157     <span class="keyword">end</span>
+0158     <span class="keyword">if</span> any(strcmp(name, used))
+0159         <span class="keyword">continue</span>
+0160     <span class="keyword">end</span>
+0161     value = s.(fields{k});
+0162     <span class="keyword">if</span> isstruct(value) &amp;&amp; isscalar(value) &amp;&amp; any(startsWith(used, [name <span class="string">'.'</span>]))
+0163         sub = <a href="#_sub3" class="code" title="subfunction extra = unusedFields(s, prefix, used)">unusedFields</a>(value, name, used);
+0164         <span class="keyword">if</span> ~isempty(fieldnames(sub))
+0165             extra.(fields{k}) = sub;
+0166         <span class="keyword">end</span>
+0167     <span class="keyword">elseif</span> ~(isempty(value) &amp;&amp; ~ischar(value) &amp;&amp; ~iscell(value))
+0168         extra.(fields{k}) = value;
+0169     <span class="keyword">end</span>
+0170 <span class="keyword">end</span>
+0171 <span class="keyword">end</span>
+0172 
+0173 <a name="_sub4" href="#_subfunctions" class="code">function names = flattenNames(s, prefix)</a>
+0174 names = {};
+0175 fields = fieldnames(s);
+0176 <span class="keyword">for</span> k = 1:numel(fields)
+0177     name = fields{k};
+0178     <span class="keyword">if</span> ~isempty(prefix)
+0179         name = [prefix <span class="string">'.'</span> name];
+0180     <span class="keyword">end</span>
+0181     <span class="keyword">if</span> isstruct(s.(fields{k}))
+0182         names = [names, <a href="#_sub4" class="code" title="subfunction names = flattenNames(s, prefix)">flattenNames</a>(s.(fields{k}), name)]; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0183     <span class="keyword">else</span>
+0184         names{end+1} = name; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0185     <span class="keyword">end</span>
+0186 <span class="keyword">end</span>
+0187 <span class="keyword">end</span>
+0188 
+0189 <a name="_sub5" href="#_subfunctions" class="code">function p = relativePath(p, projectPath)</a>
+0190 p = strrep(p, <span class="string">'\'</span>, <span class="string">'/'</span>);
+0191 base = strrep(projectPath, <span class="string">'\'</span>, <span class="string">'/'</span>);
+0192 <span class="keyword">if</span> ~isempty(base) &amp;&amp; startsWith(p, [base <span class="string">'/'</span>])
+0193     p = p(numel(base)+2:end);
+0194 <span class="keyword">end</span>
+0195 <span class="keyword">end</span>
+0196 
+0197 <a name="_sub6" href="#_subfunctions" class="code">function [found, value] = getDotted(s, key)</a>
+0198 parts = strsplit(key, <span class="string">'.'</span>);
+0199 value = s;
+0200 found = true;
+0201 <span class="keyword">for</span> k = 1:numel(parts)
+0202     <span class="keyword">if</span> ~isstruct(value) || ~isfield(value, parts{k})
+0203         found = false;
+0204         value = [];
+0205         <span class="keyword">return</span>
+0206     <span class="keyword">end</span>
+0207     value = value.(parts{k});
+0208 <span class="keyword">end</span>
+0209 <span class="keyword">end</span>
+0210 
+0211 <a name="_sub7" href="#_subfunctions" class="code">function s = setDotted(s, key, value)</a>
+0212 parts = strsplit(key, <span class="string">'.'</span>);
+0213 <span class="keyword">if</span> numel(parts) == 1
+0214     s.(parts{1}) = value;
+0215     <span class="keyword">return</span>
+0216 <span class="keyword">end</span>
+0217 <span class="keyword">if</span> ~isfield(s, parts{1}) || ~isstruct(s.(parts{1}))
+0218     s.(parts{1}) = struct();
+0219 <span class="keyword">end</span>
+0220 s.(parts{1}) = <a href="#_sub7" class="code" title="subfunction s = setDotted(s, key, value)">setDotted</a>(s.(parts{1}), strjoin(parts(2:end), <span class="string">'.'</span>), value);
+0221 <span class="keyword">end</span>
+0222 
+0223 <a name="_sub8" href="#_subfunctions" class="code">function v = getOr(s, field, default)</a>
+0224 v = default;
+0225 <span class="keyword">if</span> isfield(s, field) &amp;&amp; ~isempty(s.(field))
+0226     v = s.(field);
+0227 <span class="keyword">end</span>
+0228 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

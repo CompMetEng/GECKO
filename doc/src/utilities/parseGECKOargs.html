@@ -1,0 +1,195 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of parseGECKOargs</title>
+  <meta name="keywords" content="parseGECKOargs">
+  <meta name="description" content="parseGECKOargs  Resolve optional arguments passed positionally or by name.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">utilities</a> &gt; parseGECKOargs.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/utilities&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>parseGECKOargs
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>parseGECKOargs  Resolve optional arguments passed positionally or by name.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function args = parseGECKOargs(rawArgs, spec) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> parseGECKOargs  Resolve optional arguments passed positionally or by name.
+
+ Helper that lets a GECKO function accept its optional arguments either in
+ the traditional positional order or as name-value pairs, without losing
+ backward compatibility. The required leading arguments stay explicit in the
+ function signature; the optional tail is collected into varargin and passed
+ here together with a specification of the optional parameters.
+
+ Parameters
+ ----------
+ rawArgs : cell
+     the function's varargin, i.e. whatever was supplied after the required
+     positional arguments.
+ spec : cell
+     an N-by-2 or N-by-3 cell array describing the optional parameters, one
+     per row:
+
+     - column 1 : parameter name (char).
+     - column 2 : default value, used when the parameter is not supplied.
+     - column 3 : optional validator, a function handle that is called with
+       the resolved value and should error on an invalid value. Use [] for
+       no validation.
+
+ Returns
+ -------
+ args : struct
+     a struct with one field per parameter name, holding the resolved value.
+
+ Notes
+ -----
+ The calling convention is detected from rawArgs: it is treated as name-
+ value pairs only when it has an even number of elements AND every element
+ in a name position is a string matching one of the declared parameter
+ names. Otherwise it is treated as positional and assigned in the order of
+ the spec. A call therefore uses either the positional or the name-value
+ form for the optional tail, not a mix of the two. When an optional tail
+ value could itself be a string equal to a parameter name, use the explicit
+ name-value form to remove the ambiguity.
+
+ Examples
+ --------
+     % inside makeEcModel(model, varargin):
+     p = parseGECKOargs(varargin, { ...
+         'geckoLight',   false; ...
+         'modelAdapter', []});
+     geckoLight   = p.geckoLight;
+     modelAdapter = p.modelAdapter;
+
+     % the caller may then use either form:
+     makeEcModel(model, true, adapter)                  % positional
+     makeEcModel(model, 'geckoLight', true)             % named</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="createGECKOproject.html" class="code" title="function createGECKOproject(varargin)">createGECKOproject</a>	createGECKOproject  Create a basic project structure for GECKO.</li><li><a href="upgradeGECKOproject.html" class="code" title="function report = upgradeGECKOproject(projectPath, varargin)">upgradeGECKOproject</a>	upgradeGECKOproject  Bring a GECKO 3 project to the GECKO 4 layout.</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function args = parseGECKOargs(rawArgs, spec)</a>
+0002 <span class="comment">% parseGECKOargs  Resolve optional arguments passed positionally or by name.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Helper that lets a GECKO function accept its optional arguments either in</span>
+0005 <span class="comment">% the traditional positional order or as name-value pairs, without losing</span>
+0006 <span class="comment">% backward compatibility. The required leading arguments stay explicit in the</span>
+0007 <span class="comment">% function signature; the optional tail is collected into varargin and passed</span>
+0008 <span class="comment">% here together with a specification of the optional parameters.</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% Parameters</span>
+0011 <span class="comment">% ----------</span>
+0012 <span class="comment">% rawArgs : cell</span>
+0013 <span class="comment">%     the function's varargin, i.e. whatever was supplied after the required</span>
+0014 <span class="comment">%     positional arguments.</span>
+0015 <span class="comment">% spec : cell</span>
+0016 <span class="comment">%     an N-by-2 or N-by-3 cell array describing the optional parameters, one</span>
+0017 <span class="comment">%     per row:</span>
+0018 <span class="comment">%</span>
+0019 <span class="comment">%     - column 1 : parameter name (char).</span>
+0020 <span class="comment">%     - column 2 : default value, used when the parameter is not supplied.</span>
+0021 <span class="comment">%     - column 3 : optional validator, a function handle that is called with</span>
+0022 <span class="comment">%       the resolved value and should error on an invalid value. Use [] for</span>
+0023 <span class="comment">%       no validation.</span>
+0024 <span class="comment">%</span>
+0025 <span class="comment">% Returns</span>
+0026 <span class="comment">% -------</span>
+0027 <span class="comment">% args : struct</span>
+0028 <span class="comment">%     a struct with one field per parameter name, holding the resolved value.</span>
+0029 <span class="comment">%</span>
+0030 <span class="comment">% Notes</span>
+0031 <span class="comment">% -----</span>
+0032 <span class="comment">% The calling convention is detected from rawArgs: it is treated as name-</span>
+0033 <span class="comment">% value pairs only when it has an even number of elements AND every element</span>
+0034 <span class="comment">% in a name position is a string matching one of the declared parameter</span>
+0035 <span class="comment">% names. Otherwise it is treated as positional and assigned in the order of</span>
+0036 <span class="comment">% the spec. A call therefore uses either the positional or the name-value</span>
+0037 <span class="comment">% form for the optional tail, not a mix of the two. When an optional tail</span>
+0038 <span class="comment">% value could itself be a string equal to a parameter name, use the explicit</span>
+0039 <span class="comment">% name-value form to remove the ambiguity.</span>
+0040 <span class="comment">%</span>
+0041 <span class="comment">% Examples</span>
+0042 <span class="comment">% --------</span>
+0043 <span class="comment">%     % inside makeEcModel(model, varargin):</span>
+0044 <span class="comment">%     p = parseGECKOargs(varargin, { ...</span>
+0045 <span class="comment">%         'geckoLight',   false; ...</span>
+0046 <span class="comment">%         'modelAdapter', []});</span>
+0047 <span class="comment">%     geckoLight   = p.geckoLight;</span>
+0048 <span class="comment">%     modelAdapter = p.modelAdapter;</span>
+0049 <span class="comment">%</span>
+0050 <span class="comment">%     % the caller may then use either form:</span>
+0051 <span class="comment">%     makeEcModel(model, true, adapter)                  % positional</span>
+0052 <span class="comment">%     makeEcModel(model, 'geckoLight', true)             % named</span>
+0053 
+0054 <span class="keyword">if</span> nargin &lt; 2 || isempty(spec)
+0055     error(<span class="string">'parseGECKOargs:noSpec'</span>, <span class="string">'A parameter specification is required.'</span>);
+0056 <span class="keyword">end</span>
+0057 
+0058 names = spec(:, 1);
+0059 defaults = spec(:, 2);
+0060 hasValidators = size(spec, 2) &gt;= 3;
+0061 
+0062 <span class="comment">% Seed every parameter with its default.</span>
+0063 args = struct();
+0064 <span class="keyword">for</span> i = 1:numel(names)
+0065     args.(names{i}) = defaults{i};
+0066 <span class="keyword">end</span>
+0067 
+0068 <span class="keyword">if</span> ~isempty(rawArgs)
+0069     isNameValue = mod(numel(rawArgs), 2) == 0 &amp;&amp; <span class="keyword">...</span>
+0070         all(cellfun(@(x) (ischar(x) || isstring(x)) &amp;&amp; isscalar(string(x)) &amp;&amp; <span class="keyword">...</span>
+0071         any(strcmpi(x, names)), rawArgs(1:2:end)));
+0072 
+0073     <span class="keyword">if</span> isNameValue
+0074         <span class="keyword">for</span> k = 1:2:numel(rawArgs)
+0075             args.(names{strcmpi(rawArgs{k}, names)}) = rawArgs{k + 1};
+0076         <span class="keyword">end</span>
+0077     <span class="keyword">else</span>
+0078         <span class="keyword">if</span> numel(rawArgs) &gt; numel(names)
+0079             error(<span class="string">'parseGECKOargs:tooManyArgs'</span>, <span class="keyword">...</span>
+0080                 <span class="string">'Too many positional arguments: expected at most %d, got %d.'</span>, <span class="keyword">...</span>
+0081                 numel(names), numel(rawArgs));
+0082         <span class="keyword">end</span>
+0083         <span class="keyword">for</span> k = 1:numel(rawArgs)
+0084             args.(names{k}) = rawArgs{k};
+0085         <span class="keyword">end</span>
+0086     <span class="keyword">end</span>
+0087 <span class="keyword">end</span>
+0088 
+0089 <span class="comment">% Apply optional validators.</span>
+0090 <span class="keyword">if</span> hasValidators
+0091     <span class="keyword">for</span> i = 1:numel(names)
+0092         validator = spec{i, 3};
+0093         <span class="keyword">if</span> ~isempty(validator)
+0094             validator(args.(names{i}));
+0095         <span class="keyword">end</span>
+0096     <span class="keyword">end</span>
+0097 <span class="keyword">end</span>
+0098 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

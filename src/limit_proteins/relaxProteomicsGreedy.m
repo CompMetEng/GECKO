@@ -19,7 +19,9 @@ function result = relaxProteomicsGreedy(model, varargin)
 %     target objective value. Required.
 % enzymeSet : cell
 %     subset of uniprot ids eligible for relaxation (default: every
-%     currently proteomics-constrained enzyme).
+%     currently proteomics-constrained enzyme). An empty cell array {} means
+%     no enzyme is eligible (converged is false unless the model already
+%     reaches minimalGrowth); [] means the default.
 % maxIterations : double
 %     safety cap; errors if exceeded while eligible enzymes still remained
 %     (default 100).
@@ -91,7 +93,7 @@ if ~all(found)
     error('Cannot find prot_<id> metabolites for all enzymes. This is done by makeEcModel.')
 end
 
-if isempty(enzymeSet)
+if isnumeric(enzymeSet) && isempty(enzymeSet)
     pool = model.ec.enzymes;
 else
     pool = intersect(enzymeSet(:), model.ec.enzymes, 'stable');

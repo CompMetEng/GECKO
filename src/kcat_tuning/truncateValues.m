@@ -2,7 +2,8 @@ function table = truncateValues(table,cols)
 % truncateValues  Round values in selected columns to six significant digits.
 %
 % Rounds each value in the given columns of a cell array or table to six
-% significant digits, based on the value's order of magnitude.
+% significant digits, based on the value's order of magnitude. Infinite
+% values are returned unchanged.
 %
 % Parameters
 % ----------
@@ -20,6 +21,9 @@ function table = truncateValues(table,cols)
 [m,n] = size(table);
 for i = 1:m
     for j = cols
+        if isinf(table{i,j})
+            continue
+        end
         orderMagn  = max([ceil(log10(abs(table{i,j}))),0]);
         table{i,j} = round(table{i,j},6-orderMagn);
     end

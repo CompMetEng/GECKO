@@ -1,0 +1,373 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of updateKcatSources</title>
+  <meta name="keywords" content="updateKcatSources">
+  <meta name="description" content="updateKcatSources  Gather the kcat sources that the configuration needs.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">gather_kcats</a> &gt; updateKcatSources.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/gather_kcats&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>updateKcatSources
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>updateKcatSources  Gather the kcat sources that the configuration needs.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function report = updateKcatSources(model, varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> updateKcatSources  Gather the kcat sources that the configuration needs.
+
+ Lists the kcat source files that [kcat_assignment] in model_adapter.toml
+ uses (see collectKcats), and gathers those that are missing or outdated
+ with kcatsFromBrenda, kcatsFromECTree, kcatsFromDLKcat and kcatsFromOKP:
+
+ - a file is outdated when its header records other settings than
+   [kcat_sources.&lt;name&gt;] asks for (presets set these for brenda and
+   ec_tree), or, for brenda and ec_tree, another BRENDA release than the
+   BRENDA files in use;
+ - brenda and ec_tree are made again; dlkcat reads data/DLKcat.tsv if it exists and
+   runs DLKcat (Docker) otherwise; okp_&lt;method&gt; submits or fetches a job,
+   and reports it as pending while the job runs;
+ - custom.tsv and other files it cannot gather are left as they are.
+
+ Requirements are checked first: Docker for a DLKcat run and an
+ OpenKineticsPredictor API key for OKP. Calling it again is safe: files
+ that are current are not gathered again.
+
+ Per-source settings are read from model_adapter.toml, for instance:
+
+     [kcat_sources.brenda]
+     aggregation = &quot;median&quot;
+
+     [kcat_sources.okp_catapro]
+     method = &quot;CataPro&quot;
+
+ Parameters
+ ----------
+ model : struct
+     an ecModel in GECKO 3 format (with ecModel.ec structure).
+
+ Name-Value Arguments
+ --------------------
+ dryRun : logical
+     only report what would be gathered (default false).
+ modelAdapter : ModelAdapter
+     a loaded model adapter (default: the current default model adapter).
+
+ Returns
+ -------
+ report : table
+     one row per source: source, status (current, gathered, pending,
+     outdated, missing, failed or skipped) and note.
+
+ Examples
+ --------
+     updateKcatSources(ecModel, 'dryRun', true)
+     updateKcatSources(ecModel);
+
+ See also
+ --------
+ <a href="collectKcats.html" class="code" title="function [decisions, report, ecModel] = collectKcats(model, varargin)">collectKcats</a>, <a href="assignKcats.html" class="code" title="function [model, decisions, report] = assignKcats(model, varargin)">assignKcats</a>, <a href="kcatsFromBrenda.html" class="code" title="function kcatList = kcatsFromBrenda(model, varargin)">kcatsFromBrenda</a>, <a href="kcatsFromDLKcat.html" class="code" title="function kcatList = kcatsFromDLKcat(model, varargin)">kcatsFromDLKcat</a>, <a href="kcatsFromOKP.html" class="code" title="function [kcatList, done] = kcatsFromOKP(model, varargin)">kcatsFromOKP</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="kcatAssignmentConfig.html" class="code" title="function config = kcatAssignmentConfig(params)">kcatAssignmentConfig</a>	kcatAssignmentConfig  The kcat assignment settings of a model adapter.</li><li><a href="kcatsFromBrenda.html" class="code" title="function kcatList = kcatsFromBrenda(model, varargin)">kcatsFromBrenda</a>	kcatsFromBrenda  Gather kcats from BRENDA and keep them as a source file.</li><li><a href="kcatsFromDLKcat.html" class="code" title="function kcatList = kcatsFromDLKcat(model, varargin)">kcatsFromDLKcat</a>	kcatsFromDLKcat  Gather kcats from DLKcat and keep them as a source file.</li><li><a href="kcatsFromECTree.html" class="code" title="function kcatList = kcatsFromECTree(model, varargin)">kcatsFromECTree</a>	kcatsFromECTree  Estimate kcats from the EC tree and keep them as a source file.</li><li><a href="kcatsFromHomologs.html" class="code" title="function kcatList = kcatsFromHomologs(model, varargin)">kcatsFromHomologs</a>	kcatsFromHomologs  Estimate kcats from measured homologs and keep them as a source file.</li><li><a href="kcatsFromOKP.html" class="code" title="function [kcatList, done] = kcatsFromOKP(model, varargin)">kcatsFromOKP</a>	kcatsFromOKP  Gather kcats from OpenKineticsPredictor and keep them as a source file.</li><li><a href="resolveOkpApiKey.html" class="code" title="function key = resolveOkpApiKey(argKey, basePath)">resolveOkpApiKey</a>	resolveOkpApiKey  Resolve the OpenKineticsPredictor API key.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function [st, nt] = check(name, file, wanted)</a></li><li><a href="#_sub2" class="code">function [st, nt] = gather(model, name, wanted, modelAdapter)</a></li><li><a href="#_sub3" class="code">function method = okpMethod(name, wanted)</a></li><li><a href="#_sub4" class="code">function v = normalizeValue(v)</a></li><li><a href="#_sub5" class="code">function release = brendaRelease(modelAdapter, name)</a></li><li><a href="#_sub6" class="code">function meta = readHeaderLines(filename)</a></li><li><a href="#_sub7" class="code">function [key, value] = parseHeaderLine(line)</a></li><li><a href="#_sub8" class="code">function t = unquoteField(t)</a></li><li><a href="#_sub9" class="code">function checkOptions(args, names, functionName)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function report = updateKcatSources(model, varargin)</a>
+0002 <span class="comment">% updateKcatSources  Gather the kcat sources that the configuration needs.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Lists the kcat source files that [kcat_assignment] in model_adapter.toml</span>
+0005 <span class="comment">% uses (see collectKcats), and gathers those that are missing or outdated</span>
+0006 <span class="comment">% with kcatsFromBrenda, kcatsFromECTree, kcatsFromDLKcat and kcatsFromOKP:</span>
+0007 <span class="comment">%</span>
+0008 <span class="comment">% - a file is outdated when its header records other settings than</span>
+0009 <span class="comment">%   [kcat_sources.&lt;name&gt;] asks for (presets set these for brenda and</span>
+0010 <span class="comment">%   ec_tree), or, for brenda and ec_tree, another BRENDA release than the</span>
+0011 <span class="comment">%   BRENDA files in use;</span>
+0012 <span class="comment">% - brenda and ec_tree are made again; dlkcat reads data/DLKcat.tsv if it exists and</span>
+0013 <span class="comment">%   runs DLKcat (Docker) otherwise; okp_&lt;method&gt; submits or fetches a job,</span>
+0014 <span class="comment">%   and reports it as pending while the job runs;</span>
+0015 <span class="comment">% - custom.tsv and other files it cannot gather are left as they are.</span>
+0016 <span class="comment">%</span>
+0017 <span class="comment">% Requirements are checked first: Docker for a DLKcat run and an</span>
+0018 <span class="comment">% OpenKineticsPredictor API key for OKP. Calling it again is safe: files</span>
+0019 <span class="comment">% that are current are not gathered again.</span>
+0020 <span class="comment">%</span>
+0021 <span class="comment">% Per-source settings are read from model_adapter.toml, for instance:</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">%     [kcat_sources.brenda]</span>
+0024 <span class="comment">%     aggregation = &quot;median&quot;</span>
+0025 <span class="comment">%</span>
+0026 <span class="comment">%     [kcat_sources.okp_catapro]</span>
+0027 <span class="comment">%     method = &quot;CataPro&quot;</span>
+0028 <span class="comment">%</span>
+0029 <span class="comment">% Parameters</span>
+0030 <span class="comment">% ----------</span>
+0031 <span class="comment">% model : struct</span>
+0032 <span class="comment">%     an ecModel in GECKO 3 format (with ecModel.ec structure).</span>
+0033 <span class="comment">%</span>
+0034 <span class="comment">% Name-Value Arguments</span>
+0035 <span class="comment">% --------------------</span>
+0036 <span class="comment">% dryRun : logical</span>
+0037 <span class="comment">%     only report what would be gathered (default false).</span>
+0038 <span class="comment">% modelAdapter : ModelAdapter</span>
+0039 <span class="comment">%     a loaded model adapter (default: the current default model adapter).</span>
+0040 <span class="comment">%</span>
+0041 <span class="comment">% Returns</span>
+0042 <span class="comment">% -------</span>
+0043 <span class="comment">% report : table</span>
+0044 <span class="comment">%     one row per source: source, status (current, gathered, pending,</span>
+0045 <span class="comment">%     outdated, missing, failed or skipped) and note.</span>
+0046 <span class="comment">%</span>
+0047 <span class="comment">% Examples</span>
+0048 <span class="comment">% --------</span>
+0049 <span class="comment">%     updateKcatSources(ecModel, 'dryRun', true)</span>
+0050 <span class="comment">%     updateKcatSources(ecModel);</span>
+0051 <span class="comment">%</span>
+0052 <span class="comment">% See also</span>
+0053 <span class="comment">% --------</span>
+0054 <span class="comment">% collectKcats, assignKcats, kcatsFromBrenda, kcatsFromDLKcat, kcatsFromOKP</span>
+0055 
+0056 <a href="#_sub9" class="code" title="subfunction checkOptions(args, names, functionName)">checkOptions</a>(varargin, {<span class="string">'dryRun'</span>,<span class="string">'modelAdapter'</span>}, <span class="string">'updateKcatSources'</span>);
+0057 p = parseGECKOargs(varargin, {<span class="string">'dryRun'</span>, false; <span class="string">'modelAdapter'</span>, []});
+0058 modelAdapter = p.modelAdapter;
+0059 <span class="keyword">if</span> isempty(modelAdapter)
+0060     modelAdapter = ModelAdapterManager.getDefault();
+0061     <span class="keyword">if</span> isempty(modelAdapter)
+0062         error(<span class="string">'Either send in a modelAdapter or set the default model adapter in the ModelAdapterManager.'</span>)
+0063     <span class="keyword">end</span>
+0064 <span class="keyword">end</span>
+0065 params = modelAdapter.params;
+0066 config = <a href="kcatAssignmentConfig.html" class="code" title="function config = kcatAssignmentConfig(params)">kcatAssignmentConfig</a>(params);
+0067 kcatDir = fullfile(params.path, <span class="string">'data'</span>, <span class="string">'kcats'</span>);
+0068 
+0069 names = {};
+0070 <span class="keyword">for</span> s = 1:numel(config.stages)
+0071     <span class="keyword">for</span> t = 1:numel(config.stages(s).files)
+0072         token = config.stages(s).files{t};
+0073         <span class="keyword">if</span> startsWith(token, <span class="string">'database_'</span>)
+0074             token = <span class="string">'brenda'</span>;
+0075         <span class="keyword">end</span>
+0076         <span class="keyword">if</span> ~any(strcmp(names, token))
+0077             names{end+1} = token; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0078         <span class="keyword">end</span>
+0079     <span class="keyword">end</span>
+0080 <span class="keyword">end</span>
+0081 
+0082 status = cell(numel(names), 1);
+0083 note = cell(numel(names), 1);
+0084 <span class="keyword">for</span> k = 1:numel(names)
+0085     name = names{k};
+0086     file = fullfile(kcatDir, [name <span class="string">'.tsv'</span>]);
+0087     wanted = struct();
+0088     <span class="keyword">if</span> isfield(config.sources, name)
+0089         wanted = config.sources.(name);
+0090     <span class="keyword">end</span>
+0091     [status{k}, note{k}] = <a href="#_sub1" class="code" title="subfunction [st, nt] = check(name, file, wanted)">check</a>(name, file, wanted);
+0092     <span class="keyword">if</span> any(strcmp(status{k}, {<span class="string">'missing'</span>,<span class="string">'outdated'</span>})) &amp;&amp; ~p.dryRun
+0093         [status{k}, note{k}] = <a href="#_sub2" class="code" title="subfunction [st, nt] = gather(model, name, wanted, modelAdapter)">gather</a>(model, name, wanted, modelAdapter);
+0094     <span class="keyword">end</span>
+0095 <span class="keyword">end</span>
+0096 report = table(names(:), status, note, <span class="string">'VariableNames'</span>, {<span class="string">'source'</span>,<span class="string">'status'</span>,<span class="string">'note'</span>});
+0097 disp(report)
+0098 
+0099     <a name="_sub1" href="#_subfunctions" class="code">function [st, nt] = check(name, file, wanted)</a>
+0100         st = <span class="string">'current'</span>; nt = <span class="string">''</span>;
+0101         <span class="keyword">if</span> strcmp(name, <span class="string">'custom'</span>)
+0102             st = <span class="string">'skipped'</span>; nt = <span class="string">'curated by hand'</span>;
+0103             <span class="keyword">return</span>
+0104         <span class="keyword">elseif</span> ~any(strcmp(name, {<span class="string">'brenda'</span>,<span class="string">'ec_tree'</span>,<span class="string">'homologs'</span>,<span class="string">'dlkcat'</span>})) &amp;&amp; ~startsWith(name, <span class="string">'okp_'</span>)
+0105             st = <span class="string">'skipped'</span>; nt = <span class="string">'not a source GECKO gathers'</span>;
+0106             <span class="keyword">return</span>
+0107         <span class="keyword">end</span>
+0108         <span class="keyword">if</span> ~isfile(file)
+0109             st = <span class="string">'missing'</span>;
+0110             <span class="keyword">return</span>
+0111         <span class="keyword">end</span>
+0112         meta = <a href="#_sub6" class="code" title="subfunction meta = readHeaderLines(filename)">readHeaderLines</a>(file);
+0113         recorded = struct();
+0114         <span class="keyword">if</span> isfield(meta, <span class="string">'parameters'</span>) &amp;&amp; ~isempty(meta.parameters)
+0115             recorded = jsondecode(meta.parameters);
+0116         <span class="keyword">end</span>
+0117         f = fieldnames(wanted);
+0118         <span class="keyword">for</span> i = 1:numel(f)
+0119             <span class="keyword">if</span> ~isfield(recorded, f{i}) || ~isequal(<a href="#_sub4" class="code" title="subfunction v = normalizeValue(v)">normalizeValue</a>(recorded.(f{i})), <a href="#_sub4" class="code" title="subfunction v = normalizeValue(v)">normalizeValue</a>(wanted.(f{i})))
+0120                 st = <span class="string">'outdated'</span>;
+0121                 nt = sprintf(<span class="string">'%s differs from model_adapter.toml'</span>, f{i});
+0122                 <span class="keyword">return</span>
+0123             <span class="keyword">end</span>
+0124         <span class="keyword">end</span>
+0125         <span class="keyword">if</span> any(strcmp(name, {<span class="string">'brenda'</span>,<span class="string">'ec_tree'</span>,<span class="string">'homologs'</span>}))
+0126             release = <a href="#_sub5" class="code" title="subfunction release = brendaRelease(modelAdapter, name)">brendaRelease</a>(modelAdapter, name);
+0127             <span class="keyword">if</span> isfield(meta, <span class="string">'data'</span>) &amp;&amp; ~isempty(release) &amp;&amp; ~strcmp(meta.data, release)
+0128                 st = <span class="string">'outdated'</span>;
+0129                 nt = sprintf(<span class="string">'made from %s; GECKO has %s'</span>, meta.data, release);
+0130             <span class="keyword">end</span>
+0131         <span class="keyword">end</span>
+0132     <span class="keyword">end</span>
+0133 <span class="keyword">end</span>
+0134 
+0135 <a name="_sub2" href="#_subfunctions" class="code">function [st, nt] = gather(model, name, wanted, modelAdapter)</a>
+0136 st = <span class="string">'gathered'</span>; nt = <span class="string">''</span>;
+0137 <span class="keyword">try</span>
+0138     <span class="keyword">if</span> strcmp(name, <span class="string">'brenda'</span>)
+0139         args = {};
+0140         <span class="keyword">if</span> isfield(wanted, <span class="string">'aggregation'</span>), args = [args, {<span class="string">'aggregation'</span>, wanted.aggregation}]; <span class="keyword">end</span>
+0141         <span class="keyword">if</span> isfield(wanted, <span class="string">'force_wildcard_level'</span>), args = [args, {<span class="string">'forceWClvl'</span>, wanted.force_wildcard_level}]; <span class="keyword">end</span>
+0142         <a href="kcatsFromBrenda.html" class="code" title="function kcatList = kcatsFromBrenda(model, varargin)">kcatsFromBrenda</a>(model, args{:}, <span class="string">'modelAdapter'</span>, modelAdapter);
+0143     <span class="keyword">elseif</span> strcmp(name, <span class="string">'ec_tree'</span>)
+0144         args = {};
+0145         <span class="keyword">if</span> isfield(wanted, <span class="string">'k'</span>), args = {<span class="string">'k'</span>, double(wanted.k)}; <span class="keyword">end</span>
+0146         <a href="kcatsFromECTree.html" class="code" title="function kcatList = kcatsFromECTree(model, varargin)">kcatsFromECTree</a>(model, args{:}, <span class="string">'modelAdapter'</span>, modelAdapter);
+0147     <span class="keyword">elseif</span> strcmp(name, <span class="string">'homologs'</span>)
+0148         args = {};
+0149         <span class="keyword">if</span> isfield(wanted, <span class="string">'k'</span>), args = [args, {<span class="string">'k'</span>, double(wanted.k)}]; <span class="keyword">end</span>
+0150         <span class="keyword">if</span> isfield(wanted, <span class="string">'min_identity'</span>), args = [args, {<span class="string">'minIdentity'</span>, double(wanted.min_identity)}]; <span class="keyword">end</span>
+0151         <span class="keyword">if</span> isfield(wanted, <span class="string">'coverage'</span>), args = [args, {<span class="string">'coverage'</span>, double(wanted.coverage)}]; <span class="keyword">end</span>
+0152         <a href="kcatsFromHomologs.html" class="code" title="function kcatList = kcatsFromHomologs(model, varargin)">kcatsFromHomologs</a>(model, args{:}, <span class="string">'modelAdapter'</span>, modelAdapter);
+0153     <span class="keyword">elseif</span> strcmp(name, <span class="string">'dlkcat'</span>)
+0154         run = ~isfile(fullfile(modelAdapter.params.path, <span class="string">'data'</span>, <span class="string">'DLKcat.tsv'</span>));
+0155         <span class="keyword">if</span> run
+0156             [status, ~] = system(<span class="string">'docker --version'</span>);
+0157             <span class="keyword">if</span> status ~= 0
+0158                 st = <span class="string">'failed'</span>; nt = <span class="string">'DLKcat needs Docker to run'</span>;
+0159                 <span class="keyword">return</span>
+0160             <span class="keyword">end</span>
+0161         <span class="keyword">end</span>
+0162         <a href="kcatsFromDLKcat.html" class="code" title="function kcatList = kcatsFromDLKcat(model, varargin)">kcatsFromDLKcat</a>(model, <span class="string">'run'</span>, run, <span class="string">'modelAdapter'</span>, modelAdapter);
+0163     <span class="keyword">else</span> <span class="comment">% okp_&lt;method&gt;</span>
+0164         method = <a href="#_sub3" class="code" title="subfunction method = okpMethod(name, wanted)">okpMethod</a>(name, wanted);
+0165         <a href="resolveOkpApiKey.html" class="code" title="function key = resolveOkpApiKey(argKey, basePath)">resolveOkpApiKey</a>(<span class="string">''</span>, modelAdapter.params.path); <span class="comment">% errors without a key</span>
+0166         [~, done] = <a href="kcatsFromOKP.html" class="code" title="function [kcatList, done] = kcatsFromOKP(model, varargin)">kcatsFromOKP</a>(model, <span class="string">'method'</span>, method, <span class="string">'saveAs'</span>, name, <span class="string">'modelAdapter'</span>, modelAdapter);
+0167         <span class="keyword">if</span> ~done
+0168             st = <span class="string">'pending'</span>; nt = sprintf(<span class="string">'OKP job for %s still running; call again later'</span>, method);
+0169         <span class="keyword">end</span>
+0170     <span class="keyword">end</span>
+0171 <span class="keyword">catch</span> err
+0172     st = <span class="string">'failed'</span>; nt = err.message;
+0173 <span class="keyword">end</span>
+0174 <span class="keyword">end</span>
+0175 
+0176 <a name="_sub3" href="#_subfunctions" class="code">function method = okpMethod(name, wanted)</a>
+0177 <span class="comment">% The OKP method of okp_&lt;method&gt;: from [kcat_sources.okp_&lt;method&gt;] method,</span>
+0178 <span class="comment">% or the known method whose name gives this file name.</span>
+0179 <span class="keyword">if</span> isfield(wanted, <span class="string">'method'</span>)
+0180     method = char(wanted.method);
+0181     <span class="keyword">return</span>
+0182 <span class="keyword">end</span>
+0183 known = {<span class="string">'CataPro'</span>,<span class="string">'CatPred'</span>,<span class="string">'CatRange'</span>,<span class="string">'DLKcat'</span>,<span class="string">'EITLEM'</span>,<span class="string">'KinForm-H'</span>,<span class="string">'KinForm-L'</span>, <span class="keyword">...</span>
+0184     <span class="string">'OmniESI'</span>,<span class="string">'OmniESI-O2DENet'</span>,<span class="string">'TurNup'</span>,<span class="string">'UniKP'</span>};
+0185 tags = cellfun(@(m) [<span class="string">'okp_'</span> lower(regexprep(m, <span class="string">'[^A-Za-z0-9]+'</span>, <span class="string">'_'</span>))], known, <span class="string">'UniformOutput'</span>, false);
+0186 hit = strcmp(tags, name);
+0187 <span class="keyword">if</span> ~any(hit)
+0188     error(<span class="string">'updateKcatSources:okpMethod'</span>, [<span class="string">'Set the OKP method of %s in model_adapter.toml: '</span> <span class="keyword">...</span>
+0189         <span class="string">'[kcat_sources.%s] method = &quot;...&quot;'</span>], name, name)
+0190 <span class="keyword">end</span>
+0191 method = known{hit};
+0192 <span class="keyword">end</span>
+0193 
+0194 <a name="_sub4" href="#_subfunctions" class="code">function v = normalizeValue(v)</a>
+0195 <span class="keyword">if</span> isstring(v)
+0196     v = char(v);
+0197 <span class="keyword">end</span>
+0198 <span class="keyword">if</span> ischar(v)
+0199     v = lower(v);
+0200 <span class="keyword">elseif</span> islogical(v)
+0201     v = double(v);
+0202 <span class="keyword">end</span>
+0203 <span class="keyword">end</span>
+0204 
+0205 <a name="_sub5" href="#_subfunctions" class="code">function release = brendaRelease(modelAdapter, name)</a>
+0206 <span class="comment">% The release line of the BRENDA file a source is made from.</span>
+0207 release = <span class="string">''</span>;
+0208 files = struct(<span class="string">'brenda'</span>, <span class="string">'kcat.tsv'</span>, <span class="string">'ec_tree'</span>, <span class="string">'measurements.tsv'</span>, <span class="string">'homologs'</span>, <span class="string">'measurements.tsv'</span>);
+0209 fid = fopen(fullfile(modelAdapter.getBrendaDBFolder(), files.(name)), <span class="string">'r'</span>);
+0210 <span class="keyword">if</span> fid &lt; 0
+0211     <span class="keyword">return</span>
+0212 <span class="keyword">end</span>
+0213 line = fgetl(fid);
+0214 fclose(fid);
+0215 tok = regexp(line, <span class="string">'^#\s*(BRENDA release [^ ]+)'</span>, <span class="string">'tokens'</span>, <span class="string">'once'</span>);
+0216 <span class="keyword">if</span> ~isempty(tok)
+0217     release = tok{1};
+0218 <span class="keyword">end</span>
+0219 <span class="keyword">end</span>
+0220 
+0221 <a name="_sub6" href="#_subfunctions" class="code">function meta = readHeaderLines(filename)</a>
+0222 <span class="comment">% Only the header lines at the top, so that a damaged table does not stop</span>
+0223 <span class="comment">% a gathered file from being written again.</span>
+0224 meta = struct();
+0225 fid = fopen(filename, <span class="string">'r'</span>, <span class="string">'n'</span>, <span class="string">'UTF-8'</span>);
+0226 <span class="keyword">if</span> fid &lt; 0
+0227     <span class="keyword">return</span>
+0228 <span class="keyword">end</span>
+0229 cleanup = onCleanup(@() fclose(fid));
+0230 line = fgetl(fid);
+0231 <span class="keyword">if</span> ischar(line)
+0232     line = regexprep(line, [<span class="string">'^'</span> char(65279)], <span class="string">''</span>);
+0233 <span class="keyword">end</span>
+0234 <span class="keyword">while</span> ischar(line) &amp;&amp; (isempty(strtrim(line)) || startsWith(<a href="#_sub8" class="code" title="subfunction t = unquoteField(t)">unquoteField</a>(line), <span class="string">'#'</span>))
+0235     [key, value] = <a href="#_sub7" class="code" title="subfunction [key, value] = parseHeaderLine(line)">parseHeaderLine</a>(line);
+0236     <span class="keyword">if</span> ~isempty(key)
+0237         meta.(key) = value;
+0238     <span class="keyword">end</span>
+0239     line = fgetl(fid);
+0240 <span class="keyword">end</span>
+0241 <span class="keyword">end</span>
+0242 
+0243 <a name="_sub7" href="#_subfunctions" class="code">function [key, value] = parseHeaderLine(line)</a>
+0244 key = <span class="string">''</span>; value = <span class="string">''</span>;
+0245 tok = regexp(<a href="#_sub8" class="code" title="subfunction t = unquoteField(t)">unquoteField</a>(line), <span class="string">'^\s*#\s*([A-Za-z][A-Za-z0-9_]{0,62})\s*:\s?(.*)$'</span>, <span class="string">'tokens'</span>, <span class="string">'once'</span>);
+0246 <span class="keyword">if</span> ~isempty(tok)
+0247     key = lower(tok{1});
+0248     value = strtrim(tok{2});
+0249 <span class="keyword">end</span>
+0250 <span class="keyword">end</span>
+0251 
+0252 <a name="_sub8" href="#_subfunctions" class="code">function t = unquoteField(t)</a>
+0253 t = strtrim(t);
+0254 <span class="keyword">if</span> numel(t) &gt;= 2 &amp;&amp; t(1) == <span class="string">'&quot;'</span> &amp;&amp; t(end) == <span class="string">'&quot;'</span>
+0255     t = strtrim(strrep(t(2:end-1), <span class="string">'&quot;&quot;'</span>, <span class="string">'&quot;'</span>));
+0256 <span class="keyword">end</span>
+0257 <span class="keyword">end</span>
+0258 
+0259 <a name="_sub9" href="#_subfunctions" class="code">function checkOptions(args, names, functionName)</a>
+0260 <span class="comment">% Options are name-value pairs with known names, so a misspelled option is</span>
+0261 <span class="comment">% an error instead of being taken as a positional argument.</span>
+0262 id = [functionName <span class="string">':arguments'</span>];
+0263 given = args(1:2:end);
+0264 <span class="keyword">if</span> mod(numel(args), 2) ~= 0 || ~all(cellfun(@(x) ischar(x) || (isstring(x) &amp;&amp; isscalar(x)), given))
+0265     error(id, <span class="string">'Options of %s are name-value pairs. Options: %s.'</span>, functionName, strjoin(names, <span class="string">', '</span>))
+0266 <span class="keyword">end</span>
+0267 unknown = setdiff(cellfun(@char, given, <span class="string">'UniformOutput'</span>, false), names);
+0268 <span class="keyword">if</span> ~isempty(unknown)
+0269     error(id, <span class="string">'Unknown option of %s: %s. Options: %s.'</span>, functionName, strjoin(unknown, <span class="string">', '</span>), <span class="keyword">...</span>
+0270         strjoin(names, <span class="string">', '</span>))
+0271 <span class="keyword">end</span>
+0272 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

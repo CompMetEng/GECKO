@@ -3,7 +3,8 @@ function [model, invalidEC, invalidECpos] = getECfromGEM(model, varargin)
 %
 % Uses the model.eccodes to populate the model.ec.eccodes field. EC numbers
 % must be formatted as four numbers separated by periods, possibly with
-% trailing wildcards; incorrectly formatted EC numbers are skipped.
+% trailing wildcards; incorrectly formatted EC numbers are skipped. A model without
+% a model.eccodes field gives a warning and every EC number is empty.
 %
 % Parameters
 % ----------
@@ -48,7 +49,8 @@ p = parseGECKOargs(varargin, { ...
 ecRxns = p.ecRxns;
 
 if ~isfield(model,'eccodes')
-    error('The model has no model.eccodes field.')
+    warning('getECfromGEM:noEccodes','The model has no model.eccodes field, no EC numbers are taken from it.')
+    model.eccodes = repmat({''},numel(model.rxns),1);
 end
 
 %Need to remove the prefix of GECKO light rxn names in the ec structure

@@ -1,0 +1,203 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of getConcControlCoeffs</title>
+  <meta name="keywords" content="getConcControlCoeffs">
+  <meta name="description" content="getConcControlCoeffs  Calculate control coefficients of protein usage.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">limit_proteins</a> &gt; getConcControlCoeffs.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/limit_proteins&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>getConcControlCoeffs
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>getConcControlCoeffs  Calculate control coefficients of protein usage.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function [enz, controlCoeffs] = getConcControlCoeffs(model, varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> getConcControlCoeffs  Calculate control coefficients of protein usage.
+
+ For each candidate protein whose usage reaction is running above the
+ given limit fraction of its upper bound, temporarily increases that
+ protein's usage upper bound by foldChange, re-solves, and expresses the
+ resulting growth-rate increase per unit of concentration increase as a
+ control coefficient. Proteins below the limit, or whose increase does
+ not measurably raise growth, get a coefficient of zero.
+
+ Parameters
+ ----------
+ model : struct
+     an ecModel in GECKO 3 format (with ecModel.ec structure).
+
+ Name-Value Arguments
+ --------------------
+ proteins : cell
+     a list of proteins to calculate the coefficients (default
+     model.ec.enzymes).
+ foldChange : double
+     a value how much to increase the protein concentration (default 2).
+ limit : double
+     threshold on the usage/concentration ratio (how saturated a
+     protein's usage upper bound already is); only proteins with a ratio
+     above this value are evaluated for a control coefficient (default
+     0, i.e. any nonzero usage is evaluated).
+
+ Returns
+ -------
+ enz : logical
+     flags which of the input proteins had a usage/concentration ratio
+     above limit and were evaluated for a control coefficient.
+ controlCoeffs : double
+     control coefficient per input protein (0 for proteins not evaluated
+     or whose increase did not measurably raise growth).
+
+ Examples
+ --------
+     % optional arguments may be given positionally or as name-value pairs:
+     [enz, controlCoeffs] = getConcControlCoeffs(model);
+     [enz, controlCoeffs] = getConcControlCoeffs(model, 'foldChange', 3);
+
+ See also
+ --------
+ <a href="flexibilizeEnzConcs.html" class="code" title="function [model, flexEnz] = flexibilizeEnzConcs(model, varargin)">flexibilizeEnzConcs</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="flexibilizeEnzConcs.html" class="code" title="function [model, flexEnz] = flexibilizeEnzConcs(model, varargin)">flexibilizeEnzConcs</a>	flexibilizeEnzConcs  Flexibilize enzyme concentrations of an ecModel.</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [enz, controlCoeffs] = getConcControlCoeffs(model, varargin)</a>
+0002 <span class="comment">% getConcControlCoeffs  Calculate control coefficients of protein usage.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% For each candidate protein whose usage reaction is running above the</span>
+0005 <span class="comment">% given limit fraction of its upper bound, temporarily increases that</span>
+0006 <span class="comment">% protein's usage upper bound by foldChange, re-solves, and expresses the</span>
+0007 <span class="comment">% resulting growth-rate increase per unit of concentration increase as a</span>
+0008 <span class="comment">% control coefficient. Proteins below the limit, or whose increase does</span>
+0009 <span class="comment">% not measurably raise growth, get a coefficient of zero.</span>
+0010 <span class="comment">%</span>
+0011 <span class="comment">% Parameters</span>
+0012 <span class="comment">% ----------</span>
+0013 <span class="comment">% model : struct</span>
+0014 <span class="comment">%     an ecModel in GECKO 3 format (with ecModel.ec structure).</span>
+0015 <span class="comment">%</span>
+0016 <span class="comment">% Name-Value Arguments</span>
+0017 <span class="comment">% --------------------</span>
+0018 <span class="comment">% proteins : cell</span>
+0019 <span class="comment">%     a list of proteins to calculate the coefficients (default</span>
+0020 <span class="comment">%     model.ec.enzymes).</span>
+0021 <span class="comment">% foldChange : double</span>
+0022 <span class="comment">%     a value how much to increase the protein concentration (default 2).</span>
+0023 <span class="comment">% limit : double</span>
+0024 <span class="comment">%     threshold on the usage/concentration ratio (how saturated a</span>
+0025 <span class="comment">%     protein's usage upper bound already is); only proteins with a ratio</span>
+0026 <span class="comment">%     above this value are evaluated for a control coefficient (default</span>
+0027 <span class="comment">%     0, i.e. any nonzero usage is evaluated).</span>
+0028 <span class="comment">%</span>
+0029 <span class="comment">% Returns</span>
+0030 <span class="comment">% -------</span>
+0031 <span class="comment">% enz : logical</span>
+0032 <span class="comment">%     flags which of the input proteins had a usage/concentration ratio</span>
+0033 <span class="comment">%     above limit and were evaluated for a control coefficient.</span>
+0034 <span class="comment">% controlCoeffs : double</span>
+0035 <span class="comment">%     control coefficient per input protein (0 for proteins not evaluated</span>
+0036 <span class="comment">%     or whose increase did not measurably raise growth).</span>
+0037 <span class="comment">%</span>
+0038 <span class="comment">% Examples</span>
+0039 <span class="comment">% --------</span>
+0040 <span class="comment">%     % optional arguments may be given positionally or as name-value pairs:</span>
+0041 <span class="comment">%     [enz, controlCoeffs] = getConcControlCoeffs(model);</span>
+0042 <span class="comment">%     [enz, controlCoeffs] = getConcControlCoeffs(model, 'foldChange', 3);</span>
+0043 <span class="comment">%</span>
+0044 <span class="comment">% See also</span>
+0045 <span class="comment">% --------</span>
+0046 <span class="comment">% flexibilizeEnzConcs</span>
+0047 
+0048 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0049     <span class="string">'proteins'</span>,   []; <span class="keyword">...</span>
+0050     <span class="string">'foldChange'</span>, []; <span class="keyword">...</span>
+0051     <span class="string">'limit'</span>,      []});
+0052 proteins   = p.proteins;
+0053 foldChange = p.foldChange;
+0054 limit      = p.limit;
+0055 
+0056 <span class="keyword">if</span> isempty(limit)
+0057     limit = 0;
+0058 <span class="keyword">end</span>
+0059 
+0060 <span class="keyword">if</span> isempty(foldChange)
+0061     foldChange = 2;
+0062 <span class="keyword">end</span>
+0063 
+0064 <span class="keyword">if</span> isempty(proteins)
+0065     proteins = model.ec.enzymes;
+0066 <span class="keyword">end</span>
+0067 
+0068 <span class="comment">% for now</span>
+0069 enz = false(length(proteins),1);
+0070 controlCoeffs = zeros(length(proteins),1);
+0071 
+0072 [sol,hs] = solveLP(model);
+0073 initialGrowth = sol.f;
+0074 
+0075 <span class="comment">% Get enzyme index</span>
+0076 [~, protIdx] = ismember(proteins, model.ec.enzymes);
+0077 
+0078 <span class="comment">% Get the protein usage reactions</span>
+0079 protUsageRxns = strcat(<span class="string">'usage_prot_'</span>, model.ec.enzymes(protIdx));
+0080 [~, protUsageRxnIdx] = ismember(protUsageRxns, model.rxns);
+0081 
+0082 <span class="keyword">for</span> i = 1:numel(proteins)
+0083     <span class="comment">% Get the previous concentration</span>
+0084     prevConc = model.ub(protUsageRxnIdx(i));
+0085 
+0086     <span class="comment">% Only consider those with a usage close the UB</span>
+0087     <span class="keyword">if</span> (sol.x(protUsageRxnIdx(i))/prevConc) &gt; limit
+0088         
+0089         <span class="comment">% Update the logical vector</span>
+0090         enz(i) = 1;
+0091 
+0092         <span class="comment">% Create a temporal model since coeff will be calculated one enzyme at</span>
+0093         <span class="comment">% the time, without other change</span>
+0094         tempModel = model;
+0095         <span class="comment">% Increase the concentration by flexfactor</span>
+0096         newConc = prevConc*(foldChange);
+0097         tempModel.ub(protUsageRxnIdx(i)) = newConc;
+0098 
+0099         <span class="comment">% Get the new growth rate after the adjustment</span>
+0100         [tempSol,hs] = solveLP(tempModel,0,[],hs);
+0101         tempGrowth = tempSol.f;
+0102         
+0103         <span class="comment">% Calculate the coeff only if new growth rate is significantly</span>
+0104         <span class="comment">% higher than initial value</span>
+0105         <span class="keyword">if</span> (tempGrowth-initialGrowth)&gt;1e-10
+0106             controlCoeffs(i) = (tempGrowth-initialGrowth)/(newConc-prevConc);
+0107         <span class="keyword">end</span>
+0108     <span class="keyword">end</span>
+0109 
+0110 <span class="keyword">end</span>
+0111 <span class="keyword">end</span>
+0112</pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

@@ -4,7 +4,9 @@ function model = getKcatAcrossIsozymes(model)
 % For reactions without kcat value (0 in model.ec.kcat), isozymes are found
 % (being based on the same reaction in the conventional GEM), that do have a
 % kcat value assigned. The mean kcat value of these isozymes is then used to
-% fill in model.ec.kcat.
+% fill in model.ec.kcat. Only isozymes with a kcat above 0 enter the mean: a
+% NaN or negative kcat of an isozyme is left out, and an entry whose kcat is
+% NaN is not filled.
 %
 % Parameters
 % ----------
@@ -34,10 +36,11 @@ if all(model.ec.kcat==0)
 end
 
 noKcats     = model.ec.kcat==0;
+hasKcat     = model.ec.kcat>0; % NaN and negative kcats are not isozyme values
 rxnIDs      = regexprep(model.ec.rxns,'_EXP_\d+','');
 noKcatID    = rxnIDs(noKcats);
-yesKcatID   = rxnIDs(~noKcats);
-yesKcatVal  = model.ec.kcat(~noKcats);
+yesKcatID   = rxnIDs(hasKcat);
+yesKcatVal  = model.ec.kcat(hasKcat);
 
 noKcatVal   = cellfun(@(x) strcmp(x, yesKcatID), noKcatID, 'UniformOutput', false);
 noKcatVal   = cell2mat(cellfun(@(x) mean(yesKcatVal(x)), noKcatVal, 'UniformOutput', false));

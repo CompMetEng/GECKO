@@ -1,0 +1,138 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of fetchBrendaAsset</title>
+  <meta name="keywords" content="fetchBrendaAsset">
+  <meta name="description" content="fetchBrendaAsset  Download (once) GECKO's BRENDA files and return their folder.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">download_databases</a> &gt; fetchBrendaAsset.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/download_databases&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>fetchBrendaAsset
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>fetchBrendaAsset  Download (once) GECKO's BRENDA files and return their folder.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function folder = fetchBrendaAsset(files) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> fetchBrendaAsset  Download (once) GECKO's BRENDA files and return their folder.
+
+ GECKO does not ship BRENDA data. The files of the toolbox-assets release
+ brenda-2026.1-1 (BRENDA 2026.1, CC BY 4.0) are downloaded on first use
+ with RAVEN's fetchToolboxAsset, which checks them against the checksums
+ of the toolbox-assets manifest, and are unpacked into
+ databases/brenda-2026.1-1 in the GECKO folder. geckopy reads the same
+ release (fetch_brenda_asset). A project can use its own BRENDA files
+ instead, in data/brenda (see ModelAdapter.getBrendaDBFolder).
+
+ Parameters
+ ----------
+ files : cell
+     file names (default: kcat.tsv, sa.tsv, mw.tsv and measurements.tsv);
+     the release also has sequences.fasta, substrates.tsv and
+     kcatCombineParams.tsv.
+
+ Returns
+ -------
+ folder : char
+     the folder with the files, unpacked.
+
+ Examples
+ --------
+     folder = fetchBrendaAsset();
+     folder = fetchBrendaAsset({'kcatCombineParams.tsv'});
+
+ See also
+ --------
+ <a href="loadBRENDAdata.html" class="code" title="function [KCATcell, SAcell] = loadBRENDAdata(varargin)">loadBRENDAdata</a>, loadBrendaMeasurements, ModelAdapter</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function folder = fetchBrendaAsset(files)</a>
+0002 <span class="comment">% fetchBrendaAsset  Download (once) GECKO's BRENDA files and return their folder.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% GECKO does not ship BRENDA data. The files of the toolbox-assets release</span>
+0005 <span class="comment">% brenda-2026.1-1 (BRENDA 2026.1, CC BY 4.0) are downloaded on first use</span>
+0006 <span class="comment">% with RAVEN's fetchToolboxAsset, which checks them against the checksums</span>
+0007 <span class="comment">% of the toolbox-assets manifest, and are unpacked into</span>
+0008 <span class="comment">% databases/brenda-2026.1-1 in the GECKO folder. geckopy reads the same</span>
+0009 <span class="comment">% release (fetch_brenda_asset). A project can use its own BRENDA files</span>
+0010 <span class="comment">% instead, in data/brenda (see ModelAdapter.getBrendaDBFolder).</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Parameters</span>
+0013 <span class="comment">% ----------</span>
+0014 <span class="comment">% files : cell</span>
+0015 <span class="comment">%     file names (default: kcat.tsv, sa.tsv, mw.tsv and measurements.tsv);</span>
+0016 <span class="comment">%     the release also has sequences.fasta, substrates.tsv and</span>
+0017 <span class="comment">%     kcatCombineParams.tsv.</span>
+0018 <span class="comment">%</span>
+0019 <span class="comment">% Returns</span>
+0020 <span class="comment">% -------</span>
+0021 <span class="comment">% folder : char</span>
+0022 <span class="comment">%     the folder with the files, unpacked.</span>
+0023 <span class="comment">%</span>
+0024 <span class="comment">% Examples</span>
+0025 <span class="comment">% --------</span>
+0026 <span class="comment">%     folder = fetchBrendaAsset();</span>
+0027 <span class="comment">%     folder = fetchBrendaAsset({'kcatCombineParams.tsv'});</span>
+0028 <span class="comment">%</span>
+0029 <span class="comment">% See also</span>
+0030 <span class="comment">% --------</span>
+0031 <span class="comment">% loadBRENDAdata, loadBrendaMeasurements, ModelAdapter</span>
+0032 
+0033 release = <span class="string">'brenda-2026.1-1'</span>;
+0034 <span class="keyword">if</span> nargin &lt; 1 || isempty(files)
+0035     files = {<span class="string">'kcat.tsv'</span>, <span class="string">'sa.tsv'</span>, <span class="string">'mw.tsv'</span>, <span class="string">'measurements.tsv'</span>};
+0036 <span class="keyword">end</span>
+0037 files = cellstr(files);
+0038 packed = struct(<span class="string">'kcat_tsv'</span>, 1, <span class="string">'sa_tsv'</span>, 1, <span class="string">'mw_tsv'</span>, 1, <span class="string">'measurements_tsv'</span>, 1, <span class="keyword">...</span>
+0039     <span class="string">'sequences_fasta'</span>, 1, <span class="string">'substrates_tsv'</span>, 1, <span class="string">'kcatCombineParams_tsv'</span>, 0);
+0040 folder = fullfile(findGECKOroot(), <span class="string">'databases'</span>, release);
+0041 <span class="keyword">if</span> exist(<span class="string">'fetchToolboxAsset'</span>, <span class="string">'file'</span>) ~= 2
+0042     error(<span class="string">'fetchBrendaAsset:raven'</span>, [<span class="string">'GECKO downloads its BRENDA files with RAVEN''s '</span> <span class="keyword">...</span>
+0043         <span class="string">'fetchToolboxAsset, which this RAVEN does not have. Update RAVEN to version 3.'</span>])
+0044 <span class="keyword">end</span>
+0045 <span class="keyword">for</span> i = 1:numel(files)
+0046     name = files{i};
+0047     key = matlab.lang.makeValidName(name);
+0048     <span class="keyword">if</span> ~isfield(packed, key)
+0049         error(<span class="string">'fetchBrendaAsset:file'</span>, <span class="string">'%s is not a file of %s.'</span>, name, release)
+0050     <span class="keyword">end</span>
+0051     target = fullfile(folder, name);
+0052     <span class="keyword">if</span> isfile(target)
+0053         <span class="keyword">continue</span>
+0054     <span class="keyword">end</span>
+0055     <span class="keyword">if</span> packed.(key)
+0056         gz = fetchToolboxAsset(folder, release, [name <span class="string">'.gz'</span>]);
+0057         gunzip(gz, folder);
+0058     <span class="keyword">else</span>
+0059         fetchToolboxAsset(folder, release, name);
+0060     <span class="keyword">end</span>
+0061 <span class="keyword">end</span>
+0062 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

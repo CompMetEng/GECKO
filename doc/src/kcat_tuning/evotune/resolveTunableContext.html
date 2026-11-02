@@ -1,0 +1,144 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of resolveTunableContext</title>
+  <meta name="keywords" content="resolveTunableContext">
+  <meta name="description" content="resolveTunableContext  The tunable kcat subset plus everything derived">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="../index.html">kcat_tuning</a> &gt; <a href="index.html">evotune</a> &gt; resolveTunableContext.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../../index.html"><img alt="<" border="0" src="../../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/kcat_tuning/evotune&nbsp;<img alt=">" border="0" src="../../../right.png"></a></td></tr></table>-->
+
+<h1>resolveTunableContext
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+<div class="box"><strong>resolveTunableContext  The tunable kcat subset plus everything derived</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+<div class="box"><strong>function [tunableIdx,ecRxnIdsTunable,kcat0,groups,sigma0log,tieMap] = resolveTunableContext(ecModel,params,tunableMask) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> resolveTunableContext  The tunable kcat subset plus everything derived
+ from it: source-group trust tiers and isozyme tie groups.
+
+ Shared by screenKcatLeverage and cmaesKcatTuning so a screen and the
+ tuning run it feeds are always looking at exactly the same parameters.
+
+ Parameters
+ ----------
+ ecModel : struct
+     ecModel with a populated ec.kcat.
+ params : struct
+     modelAdapter.params.evotune (kcatSources, sigma0logSource,
+     sigma0logDefault, tieIsozymes).
+ tunableMask : logical
+     same length as ecModel.ec.rxns; [] to consider every kcat &gt; 0.
+
+ Returns
+ -------
+ tunableIdx : double
+     indices into ecModel.ec.rxns/ec.kcat of the tunable subset.
+ ecRxnIdsTunable : cell
+ kcat0 : double
+ groups : cell
+     source-group name per tunable row ('unlabelled' if unmatched).
+ sigma0log : double
+     per-row prior std dev in log-space.
+ tieMap : double
+     isozymeTieMap(ecRxnIdsTunable,kcat0,'sources',groups) if
+     params.tieIsozymes, otherwise every row is its own free parameter.
+
+ See also
+ --------
+ <a href="screenKcatLeverage.html" class="code" title="function screen = screenKcatLeverage(ecModel,varargin)">screenKcatLeverage</a>, <a href="cmaesKcatTuning.html" class="code" title="function [ecModel,result] = cmaesKcatTuning(ecModel,varargin)">cmaesKcatTuning</a>, <a href="isozymeTieMap.html" class="code" title="function tieMap = isozymeTieMap(rxnIds,kcat0,varargin)">isozymeTieMap</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../../matlabicon.gif)">
+<li><a href="isozymeTieMap.html" class="code" title="function tieMap = isozymeTieMap(rxnIds,kcat0,varargin)">isozymeTieMap</a>	isozymeTieMap  Index of the parameter each isozyme copy follows.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../../../matlabicon.gif)">
+<li><a href="cmaesKcatTuning.html" class="code" title="function [ecModel,result] = cmaesKcatTuning(ecModel,varargin)">cmaesKcatTuning</a>	cmaesKcatTuning  Tune kcats against experimental data with CMA-ES.</li><li><a href="screenKcatLeverage.html" class="code" title="function screen = screenKcatLeverage(ecModel,varargin)">screenKcatLeverage</a>	screenKcatLeverage  Report which kcats the data can actually speak to.</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [tunableIdx,ecRxnIdsTunable,kcat0,groups,sigma0log,tieMap] = resolveTunableContext(ecModel,params,tunableMask)</a>
+0002 <span class="comment">% resolveTunableContext  The tunable kcat subset plus everything derived</span>
+0003 <span class="comment">% from it: source-group trust tiers and isozyme tie groups.</span>
+0004 <span class="comment">%</span>
+0005 <span class="comment">% Shared by screenKcatLeverage and cmaesKcatTuning so a screen and the</span>
+0006 <span class="comment">% tuning run it feeds are always looking at exactly the same parameters.</span>
+0007 <span class="comment">%</span>
+0008 <span class="comment">% Parameters</span>
+0009 <span class="comment">% ----------</span>
+0010 <span class="comment">% ecModel : struct</span>
+0011 <span class="comment">%     ecModel with a populated ec.kcat.</span>
+0012 <span class="comment">% params : struct</span>
+0013 <span class="comment">%     modelAdapter.params.evotune (kcatSources, sigma0logSource,</span>
+0014 <span class="comment">%     sigma0logDefault, tieIsozymes).</span>
+0015 <span class="comment">% tunableMask : logical</span>
+0016 <span class="comment">%     same length as ecModel.ec.rxns; [] to consider every kcat &gt; 0.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% Returns</span>
+0019 <span class="comment">% -------</span>
+0020 <span class="comment">% tunableIdx : double</span>
+0021 <span class="comment">%     indices into ecModel.ec.rxns/ec.kcat of the tunable subset.</span>
+0022 <span class="comment">% ecRxnIdsTunable : cell</span>
+0023 <span class="comment">% kcat0 : double</span>
+0024 <span class="comment">% groups : cell</span>
+0025 <span class="comment">%     source-group name per tunable row ('unlabelled' if unmatched).</span>
+0026 <span class="comment">% sigma0log : double</span>
+0027 <span class="comment">%     per-row prior std dev in log-space.</span>
+0028 <span class="comment">% tieMap : double</span>
+0029 <span class="comment">%     isozymeTieMap(ecRxnIdsTunable,kcat0,'sources',groups) if</span>
+0030 <span class="comment">%     params.tieIsozymes, otherwise every row is its own free parameter.</span>
+0031 <span class="comment">%</span>
+0032 <span class="comment">% See also</span>
+0033 <span class="comment">% --------</span>
+0034 <span class="comment">% screenKcatLeverage, cmaesKcatTuning, isozymeTieMap</span>
+0035 isTunable = ecModel.ec.kcat &gt; 0;
+0036 <span class="keyword">if</span> ~isempty(tunableMask)
+0037     isTunable = isTunable &amp; tunableMask(:);
+0038 <span class="keyword">end</span>
+0039 tunableIdx = find(isTunable);
+0040 <span class="keyword">if</span> isempty(tunableIdx)
+0041     <span class="keyword">if</span> isempty(tunableMask)
+0042         error(<span class="string">'No tunable kcats: ecModel.ec.kcat is all &lt;= 0.'</span>)
+0043     <span class="keyword">else</span>
+0044         error(<span class="string">'No tunable kcats: ecModel.ec.kcat is all &lt;= 0, or tunableMask excludes every one with a kcat.'</span>)
+0045     <span class="keyword">end</span>
+0046 <span class="keyword">end</span>
+0047 
+0048 ecRxnIdsTunable = ecModel.ec.rxns(tunableIdx);
+0049 kcat0           = ecModel.ec.kcat(tunableIdx);
+0050 sources         = ecModel.ec.source(tunableIdx);
+0051 
+0052 groups    = repmat({<span class="string">'unlabelled'</span>}, numel(tunableIdx), 1);
+0053 sigma0log = params.sigma0logDefault * ones(numel(tunableIdx),1);
+0054 <span class="keyword">for</span> i = 1:numel(params.kcatSources)
+0055     idx = strcmpi(sources, params.kcatSources{i});
+0056     groups(idx)    = params.kcatSources(i);
+0057     sigma0log(idx) = params.sigma0logSource(i);
+0058 <span class="keyword">end</span>
+0059 
+0060 <span class="keyword">if</span> isfield(params,<span class="string">'tieIsozymes'</span>) &amp;&amp; params.tieIsozymes
+0061     tieMap = <a href="isozymeTieMap.html" class="code" title="function tieMap = isozymeTieMap(rxnIds,kcat0,varargin)">isozymeTieMap</a>(ecRxnIdsTunable, kcat0, <span class="string">'sources'</span>, groups);
+0062 <span class="keyword">else</span>
+0063     tieMap = (1:numel(kcat0))';
+0064 <span class="keyword">end</span>
+0065 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

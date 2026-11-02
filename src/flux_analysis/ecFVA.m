@@ -42,7 +42,7 @@ p = parseGECKOargs(varargin, { ...
     'runParallel', true});
 runParallel = p.runParallel;
 
-rxnIDs = regexprep(ecModel.rxns,'(_REV)?(_EXP_\d+)?','');
+rxnIDs = regexprep(ecModel.rxns,'(_REV)?(_EXP_\d+)?$','');
 [rxnIDmap, convRxnID] = findgroups(rxnIDs);
 
 N = numel(convRxnID);

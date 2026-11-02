@@ -21,7 +21,10 @@ function solution = getPfbaEnzymes(model, varargin)
 %     (default: use model.c as given).
 % fractionOfOptimum : double
 %     fraction of the optimal objective value to fix before minimising
-%     enzyme usage (default 1.0).
+%     enzyme usage (default 1.0). A value below 1.0 lets the objective fall
+%     by (1 - fractionOfOptimum) times the magnitude of its optimum, so it
+%     also applies to a negative optimum (for example the exchange flux of
+%     a nutrient that is maximised).
 %
 % Returns
 % -------
@@ -89,12 +92,10 @@ end
 
 % Fix the objective as a constraint, same "fake metabolite" technique
 % solveLP's own minFlux=1 option uses (see solveLP.m).
-target = fractionOfOptimum * solOrig.f;
-if target > 0
-    target = target * 0.999999;
-else
-    target = target * 1.000001;
-end
+% The objective may fall by (1 - fractionOfOptimum*0.999999) of the magnitude
+% of its optimum, for a positive and a negative optimum alike (the band that
+% setParam(model, 'var', ...) sets around a value).
+target = solOrig.f - (1 - fractionOfOptimum*0.999999) * abs(solOrig.f);
 fixModel = model;
 fixModel.S(end+1, :) = model.c';
 fixModel.mets{end+1, 1} = 'getPfbaEnzymes_objective';

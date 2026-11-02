@@ -1,0 +1,146 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of downloadUniProt</title>
+  <meta name="keywords" content="downloadUniProt">
+  <meta name="description" content="downloadUniProt  Download UniProt protein data for an organism and write a TSV.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">download_databases</a> &gt; downloadUniProt.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/download_databases&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>downloadUniProt
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>downloadUniProt  Download UniProt protein data for an organism and write a TSV.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function downloadUniProt(uniprotID, filePath, geneIDfield, type, reviewed) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> downloadUniProt  Download UniProt protein data for an organism and write a TSV.
+
+ Downloads accession, gene name, EC number, mass and sequence for every
+ protein matching the given organism identifier, and writes the result
+ to a TSV file. Used by loadDatabases when its expected uniprot.tsv is
+ missing; can also be called directly to refresh one organism's UniProt
+ snapshot without re-running loadDatabases for everything else.
+
+ Parameters
+ ----------
+ uniprotID : char
+     UniProt-side identifier whose meaning depends on type, e.g. an NCBI
+     taxonomy ID such as 559292 for Saccharomyces cerevisiae S288C.
+ filePath : char
+     destination TSV path (overwritten if it exists).
+ geneIDfield : char
+     UniProt field that becomes the second column (the gene matching
+     key) (optional, default 'gene_oln', Ordered Locus Names, which
+     works for most prokaryotes and budding yeast).
+ type : char
+     UniProt query field for uniprotID (optional, default
+     'taxonomy_id'). 'taxonomy' is accepted as an alias.
+ reviewed : logical
+     whether to restrict the query to reviewed (Swiss-Prot) entries
+     (optional, default true).
+
+ Examples
+ --------
+     downloadUniProt(559292, 'uniprot.tsv');
+     downloadUniProt(559292, 'uniprot.tsv', 'gene_oln', 'taxonomy_id', true);
+
+ See also
+ --------
+ <a href="loadDatabases.html" class="code" title="function databases = loadDatabases(varargin)">loadDatabases</a>, <a href="downloadKEGG.html" class="code" title="function downloadKEGG(keggID, filePath, keggGeneID)">downloadKEGG</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="loadDatabases.html" class="code" title="function databases = loadDatabases(varargin)">loadDatabases</a>	loadDatabases  Load the organism-specific KEGG and UniProt databases.</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function downloadUniProt(uniprotID, filePath, geneIDfield, type, reviewed)</a>
+0002 <span class="comment">% downloadUniProt  Download UniProt protein data for an organism and write a TSV.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Downloads accession, gene name, EC number, mass and sequence for every</span>
+0005 <span class="comment">% protein matching the given organism identifier, and writes the result</span>
+0006 <span class="comment">% to a TSV file. Used by loadDatabases when its expected uniprot.tsv is</span>
+0007 <span class="comment">% missing; can also be called directly to refresh one organism's UniProt</span>
+0008 <span class="comment">% snapshot without re-running loadDatabases for everything else.</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% Parameters</span>
+0011 <span class="comment">% ----------</span>
+0012 <span class="comment">% uniprotID : char</span>
+0013 <span class="comment">%     UniProt-side identifier whose meaning depends on type, e.g. an NCBI</span>
+0014 <span class="comment">%     taxonomy ID such as 559292 for Saccharomyces cerevisiae S288C.</span>
+0015 <span class="comment">% filePath : char</span>
+0016 <span class="comment">%     destination TSV path (overwritten if it exists).</span>
+0017 <span class="comment">% geneIDfield : char</span>
+0018 <span class="comment">%     UniProt field that becomes the second column (the gene matching</span>
+0019 <span class="comment">%     key) (optional, default 'gene_oln', Ordered Locus Names, which</span>
+0020 <span class="comment">%     works for most prokaryotes and budding yeast).</span>
+0021 <span class="comment">% type : char</span>
+0022 <span class="comment">%     UniProt query field for uniprotID (optional, default</span>
+0023 <span class="comment">%     'taxonomy_id'). 'taxonomy' is accepted as an alias.</span>
+0024 <span class="comment">% reviewed : logical</span>
+0025 <span class="comment">%     whether to restrict the query to reviewed (Swiss-Prot) entries</span>
+0026 <span class="comment">%     (optional, default true).</span>
+0027 <span class="comment">%</span>
+0028 <span class="comment">% Examples</span>
+0029 <span class="comment">% --------</span>
+0030 <span class="comment">%     downloadUniProt(559292, 'uniprot.tsv');</span>
+0031 <span class="comment">%     downloadUniProt(559292, 'uniprot.tsv', 'gene_oln', 'taxonomy_id', true);</span>
+0032 <span class="comment">%</span>
+0033 <span class="comment">% See also</span>
+0034 <span class="comment">% --------</span>
+0035 <span class="comment">% loadDatabases, downloadKEGG</span>
+0036 
+0037 <span class="keyword">if</span> nargin &lt; 3 || isempty(geneIDfield)
+0038     geneIDfield = <span class="string">'gene_oln'</span>;
+0039 <span class="keyword">end</span>
+0040 <span class="keyword">if</span> nargin &lt; 4 || isempty(type)
+0041     type = <span class="string">'taxonomy_id'</span>;
+0042 <span class="keyword">end</span>
+0043 <span class="keyword">if</span> nargin &lt; 5 || isempty(reviewed)
+0044     reviewed = true;
+0045 <span class="keyword">end</span>
+0046 <span class="keyword">if</span> strcmp(type,<span class="string">'taxonomy'</span>)
+0047     type = <span class="string">'taxonomy_id'</span>;
+0048 <span class="keyword">end</span>
+0049 <span class="keyword">if</span> reviewed
+0050     uniprotRev = <span class="string">'reviewed:true+AND+'</span>;
+0051 <span class="keyword">else</span>
+0052     uniprotRev = <span class="string">''</span>;
+0053 <span class="keyword">end</span>
+0054 
+0055 disp([<span class="string">'Downloading Uniprot data for '</span> type <span class="string">' '</span> num2str(uniprotID) <span class="string">'. This can take a few minutes.'</span>])
+0056 url = [<span class="string">'https://rest.uniprot.org/uniprotkb/stream?query='</span> uniprotRev <span class="keyword">...</span>
+0057        type <span class="string">':'</span> num2str(uniprotID) <span class="string">'&amp;fields=accession%2C'</span> geneIDfield <span class="keyword">...</span>
+0058     <span class="string">'%2Cec%2Cmass%2Csequence&amp;format=tsv&amp;compressed=false&amp;sort=protein_name%20asc'</span>];
+0059 <span class="keyword">try</span>
+0060     urlwrite(url,filePath,<span class="string">'Timeout'</span>,30);
+0061     fprintf(<span class="string">'Model-specific UniProt database stored at %s\n'</span>,filePath);
+0062 <span class="keyword">catch</span>
+0063     error([<span class="string">'Download failed, check your internet connection and try again, or manually download: '</span> url <span class="keyword">...</span>
+0064         <span class="string">' After downloading, store the file as '</span> filePath])
+0065 <span class="keyword">end</span>
+0066 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

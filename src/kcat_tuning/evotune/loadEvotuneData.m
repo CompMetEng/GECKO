@@ -44,19 +44,26 @@ end
 
 basePath = modelAdapter.params.path;
 
-evoData.fluxData = loadFluxData(fullfile(basePath,'data','evotuneFluxData.tsv'), modelAdapter);
+evoData.fluxData = [];
+fluxFile = fullfile(basePath,'data','evotuneFluxData.tsv');
+if isfile(fluxFile)
+    evoData.fluxData = loadFluxData(fluxFile, modelAdapter);
+end
 if ~isempty(evoData.fluxData)
     evoData.fluxData.biomass = modelAdapter.params.bioRxn;
 end
 
-evoData.maxGrate = loadFluxData(fullfile(basePath,'data','evotuneMaxGrowth.tsv'), modelAdapter);
+evoData.maxGrate = [];
+maxGrateFile = fullfile(basePath,'data','evotuneMaxGrowth.tsv');
+if isfile(maxGrateFile)
+    evoData.maxGrate = loadFluxData(maxGrateFile, modelAdapter);
+end
 if ~isempty(evoData.maxGrate)
     evoData.maxGrate.biomass = modelAdapter.params.bioRxn;
 end
 
-% Unlike loadFluxData (used for fluxData/maxGrate above, which already
-% degrades to [] on a missing file), readtable has no such guard, so this
-% is wrapped explicitly to keep all three files uniformly optional.
+% All three files are optional: a missing file gives [] (fluxData, maxGrate)
+% or {} (zeroFlux).
 zeroExchFile = fullfile(basePath,'data','evotuneZeroExch.tsv');
 if isfile(zeroExchFile)
     evoData.zeroFlux = table2cell(readtable(zeroExchFile, 'Delimiter', '\t', 'FileType','delimitedtext'));

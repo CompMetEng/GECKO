@@ -27,7 +27,8 @@ function model = constrainFluxData(model, varargin)
 %     'max' if the provided growth rate should be set as maximum growth rate
 %     (= upper bound), or 'min' if it should be set as minimum growth rate
 %     (= lower bound). The latter option is suitable if minimization of
-%     prot_pool_exchange is used as objective function (default 'max').
+%     prot_pool_exchange is used as objective function (default 'max'). Any
+%     other value raises constrainFluxData:invalidMaxMinGrowth.
 % looseStrictFlux : char or double
 %     how strictly constrained the exchange fluxes should be (default
 %     'loose'):
@@ -49,6 +50,10 @@ function model = constrainFluxData(model, varargin)
 %
 % Notes
 % -----
+% An exchange reaction in fluxData.exchRxnIDs that is not in the model
+% raises constrainFluxData:missingReaction, and a condition that is not in
+% fluxData.conds raises constrainFluxData:unknownCondition.
+%
 % If a provided constraint is either -1000 or 1000, then the function will
 % update the reaction lower and upper bound to either allow uptake or
 % excretion, irrespective of what option is given as the looseStrictFlux
@@ -96,12 +101,24 @@ if isempty(fluxData)
     fluxData = loadFluxData(fullfile(params.path,'data','fluxData.tsv'),modelAdapter);
 end
 
+if ~(ischar(maxMinGrowth) && any(strcmp(maxMinGrowth, {'max','min'})))
+    error('constrainFluxData:invalidMaxMinGrowth', ...
+        'maxMinGrowth must be ''max'' or ''min''.')
+end
+
+missingRxns = fluxData.exchRxnIDs(~ismember(fluxData.exchRxnIDs, model.rxns));
+if ~isempty(missingRxns)
+    error('constrainFluxData:missingReaction', ...
+        'The exchange reactions %s of fluxData are not in the model.', strjoin(missingRxns, ', '))
+end
+
 if isempty(condition)
     condition = 1;
 elseif ~isnumeric(condition)
     idx = find(strcmp(fluxData.conds,condition));
-    if isempty(condition)
-        error(['Condition ' condition ' cannot be found in fluxData'])
+    if isempty(idx)
+        error('constrainFluxData:unknownCondition', ...
+            'Condition %s cannot be found in fluxData.', condition)
     else
         condition = idx;
     end

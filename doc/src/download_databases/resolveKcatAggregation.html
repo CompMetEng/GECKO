@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of resolveKcatAggregation</title>
+  <meta name="keywords" content="resolveKcatAggregation">
+  <meta name="description" content="%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">download_databases</a> &gt; resolveKcatAggregation.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/download_databases&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>resolveKcatAggregation
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function kcatAggregation = resolveKcatAggregation(kcatAggregation, modelAdapter) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ resolveKcatAggregation  Settle which BRENDA aggregate to read.
+
+ The BRENDA snapshot records both a maximum and a median per
+ (EC, substrate, organism) triple. Which one a run uses can be given per
+ call, or once on the model adapter as params.kcatAggregation; an
+ adapter that sets neither gets 'max', which is what GECKO has always
+ used.
+
+ Input Arguments
+ ---------------
+ kcatAggregation : char
+     the per-call choice, or empty to fall back to the adapter.
+ modelAdapter : ModelAdapter
+     a loaded model adapter.
+
+ Returns
+ -------
+ kcatAggregation : char
+     'max' or 'median'.
+
+ See also
+ --------
+ <a href="loadBRENDAdata.html" class="code" title="function [KCATcell, SAcell] = loadBRENDAdata(varargin)">loadBRENDAdata</a>, fuzzyKcatMatching</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="loadBRENDAdata.html" class="code" title="function [KCATcell, SAcell] = loadBRENDAdata(varargin)">loadBRENDAdata</a>	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0002 <a name="_sub0" href="#_subfunctions" class="code">function kcatAggregation = resolveKcatAggregation(kcatAggregation, modelAdapter)</a>
+0003 <span class="comment">% resolveKcatAggregation  Settle which BRENDA aggregate to read.</span>
+0004 <span class="comment">%</span>
+0005 <span class="comment">% The BRENDA snapshot records both a maximum and a median per</span>
+0006 <span class="comment">% (EC, substrate, organism) triple. Which one a run uses can be given per</span>
+0007 <span class="comment">% call, or once on the model adapter as params.kcatAggregation; an</span>
+0008 <span class="comment">% adapter that sets neither gets 'max', which is what GECKO has always</span>
+0009 <span class="comment">% used.</span>
+0010 <span class="comment">%</span>
+0011 <span class="comment">% Input Arguments</span>
+0012 <span class="comment">% ---------------</span>
+0013 <span class="comment">% kcatAggregation : char</span>
+0014 <span class="comment">%     the per-call choice, or empty to fall back to the adapter.</span>
+0015 <span class="comment">% modelAdapter : ModelAdapter</span>
+0016 <span class="comment">%     a loaded model adapter.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% Returns</span>
+0019 <span class="comment">% -------</span>
+0020 <span class="comment">% kcatAggregation : char</span>
+0021 <span class="comment">%     'max' or 'median'.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% See also</span>
+0024 <span class="comment">% --------</span>
+0025 <span class="comment">% loadBRENDAdata, fuzzyKcatMatching</span>
+0026 
+0027 <span class="keyword">if</span> isempty(kcatAggregation)
+0028     params = modelAdapter.getParameters();
+0029     <span class="keyword">if</span> isfield(params,<span class="string">'kcatAggregation'</span>) &amp;&amp; ~isempty(params.kcatAggregation)
+0030         kcatAggregation = params.kcatAggregation;
+0031     <span class="keyword">else</span>
+0032         kcatAggregation = <span class="string">'max'</span>;
+0033     <span class="keyword">end</span>
+0034 <span class="keyword">end</span>
+0035 
+0036 <span class="keyword">if</span> ~(ischar(kcatAggregation) || isstring(kcatAggregation)) || <span class="keyword">...</span>
+0037         ~any(strcmpi(kcatAggregation,{<span class="string">'max'</span>,<span class="string">'median'</span>}))
+0038     error(<span class="string">'resolveKcatAggregation:invalidKcatAggregation'</span>, <span class="keyword">...</span>
+0039         <span class="string">'kcatAggregation must be ''max'' or ''median''.'</span>)
+0040 <span class="keyword">end</span>
+0041 kcatAggregation = lower(char(kcatAggregation));
+0042 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

@@ -27,13 +27,19 @@ function mergedKcatList = mergeKcats(kcatLists, sourcePriority, varargin)
 %       wildcardLimit / bottomOriginLimit.
 %
 %     Any other token is matched against each row's source after folding
-%     to lowercase snake_case (e.g. 'dlkcat', 'catapro'). Sources not
-%     listed are dropped.
+%     to lowercase snake_case (e.g. 'dlkcat', 'catapro'). A leading 'okp_'
+%     of the row's folded source (the OKP- tag of OpenKineticsPredictor
+%     rows) is dropped for matching, so 'OKP-BRENDA' routes to the database
+%     tiers and 'OKP-CataPro' matches 'catapro'; the rows keep their
+%     source label. Sources not listed are dropped.
 %
 % Name-Value Arguments
 % --------------------
 % topOriginLimit : double
-%     origin limit for database_top (default 6).
+%     origin limit for database_top (default 4). Origins 5 and 6 are specific
+%     activity times molecular weight kcats, which do not always beat a
+%     prediction; they rank after the other sources and are used where
+%     nothing else exists, or above DLKcat with topOriginLimit 6.
 % bottomOriginLimit : double
 %     origin limit for database_bottom (default 6).
 % wildcardLimit : double
@@ -87,7 +93,7 @@ function mergedKcatList = mergeKcats(kcatLists, sourcePriority, varargin)
 % mergeDLKcatAndFuzzyKcats, readDLKcatOutput, fuzzyKcatMatching, assignKcatValues
 
 p = parseGECKOargs(varargin, { ...
-    'topOriginLimit',    6; ...
+    'topOriginLimit',    4; ...
     'bottomOriginLimit', 6; ...
     'wildcardLimit',     3; ...
     'databaseSources',   {'brenda','sabio_rk'}});
@@ -167,6 +173,7 @@ if N == 0
 end
 
 token  = cellfun(@normalizeSource, rawSource, 'UniformOutput', false);
+token  = regexprep(token, '^okp_', '');
 isDb   = ismember(token, dbSources);
 hasMeta = ~isnan(wcl) & ~isnan(origin);
 

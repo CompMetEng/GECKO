@@ -1,0 +1,243 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of kcatsFromBrenda</title>
+  <meta name="keywords" content="kcatsFromBrenda">
+  <meta name="description" content="kcatsFromBrenda  Gather kcats from BRENDA and keep them as a source file.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">gather_kcats</a> &gt; kcatsFromBrenda.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/gather_kcats&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>kcatsFromBrenda
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>kcatsFromBrenda  Gather kcats from BRENDA and keep them as a source file.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function kcatList = kcatsFromBrenda(model, varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> kcatsFromBrenda  Gather kcats from BRENDA and keep them as a source file.
+
+ Matches the model's EC numbers and substrates to BRENDA by fuzzy
+ matching (see fuzzyKcatMatching), and writes the result to
+ data/kcats/brenda.tsv in the project folder (see saveKcatSource). The
+ matching runs locally on the BRENDA files of GECKO.
+
+ Parameters
+ ----------
+ model : struct
+     an ecModel in GECKO 3 format (with ecModel.ec structure), with EC
+     numbers (getECfromDatabase or getECfromGEM).
+
+ Name-Value Arguments
+ --------------------
+ aggregation : char
+     which BRENDA value per EC number, substrate and organism is used:
+     'max' or 'median' (default: params.kcatAggregation of the model
+     adapter, or 'max').
+ forceWClvl : double
+     number of extra levels, from the right, replaced by a wildcard in the
+     EC numbers (on top of any wildcard already in the code; default 0).
+ ecRxns : logical or double
+     for which model.ec.rxns kcats are gathered (default: all). A logical
+     vector or indices of model.ec.rxns, see fuzzyKcatMatching; [] selects
+     all reactions and any other empty selection is an error.
+ save : logical
+     write the source file (default true).
+ saveAs : char
+     name of the source file, without .tsv (default 'brenda'). With
+     ecRxns, the file then only holds those reactions.
+ modelAdapter : ModelAdapter
+     a loaded model adapter (default: the current default model adapter).
+
+ Returns
+ -------
+ kcatList : struct
+     the kcat values, as returned by fuzzyKcatMatching.
+
+ Examples
+ --------
+     kcatsFromBrenda(ecModel);
+     kcatList = kcatsFromBrenda(ecModel, 'aggregation', 'median');
+
+ See also
+ --------
+ <a href="fuzzyKcatMatching.html" class="code" title="function kcatList = fuzzyKcatMatching(model, varargin)">fuzzyKcatMatching</a>, <a href="kcatsFromDLKcat.html" class="code" title="function kcatList = kcatsFromDLKcat(model, varargin)">kcatsFromDLKcat</a>, <a href="kcatsFromOKP.html" class="code" title="function [kcatList, done] = kcatsFromOKP(model, varargin)">kcatsFromOKP</a>, <a href="saveKcatSource.html" class="code" title="function filename = saveKcatSource(model, kcatList, name, varargin)">saveKcatSource</a>, <a href="loadKcatSource.html" class="code" title="function [kcatList, report] = loadKcatSource(model, name, varargin)">loadKcatSource</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="fuzzyKcatMatching.html" class="code" title="function kcatList = fuzzyKcatMatching(model, varargin)">fuzzyKcatMatching</a>	fuzzyKcatMatching  Match model EC numbers and substrates to BRENDA kcats.</li><li><a href="saveKcatSource.html" class="code" title="function filename = saveKcatSource(model, kcatList, name, varargin)">saveKcatSource</a>	saveKcatSource  Write a kcatList to a kcat source file of the project.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="updateKcatSources.html" class="code" title="function report = updateKcatSources(model, varargin)">updateKcatSources</a>	updateKcatSources  Gather the kcat sources that the configuration needs.</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function release = brendaRelease(modelAdapter)</a></li><li><a href="#_sub2" class="code">function tf = isSubset(ecRxns)</a></li><li><a href="#_sub3" class="code">function n = countSelected(ecRxns)</a></li><li><a href="#_sub4" class="code">function n = countRxns(ecRxns)</a></li><li><a href="#_sub5" class="code">function warnSubset(ecRxns, nRxns, file)</a></li><li><a href="#_sub6" class="code">function checkOptions(args, names, functionName)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function kcatList = kcatsFromBrenda(model, varargin)</a>
+0002 <span class="comment">% kcatsFromBrenda  Gather kcats from BRENDA and keep them as a source file.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Matches the model's EC numbers and substrates to BRENDA by fuzzy</span>
+0005 <span class="comment">% matching (see fuzzyKcatMatching), and writes the result to</span>
+0006 <span class="comment">% data/kcats/brenda.tsv in the project folder (see saveKcatSource). The</span>
+0007 <span class="comment">% matching runs locally on the BRENDA files of GECKO.</span>
+0008 <span class="comment">%</span>
+0009 <span class="comment">% Parameters</span>
+0010 <span class="comment">% ----------</span>
+0011 <span class="comment">% model : struct</span>
+0012 <span class="comment">%     an ecModel in GECKO 3 format (with ecModel.ec structure), with EC</span>
+0013 <span class="comment">%     numbers (getECfromDatabase or getECfromGEM).</span>
+0014 <span class="comment">%</span>
+0015 <span class="comment">% Name-Value Arguments</span>
+0016 <span class="comment">% --------------------</span>
+0017 <span class="comment">% aggregation : char</span>
+0018 <span class="comment">%     which BRENDA value per EC number, substrate and organism is used:</span>
+0019 <span class="comment">%     'max' or 'median' (default: params.kcatAggregation of the model</span>
+0020 <span class="comment">%     adapter, or 'max').</span>
+0021 <span class="comment">% forceWClvl : double</span>
+0022 <span class="comment">%     number of extra levels, from the right, replaced by a wildcard in the</span>
+0023 <span class="comment">%     EC numbers (on top of any wildcard already in the code; default 0).</span>
+0024 <span class="comment">% ecRxns : logical or double</span>
+0025 <span class="comment">%     for which model.ec.rxns kcats are gathered (default: all). A logical</span>
+0026 <span class="comment">%     vector or indices of model.ec.rxns, see fuzzyKcatMatching; [] selects</span>
+0027 <span class="comment">%     all reactions and any other empty selection is an error.</span>
+0028 <span class="comment">% save : logical</span>
+0029 <span class="comment">%     write the source file (default true).</span>
+0030 <span class="comment">% saveAs : char</span>
+0031 <span class="comment">%     name of the source file, without .tsv (default 'brenda'). With</span>
+0032 <span class="comment">%     ecRxns, the file then only holds those reactions.</span>
+0033 <span class="comment">% modelAdapter : ModelAdapter</span>
+0034 <span class="comment">%     a loaded model adapter (default: the current default model adapter).</span>
+0035 <span class="comment">%</span>
+0036 <span class="comment">% Returns</span>
+0037 <span class="comment">% -------</span>
+0038 <span class="comment">% kcatList : struct</span>
+0039 <span class="comment">%     the kcat values, as returned by fuzzyKcatMatching.</span>
+0040 <span class="comment">%</span>
+0041 <span class="comment">% Examples</span>
+0042 <span class="comment">% --------</span>
+0043 <span class="comment">%     kcatsFromBrenda(ecModel);</span>
+0044 <span class="comment">%     kcatList = kcatsFromBrenda(ecModel, 'aggregation', 'median');</span>
+0045 <span class="comment">%</span>
+0046 <span class="comment">% See also</span>
+0047 <span class="comment">% --------</span>
+0048 <span class="comment">% fuzzyKcatMatching, kcatsFromDLKcat, kcatsFromOKP, saveKcatSource, loadKcatSource</span>
+0049 
+0050 <a href="#_sub6" class="code" title="subfunction checkOptions(args, names, functionName)">checkOptions</a>(varargin, {<span class="string">'aggregation'</span>,<span class="string">'forceWClvl'</span>,<span class="string">'ecRxns'</span>,<span class="string">'save'</span>,<span class="string">'saveAs'</span>,<span class="string">'modelAdapter'</span>}, <span class="string">'kcatsFromBrenda'</span>);
+0051 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0052     <span class="string">'aggregation'</span>,  []; <span class="keyword">...</span>
+0053     <span class="string">'forceWClvl'</span>,   0; <span class="keyword">...</span>
+0054     <span class="string">'ecRxns'</span>,       []; <span class="keyword">...</span>
+0055     <span class="string">'save'</span>,         true; <span class="keyword">...</span>
+0056     <span class="string">'saveAs'</span>,       <span class="string">'brenda'</span>; <span class="keyword">...</span>
+0057     <span class="string">'modelAdapter'</span>, []});
+0058 modelAdapter = p.modelAdapter;
+0059 <span class="keyword">if</span> isempty(modelAdapter)
+0060     modelAdapter = ModelAdapterManager.getDefault();
+0061     <span class="keyword">if</span> isempty(modelAdapter)
+0062         error(<span class="string">'Either send in a modelAdapter or set the default model adapter in the ModelAdapterManager.'</span>)
+0063     <span class="keyword">end</span>
+0064 <span class="keyword">end</span>
+0065 aggregation = resolveKcatAggregation(p.aggregation, modelAdapter);
+0066 <span class="keyword">if</span> <a href="#_sub2" class="code" title="subfunction tf = isSubset(ecRxns)">isSubset</a>(p.ecRxns) &amp;&amp; <a href="#_sub3" class="code" title="subfunction n = countSelected(ecRxns)">countSelected</a>(p.ecRxns) == 0
+0067     error(<span class="string">'kcatsFromBrenda:emptySubset'</span>, <span class="keyword">...</span>
+0068         <span class="string">'ecRxns selects no reactions; leave it out to gather for all reactions.'</span>);
+0069 <span class="keyword">end</span>
+0070 <span class="keyword">if</span> p.save
+0071     file = fullfile(modelAdapter.params.path, <span class="string">'data'</span>, <span class="string">'kcats'</span>, [char(p.saveAs) <span class="string">'.tsv'</span>]);
+0072     <a href="#_sub5" class="code" title="subfunction warnSubset(ecRxns, nRxns, file)">warnSubset</a>(p.ecRxns, numel(model.ec.rxns), file);
+0073 <span class="keyword">end</span>
+0074 
+0075 kcatList = <a href="fuzzyKcatMatching.html" class="code" title="function kcatList = fuzzyKcatMatching(model, varargin)">fuzzyKcatMatching</a>(model, <span class="string">'ecRxns'</span>, p.ecRxns, <span class="string">'modelAdapter'</span>, modelAdapter, <span class="keyword">...</span>
+0076     <span class="string">'forceWClvl'</span>, p.forceWClvl, <span class="string">'kcatAggregation'</span>, aggregation);
+0077 
+0078 <span class="keyword">if</span> p.save
+0079     parameters = struct(<span class="string">'aggregation'</span>, aggregation, <span class="string">'force_wildcard_level'</span>, p.forceWClvl);
+0080     <span class="keyword">if</span> <a href="#_sub2" class="code" title="subfunction tf = isSubset(ecRxns)">isSubset</a>(p.ecRxns)
+0081         parameters.ec_rxns = numel(kcatList.rxns);
+0082     <span class="keyword">end</span>
+0083     <a href="saveKcatSource.html" class="code" title="function filename = saveKcatSource(model, kcatList, name, varargin)">saveKcatSource</a>(model, kcatList, p.saveAs, <span class="string">'modelAdapter'</span>, modelAdapter, <span class="keyword">...</span>
+0084         <span class="string">'generator'</span>, <span class="string">'kcatsFromBrenda'</span>, <span class="string">'parameters'</span>, parameters, <span class="keyword">...</span>
+0085         <span class="string">'data'</span>, <a href="#_sub1" class="code" title="subfunction release = brendaRelease(modelAdapter)">brendaRelease</a>(modelAdapter));
+0086     fprintf(<span class="string">'BRENDA kcats for %d reactions written to %s\n'</span>, sum(kcatList.kcats &gt; 0), file);
+0087 <span class="keyword">end</span>
+0088 <span class="keyword">end</span>
+0089 
+0090 <a name="_sub1" href="#_subfunctions" class="code">function release = brendaRelease(modelAdapter)</a>
+0091 <span class="comment">% The release line at the top of kcat.tsv, e.g. 'BRENDA release 2026.1'.</span>
+0092 release = <span class="string">''</span>;
+0093 file = fullfile(modelAdapter.getBrendaDBFolder(), <span class="string">'kcat.tsv'</span>);
+0094 fid = fopen(file, <span class="string">'r'</span>);
+0095 <span class="keyword">if</span> fid &lt; 0
+0096     <span class="keyword">return</span>
+0097 <span class="keyword">end</span>
+0098 line = fgetl(fid);
+0099 fclose(fid);
+0100 tok = regexp(line, <span class="string">'^#\s*(BRENDA release [^ ]+)'</span>, <span class="string">'tokens'</span>, <span class="string">'once'</span>);
+0101 <span class="keyword">if</span> ~isempty(tok)
+0102     release = tok{1};
+0103 <span class="keyword">end</span>
+0104 <span class="keyword">end</span>
+0105 
+0106 <a name="_sub2" href="#_subfunctions" class="code">function tf = isSubset(ecRxns)</a>
+0107 <span class="comment">% [] selects all reactions; any other value selects the reactions it names.</span>
+0108 tf = ~(isnumeric(ecRxns) &amp;&amp; isequal(size(ecRxns),[0 0]));
+0109 <span class="keyword">end</span>
+0110 
+0111 <a name="_sub3" href="#_subfunctions" class="code">function n = countSelected(ecRxns)</a>
+0112 <span class="keyword">if</span> islogical(ecRxns)
+0113     n = sum(ecRxns);
+0114 <span class="keyword">else</span>
+0115     n = numel(ecRxns);
+0116 <span class="keyword">end</span>
+0117 <span class="keyword">end</span>
+0118 
+0119 <a name="_sub4" href="#_subfunctions" class="code">function n = countRxns(ecRxns)</a>
+0120 <span class="keyword">if</span> islogical(ecRxns)
+0121     n = sum(ecRxns);
+0122 <span class="keyword">else</span>
+0123     n = numel(unique(ecRxns));
+0124 <span class="keyword">end</span>
+0125 <span class="keyword">end</span>
+0126 
+0127 <a name="_sub5" href="#_subfunctions" class="code">function warnSubset(ecRxns, nRxns, file)</a>
+0128 <span class="comment">% A subset written under the default name replaces the full file.</span>
+0129 <span class="keyword">if</span> <a href="#_sub2" class="code" title="subfunction tf = isSubset(ecRxns)">isSubset</a>(ecRxns) &amp;&amp; <a href="#_sub4" class="code" title="subfunction n = countRxns(ecRxns)">countRxns</a>(ecRxns) &lt; nRxns &amp;&amp; isfile(file)
+0130     printOrange(sprintf([<span class="string">'%s is replaced by kcats for %d reactions only. Give saveAs '</span> <span class="keyword">...</span>
+0131         <span class="string">'to keep it.\n'</span>], file, <a href="#_sub4" class="code" title="subfunction n = countRxns(ecRxns)">countRxns</a>(ecRxns)));
+0132 <span class="keyword">end</span>
+0133 <span class="keyword">end</span>
+0134 
+0135 <a name="_sub6" href="#_subfunctions" class="code">function checkOptions(args, names, functionName)</a>
+0136 <span class="comment">% Options are name-value pairs with known names, so a misspelled option is</span>
+0137 <span class="comment">% an error instead of being taken as a positional argument.</span>
+0138 id = [functionName <span class="string">':arguments'</span>];
+0139 given = args(1:2:end);
+0140 <span class="keyword">if</span> mod(numel(args), 2) ~= 0 || ~all(cellfun(@(x) ischar(x) || (isstring(x) &amp;&amp; isscalar(x)), given))
+0141     error(id, <span class="string">'Options of %s are name-value pairs. Options: %s.'</span>, functionName, strjoin(names, <span class="string">', '</span>))
+0142 <span class="keyword">end</span>
+0143 unknown = setdiff(cellfun(@char, given, <span class="string">'UniformOutput'</span>, false), names);
+0144 <span class="keyword">if</span> ~isempty(unknown)
+0145     error(id, <span class="string">'Unknown option of %s: %s. Options: %s.'</span>, functionName, strjoin(unknown, <span class="string">', '</span>), <span class="keyword">...</span>
+0146         strjoin(names, <span class="string">', '</span>))
+0147 <span class="keyword">end</span>
+0148 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

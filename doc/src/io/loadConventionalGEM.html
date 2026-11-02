@@ -1,0 +1,136 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of loadConventionalGEM</title>
+  <meta name="keywords" content="loadConventionalGEM">
+  <meta name="description" content="loadConventionalGEM  Load the conventional GEM (non-ecModel).">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">io</a> &gt; loadConventionalGEM.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/io&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>loadConventionalGEM
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>loadConventionalGEM  Load the conventional GEM (non-ecModel).</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function model = loadConventionalGEM(varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> loadConventionalGEM  Load the conventional GEM (non-ecModel).
+
+ Loads the conventional GEM (non-ecModel) from the location specified in
+ the modelAdapter. By default, it looks in the models/ subdirectory of the
+ param.path specified in the modelAdapter. When loading conventional GEMs
+ from other locations, one can directly use importModel.
+
+ Name-Value Arguments
+ --------------------
+ filename : char
+     name of the model file, without extension, located in the models/
+     subfolder of param.path as specified in the modelAdapter; it is
+     loaded as SBML (.xml) (default: the value specified as param.convGEM
+     in the modelAdapter, which may instead point to a YAML file).
+ modelAdapter : ModelAdapter
+     a loaded model adapter, from where the model folder is read (default:
+     the current default model adapter).
+
+ Returns
+ -------
+ model : struct
+     model in RAVEN format.
+
+ Examples
+ --------
+     % optional arguments may be given positionally or as name-value pairs:
+     model = loadConventionalGEM(filename, modelAdapter);
+     model = loadConventionalGEM('filename', filename);
+
+ See also
+ --------
+ <a href="loadEcModel.html" class="code" title="function model = loadEcModel(varargin)">loadEcModel</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function model = loadConventionalGEM(varargin)</a>
+0002 <span class="comment">% loadConventionalGEM  Load the conventional GEM (non-ecModel).</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Loads the conventional GEM (non-ecModel) from the location specified in</span>
+0005 <span class="comment">% the modelAdapter. By default, it looks in the models/ subdirectory of the</span>
+0006 <span class="comment">% param.path specified in the modelAdapter. When loading conventional GEMs</span>
+0007 <span class="comment">% from other locations, one can directly use importModel.</span>
+0008 <span class="comment">%</span>
+0009 <span class="comment">% Name-Value Arguments</span>
+0010 <span class="comment">% --------------------</span>
+0011 <span class="comment">% filename : char</span>
+0012 <span class="comment">%     name of the model file, without extension, located in the models/</span>
+0013 <span class="comment">%     subfolder of param.path as specified in the modelAdapter; it is</span>
+0014 <span class="comment">%     loaded as SBML (.xml) (default: the value specified as param.convGEM</span>
+0015 <span class="comment">%     in the modelAdapter, which may instead point to a YAML file).</span>
+0016 <span class="comment">% modelAdapter : ModelAdapter</span>
+0017 <span class="comment">%     a loaded model adapter, from where the model folder is read (default:</span>
+0018 <span class="comment">%     the current default model adapter).</span>
+0019 <span class="comment">%</span>
+0020 <span class="comment">% Returns</span>
+0021 <span class="comment">% -------</span>
+0022 <span class="comment">% model : struct</span>
+0023 <span class="comment">%     model in RAVEN format.</span>
+0024 <span class="comment">%</span>
+0025 <span class="comment">% Examples</span>
+0026 <span class="comment">% --------</span>
+0027 <span class="comment">%     % optional arguments may be given positionally or as name-value pairs:</span>
+0028 <span class="comment">%     model = loadConventionalGEM(filename, modelAdapter);</span>
+0029 <span class="comment">%     model = loadConventionalGEM('filename', filename);</span>
+0030 <span class="comment">%</span>
+0031 <span class="comment">% See also</span>
+0032 <span class="comment">% --------</span>
+0033 <span class="comment">% loadEcModel</span>
+0034 
+0035 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0036     <span class="string">'filename'</span>,     []; <span class="keyword">...</span>
+0037     <span class="string">'modelAdapter'</span>, []});
+0038 filename     = p.filename;
+0039 modelAdapter = p.modelAdapter;
+0040 
+0041 <span class="keyword">if</span> isempty(modelAdapter)
+0042     modelAdapter = ModelAdapterManager.getDefault();
+0043     <span class="keyword">if</span> isempty(modelAdapter)
+0044         error(<span class="string">'Either send in a modelAdapter or set the default model adapter in the ModelAdapterManager.'</span>)
+0045     <span class="keyword">end</span>
+0046 <span class="keyword">end</span>
+0047 params = modelAdapter.getParameters();
+0048 <span class="keyword">if</span> isempty(filename)
+0049     filename = params.convGEM;
+0050 <span class="keyword">else</span>
+0051     filename = fullfile(params.path,<span class="string">'models'</span>,[filename, <span class="string">'.xml'</span>])
+0052 <span class="keyword">end</span>
+0053 
+0054 <span class="keyword">if</span> endsWith(filename,<span class="string">'.xml'</span>)
+0055     model = importModel(filename);
+0056 <span class="keyword">elseif</span> endsWith(filename,<span class="string">'.yml'</span>)
+0057     model = readYAMLmodel(filename);
+0058 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

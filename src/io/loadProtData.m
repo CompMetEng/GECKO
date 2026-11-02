@@ -11,7 +11,9 @@ function protData = loadProtData(replPerCond, varargin)
 % replPerCond : double
 %     vector with number of replicates for each condition in the dataset.
 %     Example: [3, 2] if first condition has triplicates and second
-%     condition has duplicates.
+%     condition has duplicates. The sum must equal the number of replicate
+%     columns of the file (all columns after the UniProt ID), otherwise an
+%     error is raised.
 %
 % Name-Value Arguments
 % --------------------
@@ -109,6 +111,15 @@ end
 if ~isstruct(protDataFile)
     checkFileExistence(protDataFile);
     fID         = fopen(protDataFile);
+    nHeaderCols = numel(strsplit(fgetl(fID),'\t','CollapseDelimiters',false));
+    if nHeaderCols ~= sum(replPerCond)+1
+        fclose(fID);
+        error('loadProtData:replicateMismatch', ...
+              ['The header of %s has %d columns but replPerCond sums to %d, ' ...
+               'so %d columns are expected (the UniProt ID and one per replicate).'], ...
+              protDataFile, nHeaderCols, sum(replPerCond), sum(replPerCond)+1)
+    end
+    frewind(fID);
     protDataRaw = textscan(fID,format,'Delimiter','\t','HeaderLines',1,'TreatAsEmpty',{'NA','na','NaN','#VALUE!'});
     uniprotIDs  = protDataRaw{1};
     abundances  = cell2mat(protDataRaw(2:end));
@@ -143,16 +154,16 @@ if filterData
         end
         % Filter by RSD
         remData = (std(condAbund,0,2,'omitnan')./mean(condAbund,2,'omitnan'))>maxRSD;
-        condAbund(remData) = nan;
+        condAbund(remData,:) = nan;
         % Add stdevs
         condAbund = mean(condAbund,2,'omitnan')+(addStdevs*std(condAbund,0,2,'omitnan'));
         % Filter by minVal
         remData = mean(condAbund,2,'omitnan')<minVal;
         condAbund(remData) = nan;
-        % Remove bottom 5%
+        % Remove the lowest cutLowest percent
         numData  = find(~isnan(condAbund));
         [~,sortData] = sort(condAbund);
-        lowCutoff = floor(numel(numData)*0.05);
+        lowCutoff = floor(numel(numData)*cutLowest/100);
         condAbund(sortData(1:lowCutoff)) = nan;
         % Combine conditions
         filtAbund(:,i) = condAbund;

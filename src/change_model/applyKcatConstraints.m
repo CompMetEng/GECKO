@@ -3,7 +3,8 @@ function model = applyKcatConstraints(model,varargin)
 %
 % Existing enzyme constraints are first removed (unless updateRxns is
 % provided), and new constraints are defined based on the content of
-% model.ec.kcat.
+% model.ec.kcat. When every kcat is 0, the existing constraints are removed
+% and no new ones are written.
 %
 % Parameters
 % ----------
@@ -16,8 +17,13 @@ function model = applyKcatConstraints(model,varargin)
 %     if not all enzyme constraints should be updated, this can be given as
 %     either a logical vector of length model.ec.rxns, a vector of
 %     model.ec.rxns indices, or a (cell array of) string(s) with
-%     model.ec.rxns identifiers. For light models, these reactions should
-%     match model.rxns.
+%     model.ec.rxns identifiers. For light models, a (cell array of) string(s)
+%     may hold reaction identifiers of model.rxns or of model.ec.rxns (with
+%     the ###_ prefix); a reaction is then updated as a whole, with all its
+%     isozymes. An identifier that is in both or in neither raises the
+%     error applyKcatConstraints:ambiguousReaction or
+%     applyKcatConstraints:unknownReaction. A logical vector or indices
+%     refer to model.rxns for light models.
 %
 % Returns
 % -------
@@ -54,6 +60,23 @@ elseif isnumeric(updateRxns)
     updateRxns = updateRxnsLog;
 elseif iscellstr(updateRxns) || ischar(updateRxns) || isstring(updateRxns)
     updateRxnsIds = convertCharArray(updateRxns);
+    updateRxnsIds = updateRxnsIds(:);
+    if model.ec.geckoLight
+        isCobra = ismember(updateRxnsIds,model.rxns);
+        isEc    = ismember(updateRxnsIds,model.ec.rxns);
+        if any(isCobra & isEc)
+            error('applyKcatConstraints:ambiguousReaction', ...
+                'The identifiers %s are in both model.rxns and model.ec.rxns.', ...
+                strjoin(updateRxnsIds(isCobra & isEc),', '))
+        end
+        if any(~isCobra & ~isEc)
+            error('applyKcatConstraints:unknownReaction', ...
+                'The identifiers %s are in neither model.rxns nor model.ec.rxns.', ...
+                strjoin(updateRxnsIds(~isCobra & ~isEc),', '))
+        end
+        updateRxnsIds = [updateRxnsIds(isCobra); extractAfter(updateRxnsIds(isEc),4)];
+        updateRxnsIds = updateRxnsIds(:);
+    end
     updateRxns = ismember(rxns,updateRxnsIds);
 end
  
@@ -66,8 +89,9 @@ if ~isfield(model,'ec')
            ' not a valid GECKO3 ecModel. First run makeEcModel(model).'])
 end
 if all(model.ec.kcat==0)
-    printOrange('WARNING: No kcat values are provided in model.ec.kcat, model remains unchanged.\n');
-    return
+    % The existing enzyme constraints of the selected reactions are still
+    % cleared below, and no new ones are written.
+    printOrange('WARNING: No kcat values are provided in model.ec.kcat, existing enzyme constraints are cleared and no new ones are written.\n');
 end
 
 %Clear existing incorporation of enzyme usage
@@ -135,12 +159,17 @@ else %GECKO light formulation, where prot_pool represents all usages
         % summed per reaction), and divide by their kcat, to get a vector
         % of MW/kcat values.
         MWkcat = (model.ec.rxnEnzMat(ecIdx,:) * model.ec.mw) ./ model.ec.kcat(ecIdx);
-        % If kcat was zero, MWkcat is Inf. If no enzyme info was found,
-        % MWkcat is NaN. Drop those isozymes *before* selecting the
-        % cheapest one: correcting them to zero and including them in the
-        % min() below would let an isozyme with no kcat assigned always
-        % win over a real kcat on another isozyme of the same reaction.
-        validKcat = ~isinf(MWkcat) & ~isnan(MWkcat);
+        % If kcat was zero, MWkcat is Inf (or NaN without enzymes). An
+        % isozyme row without any enzyme has MWkcat zero. Drop those
+        % isozymes *before* selecting the cheapest one: including them in
+        % the min() below would let an isozyme with no kcat or no enzyme
+        % always win over a real kcat on another isozyme of the same reaction.
+        % A row with a kcat that is not positive or an enzyme mass that is not
+        % positive has no usable cost either.
+        hasEnzyme = full(sum(model.ec.rxnEnzMat(ecIdx,:) ~= 0,2)) > 0;
+        enzMass   = full(model.ec.rxnEnzMat(ecIdx,:) * model.ec.mw);
+        validKcat = ~isinf(MWkcat) & ~isnan(MWkcat) & hasEnzyme & ...
+            model.ec.kcat(ecIdx) > 0 & enzMass > 0;
         if any(validKcat)
             % Select the lowest MW/kcat (= most efficient), and convert to /hour
             model.S(prot_pool_idx, hasEc(i)) = -min(MWkcat(validKcat)/3600);

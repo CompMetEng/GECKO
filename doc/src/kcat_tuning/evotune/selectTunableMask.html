@@ -1,0 +1,123 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of selectTunableMask</title>
+  <meta name="keywords" content="selectTunableMask">
+  <meta name="description" content="selectTunableMask  Build a tunableMask from a screenKcatLeverage report.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="../index.html">kcat_tuning</a> &gt; <a href="index.html">evotune</a> &gt; selectTunableMask.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../../index.html"><img alt="<" border="0" src="../../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/kcat_tuning/evotune&nbsp;<img alt=">" border="0" src="../../../right.png"></a></td></tr></table>-->
+
+<h1>selectTunableMask
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+<div class="box"><strong>selectTunableMask  Build a tunableMask from a screenKcatLeverage report.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+<div class="box"><strong>function mask = selectTunableMask(ecModel,screen,varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> selectTunableMask  Build a tunableMask from a screenKcatLeverage report.
+
+ Keeps the fewest highest-ranked groups whose combined leverage reaches
+ targetImpactShare of the total -- a relative cutoff, so the same
+ targetImpactShare selects a comparable quality of parameter set on any
+ model, rather than an absolute leverage value or a fixed count
+ calibrated on a different model's scale.
+
+ Pure and cheap -- no simulation, only screen is read.
+
+ Parameters
+ ----------
+ ecModel : struct
+ screen : table
+     as returned by screenKcatLeverage.
+
+ Name-Value Arguments
+ --------------------
+ targetImpactShare : double
+     default 0.9. Not a validated universal constant -- check the
+     resulting mask's size against screenKcatLeverage's own curve before
+     trusting it on a new model.
+
+ Returns
+ -------
+ mask : logical
+     length numel(ecModel.ec.rxns).
+
+ See also
+ --------
+ <a href="screenKcatLeverage.html" class="code" title="function screen = screenKcatLeverage(ecModel,varargin)">screenKcatLeverage</a>, <a href="cmaesKcatTuning.html" class="code" title="function [ecModel,result] = cmaesKcatTuning(ecModel,varargin)">cmaesKcatTuning</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../../../matlabicon.gif)">
+<li><a href="cmaesKcatTuning.html" class="code" title="function [ecModel,result] = cmaesKcatTuning(ecModel,varargin)">cmaesKcatTuning</a>	cmaesKcatTuning  Tune kcats against experimental data with CMA-ES.</li><li><a href="tunePriorPenaltyWeight.html" class="code" title="function sweepTable = tunePriorPenaltyWeight(ecModel,varargin)">tunePriorPenaltyWeight</a>	tunePriorPenaltyWeight  Sweep priorPenaltyWeight and report the</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function mask = selectTunableMask(ecModel,screen,varargin)</a>
+0002 <span class="comment">% selectTunableMask  Build a tunableMask from a screenKcatLeverage report.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Keeps the fewest highest-ranked groups whose combined leverage reaches</span>
+0005 <span class="comment">% targetImpactShare of the total -- a relative cutoff, so the same</span>
+0006 <span class="comment">% targetImpactShare selects a comparable quality of parameter set on any</span>
+0007 <span class="comment">% model, rather than an absolute leverage value or a fixed count</span>
+0008 <span class="comment">% calibrated on a different model's scale.</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% Pure and cheap -- no simulation, only screen is read.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Parameters</span>
+0013 <span class="comment">% ----------</span>
+0014 <span class="comment">% ecModel : struct</span>
+0015 <span class="comment">% screen : table</span>
+0016 <span class="comment">%     as returned by screenKcatLeverage.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% Name-Value Arguments</span>
+0019 <span class="comment">% --------------------</span>
+0020 <span class="comment">% targetImpactShare : double</span>
+0021 <span class="comment">%     default 0.9. Not a validated universal constant -- check the</span>
+0022 <span class="comment">%     resulting mask's size against screenKcatLeverage's own curve before</span>
+0023 <span class="comment">%     trusting it on a new model.</span>
+0024 <span class="comment">%</span>
+0025 <span class="comment">% Returns</span>
+0026 <span class="comment">% -------</span>
+0027 <span class="comment">% mask : logical</span>
+0028 <span class="comment">%     length numel(ecModel.ec.rxns).</span>
+0029 <span class="comment">%</span>
+0030 <span class="comment">% See also</span>
+0031 <span class="comment">% --------</span>
+0032 <span class="comment">% screenKcatLeverage, cmaesKcatTuning</span>
+0033 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0034     <span class="string">'targetImpactShare'</span>, 0.9});
+0035 targetImpactShare = p.targetImpactShare;
+0036 
+0037 mask = false(numel(ecModel.ec.rxns),1);
+0038 <span class="keyword">if</span> isempty(screen) || height(screen) == 0
+0039     <span class="keyword">return</span>
+0040 <span class="keyword">end</span>
+0041 prevCum = [0; screen.cumLeverageShare(1:end-1)];
+0042 keep = prevCum &lt; targetImpactShare;
+0043 <span class="keyword">for</span> i = find(keep)'
+0044     mask(screen.positions{i}) = true;
+0045 <span class="keyword">end</span>
+0046 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

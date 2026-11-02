@@ -6,6 +6,10 @@ function kcatList = readOpenKineticsPredictorOutput(model, varargin)
 % constructs a kcatList structure, that can be used by assignKcatValues() to
 % populate the ecModel with kcat values.
 %
+% CatRange predicts a class of kcat values, which OKP returns as its range
+% (for instance '10 to 100 s^-1'). It is read as the geometric midpoint of
+% the range, or half the upper bound for the class starting at 0.
+%
 % The per-entry `Source kcat` column (e.g. 'Prediction from CatPred',
 % 'BRENDA', 'Sabio-RK', 'UniProt') is preserved in kcatList.kcatSource so
 % that assignKcatValues() records the actual provenance of each value.
@@ -39,6 +43,8 @@ function kcatList = readOpenKineticsPredictorOutput(model, varargin)
 % - genes : gene identifiers, matching model.ec.genes.
 % - substrates : substrate names, matching model.metNames.
 % - kcats : kcat values in /sec.
+% - similarity : the enzyme's highest sequence similarity to the method's
+%   training data, in percent (NaN without the similarity column)
 % - kcatSource : per-entry source as reported by OKP, prefixed with 'OKP-'
 %   (e.g. 'OKP-CatPred', 'OKP-BRENDA', 'OKP-Sabio-RK', 'OKP-UniProt').
 %
@@ -92,8 +98,22 @@ if size(raw,2) < 5
     error('OKP output file does not have the expected 5 columns (kcat, Source kcat, Extra Info kcat, Protein Sequence, Substrate): %s', outFile)
 end
 
-% Drop header row
+% Drop header row; the 'max similarity to <method> training data' column,
+% when present, gives the similarity.
+header = cellfun(@(h) char(string(h)), raw(1,:), 'UniformOutput', false);
+simCol = find(startsWith(header, 'max similarity to'), 1);
 raw = raw(2:end, :);
+similarity = nan(size(raw, 1), 1);
+if ~isempty(simCol)
+    for i = 1:size(raw, 1)
+        v = raw{i, simCol};
+        if isnumeric(v) && ~isempty(v)
+            similarity(i) = v;
+        elseif ischar(v) || isstring(v)
+            similarity(i) = str2double(v);
+        end
+    end
+end
 
 kcatsCol      = raw(:,1);
 sourceKcatCol = raw(:,2);
@@ -108,7 +128,7 @@ for i = 1:numel(kcatsCol)
     if isnumeric(v)
         kcats(i) = v;
     elseif ischar(v) || isstring(v)
-        kcats(i) = str2double(v);
+        kcats(i) = kcatFromText(char(v));
     end
 end
 
@@ -123,6 +143,7 @@ kcats         = kcats(valid);
 sequences     = sequences(valid);
 smiles        = smiles(valid);
 sourceKcatCol = sourceKcatCol(valid);
+similarity    = similarity(valid);
 
 if isempty(kcats)
     error('OKP file does not contain any numeric kcat values. Run the job at https://predictor.openkinetics.org/ first.')
@@ -150,6 +171,7 @@ genesOut      = cell(0,1);
 substratesOut = cell(0,1);
 kcatsOut      = zeros(0,1);
 sourceOut     = cell(0,1);
+similarityOut = zeros(0,1);
 unmatched     = 0;
 
 for i = 1:numel(sequences)
@@ -208,6 +230,7 @@ for i = 1:numel(sequences)
         substratesOut{end+1,1} = subName;
         kcatsOut(end+1,1)      = kcats(i);
         sourceOut{end+1,1}     = sourceKcatCol{i};
+        similarityOut(end+1,1) = similarity(i);
     end
 end
 
@@ -234,6 +257,7 @@ kcatList.genes      = genesOut;
 kcatList.substrates = substratesOut;
 kcatList.kcats      = kcatsOut;
 kcatList.kcatSource = kcatSource;
+kcatList.similarity = similarityOut;
 end
 
 function c = normalizeCellStrings(c)
@@ -253,5 +277,27 @@ for i = 1:numel(c)
     elseif ~ischar(v)
         c{i} = char(string(v));
     end
+end
+end
+
+function kcat = kcatFromText(v)
+% A number, or a CatRange class range '<low> to <high> s^-1' as its
+% geometric midpoint (half the upper bound when the class starts at 0).
+kcat = str2double(v);
+if ~isnan(kcat)
+    return
+end
+bounds = regexp(strtrim(v), '^([0-9.eE+-]+)\s+to\s+([0-9.eE+-]+)(\s*s\^-1)?$', 'tokens', 'once');
+if isempty(bounds)
+    return
+end
+low = str2double(bounds{1});
+high = str2double(bounds{2});
+if isnan(low) || isnan(high)
+    return
+elseif low > 0
+    kcat = sqrt(low * high);
+else
+    kcat = high / 2;
 end
 end

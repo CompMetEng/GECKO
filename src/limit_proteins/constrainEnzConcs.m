@@ -25,7 +25,8 @@ function model = constrainEnzConcs(model, varargin)
 %
 % Notes
 % -----
-% To populate model.ec.concs you should run fillEnzConcs.
+% A negative concentration in model.ec.concs is contradictory data and
+% raises the error constrainEnzConcs:negativeConcentration. To populate model.ec.concs you should run fillEnzConcs.
 %
 % Examples
 % --------
@@ -63,6 +64,11 @@ if removeConstraints
     protCons = [];
 else
     protCons = ~isnan(model.ec.concs);
+    if any(model.ec.concs(protCons) < 0)
+        error('constrainEnzConcs:negativeConcentration', ...
+            'model.ec.concs has a negative concentration for %s.', ...
+            strjoin(model.ec.enzymes(model.ec.concs < 0), ', '))
+    end
 end
 
 %Set all reactions to draw from prot_pool (forward: prot_pool -> prot_<id>)

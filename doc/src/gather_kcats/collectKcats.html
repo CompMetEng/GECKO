@@ -1,0 +1,628 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of collectKcats</title>
+  <meta name="keywords" content="collectKcats">
+  <meta name="description" content="collectKcats  Decide one kcat per reaction from the kcat source files.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">gather_kcats</a> &gt; collectKcats.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/gather_kcats&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>collectKcats
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>collectKcats  Decide one kcat per reaction from the kcat source files.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function [decisions, report, ecModel] = collectKcats(model, varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> collectKcats  Decide one kcat per reaction from the kcat source files.
+
+ Combines the kcat source files in data/kcats (see kcatsFromBrenda,
+ kcatsFromDLKcat, kcatsFromOKP and saveKcatSource) as [kcat_assignment] in
+ model_adapter.toml sets, without changing the model given. assignKcats
+ applies the decisions.
+
+ The order is a preset or a list of stages:
+
+     [kcat_assignment]
+     preset = &quot;brenda_ec_tree&quot;    # the default; or ec_tree_homologs, ec_tree_okp, okp,
+                                  # gecko_median, gecko_classic
+     isozymes = true              # fill from isozymes after the stages
+     standard = true              # standard kcat for the rest
+
+     # instead of a preset:
+     [[kcat_assignment.stage]]
+     action = &quot;select&quot;            # or &quot;combine&quot;
+     sources = [&quot;custom&quot;, &quot;database_top&quot;, &quot;ec_tree&quot;]
+     criteria = &quot;max&quot;             # select: among several values of one source
+     top_origin_limit = 1
+
+     [kcat_sources.okp]
+     methods = [&quot;CataPro&quot;, &quot;UniKP&quot;]   # the okp source group
+
+ A stage decides the reactions that are still open:
+ - select: the first listed source with a value (see mergeKcats). Sources
+   are the names of source files (custom, ec_tree, dlkcat, okp_catapro,
+   ...) and the BRENDA quality tiers database_exact, database_top and
+   database_bottom, which read brenda.tsv.
+ - combine: all listed sources with a value, each corrected for its bias
+   and weighted by 1 / its error variance, both for the source's evidence
+   for that reaction (the EC tree: measurements of the EC and its EC
+   level; an OKP method: the enzyme's similarity to the method's training
+   sequences). The parameters come with the BRENDA files
+   (kcatCombineParams.tsv). model.ec.source reads 'combined (sd=&lt;log10
+   sd&gt;, n=&lt;sources&gt;)'; sd is the uncertainty for a new measurement.
+ In both, okp stands for the OKP methods of [kcat_sources.okp] methods
+ (default: all methods with combination parameters).
+
+ The presets:
+ - brenda_ec_tree (the default): custom kcats, the BRENDA median of
+   measurements of the organism on the reaction's substrate (origin 1,
+   without EC wildcards), the EC tree (kcatsFromECTree); then the OKP
+   methods combined for the reactions left (without an EC number).
+ - ec_tree_homologs: custom kcats, the organism's own BRENDA value; then
+   the EC tree and homologs (kcatsFromHomologs) combined; then the OKP
+   methods combined.
+ - ec_tree_okp: custom kcats, the organism's own BRENDA value; then the EC
+   tree, homologs and the OKP methods combined; then the OKP methods
+   combined.
+ - okp: custom kcats; then the OKP methods combined.
+ - gecko_median: custom kcats, the BRENDA median of matches without EC
+   wildcards from the organism or other organisms, with or without the
+   substrate (origin 1 to 4), DLKcat, then the other BRENDA matches (EC
+   wildcards, and specific activities, origin 5 and 6).
+ - gecko_classic: as gecko_median with the BRENDA maximum and the
+   specific-activity matches above DLKcat (origin up to 6), as the GECKO 3
+   tutorial.
+ Against measured kcats hidden from the search, the EC tree was closer
+ than the BRENDA median at origins 2 and 4 and with EC wildcards and as
+ close at origins 1 and 3; the EC tree combined with the OKP methods was
+ slightly closer than the EC tree, and the OKP methods combined as close.
+ In ecModels, values combined with predictions set high-turnover enzymes
+ such as ATP synthase too low, which is why the default uses predictions
+ only where there is no value from measurements. The BRENDA aggregation is
+ [kcat_sources.brenda] aggregation (see updateKcatSources).
+
+ After the stages:
+ - custom kcats of data/customKcats.tsv are applied (applyCustomKcats),
+   when a stage lists custom but there is no data/kcats/custom.tsv;
+ - with isozymes, reactions without a kcat take one from their isozymes
+   (getKcatAcrossIsozymes);
+ - with standard, the remaining reactions get the standard kcat
+   (getStandardKcat).
+
+ A source file a stage names that does not exist is reported and left out.
+
+ Parameters
+ ----------
+ model : struct
+     an ecModel in GECKO 3 format (with ecModel.ec structure).
+
+ Name-Value Arguments
+ --------------------
+ modelAdapter : ModelAdapter
+     a loaded model adapter (default: the current default model adapter).
+ writeReport : logical
+     write the decisions to output/&lt;model id&gt;_kcatDecisions.tsv (default
+     true).
+
+ Returns
+ -------
+ decisions : table
+     one row per model.ec reaction: ecRxn, stage (the stage number, or
+     custom, isozymes, standard, or empty when no kcat was found), source
+     (as in model.ec.source), kcat, candidates (the number of values the
+     deciding source had for the reaction, or of sources combined),
+     spreadLog10 (their range, in log10 units) and sdLog10 (the
+     uncertainty of a combined value).
+ report : struct
+     - preset: the preset used, or '' with stages;
+     - missing: source files the stages name that do not exist;
+     - sources: per source file loaded, its unmatched, partial and invalid
+       rows (see loadKcatSource).
+ ecModel : struct
+     the model with the decided kcats, before applyKcatConstraints; this
+     is what assignKcats returns, after applying the constraints.
+
+ Examples
+ --------
+     decisions = collectKcats(ecModel);
+     decisions(strcmp(decisions.stage, ''), :)   % reactions without a kcat
+
+ See also
+ --------
+ <a href="assignKcats.html" class="code" title="function [model, decisions, report] = assignKcats(model, varargin)">assignKcats</a>, <a href="updateKcatSources.html" class="code" title="function report = updateKcatSources(model, varargin)">updateKcatSources</a>, <a href="loadKcatSource.html" class="code" title="function [kcatList, report] = loadKcatSource(model, name, varargin)">loadKcatSource</a>, <a href="mergeKcats.html" class="code" title="function mergedKcatList = mergeKcats(kcatLists, sourcePriority, varargin)">mergeKcats</a>, <a href="assignKcatValues.html" class="code" title="function [model, rxnIdx] = assignKcatValues(model,kcatList,varargin)">assignKcatValues</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="assignKcatValues.html" class="code" title="function [model, rxnIdx] = assignKcatValues(model,kcatList,varargin)">assignKcatValues</a>	assignKcatValues  Select one kcat value per reaction and write to model.ec.</li><li><a href="getStandardKcat.html" class="code" title="function [model, rxnsMissingGPR, standardMW, standardKcat, rxnsNoKcat] = getStandardKcat(model, varargin)">getStandardKcat</a>	getStandardKcat  Assign standard kcat and MW to reactions without enzymes.</li><li><a href="kcatAssignmentConfig.html" class="code" title="function config = kcatAssignmentConfig(params)">kcatAssignmentConfig</a>	kcatAssignmentConfig  The kcat assignment settings of a model adapter.</li><li><a href="loadKcatSource.html" class="code" title="function [kcatList, report] = loadKcatSource(model, name, varargin)">loadKcatSource</a>	loadKcatSource  Read a kcat source file and map its rows to an ecModel.</li><li><a href="mergeKcats.html" class="code" title="function mergedKcatList = mergeKcats(kcatLists, sourcePriority, varargin)">mergeKcats</a>	mergeKcats  Merge any number of kcatLists, keeping the highest-priority</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="assignKcats.html" class="code" title="function [model, decisions, report] = assignKcats(model, varargin)">assignKcats</a>	assignKcats  Assign kcats from the kcat source files and apply them.</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function list = loadSource(name)</a></li><li><a href="#_sub2" class="code">function s = normalizeSource(label)</a></li><li><a href="#_sub3" class="code">function name = sourceFile(token)</a></li><li><a href="#_sub4" class="code">function checkOptions(args, names, functionName)</a></li><li><a href="#_sub5" class="code">function params = loadCombineParams(modelAdapter)</a></li><li><a href="#_sub6" class="code">function c = combineKcats(names, lists, openRxns, params)</a></li><li><a href="#_sub7" class="code">function b = evidenceBin(source, detail)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [decisions, report, ecModel] = collectKcats(model, varargin)</a>
+0002 <span class="comment">% collectKcats  Decide one kcat per reaction from the kcat source files.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Combines the kcat source files in data/kcats (see kcatsFromBrenda,</span>
+0005 <span class="comment">% kcatsFromDLKcat, kcatsFromOKP and saveKcatSource) as [kcat_assignment] in</span>
+0006 <span class="comment">% model_adapter.toml sets, without changing the model given. assignKcats</span>
+0007 <span class="comment">% applies the decisions.</span>
+0008 <span class="comment">%</span>
+0009 <span class="comment">% The order is a preset or a list of stages:</span>
+0010 <span class="comment">%</span>
+0011 <span class="comment">%     [kcat_assignment]</span>
+0012 <span class="comment">%     preset = &quot;brenda_ec_tree&quot;    # the default; or ec_tree_homologs, ec_tree_okp, okp,</span>
+0013 <span class="comment">%                                  # gecko_median, gecko_classic</span>
+0014 <span class="comment">%     isozymes = true              # fill from isozymes after the stages</span>
+0015 <span class="comment">%     standard = true              # standard kcat for the rest</span>
+0016 <span class="comment">%</span>
+0017 <span class="comment">%     # instead of a preset:</span>
+0018 <span class="comment">%     [[kcat_assignment.stage]]</span>
+0019 <span class="comment">%     action = &quot;select&quot;            # or &quot;combine&quot;</span>
+0020 <span class="comment">%     sources = [&quot;custom&quot;, &quot;database_top&quot;, &quot;ec_tree&quot;]</span>
+0021 <span class="comment">%     criteria = &quot;max&quot;             # select: among several values of one source</span>
+0022 <span class="comment">%     top_origin_limit = 1</span>
+0023 <span class="comment">%</span>
+0024 <span class="comment">%     [kcat_sources.okp]</span>
+0025 <span class="comment">%     methods = [&quot;CataPro&quot;, &quot;UniKP&quot;]   # the okp source group</span>
+0026 <span class="comment">%</span>
+0027 <span class="comment">% A stage decides the reactions that are still open:</span>
+0028 <span class="comment">% - select: the first listed source with a value (see mergeKcats). Sources</span>
+0029 <span class="comment">%   are the names of source files (custom, ec_tree, dlkcat, okp_catapro,</span>
+0030 <span class="comment">%   ...) and the BRENDA quality tiers database_exact, database_top and</span>
+0031 <span class="comment">%   database_bottom, which read brenda.tsv.</span>
+0032 <span class="comment">% - combine: all listed sources with a value, each corrected for its bias</span>
+0033 <span class="comment">%   and weighted by 1 / its error variance, both for the source's evidence</span>
+0034 <span class="comment">%   for that reaction (the EC tree: measurements of the EC and its EC</span>
+0035 <span class="comment">%   level; an OKP method: the enzyme's similarity to the method's training</span>
+0036 <span class="comment">%   sequences). The parameters come with the BRENDA files</span>
+0037 <span class="comment">%   (kcatCombineParams.tsv). model.ec.source reads 'combined (sd=&lt;log10</span>
+0038 <span class="comment">%   sd&gt;, n=&lt;sources&gt;)'; sd is the uncertainty for a new measurement.</span>
+0039 <span class="comment">% In both, okp stands for the OKP methods of [kcat_sources.okp] methods</span>
+0040 <span class="comment">% (default: all methods with combination parameters).</span>
+0041 <span class="comment">%</span>
+0042 <span class="comment">% The presets:</span>
+0043 <span class="comment">% - brenda_ec_tree (the default): custom kcats, the BRENDA median of</span>
+0044 <span class="comment">%   measurements of the organism on the reaction's substrate (origin 1,</span>
+0045 <span class="comment">%   without EC wildcards), the EC tree (kcatsFromECTree); then the OKP</span>
+0046 <span class="comment">%   methods combined for the reactions left (without an EC number).</span>
+0047 <span class="comment">% - ec_tree_homologs: custom kcats, the organism's own BRENDA value; then</span>
+0048 <span class="comment">%   the EC tree and homologs (kcatsFromHomologs) combined; then the OKP</span>
+0049 <span class="comment">%   methods combined.</span>
+0050 <span class="comment">% - ec_tree_okp: custom kcats, the organism's own BRENDA value; then the EC</span>
+0051 <span class="comment">%   tree, homologs and the OKP methods combined; then the OKP methods</span>
+0052 <span class="comment">%   combined.</span>
+0053 <span class="comment">% - okp: custom kcats; then the OKP methods combined.</span>
+0054 <span class="comment">% - gecko_median: custom kcats, the BRENDA median of matches without EC</span>
+0055 <span class="comment">%   wildcards from the organism or other organisms, with or without the</span>
+0056 <span class="comment">%   substrate (origin 1 to 4), DLKcat, then the other BRENDA matches (EC</span>
+0057 <span class="comment">%   wildcards, and specific activities, origin 5 and 6).</span>
+0058 <span class="comment">% - gecko_classic: as gecko_median with the BRENDA maximum and the</span>
+0059 <span class="comment">%   specific-activity matches above DLKcat (origin up to 6), as the GECKO 3</span>
+0060 <span class="comment">%   tutorial.</span>
+0061 <span class="comment">% Against measured kcats hidden from the search, the EC tree was closer</span>
+0062 <span class="comment">% than the BRENDA median at origins 2 and 4 and with EC wildcards and as</span>
+0063 <span class="comment">% close at origins 1 and 3; the EC tree combined with the OKP methods was</span>
+0064 <span class="comment">% slightly closer than the EC tree, and the OKP methods combined as close.</span>
+0065 <span class="comment">% In ecModels, values combined with predictions set high-turnover enzymes</span>
+0066 <span class="comment">% such as ATP synthase too low, which is why the default uses predictions</span>
+0067 <span class="comment">% only where there is no value from measurements. The BRENDA aggregation is</span>
+0068 <span class="comment">% [kcat_sources.brenda] aggregation (see updateKcatSources).</span>
+0069 <span class="comment">%</span>
+0070 <span class="comment">% After the stages:</span>
+0071 <span class="comment">% - custom kcats of data/customKcats.tsv are applied (applyCustomKcats),</span>
+0072 <span class="comment">%   when a stage lists custom but there is no data/kcats/custom.tsv;</span>
+0073 <span class="comment">% - with isozymes, reactions without a kcat take one from their isozymes</span>
+0074 <span class="comment">%   (getKcatAcrossIsozymes);</span>
+0075 <span class="comment">% - with standard, the remaining reactions get the standard kcat</span>
+0076 <span class="comment">%   (getStandardKcat).</span>
+0077 <span class="comment">%</span>
+0078 <span class="comment">% A source file a stage names that does not exist is reported and left out.</span>
+0079 <span class="comment">%</span>
+0080 <span class="comment">% Parameters</span>
+0081 <span class="comment">% ----------</span>
+0082 <span class="comment">% model : struct</span>
+0083 <span class="comment">%     an ecModel in GECKO 3 format (with ecModel.ec structure).</span>
+0084 <span class="comment">%</span>
+0085 <span class="comment">% Name-Value Arguments</span>
+0086 <span class="comment">% --------------------</span>
+0087 <span class="comment">% modelAdapter : ModelAdapter</span>
+0088 <span class="comment">%     a loaded model adapter (default: the current default model adapter).</span>
+0089 <span class="comment">% writeReport : logical</span>
+0090 <span class="comment">%     write the decisions to output/&lt;model id&gt;_kcatDecisions.tsv (default</span>
+0091 <span class="comment">%     true).</span>
+0092 <span class="comment">%</span>
+0093 <span class="comment">% Returns</span>
+0094 <span class="comment">% -------</span>
+0095 <span class="comment">% decisions : table</span>
+0096 <span class="comment">%     one row per model.ec reaction: ecRxn, stage (the stage number, or</span>
+0097 <span class="comment">%     custom, isozymes, standard, or empty when no kcat was found), source</span>
+0098 <span class="comment">%     (as in model.ec.source), kcat, candidates (the number of values the</span>
+0099 <span class="comment">%     deciding source had for the reaction, or of sources combined),</span>
+0100 <span class="comment">%     spreadLog10 (their range, in log10 units) and sdLog10 (the</span>
+0101 <span class="comment">%     uncertainty of a combined value).</span>
+0102 <span class="comment">% report : struct</span>
+0103 <span class="comment">%     - preset: the preset used, or '' with stages;</span>
+0104 <span class="comment">%     - missing: source files the stages name that do not exist;</span>
+0105 <span class="comment">%     - sources: per source file loaded, its unmatched, partial and invalid</span>
+0106 <span class="comment">%       rows (see loadKcatSource).</span>
+0107 <span class="comment">% ecModel : struct</span>
+0108 <span class="comment">%     the model with the decided kcats, before applyKcatConstraints; this</span>
+0109 <span class="comment">%     is what assignKcats returns, after applying the constraints.</span>
+0110 <span class="comment">%</span>
+0111 <span class="comment">% Examples</span>
+0112 <span class="comment">% --------</span>
+0113 <span class="comment">%     decisions = collectKcats(ecModel);</span>
+0114 <span class="comment">%     decisions(strcmp(decisions.stage, ''), :)   % reactions without a kcat</span>
+0115 <span class="comment">%</span>
+0116 <span class="comment">% See also</span>
+0117 <span class="comment">% --------</span>
+0118 <span class="comment">% assignKcats, updateKcatSources, loadKcatSource, mergeKcats, assignKcatValues</span>
+0119 
+0120 <a href="#_sub4" class="code" title="subfunction checkOptions(args, names, functionName)">checkOptions</a>(varargin, {<span class="string">'modelAdapter'</span>,<span class="string">'writeReport'</span>}, <span class="string">'collectKcats'</span>);
+0121 p = parseGECKOargs(varargin, {<span class="string">'modelAdapter'</span>, []; <span class="string">'writeReport'</span>, true});
+0122 modelAdapter = p.modelAdapter;
+0123 <span class="keyword">if</span> isempty(modelAdapter)
+0124     modelAdapter = ModelAdapterManager.getDefault();
+0125     <span class="keyword">if</span> isempty(modelAdapter)
+0126         error(<span class="string">'Either send in a modelAdapter or set the default model adapter in the ModelAdapterManager.'</span>)
+0127     <span class="keyword">end</span>
+0128 <span class="keyword">end</span>
+0129 params = modelAdapter.params;
+0130 config = <a href="kcatAssignmentConfig.html" class="code" title="function config = kcatAssignmentConfig(params)">kcatAssignmentConfig</a>(params);
+0131 kcatDir = fullfile(params.path, <span class="string">'data'</span>, <span class="string">'kcats'</span>);
+0132 
+0133 ecModel = model;
+0134 nEc = numel(ecModel.ec.rxns);
+0135 ecModel.ec.kcat(:) = 0;
+0136 ecModel.ec.source(:) = {<span class="string">''</span>};
+0137 stage = repmat({<span class="string">''</span>}, nEc, 1);
+0138 candidates = zeros(nEc, 1);
+0139 spread = nan(nEc, 1);
+0140 sd = nan(nEc, 1);
+0141 combineParams = [];
+0142 
+0143 report.preset = config.preset;
+0144 report.missing = {};
+0145 report.sources = struct();
+0146 loaded = struct();
+0147 legacyCustom = false;
+0148 
+0149     <a name="_sub1" href="#_subfunctions" class="code">function list = loadSource(name)</a>
+0150         <span class="comment">% The kcat list of a source file, or [] when it does not exist.</span>
+0151         list = [];
+0152         file = fullfile(kcatDir, [name <span class="string">'.tsv'</span>]);
+0153         <span class="keyword">if</span> isfile(file)
+0154             [list, rep] = <a href="loadKcatSource.html" class="code" title="function [kcatList, report] = loadKcatSource(model, name, varargin)">loadKcatSource</a>(ecModel, file);
+0155             report.sources.(name) = rep;
+0156         <span class="keyword">elseif</span> strcmp(name, <span class="string">'custom'</span>) &amp;&amp; isfile(fullfile(params.path, <span class="string">'data'</span>, <span class="string">'customKcats.tsv'</span>))
+0157             legacyCustom = true;
+0158         <span class="keyword">else</span>
+0159             report.missing{end+1} = name;
+0160             printOrange(sprintf([<span class="string">'No kcat source file %s; it is left out. '</span> <span class="keyword">...</span>
+0161                 <span class="string">'updateKcatSources gathers it.\n'</span>], file));
+0162         <span class="keyword">end</span>
+0163     <span class="keyword">end</span>
+0164 
+0165 <span class="keyword">for</span> s = 1:numel(config.stages)
+0166     st = config.stages(s);
+0167     <span class="keyword">if</span> strcmp(st.action, <span class="string">'combine'</span>)
+0168         names = {};
+0169         lists = {};
+0170         <span class="keyword">for</span> t = 1:numel(st.files)
+0171             name = st.files{t};
+0172             <span class="keyword">if</span> ~isfield(loaded, name)
+0173                 loaded.(name) = <a href="#_sub1" class="code" title="subfunction list = loadSource(name)">loadSource</a>(name);
+0174             <span class="keyword">end</span>
+0175             <span class="keyword">if</span> ~isempty(loaded.(name))
+0176                 names{end+1} = name; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0177                 lists{end+1} = loaded.(name); <span class="comment">%#ok&lt;AGROW&gt;</span>
+0178             <span class="keyword">end</span>
+0179         <span class="keyword">end</span>
+0180         <span class="keyword">if</span> isempty(names)
+0181             <span class="keyword">continue</span>
+0182         <span class="keyword">end</span>
+0183         <span class="keyword">if</span> isempty(combineParams)
+0184             combineParams = <a href="#_sub5" class="code" title="subfunction params = loadCombineParams(modelAdapter)">loadCombineParams</a>(modelAdapter);
+0185         <span class="keyword">end</span>
+0186         openRxns = ecModel.ec.rxns(ecModel.ec.kcat == 0);
+0187         c = <a href="#_sub6" class="code" title="subfunction c = combineKcats(names, lists, openRxns, params)">combineKcats</a>(names, lists, openRxns, combineParams);
+0188         <span class="keyword">if</span> isempty(c.rxns)
+0189             <span class="keyword">continue</span>
+0190         <span class="keyword">end</span>
+0191         [~, idx] = ismember(c.rxns, ecModel.ec.rxns);
+0192         ecModel.ec.kcat(idx) = c.kcats;
+0193         ecModel.ec.source(idx) = cellstr(compose(<span class="string">'combined (sd=%.2f, n=%d)'</span>, c.sd, c.n));
+0194         stage(idx) = {sprintf(<span class="string">'%d'</span>, s)};
+0195         candidates(idx) = c.n;
+0196         spread(idx) = c.spread;
+0197         sd(idx) = c.sd;
+0198         <span class="keyword">continue</span>
+0199     <span class="keyword">end</span>
+0200     lists = {};
+0201     priority = {};
+0202     <span class="keyword">for</span> t = 1:numel(st.files)
+0203         token = st.files{t};
+0204         name = <a href="#_sub3" class="code" title="subfunction name = sourceFile(token)">sourceFile</a>(token);
+0205         <span class="keyword">if</span> ~isfield(loaded, name)
+0206             loaded.(name) = <a href="#_sub1" class="code" title="subfunction list = loadSource(name)">loadSource</a>(name);
+0207         <span class="keyword">end</span>
+0208         list = loaded.(name);
+0209         <span class="keyword">if</span> isempty(list)
+0210             <span class="keyword">continue</span>
+0211         <span class="keyword">end</span>
+0212         <span class="keyword">if</span> ~any(cellfun(@(l) isequal(l, list), lists))
+0213             lists{end+1} = list; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0214         <span class="keyword">end</span>
+0215         <span class="keyword">if</span> startsWith(token, <span class="string">'database_'</span>)
+0216             priority{end+1} = token; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0217         <span class="keyword">else</span>
+0218             <span class="comment">% The labels of the file's rows, at the file's place in the order.</span>
+0219             labels = unique(cellfun(@<a href="#_sub2" class="code" title="subfunction s = normalizeSource(label)">normalizeSource</a>, list.kcatSource, <span class="string">'UniformOutput'</span>, false), <span class="string">'stable'</span>);
+0220             priority = [priority, labels(~ismember(labels, {<span class="string">'brenda'</span>,<span class="string">'sabio_rk'</span>}))']; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0221         <span class="keyword">end</span>
+0222     <span class="keyword">end</span>
+0223     <span class="keyword">if</span> isempty(lists) || isempty(priority)
+0224         <span class="keyword">continue</span>
+0225     <span class="keyword">end</span>
+0226     merged = <a href="mergeKcats.html" class="code" title="function mergedKcatList = mergeKcats(kcatLists, sourcePriority, varargin)">mergeKcats</a>(lists, priority, <span class="string">'topOriginLimit'</span>, st.topOriginLimit, <span class="keyword">...</span>
+0227         <span class="string">'bottomOriginLimit'</span>, st.bottomOriginLimit, <span class="string">'wildcardLimit'</span>, st.wildcardLimit);
+0228     <span class="keyword">if</span> isempty(merged.rxns)
+0229         <span class="keyword">continue</span>
+0230     <span class="keyword">end</span>
+0231     open = ecModel.ec.kcat == 0;
+0232     [ecModel, idx] = <a href="assignKcatValues.html" class="code" title="function [model, rxnIdx] = assignKcatValues(model,kcatList,varargin)">assignKcatValues</a>(ecModel, merged, <span class="string">'criteria'</span>, st.criteria, <span class="string">'overwrite'</span>, <span class="string">'false'</span>);
+0233     idx = idx(open(idx));
+0234     stage(idx) = {sprintf(<span class="string">'%d'</span>, s)};
+0235     [~, where] = ismember(merged.rxns, ecModel.ec.rxns);
+0236     valid = merged.kcats &gt; 0;
+0237     <span class="keyword">for</span> i = idx(:)'
+0238         values = merged.kcats(where == i &amp; valid);
+0239         candidates(i) = numel(values);
+0240         spread(i) = log10(max(values)) - log10(min(values));
+0241     <span class="keyword">end</span>
+0242 <span class="keyword">end</span>
+0243 
+0244 <span class="keyword">if</span> legacyCustom
+0245     before = ecModel.ec.kcat;
+0246     ecModel = applyCustomKcats(ecModel, <span class="string">'modelAdapter'</span>, modelAdapter);
+0247     changed = ecModel.ec.kcat ~= before;
+0248     stage(changed) = {<span class="string">'custom'</span>};
+0249     candidates(changed) = 1;
+0250     spread(changed) = 0;
+0251 <span class="keyword">end</span>
+0252 <span class="keyword">if</span> config.isozymes &amp;&amp; ~ecModel.ec.geckoLight
+0253     before = ecModel.ec.kcat == 0;
+0254     ecModel = getKcatAcrossIsozymes(ecModel);
+0255     stage(before &amp; ecModel.ec.kcat &gt; 0) = {<span class="string">'isozymes'</span>};
+0256 <span class="keyword">end</span>
+0257 <span class="keyword">if</span> config.standard
+0258     ecModel = <a href="getStandardKcat.html" class="code" title="function [model, rxnsMissingGPR, standardMW, standardKcat, rxnsNoKcat] = getStandardKcat(model, varargin)">getStandardKcat</a>(ecModel, <span class="string">'modelAdapter'</span>, modelAdapter);
+0259     n = numel(ecModel.ec.rxns);
+0260     stage(end+1:n) = {<span class="string">''</span>};
+0261     candidates(end+1:n) = 0;
+0262     spread(end+1:n) = NaN;
+0263     sd(end+1:n) = NaN;
+0264     stage(strcmp(ecModel.ec.source, <span class="string">'standard'</span>) &amp; ecModel.ec.kcat &gt; 0) = {<span class="string">'standard'</span>};
+0265 <span class="keyword">end</span>
+0266 
+0267 decisions = table(ecModel.ec.rxns(:), stage(:), ecModel.ec.source(:), ecModel.ec.kcat(:), <span class="keyword">...</span>
+0268     candidates(:), spread(:), sd(:), <span class="string">'VariableNames'</span>, {<span class="string">'ecRxn'</span>,<span class="string">'stage'</span>,<span class="string">'source'</span>,<span class="string">'kcat'</span>,<span class="string">'candidates'</span>, <span class="keyword">...</span>
+0269     <span class="string">'spreadLog10'</span>,<span class="string">'sdLog10'</span>});
+0270 <span class="keyword">if</span> p.writeReport
+0271     outDir = fullfile(params.path, <span class="string">'output'</span>);
+0272     <span class="keyword">if</span> ~isfolder(outDir)
+0273         mkdir(outDir);
+0274     <span class="keyword">end</span>
+0275     id = <span class="string">'ecModel'</span>;
+0276     <span class="keyword">if</span> isfield(model, <span class="string">'id'</span>) &amp;&amp; ~isempty(model.id)
+0277         id = char(model.id);
+0278     <span class="keyword">end</span>
+0279     writetable(decisions, fullfile(outDir, [id <span class="string">'_kcatDecisions.tsv'</span>]), <span class="string">'FileType'</span>, <span class="string">'text'</span>, <span class="keyword">...</span>
+0280         <span class="string">'Delimiter'</span>, <span class="string">'\t'</span>);
+0281 <span class="keyword">end</span>
+0282 nOpen = sum(strcmp(stage, <span class="string">''</span>));
+0283 fprintf(<span class="string">'Kcats decided for %d of %d reactions.\n'</span>, numel(stage) - nOpen, numel(stage));
+0284 <span class="keyword">end</span>
+0285 
+0286 <a name="_sub2" href="#_subfunctions" class="code">function s = normalizeSource(label)</a>
+0287 <span class="comment">% As mergeKcats folds source labels: lower case, other characters as '_'.</span>
+0288 s = lower(strtrim(char(label)));
+0289 s = regexprep(s, <span class="string">'[^0-9a-z]+'</span>, <span class="string">'_'</span>);
+0290 s = regexprep(s, <span class="string">'^_+|_+$'</span>, <span class="string">''</span>);
+0291 <span class="keyword">end</span>
+0292 
+0293 <a name="_sub3" href="#_subfunctions" class="code">function name = sourceFile(token)</a>
+0294 <span class="comment">% The source file a stage token reads: the BRENDA tiers read brenda.tsv.</span>
+0295 <span class="keyword">if</span> startsWith(token, <span class="string">'database_'</span>)
+0296     name = <span class="string">'brenda'</span>;
+0297 <span class="keyword">else</span>
+0298     name = token;
+0299 <span class="keyword">end</span>
+0300 <span class="keyword">end</span>
+0301 
+0302 <a name="_sub4" href="#_subfunctions" class="code">function checkOptions(args, names, functionName)</a>
+0303 <span class="comment">% Options are name-value pairs with known names, so a misspelled option is</span>
+0304 <span class="comment">% an error instead of being taken as a positional argument.</span>
+0305 id = [functionName <span class="string">':arguments'</span>];
+0306 given = args(1:2:end);
+0307 <span class="keyword">if</span> mod(numel(args), 2) ~= 0 || ~all(cellfun(@(x) ischar(x) || (isstring(x) &amp;&amp; isscalar(x)), given))
+0308     error(id, <span class="string">'Options of %s are name-value pairs. Options: %s.'</span>, functionName, strjoin(names, <span class="string">', '</span>))
+0309 <span class="keyword">end</span>
+0310 unknown = setdiff(cellfun(@char, given, <span class="string">'UniformOutput'</span>, false), names);
+0311 <span class="keyword">if</span> ~isempty(unknown)
+0312     error(id, <span class="string">'Unknown option of %s: %s. Options: %s.'</span>, functionName, strjoin(unknown, <span class="string">', '</span>), <span class="keyword">...</span>
+0313         strjoin(names, <span class="string">', '</span>))
+0314 <span class="keyword">end</span>
+0315 <span class="keyword">end</span>
+0316 
+0317 <a name="_sub5" href="#_subfunctions" class="code">function params = loadCombineParams(modelAdapter)</a>
+0318 <span class="comment">% kcatCombineParams.tsv of the BRENDA folder, or of GECKO's BRENDA release.</span>
+0319 file = fullfile(modelAdapter.getBrendaDBFolder(), <span class="string">'kcatCombineParams.tsv'</span>);
+0320 <span class="keyword">if</span> ~isfile(file)
+0321     file = fullfile(fetchBrendaAsset({<span class="string">'kcatCombineParams.tsv'</span>}), <span class="string">'kcatCombineParams.tsv'</span>);
+0322 <span class="keyword">end</span>
+0323 lines = strsplit(fileread(file), {<span class="string">'\r\n'</span>, <span class="string">'\n'</span>});
+0324 params.measurementSd = 0.48;
+0325 params.minVariance = 0.01;
+0326 params.scaleKeys = {};
+0327 params.scales = [];
+0328 k = 1;
+0329 <span class="keyword">while</span> k &lt;= numel(lines) &amp;&amp; startsWith(lines{k}, <span class="string">'#'</span>)
+0330     tok = regexp(lines{k}, <span class="string">'^#\s*([^:]+):\s*(.*)$'</span>, <span class="string">'tokens'</span>, <span class="string">'once'</span>);
+0331     <span class="keyword">if</span> ~isempty(tok)
+0332         key = strtrim(tok{1});
+0333         value = str2double(strtrim(tok{2}));
+0334         <span class="keyword">if</span> strcmp(key, <span class="string">'measurement_sd'</span>)
+0335             params.measurementSd = value;
+0336         <span class="keyword">elseif</span> strcmp(key, <span class="string">'min_variance'</span>)
+0337             params.minVariance = value;
+0338         <span class="keyword">elseif</span> startsWith(key, <span class="string">'interval_scale '</span>)
+0339             params.scaleKeys{end+1} = key(numel(<span class="string">'interval_scale '</span>)+1:end);
+0340             params.scales(end+1) = value;
+0341         <span class="keyword">end</span>
+0342     <span class="keyword">end</span>
+0343     k = k + 1;
+0344 <span class="keyword">end</span>
+0345 header = strsplit(lines{k}, <span class="string">'\t'</span>);
+0346 rows = lines(k+1:end);
+0347 rows = rows(~cellfun(@isempty, strtrim(rows)));
+0348 fields = cellfun(@(r) strsplit(r, <span class="string">'\t'</span>, <span class="string">'CollapseDelimiters'</span>, false), rows, <span class="string">'UniformOutput'</span>, false);
+0349 fields = vertcat(fields{:});
+0350 col = @(name) fields(:, strcmp(header, name));
+0351 params.source = col(<span class="string">'source'</span>);
+0352 params.bin = col(<span class="string">'bin'</span>);
+0353 params.bias = str2double(col(<span class="string">'bias'</span>));
+0354 params.variance = str2double(col(<span class="string">'variance'</span>));
+0355 <span class="keyword">end</span>
+0356 
+0357 <a name="_sub6" href="#_subfunctions" class="code">function c = combineKcats(names, lists, openRxns, params)</a>
+0358 <span class="comment">% One kcat per reaction from several sources: each source's value corrected</span>
+0359 <span class="comment">% for its bias and weighted by 1 / its error variance, both for the</span>
+0360 <span class="comment">% source's evidence bin (see evidenceBin). Several rows of one source for a</span>
+0361 <span class="comment">% reaction give their median, with the bin of best evidence; a value</span>
+0362 <span class="comment">% without a known bin gets the source's largest variance. geckopy's</span>
+0363 <span class="comment">% combine_kcats does the same.</span>
+0364 unknown = setdiff(names, params.source);
+0365 <span class="keyword">if</span> ~isempty(unknown)
+0366     error(<span class="string">'collectKcats:combine'</span>, <span class="string">'No combination parameters for %s; known sources: %s.'</span>, <span class="keyword">...</span>
+0367         strjoin(unknown, <span class="string">', '</span>), strjoin(unique(params.source), <span class="string">', '</span>))
+0368 <span class="keyword">end</span>
+0369 R = {}; S = {}; X = []; W = []; V = [];
+0370 <span class="keyword">for</span> k = 1:numel(names)
+0371     name = names{k};
+0372     list = lists{k};
+0373     keep = ismember(list.rxns, openRxns) &amp; list.kcats &gt; 0 &amp; isfinite(list.kcats);
+0374     rxns = list.rxns(keep);
+0375     values = log10(list.kcats(keep));
+0376     details = list.detail(keep);
+0377     mine = strcmp(params.source, name);
+0378     srcBins = params.bin(mine);
+0379     srcBias = params.bias(mine);
+0380     srcVar = params.variance(mine);
+0381     [~, worst] = max(srcVar);
+0382     [u, ~, g] = unique(rxns, <span class="string">'stable'</span>);
+0383     <span class="keyword">for</span> r = 1:numel(u)
+0384         rows = find(g == r);
+0385         bins = cellfun(@(d) <a href="#_sub7" class="code" title="subfunction b = evidenceBin(source, detail)">evidenceBin</a>(name, d), details(rows), <span class="string">'UniformOutput'</span>, false);
+0386         [found, where] = ismember(bins, srcBins);
+0387         <span class="keyword">if</span> any(found)
+0388             [~, best] = min(srcVar(where(found)));
+0389             pick = where(found);
+0390             pick = pick(best);
+0391         <span class="keyword">else</span>
+0392             pick = worst;
+0393         <span class="keyword">end</span>
+0394         R{end+1, 1} = u{r}; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0395         S{end+1, 1} = name; <span class="comment">%#ok&lt;AGROW&gt;</span>
+0396         V(end+1, 1) = median(values(rows)); <span class="comment">%#ok&lt;AGROW&gt;</span>
+0397         X(end+1, 1) = median(values(rows)) - srcBias(pick); <span class="comment">%#ok&lt;AGROW&gt;</span>
+0398         W(end+1, 1) = 1 / max(srcVar(pick), params.minVariance); <span class="comment">%#ok&lt;AGROW&gt;</span>
+0399     <span class="keyword">end</span>
+0400 <span class="keyword">end</span>
+0401 [u, ~, g] = unique(R, <span class="string">'stable'</span>);
+0402 c.rxns = u;
+0403 n = numel(u);
+0404 c.kcats = zeros(n, 1); c.sd = zeros(n, 1); c.n = zeros(n, 1); c.spread = zeros(n, 1);
+0405 <span class="keyword">for</span> r = 1:n
+0406     rows = g == r;
+0407     w = W(rows);
+0408     c.kcats(r) = 10 ^ (sum(w .* X(rows)) / sum(w));
+0409     srcs = S(rows);
+0410     hasOkp = any(startsWith(srcs, <span class="string">'okp_'</span>));
+0411     hasTree = any(strcmp(srcs, <span class="string">'ec_tree'</span>));
+0412     <span class="keyword">if</span> hasTree &amp;&amp; hasOkp
+0413         key = <span class="string">'ec_tree+okp'</span>;
+0414     <span class="keyword">elseif</span> hasOkp
+0415         key = <span class="string">'okp'</span>;
+0416     <span class="keyword">elseif</span> hasTree
+0417         key = <span class="string">'ec_tree+homologs'</span>;
+0418     <span class="keyword">else</span>
+0419         key = <span class="string">''</span>;
+0420     <span class="keyword">end</span>
+0421     scale = 1;
+0422     hit = strcmp(params.scaleKeys, key);
+0423     <span class="keyword">if</span> any(hit)
+0424         scale = params.scales(find(hit, 1));
+0425     <span class="keyword">end</span>
+0426     c.sd(r) = sqrt(1 / sum(w) + params.measurementSd ^ 2) * scale;
+0427     c.n(r) = sum(rows);
+0428     c.spread(r) = max(V(rows)) - min(V(rows));
+0429 <span class="keyword">end</span>
+0430 <span class="keyword">end</span>
+0431 
+0432 <a name="_sub7" href="#_subfunctions" class="code">function b = evidenceBin(source, detail)</a>
+0433 <span class="comment">% The evidence bin of a source's value, from its detail column.</span>
+0434 b = <span class="string">''</span>;
+0435 <span class="keyword">if</span> strcmp(source, <span class="string">'ec_tree'</span>)
+0436     n = regexp(detail, <span class="string">'n=(\d+)'</span>, <span class="string">'tokens'</span>, <span class="string">'once'</span>);
+0437     depth = regexp(detail, <span class="string">'depth=(\d)'</span>, <span class="string">'tokens'</span>, <span class="string">'once'</span>);
+0438     <span class="keyword">if</span> ~isempty(depth) &amp;&amp; strcmp(depth{1}, <span class="string">'4'</span>) &amp;&amp; ~isempty(n)
+0439         v = str2double(n{1});
+0440         edges = [2 5 20 100];
+0441         labels = {<span class="string">'1-2'</span>, <span class="string">'3-5'</span>, <span class="string">'6-20'</span>, <span class="string">'21-100'</span>, <span class="string">'&gt;100'</span>};
+0442         b = [<span class="string">'ec4:'</span> labels{find([v &lt;= edges, true], 1)}];
+0443     <span class="keyword">elseif</span> ~isempty(depth)
+0444         b = [<span class="string">'ec'</span> depth{1}];
+0445     <span class="keyword">else</span>
+0446         b = <span class="string">'ec0'</span>;
+0447     <span class="keyword">end</span>
+0448 <span class="keyword">elseif</span> strcmp(source, <span class="string">'homologs'</span>)
+0449     t = regexp(detail, <span class="string">'identity=([\d.]+)'</span>, <span class="string">'tokens'</span>, <span class="string">'once'</span>);
+0450     <span class="keyword">if</span> ~isempty(t) &amp;&amp; str2double(t{1}) &gt;= 0.95
+0451         b = <span class="string">'exact'</span>; <span class="comment">% the same protein: an assumed bin, see kcatCombineParams.tsv</span>
+0452     <span class="keyword">elseif</span> ~isempty(t)
+0453         labels = {<span class="string">'40'</span>, <span class="string">'50'</span>, <span class="string">'60'</span>, <span class="string">'70'</span>, <span class="string">'80'</span>, <span class="string">'90'</span>};
+0454         b = labels{find([str2double(t{1}) &lt;= [0.5 0.6 0.7 0.8 0.9], true], 1)};
+0455     <span class="keyword">end</span>
+0456 <span class="keyword">elseif</span> startsWith(source, <span class="string">'okp_'</span>)
+0457     t = regexp(detail, <span class="string">'similarity=([\d.]+)'</span>, <span class="string">'tokens'</span>, <span class="string">'once'</span>);
+0458     <span class="keyword">if</span> ~isempty(t)
+0459         labels = {<span class="string">'&lt;40'</span>, <span class="string">'40-60'</span>, <span class="string">'60-80'</span>, <span class="string">'&gt;80'</span>};
+0460         b = labels{find([str2double(t{1}) &lt;= [40 60 80], true], 1)};
+0461     <span class="keyword">end</span>
+0462 <span class="keyword">end</span>
+0463 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

@@ -1,0 +1,394 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of applyCustomKcats</title>
+  <meta name="keywords" content="applyCustomKcats">
+  <meta name="description" content="applyCustomKcats  Apply user-defined kcats to an ecModel.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../index.html">Home</a> &gt;  <a href="#">src</a> &gt; <a href="index.html">change_model</a> &gt; applyCustomKcats.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../index.html"><img alt="<" border="0" src="../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for src/change_model&nbsp;<img alt=">" border="0" src="../../right.png"></a></td></tr></table>-->
+
+<h1>applyCustomKcats
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>applyCustomKcats  Apply user-defined kcats to an ecModel.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function [model, rxnUpdated, notMatch] = applyCustomKcats(model, varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> applyCustomKcats  Apply user-defined kcats to an ecModel.
+
+ Reads data/customKcats.tsv in the obj.params.path specified in the model
+ adapter. Alternatively, a customKcats structure can be provided, as
+ specified below.
+
+ Parameters
+ ----------
+ model : struct
+     an ecModel in GECKO 3 format (with ecModel.ec structure).
+
+ Name-Value Arguments
+ --------------------
+ customKcats : struct
+     structure with custom kcat information (fields described under Notes).
+     If nothing is provided, an attempt will be made to read
+     data/customKcats.tsv from the obj.params.path folder specified in the
+     modelAdapter.
+ modelAdapter : ModelAdapter
+     a loaded model adapter (default: the current default model adapter).
+
+ Returns
+ -------
+ model : struct
+     ecModel where kcats for defined proteins have been changed.
+ rxnUpdated : cell
+     ids list of updated reactions, where new kcats were applied.
+ notMatch : table
+     reactions for which the custom information provided has a partial
+     match (at least 50%, but not 100%) with the reaction's GPR rule, for
+     the user to curate manually. Columns: rxns and name (reaction
+     identifier and name), custom enzymes (the proteins specified in
+     customKcats), enzymes in model (the enzymes annotated to the reaction
+     in the model), and rules (the reaction's GPR rule).
+
+ Notes
+ -----
+ The customKcats structure has the following fields:
+
+ - proteins : protein identifiers, multiple for the same kcat (in case of a protein complex) are separated by ' + '.
+ - genes : gene identifiers (optional, not used in matching).
+ - gene_name : short gene name (optional, not used in matching).
+ - kcat : new kcat value (one per entry).
+ - rxns : reaction identifiers, multiple for the same kcat are separated by ',' (see further explanation below).
+ - notes : will be appended to model.ec.notes, separated by ', ' from an existing note; an empty note changes nothing (optional).
+ - stoicho : complex stoichiometry, separated by ' + ' (examples: '1' or '3 + 1'), matching the order in proteins field.
+
+ An entry with an empty kcat is skipped. Protein and reaction identifiers
+ are matched exactly, including their letter case. Light ecModels are
+ supported: the rows of model.ec are matched by their ec reaction ids.
+
+ Matching order:
+
+ 1. reactions are identified by .proteins and .rxns.
+ 2. reactions are identified by .proteins only (empty .rxns entry); no
+    additional checks are made: is a reaction annotated with these
+    proteins? =&gt; its kcat will be updated, irrespective of the exact
+    reaction, direction, substrate, etc.
+ 3. reactions are identified by .rxns only (empty .proteins entry); no
+    additional checks are made: is a reaction derived from the original
+    reaction identifier =&gt; its kcat will be updated, irrespective of the
+    annotated protein.
+
+ The customKcats.rxns field reaction identifiers are from the ORIGINAL
+ model, before _EXP_ suffixes were added by makeEcModel. Reaction
+ directionality IS however specified, with a _REV suffix. Example entries:
+
+ - 'r_0001' will match r_0001, r_0001_EXP_1, r_0001_EXP_2 etc., but not r_0001_REV, r_0001_EXP_1_REV etc.
+ - 'r_0001_REV' will match r_0001_REV, r_0001_EXP_1_REV, r_0001_EXP_2_REV, etc., but not r_0001, r_0001_EXP_1 etc.
+
+ Multiple identifiers should be comma separated (e.g. r_0001, r_0002).
+
+ Examples
+ --------
+     % optional arguments may be given positionally or as name-value pairs:
+     [model, rxnUpdated, notMatch] = applyCustomKcats(model, customKcats, modelAdapter);
+     [model, rxnUpdated, notMatch] = applyCustomKcats(model, 'customKcats', customKcats);
+
+ See also
+ --------
+ <a href="applyKcatConstraints.html" class="code" title="function model = applyKcatConstraints(model,varargin)">applyKcatConstraints</a>, <a href="makeEcModel.html" class="code" title="function [model, noUniprot] = makeEcModel(model, varargin)">makeEcModel</a></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="applyKcatConstraints.html" class="code" title="function model = applyKcatConstraints(model,varargin)">applyKcatConstraints</a>	applyKcatConstraints  Apply kcat-derived enzyme constraints to an ecModel.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function notes = appendNote(notes, note)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [model, rxnUpdated, notMatch] = applyCustomKcats(model, varargin)</a>
+0002 <span class="comment">% applyCustomKcats  Apply user-defined kcats to an ecModel.</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% Reads data/customKcats.tsv in the obj.params.path specified in the model</span>
+0005 <span class="comment">% adapter. Alternatively, a customKcats structure can be provided, as</span>
+0006 <span class="comment">% specified below.</span>
+0007 <span class="comment">%</span>
+0008 <span class="comment">% Parameters</span>
+0009 <span class="comment">% ----------</span>
+0010 <span class="comment">% model : struct</span>
+0011 <span class="comment">%     an ecModel in GECKO 3 format (with ecModel.ec structure).</span>
+0012 <span class="comment">%</span>
+0013 <span class="comment">% Name-Value Arguments</span>
+0014 <span class="comment">% --------------------</span>
+0015 <span class="comment">% customKcats : struct</span>
+0016 <span class="comment">%     structure with custom kcat information (fields described under Notes).</span>
+0017 <span class="comment">%     If nothing is provided, an attempt will be made to read</span>
+0018 <span class="comment">%     data/customKcats.tsv from the obj.params.path folder specified in the</span>
+0019 <span class="comment">%     modelAdapter.</span>
+0020 <span class="comment">% modelAdapter : ModelAdapter</span>
+0021 <span class="comment">%     a loaded model adapter (default: the current default model adapter).</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Returns</span>
+0024 <span class="comment">% -------</span>
+0025 <span class="comment">% model : struct</span>
+0026 <span class="comment">%     ecModel where kcats for defined proteins have been changed.</span>
+0027 <span class="comment">% rxnUpdated : cell</span>
+0028 <span class="comment">%     ids list of updated reactions, where new kcats were applied.</span>
+0029 <span class="comment">% notMatch : table</span>
+0030 <span class="comment">%     reactions for which the custom information provided has a partial</span>
+0031 <span class="comment">%     match (at least 50%, but not 100%) with the reaction's GPR rule, for</span>
+0032 <span class="comment">%     the user to curate manually. Columns: rxns and name (reaction</span>
+0033 <span class="comment">%     identifier and name), custom enzymes (the proteins specified in</span>
+0034 <span class="comment">%     customKcats), enzymes in model (the enzymes annotated to the reaction</span>
+0035 <span class="comment">%     in the model), and rules (the reaction's GPR rule).</span>
+0036 <span class="comment">%</span>
+0037 <span class="comment">% Notes</span>
+0038 <span class="comment">% -----</span>
+0039 <span class="comment">% The customKcats structure has the following fields:</span>
+0040 <span class="comment">%</span>
+0041 <span class="comment">% - proteins : protein identifiers, multiple for the same kcat (in case of a protein complex) are separated by ' + '.</span>
+0042 <span class="comment">% - genes : gene identifiers (optional, not used in matching).</span>
+0043 <span class="comment">% - gene_name : short gene name (optional, not used in matching).</span>
+0044 <span class="comment">% - kcat : new kcat value (one per entry).</span>
+0045 <span class="comment">% - rxns : reaction identifiers, multiple for the same kcat are separated by ',' (see further explanation below).</span>
+0046 <span class="comment">% - notes : will be appended to model.ec.notes, separated by ', ' from an existing note; an empty note changes nothing (optional).</span>
+0047 <span class="comment">% - stoicho : complex stoichiometry, separated by ' + ' (examples: '1' or '3 + 1'), matching the order in proteins field.</span>
+0048 <span class="comment">%</span>
+0049 <span class="comment">% An entry with an empty kcat is skipped. Protein and reaction identifiers</span>
+0050 <span class="comment">% are matched exactly, including their letter case. Light ecModels are</span>
+0051 <span class="comment">% supported: the rows of model.ec are matched by their ec reaction ids.</span>
+0052 <span class="comment">%</span>
+0053 <span class="comment">% Matching order:</span>
+0054 <span class="comment">%</span>
+0055 <span class="comment">% 1. reactions are identified by .proteins and .rxns.</span>
+0056 <span class="comment">% 2. reactions are identified by .proteins only (empty .rxns entry); no</span>
+0057 <span class="comment">%    additional checks are made: is a reaction annotated with these</span>
+0058 <span class="comment">%    proteins? =&gt; its kcat will be updated, irrespective of the exact</span>
+0059 <span class="comment">%    reaction, direction, substrate, etc.</span>
+0060 <span class="comment">% 3. reactions are identified by .rxns only (empty .proteins entry); no</span>
+0061 <span class="comment">%    additional checks are made: is a reaction derived from the original</span>
+0062 <span class="comment">%    reaction identifier =&gt; its kcat will be updated, irrespective of the</span>
+0063 <span class="comment">%    annotated protein.</span>
+0064 <span class="comment">%</span>
+0065 <span class="comment">% The customKcats.rxns field reaction identifiers are from the ORIGINAL</span>
+0066 <span class="comment">% model, before _EXP_ suffixes were added by makeEcModel. Reaction</span>
+0067 <span class="comment">% directionality IS however specified, with a _REV suffix. Example entries:</span>
+0068 <span class="comment">%</span>
+0069 <span class="comment">% - 'r_0001' will match r_0001, r_0001_EXP_1, r_0001_EXP_2 etc., but not r_0001_REV, r_0001_EXP_1_REV etc.</span>
+0070 <span class="comment">% - 'r_0001_REV' will match r_0001_REV, r_0001_EXP_1_REV, r_0001_EXP_2_REV, etc., but not r_0001, r_0001_EXP_1 etc.</span>
+0071 <span class="comment">%</span>
+0072 <span class="comment">% Multiple identifiers should be comma separated (e.g. r_0001, r_0002).</span>
+0073 <span class="comment">%</span>
+0074 <span class="comment">% Examples</span>
+0075 <span class="comment">% --------</span>
+0076 <span class="comment">%     % optional arguments may be given positionally or as name-value pairs:</span>
+0077 <span class="comment">%     [model, rxnUpdated, notMatch] = applyCustomKcats(model, customKcats, modelAdapter);</span>
+0078 <span class="comment">%     [model, rxnUpdated, notMatch] = applyCustomKcats(model, 'customKcats', customKcats);</span>
+0079 <span class="comment">%</span>
+0080 <span class="comment">% See also</span>
+0081 <span class="comment">% --------</span>
+0082 <span class="comment">% applyKcatConstraints, makeEcModel</span>
+0083 
+0084 p = parseGECKOargs(varargin, { <span class="keyword">...</span>
+0085     <span class="string">'customKcats'</span>,  []; <span class="keyword">...</span>
+0086     <span class="string">'modelAdapter'</span>, []});
+0087 customKcats  = p.customKcats;
+0088 modelAdapter = p.modelAdapter;
+0089 
+0090 <span class="keyword">if</span> isempty(modelAdapter)
+0091     modelAdapter = ModelAdapterManager.getDefault();
+0092     <span class="keyword">if</span> isempty(modelAdapter)
+0093         error(<span class="string">'Either send in a modelAdapter or set the default model adapter in the ModelAdapterManager.'</span>)
+0094     <span class="keyword">end</span>
+0095 <span class="keyword">end</span>
+0096 
+0097 params = modelAdapter.params;
+0098 
+0099 <span class="keyword">if</span> isempty(customKcats)
+0100     customKcats = fullfile(params.path,<span class="string">'data'</span>,<span class="string">'customKcats.tsv'</span>);
+0101 <span class="keyword">end</span>
+0102 <span class="keyword">if</span> isstruct(customKcats)
+0103     <span class="keyword">if</span> ~all(isfield(customKcats,{<span class="string">'proteins'</span>,<span class="string">'kcat'</span>,<span class="string">'rxns'</span>}))
+0104         error(<span class="string">'The customKcats structure does not have all essential fields.'</span>);
+0105     <span class="keyword">end</span>
+0106 <span class="keyword">elseif</span> isfile(customKcats)
+0107     fID = fopen(customKcats, <span class="string">'r'</span>);
+0108     fileContent = textscan(fID, <span class="string">'%s %s %s %f %q %s %s'</span>, <span class="string">'Delimiter'</span>, <span class="string">'\t'</span>, <span class="string">'HeaderLines'</span>, 1);
+0109     fclose(fID);
+0110     clear customKcats
+0111     customKcats.proteins    = fileContent{1};
+0112     customKcats.genes       = fileContent{2};
+0113     customKcats.gene_name   = fileContent{3};
+0114     customKcats.kcat        = fileContent{4};
+0115     customKcats.rxns        = fileContent{5};
+0116     customKcats.notes       = fileContent{6};
+0117     customKcats.stoicho     = fileContent{7};
+0118 <span class="keyword">else</span>
+0119     error([<span class="string">'Cannot find file: '</span> customKcats]);
+0120 <span class="keyword">end</span>
+0121 
+0122 rxnToUpdate = false(length(model.ec.rxns),1);
+0123 rxnNotMatch = false(length(model.ec.rxns),1);
+0124 evaluatedRule = cell(length(model.ec.rxns),1);
+0125 enzInModel = cell(length(model.ec.rxns),1);
+0126 ecRxnNoSuffix = regexprep(model.ec.rxns,<span class="string">'_EXP_\d+$'</span>,<span class="string">''</span>);
+0127 
+0128 <span class="keyword">for</span> i = 1:numel(customKcats.proteins)
+0129     <span class="keyword">if</span> isnan(customKcats.kcat(i))
+0130         printOrange([<span class="string">'WARNING: Entry '</span> num2str(i) <span class="string">' has no kcat; it is skipped.'</span>]);
+0131         <span class="keyword">continue</span>
+0132     <span class="keyword">end</span>
+0133     <span class="keyword">if</span> isempty(customKcats.proteins{i})
+0134         <span class="comment">%If only reaction ID(s) is/are specified (and no proteins),</span>
+0135         <span class="comment">%then apply the kcat to all isozymic reactions</span>
+0136         rxns    = strtrim(strsplit(customKcats.rxns{i}, <span class="string">','</span>));
+0137         rxnIdxs = ismember(ecRxnNoSuffix,rxns);
+0138         rxnToUpdate(rxnIdxs) = 1;
+0139         model.ec.kcat(rxnIdxs) = customKcats.kcat(i);
+0140 
+0141         <span class="comment">% Add note mentioning manual kcat change</span>
+0142         model.ec.source(rxnIdxs) = {<span class="string">'custom'</span>};
+0143         <span class="keyword">if</span> isfield(customKcats,<span class="string">'notes'</span>)
+0144             matchedIdxs = find(rxnIdxs);
+0145             <span class="keyword">for</span> j = 1:numel(matchedIdxs)
+0146                 model.ec.notes{matchedIdxs(j), 1} = <a href="#_sub1" class="code" title="subfunction notes = appendNote(notes, note)">appendNote</a>(model.ec.notes{matchedIdxs(j), 1}, customKcats.notes{i});
+0147             <span class="keyword">end</span>
+0148         <span class="keyword">end</span>
+0149     <span class="keyword">else</span>
+0150         prots = strtrim(strsplit(customKcats.proteins{i}, <span class="string">'+'</span>));
+0151 
+0152         <span class="comment">% Find the index for the enzymes which kcat will be changed. In</span>
+0153         <span class="comment">% case the protein is not in the model generate a warning.</span>
+0154         <span class="keyword">try</span>
+0155             enzIdx = cellfun(@(x) find(strcmp(model.ec.enzymes, x)), prots);
+0156         <span class="keyword">catch</span>
+0157             enzIdx = [];
+0158             printOrange([<span class="string">'WARNING: Protein(s) '</span> customKcats.proteins{i} <span class="string">' were not found in the model.'</span>]);
+0159         <span class="keyword">end</span>
+0160 
+0161         <span class="comment">% if not specific reactions are defined, find all the reaction</span>
+0162         <span class="comment">% index where the enzyme is used</span>
+0163         <span class="keyword">if</span> isempty(customKcats.rxns{i})
+0164             temp_rxnIdxs = arrayfun(@(x) find(model.ec.rxnEnzMat(:, x)), enzIdx, <span class="string">'UniformOutput'</span>, false);
+0165             <span class="comment">% otherwhise, If a set of reactions if defined, only get the index for those</span>
+0166             <span class="comment">% but ignore any _EXP_ suffixes</span>
+0167         <span class="keyword">else</span>
+0168             rxns = strtrim(strsplit(customKcats.rxns{i}, <span class="string">','</span>));
+0169             temp_rxnIdxs = cellfun(@(x) find(strcmp(ecRxnNoSuffix, x)), rxns, <span class="string">'UniformOutput'</span>, false);
+0170         <span class="keyword">end</span>
+0171 
+0172         <span class="keyword">if</span> ~isempty(temp_rxnIdxs)
+0173             rxnIdxs = [];
+0174             <span class="keyword">for</span> j = 1:numel(temp_rxnIdxs)
+0175                 rxnIdxs = [rxnIdxs; temp_rxnIdxs{j}];
+0176             <span class="keyword">end</span>
+0177 
+0178             <span class="comment">% Check when multiple proteins are involved, since it can return same rxn n times</span>
+0179             rxnIdxs = unique(rxnIdxs); <span class="comment">%unique(rxnIdxs{1, :});</span>
+0180 
+0181             <span class="keyword">for</span> j = 1:numel(rxnIdxs)
+0182                 <span class="comment">% Get all the enzymes involved in the reaction</span>
+0183                 allEnzInRxn = find(model.ec.rxnEnzMat(rxnIdxs(j),:));
+0184 
+0185                 C = intersect(enzIdx, allEnzInRxn);
+0186 
+0187                 <span class="comment">% Determine the match percentage bewteen the rules</span>
+0188                 <span class="keyword">if</span> numel(C) == numel(enzIdx) &amp;&amp; numel(C) == numel(allEnzInRxn)
+0189                     match = 1;
+0190                 <span class="keyword">else</span>
+0191                     <span class="keyword">if</span> numel(enzIdx) &lt; numel(allEnzInRxn)
+0192                         match = numel(C) / numel(allEnzInRxn);
+0193                     <span class="keyword">else</span>
+0194                         match = numel(C) / numel(enzIdx);
+0195                     <span class="keyword">end</span>
+0196                 <span class="keyword">end</span>
+0197 
+0198                 <span class="comment">% Update the kcat value stored in the model, if match 100%,</span>
+0199                 <span class="comment">% otherwhise if &gt;= 0.5 inform to the user to be validated</span>
+0200                 <span class="keyword">if</span> match == 1
+0201                     rxnToUpdate(rxnIdxs(j)) = 1;
+0202                     model.ec.kcat(rxnIdxs(j)) = customKcats.kcat(i);
+0203 
+0204                     <span class="comment">% Add note mentioning manual kcat change</span>
+0205                     model.ec.source{rxnIdxs(j),1} = <span class="string">'custom'</span>;
+0206                     <span class="keyword">if</span> isfield(customKcats,<span class="string">'notes'</span>)
+0207                         model.ec.notes{rxnIdxs(j), 1} = <a href="#_sub1" class="code" title="subfunction notes = appendNote(notes, note)">appendNote</a>(model.ec.notes{rxnIdxs(j), 1}, customKcats.notes{i});
+0208                     <span class="keyword">end</span>
+0209                 <span class="keyword">elseif</span> match &gt;= 0.5 &amp;&amp; match &lt; 1
+0210                     rxnNotMatch(rxnIdxs(j)) = 1;
+0211                     evaluatedRule{rxnIdxs(j), 1} = customKcats.proteins{i};
+0212                     enzInModel{rxnIdxs(j), 1} = strjoin(model.ec.enzymes(allEnzInRxn), <span class="string">' + '</span>);
+0213                 <span class="keyword">end</span>
+0214             <span class="keyword">end</span>
+0215         <span class="keyword">end</span>
+0216     <span class="keyword">end</span>
+0217 <span class="keyword">end</span>
+0218 
+0219 <span class="comment">% Apply the new kcat values to the model</span>
+0220 <span class="keyword">if</span> ~isempty(find(rxnToUpdate, 1))
+0221     <span class="keyword">if</span> model.ec.geckoLight
+0222         <span class="comment">%Light ecModels update by reaction of the model, not by ec row</span>
+0223         updateRxns = ismember(model.rxns, extractAfter(model.ec.rxns(rxnToUpdate), 4));
+0224     <span class="keyword">else</span>
+0225         updateRxns = rxnToUpdate;
+0226     <span class="keyword">end</span>
+0227     model = <a href="applyKcatConstraints.html" class="code" title="function model = applyKcatConstraints(model,varargin)">applyKcatConstraints</a>(model, updateRxns);
+0228 <span class="keyword">else</span>
+0229     printOrange(<span class="string">'WARNING: No matches found. Consider checking the IDs or proteins in customKcats.'</span>);
+0230 <span class="keyword">end</span>
+0231 
+0232 rxnUpdated = model.ec.rxns(find(rxnToUpdate));
+0233 
+0234 <span class="comment">% Remove from notMatch those reactions already updated</span>
+0235 remove = and(rxnToUpdate, rxnNotMatch);
+0236 rxnNotMatch(remove) = 0;
+0237 evaluatedRule(remove) = <span class="string">''</span>;
+0238 enzInModel(remove) = <span class="string">''</span>;
+0239 
+0240 idRxns = model.ec.rxns(find(rxnNotMatch));
+0241 <span class="keyword">if</span> model.ec.geckoLight
+0242     modelRxnIds = extractAfter(idRxns, 4);
+0243 <span class="keyword">else</span>
+0244     modelRxnIds = idRxns;
+0245 <span class="keyword">end</span>
+0246 fullIdx = cellfun(@(x) find(strcmpi(model.rxns, x), 1), modelRxnIds);
+0247 rxnsNames = model.rxnNames(fullIdx);
+0248 evaluatedRule = evaluatedRule(~cellfun(<span class="string">'isempty'</span>, evaluatedRule));
+0249 enzInModel = enzInModel(~cellfun(<span class="string">'isempty'</span>, enzInModel));
+0250 rules = model.grRules(fullIdx);
+0251 notMatch = table(idRxns, rxnsNames, evaluatedRule, enzInModel, rules, <span class="keyword">...</span>
+0252     <span class="string">'VariableNames'</span>,{<span class="string">'rxns'</span>, <span class="string">'name'</span>, <span class="string">'custom enzymes'</span>, <span class="string">'enzymes in model'</span>, <span class="string">'rules'</span>});
+0253 <span class="keyword">end</span>
+0254 
+0255 <a name="_sub1" href="#_subfunctions" class="code">function notes = appendNote(notes, note)</a>
+0256 <span class="comment">% An empty note changes nothing; a note is separated by ', ' from an existing one.</span>
+0257 note = strtrim(note);
+0258 <span class="keyword">if</span> isempty(note)
+0259     <span class="keyword">return</span>
+0260 <span class="keyword">elseif</span> isempty(notes)
+0261     notes = note;
+0262 <span class="keyword">else</span>
+0263     notes = [notes <span class="string">', '</span> note];
+0264 <span class="keyword">end</span>
+0265 <span class="keyword">end</span></pre></div>
+<hr><address>Generated by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

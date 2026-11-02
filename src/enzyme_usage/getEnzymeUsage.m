@@ -39,7 +39,9 @@ function usageData = getEnzymeUsage(ecModel,fluxes,varargin)
 % - capUsage : vector of enzyme capacity usages.
 % - absUsage : vector of absolute enzyme usages.
 % - UB : vector of enzyme exchange reaction upper bounds.
-% - protID : string array of matching protein IDs.
+% - protID : string array of matching protein IDs. An enzyme without a
+%   usage_prot_<id> reaction in the model is left out, with the warning
+%   getEnzymeUsage:missingUsageReaction.
 % - fluxes : vector of fluxes, copy of input fluxes.
 %
 % Examples
@@ -60,6 +62,14 @@ if ecModel.ec.geckoLight
 end
 usageData.protID      = ecModel.ec.enzymes;
 [~,rxnIdx] = ismember(strcat('usage_prot_',ecModel.ec.enzymes),ecModel.rxns);
+noUsageRxn = rxnIdx == 0;
+if any(noUsageRxn)
+    warning('getEnzymeUsage:missingUsageReaction', ...
+        'The model has no usage reaction for the enzymes %s; they are left out.', ...
+        strjoin(usageData.protID(noUsageRxn), ', '))
+    usageData.protID = usageData.protID(~noUsageRxn);
+    rxnIdx = rxnIdx(~noUsageRxn);
+end
 
 usageData.UB          = ecModel.ub(rxnIdx);
 usageData.absUsage    = abs(fluxes(rxnIdx));
