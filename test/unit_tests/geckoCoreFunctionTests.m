@@ -1264,6 +1264,34 @@ function testPfbaEnzymesMinimisesEnzymeUsage_tc0025(testCase)
 end
 
 
+function testPfbaEnzymesFractionOfNegativeOptimum_tc0285(testCase)
+    % Verifies that 'fractionOfOptimum' below 1 lets a negative optimum fall
+    % by that fraction of its magnitude. The objective is -R5 with R5 >= 10,
+    % so its optimum is -10; at 0.9 the objective may fall to -11, and the
+    % solution stays feasible with R5 at its lower bound.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    model = getGeckoTestModel();
+    ecModel = makeEcModel(model, false, adapter);
+    ecModel = getECfromGEM(ecModel);
+    ecModel.ec.kcat(:) = 10;
+    ecModel.ec.source(:) = {'manual'};
+    ecModel = applyKcatConstraints(ecModel);
+    ecModel = setProtPoolSize(ecModel, 0.5, 0.5, 0.5, adapter);
+    ecModel = setParam(ecModel, 'lb', 'R5', 10);
+    ecModel = setParam(ecModel, 'obj', 'R5', -1);
+
+    solution = getPfbaEnzymes(ecModel);
+    verifyEqual(testCase, solution.stat, 1)
+    verifyEqual(testCase, solution.objectiveValue, -10, 'RelTol', 1e-5)
+
+    solution = getPfbaEnzymes(ecModel, 'fractionOfOptimum', 0.9);
+    verifyEqual(testCase, solution.stat, 1)
+    verifyEqual(testCase, solution.objectiveValue, -10, 'RelTol', 1e-5)
+    verifyGreaterThanOrEqual(testCase, solution.objectiveValue, -11)
+end
+
+
 function ecModel = fixtureForRelaxProteomicsGreedy()
 % Builds the shared fixture used by the relaxProteomicsGreedy tests below:
 % ecTestGEM with uniform kcat=10 and protein pool sized via
