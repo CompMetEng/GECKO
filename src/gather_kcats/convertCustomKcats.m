@@ -94,7 +94,7 @@ folder = fileparts(file);
 if ~isfolder(folder)
     mkdir(folder);
 end
-gecko = strtrim(fileread(fullfile(findGECKOroot(), 'version.txt')));
+gecko = geckoVersion();
 [~, name, ext] = fileparts(inFile);
 fid = fopen(file, 'w', 'n', 'UTF-8');
 fprintf(fid, '# source: custom\n');
@@ -139,5 +139,14 @@ unknown = setdiff(cellfun(@char, given, 'UniformOutput', false), names);
 if ~isempty(unknown)
     error(id, 'Unknown option of %s: %s. Options: %s.', functionName, strjoin(unknown, ', '), ...
         strjoin(names, ', '))
+end
+end
+
+function v = geckoVersion()
+file = fullfile(findGECKOroot(), 'version.txt');
+if isfile(file)
+    v = strtrim(fileread(file));
+else
+    v = 'unknown';
 end
 end

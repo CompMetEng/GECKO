@@ -146,7 +146,7 @@ The following points should be considered when merging branches to `develop`:
 * Make sure the branch gets accepted by at least one developer with writing access.
 * Wait at least a day before merging, to allow other developers to inspect the pull request.
 * To simplify the git history, use "Squash and merge" in pull requests to `develop` (but **never** use this option when merging to `main`, see also below).
-* As soon as the branch is merged, confirm that `develop` is still possible to merge to `main` (this can be checked [here](https://github.com/CompMetEng/GECKO/compare/develop)). If conflicts appear, fix the conflict _locally_ as soon as possible in `develop` and then push it (note, **DO NOT** pull any other changes from `main` to `develop`, just the single file that is creating the conflict).
+* As soon as the branch is merged, confirm that `develop` is still possible to merge to `main` (this can be checked [here](https://github.com/CompMetEng/GECKO/compare/develop)). If conflicts appear, fix the conflict _locally_ as soon as possible in `develop` and then push it. Changes of `main` reach `develop` only through the pull request of the last step of [releasing a new version](#releasing-a-new-version).
 
 ### Releasing a new version
 
@@ -164,15 +164,28 @@ GECKO follows [semantic versioning](https://semver.org/):
   - Re-organization of data
   - Refactoring of code.
 
+`version.txt` and the version in the first sentence of the `README.md` after "About GECKO" are release-only: they exist on `main` and never on `develop`, which is ahead of the last release by an unknown number of changes. A check on every pull request into `develop` rejects `version.txt`.
+
 When releasing, please follow these steps:
 
-1. Create a pull request from `develop` to `main`:
+1. Create the branch `release/<version>` from `develop`, with two changes:
+   - Add `version.txt` containing the version, e.g. `4.0.0b2`.
+   - In `README.md`, replace "This is the development version of GECKO 4." by "This is GECKO **<version>**."
+2. Create a pull request from `release/<version>` to `main`:
    - Specify the intended version in the title, e.g. `GECKO 3.0.1`
-   - Indicating all new features/fixes/etc. and referencing every previous pull request included (examples [here](https://github.com/CompMetEng/GECKO/releases)).
+   - Indicating all new features/fixes/etc. and referencing every previous pull request included (examples [here](https://github.com/CompMetEng/GECKO/releases)). The description is the release text, as GECKO has no changelog file.
    - If any [issue](https://github.com/CompMetEng/GECKO/issues) gets solved in the release, write in the pull request description "Closes #X", where "X" is the issue number. That way the issue will be automatically closed after merge.
-2. Wait at least a day for at least one approval. The GitHub Actions must also pass successfully.
-3. Merge the pull request from `develop` to `main` with the option "Create a merge commit", **not** "Squash and merge".
-4. Edit the `version.txt` in the `main` branch directly [link](https://github.com/CompMetEng/GECKO/edit/main/version.txt) to refer to the new version number. Commit the change directly to the `main` branch.
+3. Wait at least a day for at least one approval. The GitHub Actions must also pass successfully.
+4. Merge the pull request into `main` with the option "Create a merge commit", **not** "Squash and merge".
 5. Make the [new release](https://github.com/CompMetEng/GECKO/releases/new) at GitHub:
-   - Define a new tag with the version, prefixed by `v`: e.g. `v3.0.1`.
-   - Copy the description from the corresponding PR from step 1.
+   - Define a new tag with the version, without prefix: e.g. `4.0.0b2`, as the existing tags.
+   - Copy the description from the pull request of step 2.
+6. Bring `main` back into `develop` through a pull request from a branch cut from `develop`, without the release-only changes:
+   ```
+   git checkout -b sync/main-to-develop-<version> origin/develop
+   git merge --no-commit --no-ff origin/main
+   git rm --cached version.txt
+   git checkout origin/develop -- README.md
+   git commit -m "chore: merge main into develop after <version>"
+   ```
+   Merge this pull request with "Create a merge commit". `develop` then contains `main`, and the next release pull request shows only the changes since this release.
