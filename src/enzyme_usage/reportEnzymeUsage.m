@@ -31,6 +31,14 @@ function usageReport = reportEnzymeUsage(ecModel, usageData, varargin)
 %         the topAbsUsage enzymes with the highest absolute usage.
 %     totalUsageFlux : double
 %         total protein pool used, i.e. the upper bound of prot_pool_exchange.
+%     demandRatio : double
+%         demandRatio of usageData: the protein used of the enzymes with a
+%         measured concentration divided by their measured concentrations.
+%         Above 1, the solution needs more of those enzymes than was
+%         measured. NaN when usageData has no demandRatio field.
+%     demandRatioActive : double
+%         demandRatioActive of usageData: the same ratio over the enzymes
+%         that carry flux in the solution.
 %
 % Examples
 % --------
@@ -197,4 +205,10 @@ for i=1:numel(topEnzyme)
 end
 usageReport.topAbsUsage     = struct2table(topUsage);
 usageReport.totalUsageFlux  = protPool;
+usageReport.demandRatio       = NaN;
+usageReport.demandRatioActive = NaN;
+if isfield(usageData, 'demandRatio')
+    usageReport.demandRatio       = usageData.demandRatio;
+    usageReport.demandRatioActive = usageData.demandRatioActive;
+end
 end

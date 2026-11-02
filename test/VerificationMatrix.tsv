@@ -11,8 +11,8 @@ change_model/setProtPoolSize.m	tc0005
 change_model/getKcatAcrossIsoenzymes.m	tc0011, tc0252	
 change_model/getSubsetEcModel.m	tc0258, tc0259	
 change_model/applyCustomKcats.m	tc0227, tc0228, tc0229, tc0230	
-enzyme_usage/getEnzymeUsage.m	tc0507, tc0508	
-enzyme_usage/reportEnzymeUsage.m	tc0508, tc0509	
+enzyme_usage/getEnzymeUsage.m	tc0286, tc0507, tc0508	
+enzyme_usage/reportEnzymeUsage.m	tc0286, tc0508, tc0509	
 gather_kcats/fuzzyKcatMatching.m	tc0010, tc0223, tc0224, tc0225, tc0226, tc0231, tc0239	
 gather_kcats/getStandardKcat.m	tc0256, tc0257, tc0309, tc0310	
 gather_kcats/mergeDlkcatAndFuzzyKcats.m	tc0011; tc0241	
