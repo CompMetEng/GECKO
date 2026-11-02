@@ -14,7 +14,7 @@ The **GECKO** toolbox enhances a **G**enome-scale model to account for **E**nzym
 
 GECKO is written in MATLAB. Its Python port, [geckopy](https://github.com/CompMetEng/geckopy), reads and writes the same ecModel YAML files, and the two toolboxes are kept in step by a [parity ledger](https://github.com/CompMetEng/raven-gecko-parity). The documentation covers both.
 
-This is GECKO **4.0.0b1**. For the changes from GECKO 3, see [GECKO 3 → GECKO 4](https://gecko-docs.readthedocs.io/en/latest/gecko3-to-gecko4.html); for the differences between GECKO and geckopy, see [GECKO vs. geckopy](https://gecko-docs.readthedocs.io/en/latest/gecko-to-geckopy.html).
+This is the development version of GECKO 4. For the changes from GECKO 3, see [GECKO 3 → GECKO 4](https://gecko-docs.readthedocs.io/en/latest/gecko3-to-gecko4.html); for the differences between GECKO and geckopy, see [GECKO vs. geckopy](https://gecko-docs.readthedocs.io/en/latest/gecko-to-geckopy.html).
 
 ## Get started
 
