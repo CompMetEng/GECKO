@@ -1291,6 +1291,86 @@ function testPfbaEnzymesFractionOfNegativeOptimum_tc0285(testCase)
     verifyGreaterThanOrEqual(testCase, solution.objectiveValue, -11)
 end
 
+function testGetEnzymeUsageDemandRatio_tc0286(testCase)
+    % Verifies the demand ratio of getEnzymeUsage: the usage of the enzymes
+    % with a measured concentration divided by their measured
+    % concentrations, over all of them and over those that carry flux, NaN
+    % without a measured concentration, and the same whatever 'zero' is.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    model = getGeckoTestModel();
+    ecModel = makeEcModel(model, false, adapter);
+    ecModel = getECfromGEM(ecModel);
+    ecModel.ec.kcat(:) = 100;
+    ecModel.ec.source(:) = {'manual'};
+    ecModel = applyKcatConstraints(ecModel);
+    ecModel = setProtPoolSize(ecModel, [], [], [], adapter);
+
+    [~, idx] = ismember(strcat('usage_prot_', ecModel.ec.enzymes), ecModel.rxns);
+    ecModel.ec.concs = nan(numel(ecModel.ec.enzymes), 1);
+    ecModel.ec.concs(1:3) = [2; 4; 1];
+    fluxes = zeros(numel(ecModel.rxns), 1);
+    fluxes(idx(1)) = 3;
+    fluxes(idx(3)) = 1.5;
+    fluxes(idx(4)) = 7;
+
+    usageData = getEnzymeUsage(ecModel, fluxes);
+    verifyEqual(testCase, usageData.measuredProtein, 7, 'AbsTol', 1e-12)
+    verifyEqual(testCase, usageData.demandedProtein, 4.5, 'AbsTol', 1e-12)
+    verifyEqual(testCase, usageData.demandRatio, 4.5/7, 'AbsTol', 1e-12)
+    verifyEqual(testCase, usageData.measuredProteinActive, 3, 'AbsTol', 1e-12)
+    verifyEqual(testCase, usageData.demandRatioActive, 1.5, 'AbsTol', 1e-12)
+
+    withoutZero = getEnzymeUsage(ecModel, fluxes, 'zero', false);
+    verifyEqual(testCase, withoutZero.demandRatio, usageData.demandRatio, 'AbsTol', 1e-12)
+    verifyEqual(testCase, withoutZero.demandRatioActive, usageData.demandRatioActive, 'AbsTol', 1e-12)
+
+    report = reportEnzymeUsage(ecModel, usageData);
+    verifyEqual(testCase, report.demandRatio, usageData.demandRatio, 'AbsTol', 1e-12)
+    verifyEqual(testCase, report.demandRatioActive, usageData.demandRatioActive, 'AbsTol', 1e-12)
+
+    % A usage below the threshold counts as demand but not as active.
+    lowFluxes = fluxes;
+    lowFluxes(idx(2)) = 1e-8;
+    usageData = getEnzymeUsage(ecModel, lowFluxes);
+    verifyEqual(testCase, usageData.demandedProtein, 4.5 + 1e-8, 'AbsTol', 1e-12)
+    verifyEqual(testCase, usageData.measuredProteinActive, 3, 'AbsTol', 1e-12)
+    verifyEqual(testCase, usageData.demandRatioActive, 1.5, 'AbsTol', 1e-12)
+
+    % An enzyme without a usage reaction is left out with its concentration.
+    reduced = removeReactions(ecModel, ecModel.rxns(idx(1)));
+    reducedFluxes = fluxes;
+    reducedFluxes(idx(1)) = [];
+    warning('off', 'getEnzymeUsage:missingUsageReaction')
+    restore = onCleanup(@() warning('on', 'getEnzymeUsage:missingUsageReaction'));
+    usageData = getEnzymeUsage(reduced, reducedFluxes);
+    verifyEqual(testCase, usageData.measuredProtein, 5, 'AbsTol', 1e-12)
+    verifyEqual(testCase, usageData.demandedProtein, 1.5, 'AbsTol', 1e-12)
+    verifyEqual(testCase, usageData.demandRatioActive, 1.5, 'AbsTol', 1e-12)
+
+    % A usageData without the demand fields gives NaN in the report.
+    bare = rmfield(getEnzymeUsage(ecModel, fluxes), ...
+        {'measuredProtein','measuredProteinActive','demandedProtein','demandRatio','demandRatioActive'});
+    report = reportEnzymeUsage(ecModel, bare);
+    verifyTrue(testCase, isnan(report.demandRatio))
+    verifyTrue(testCase, isnan(report.demandRatioActive))
+
+    % A concentration vector shorter than the enzyme list counts as unmeasured.
+    short = ecModel;
+    short.ec.concs = [2; 4];
+    usageData = getEnzymeUsage(short, fluxes);
+    verifyEqual(testCase, usageData.measuredProtein, 6, 'AbsTol', 1e-12)
+    short.ec.concs = [];
+    usageData = getEnzymeUsage(short, fluxes);
+    verifyTrue(testCase, isnan(usageData.demandRatio))
+
+    ecModel.ec.concs(:) = NaN;
+    usageData = getEnzymeUsage(ecModel, fluxes);
+    verifyEqual(testCase, usageData.measuredProtein, 0)
+    verifyTrue(testCase, isnan(usageData.demandRatio))
+    verifyTrue(testCase, isnan(usageData.demandRatioActive))
+end
+
 
 function ecModel = fixtureForRelaxProteomicsGreedy()
 % Builds the shared fixture used by the relaxProteomicsGreedy tests below:
