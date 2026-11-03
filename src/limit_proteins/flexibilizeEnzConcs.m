@@ -49,7 +49,7 @@ function [model, flexEnz] = flexibilizeEnzConcs(model, varargin)
 %     complex, and one factor per complex is kept in the final pass, so that
 %     concentrations levelled by levelComplexConcs stay levelled. An upper
 %     bound is never lowered below its current value. The frequence of a
-%     complex is recorded on its first measured subunit.
+%     complex is recorded on its first subunit with a concentration above 0.
 %
 % Returns
 % -------
@@ -68,6 +68,15 @@ function [model, flexEnz] = flexibilizeEnzConcs(model, varargin)
 %       will be sorted by this field.
 %     - frequence : numeric how often the enzyme has been step-wise
 %       flexibilized.
+%
+% Notes
+% -----
+% The usage upper bound of an enzyme is raised by a factor of its
+% concentration, so an enzyme with a concentration of 0 in model.ec.concs
+% stays at 0 and is never flexibilized. If such enzymes exist, the warning
+% flexibilizeEnzConcs:measuredZero lists them: a growth rate that is not
+% reached can then be caused by these enzymes, and flexibilizeEnzConcs
+% reports no limiting enzyme for them.
 %
 % Examples
 % --------
@@ -143,6 +152,17 @@ predGrowth = sol.f;
 
 % Get those proteins with a concentration defined
 protConcs = find(~isnan(model.ec.concs));
+measuredZero = model.ec.enzymes(model.ec.concs == 0);
+if ~isempty(measuredZero)
+    listed = strjoin(measuredZero(1:min(10, end))', ', ');
+    if numel(measuredZero) > 10
+        listed = sprintf('%s and %d more', listed, numel(measuredZero) - 10);
+    end
+    warning('flexibilizeEnzConcs:measuredZero', ...
+        ['The enzymes %s have a concentration of 0 in model.ec.concs. Their usage ' ...
+         'upper bound stays 0, because it is raised as a factor of the concentration.'], ...
+        listed)
+end
 
 % Get enzymes names with a concentration value
 proteins = model.ec.enzymes(protConcs);
@@ -374,7 +394,11 @@ while predGrowth < expGrowth
 
     [~, unit] = max(scores);
     members = units{unit};
-    frequence(members(1)) = frequence(members(1)) + 1;
+    first = members(find(model.ec.concs(protConcs(members)) > 0, 1));
+    if isempty(first)
+        first = members(1);
+    end
+    frequence(first) = frequence(first) + 1;
     unitFrequence(unit)   = unitFrequence(unit) + 1;
     if unitFrequence(unit) > iterPerEnzyme
         if numel(members) > 1
@@ -404,6 +428,8 @@ while predGrowth < expGrowth
 end
 
 flexIdx  = find(frequence > 0 | touched);
+% An enzyme with a concentration of 0 keeps its bound and is not reported
+flexIdx(model.ec.concs(protConcs(flexIdx)) == 0) = [];
 protFlex = proteins(flexIdx);
 oldConcs = model.ec.concs(protConcs(flexIdx));
 freq     = frequence(flexIdx);

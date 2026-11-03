@@ -5,7 +5,9 @@ function result = relaxProteomicsGreedy(model, varargin)
 % While growth is below minimalGrowth, finds the still-proteomics-constrained
 % enzyme (usage_prot_<id> upper bound below defaultUpperBound) with the
 % largest absolute shadow price on its prot_<id> mass-balance constraint,
-% fully relaxes it back to defaultUpperBound, re-solves, and repeats.
+% fully relaxes it back to defaultUpperBound, re-solves, and repeats. An
+% enzyme with a concentration of 0 in model.ec.concs is a candidate like any
+% other and is relaxed in the same way.
 %
 % Parameters
 % ----------

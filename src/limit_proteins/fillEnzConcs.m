@@ -35,6 +35,12 @@ function model = fillEnzConcs(model, protData, varargin)
 % A negative abundance of a protein that is an enzyme of the model is
 % contradictory data and raises the error fillEnzConcs:negativeAbundance.
 %
+% A NaN entry in model.ec.concs means that the protein was not measured, and
+% the usage of the enzyme draws from the protein pool. An entry of 0 means
+% that the protein was measured as absent, and constrainEnzConcs limits the
+% usage of the enzyme to 0. loadProtData returns a measured 0 only with the
+% option zerosAsMeasured.
+%
 % To also constrain the model with the content of model.ec.concs, you should
 % run constrainEnzConcs.
 %
