@@ -24,7 +24,8 @@ function protData = loadProtData(replPerCond, varargin)
 %     that was previously made by loadProtData.
 % filterData : logical
 %     whether abundances should be filtered. If false, minVal, maxRSD,
-%     maxMissing, cutLowest and addStdevs are not considered (default true).
+%     maxMissing, cutLowest and addStdevs are not considered, and
+%     zerosAsMeasured applies in both cases. Default true.
 % modelAdapter : ModelAdapter
 %     a loaded model adapter (default: the current default model adapter).
 % minVal : double
@@ -51,6 +52,18 @@ function protData = loadProtData(replPerCond, varargin)
 %     how many standard deviations should be added to the mean value of
 %     each protein measurement across replicates, broadening the confidence
 %     interval (default 1).
+% zerosAsMeasured : logical
+%     whether an abundance of 0 is a measurement (default false). If false,
+%     a 0 is read as not measured (NaN) before any filter, also in a protDataFile
+%     that is a protData structure: the mean of a protein over its replicates
+%     leaves out the zeros, and a protein with only zeros is removed. If true,
+%     a 0 counts as a measured replicate and is kept in the mean; a protein
+%     whose replicates are all 0 is returned as 0, is not removed by minVal or
+%     cutLowest, and limits the usage of its enzyme to 0 in constrainEnzConcs.
+%     Proteomics reports a protein below the detection limit as 0 or as
+%     missing. With true, a 0 is read as a protein that is absent, for
+%     example in a deletion strain. maxRSD and maxMissing still apply to a
+%     protein with some zero replicates.
 %
 % Returns
 % -------
@@ -64,11 +77,16 @@ function protData = loadProtData(replPerCond, varargin)
 % - uniprotIDs : cell array with Uniprot IDs matching protData.abundances.
 % - abundances : matrix of proteomics data, where each column contains mean abundances per condition.
 %
+% A protein that is not measured in a condition is NaN in abundances and
+% leaves the usage of its enzyme drawing from the protein pool (see
+% fillEnzConcs and constrainEnzConcs).
+%
 % Examples
 % --------
 %     % optional arguments may be given positionally or as name-value pairs:
-%     protData = loadProtData(replPerCond, protDataFile, filterData, modelAdapter, minVal, maxRSD, maxMissing, cutLowest, addStdevs);
+%     protData = loadProtData(replPerCond, protDataFile, filterData, modelAdapter, minVal, maxRSD, maxMissing, cutLowest, addStdevs, zerosAsMeasured);
 %     protData = loadProtData(replPerCond, 'filterData', false);
+%     protData = loadProtData(replPerCond, 'zerosAsMeasured', true);
 %
 % See also
 % --------
@@ -82,7 +100,8 @@ p = parseGECKOargs(varargin, { ...
     'maxRSD',       1; ...
     'maxMissing',   2/3; ...
     'cutLowest',    5; ...
-    'addStdevs',    1});
+    'addStdevs',    1; ...
+    'zerosAsMeasured', false});
 protDataFile = p.protDataFile;
 filterData   = p.filterData;
 modelAdapter = p.modelAdapter;
@@ -91,6 +110,10 @@ maxRSD       = p.maxRSD;
 maxMissing   = p.maxMissing;
 cutLowest    = p.cutLowest;
 addStdevs    = p.addStdevs;
+zerosAsMeasured = p.zerosAsMeasured;
+if isempty(zerosAsMeasured)
+    zerosAsMeasured = false;
+end
 
 if isempty(modelAdapter)
     modelAdapter = ModelAdapterManager.getDefault();
@@ -129,6 +152,11 @@ else
     abundances  = protDataFile.abundances;
 end
 
+% An abundance of 0 is not measured unless zerosAsMeasured is true
+if ~zerosAsMeasured
+    abundances(abundances == 0) = NaN;
+end
+
 %Remove entriew without ID
 remData = cellfun(@isempty,uniprotIDs);
 uniprotIDs(remData,:) = [];
@@ -149,7 +177,12 @@ if filterData
             else
                 maxMisRepl = maxMissing;
             end
-            remData = sum(condAbund>0,2)<maxMisRepl*size(condAbund,2);
+            if zerosAsMeasured
+                present = condAbund>=0;
+            else
+                present = condAbund>0;
+            end
+            remData = sum(present,2)<maxMisRepl*size(condAbund,2);
             condAbund(remData,:) = nan;
         end
         % Filter by RSD
@@ -159,12 +192,19 @@ if filterData
         condAbund = mean(condAbund,2,'omitnan')+(addStdevs*std(condAbund,0,2,'omitnan'));
         % Filter by minVal
         remData = mean(condAbund,2,'omitnan')<minVal;
+        if zerosAsMeasured
+            remData = remData & condAbund~=0;
+        end
         condAbund(remData) = nan;
         % Remove the lowest cutLowest percent
-        numData  = find(~isnan(condAbund));
-        [~,sortData] = sort(condAbund);
-        lowCutoff = floor(numel(numData)*cutLowest/100);
-        condAbund(sortData(1:lowCutoff)) = nan;
+        if zerosAsMeasured
+            cutData = find(~isnan(condAbund) & condAbund~=0);
+        else
+            cutData = find(~isnan(condAbund));
+        end
+        [~,sortData] = sort(condAbund(cutData));
+        lowCutoff = floor(numel(cutData)*cutLowest/100);
+        condAbund(cutData(sortData(1:lowCutoff))) = nan;
         % Combine conditions
         filtAbund(:,i) = condAbund;
     end

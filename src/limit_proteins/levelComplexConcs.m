@@ -12,11 +12,13 @@ function [model, result] = levelComplexConcs(model, varargin)
 % Run after fillEnzConcs and before constrainEnzConcs. The concentrations
 % (mg/gDCW) in model.ec.concs are converted to molar amounts with model.ec.mw
 % for the levelling and back afterwards. Per complex, the statistic over the
-% measured subunits that belong to the complex of the molar amount divided
-% by the copies of the subunit is written back, times the copies and the
-% molecular weight, to every subunit that belongs to the complex. Subunits
+% subunits with a concentration above 0 that belong to the complex of the
+% molar amount divided by the copies of the subunit is written back, times
+% the copies and the molecular weight, to every subunit that belongs to the
+% complex. Subunits
 % that are shared between complexes, or that also catalyse a reaction on
-% their own, are left as measured.
+% their own, are left as measured. A subunit with a concentration of 0 is
+% measured as absent and stays 0.
 %
 % Parameters
 % ----------
@@ -27,8 +29,8 @@ function [model, result] = levelComplexConcs(model, varargin)
 % Name-Value Arguments
 % --------------------
 % statistic : char
-%     the summary over the measured subunits, 'median' or 'mean' (default
-%     'median').
+%     the summary over the subunits with a concentration above 0, 'median' or
+%     'mean' (default 'median').
 % fillMissing : logical
 %     whether subunits without a measurement, that belong to a complex, are
 %     given the concentration of the complex (default true).
@@ -39,7 +41,8 @@ function [model, result] = levelComplexConcs(model, varargin)
 % Returns
 % -------
 % model : struct
-%     ecModel where model.ec.concs has one abundance per complex.
+%     ecModel where model.ec.concs has one abundance per complex, except
+%     for subunits at 0, shared subunits and skipped complexes.
 % result : struct
 %     what was changed, with the fields:
 %
@@ -51,7 +54,7 @@ function [model, result] = levelComplexConcs(model, varargin)
 %       measured because they belong to more than one complex or also
 %       catalyse a reaction on their own.
 %     - skipped : cell array with one cell array of subunits per complex
-%       that has no measured subunit that belongs to it.
+%       that has no subunit with a concentration above 0 that belongs to it.
 %
 % Examples
 % --------
@@ -96,6 +99,7 @@ molar   = concs ./ mw;
 values   = molar;
 isKnown  = isfinite(molar);
 isLevel  = isKnown & molar > 0;
+isZero   = isKnown & molar == 0;
 result.adjusted = cell(0, 1);
 result.added    = cell(0, 1);
 result.shared   = sort(enzymes(ismember(enzymes, families.shared) & isKnown));
@@ -120,7 +124,7 @@ for c = 1:numel(families.complexes)
                 result.adjusted{end+1, 1} = enzymes{e}; %#ok<AGROW>
             end
             values(e) = level;
-        elseif fillMissing
+        elseif fillMissing && ~isZero(e)
             values(e)  = level;
             isKnown(e) = true;
             result.added{end+1, 1} = enzymes{e}; %#ok<AGROW>

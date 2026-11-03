@@ -85,3 +85,44 @@ function file = writeProteomics(ids, values)
     end
     fclose(fid);
 end
+
+function testLoadProtDataReadsZeroAsNotMeasuredByDefault_tc0298(testCase)
+    % Z1 is 0 in every replicate; Z2 is 0 in one replicate. Both are read as
+    % not measured: Z1 is dropped, and the mean of Z2 is over the two values.
+    adapter = getTestAdapter();
+    file = writeProteomics({'Z1','Z2','Z3'}, [0 0 0; 0 4 6; 5 5 5]);
+    for filterData = [true false]
+        protData = loadProtData(3, 'protDataFile', file, 'modelAdapter', adapter, ...
+            'filterData', filterData, 'addStdevs', 0, 'cutLowest', 0);
+        verifyEqual(testCase, protData.uniprotIDs, {'Z2';'Z3'})
+        verifyEqual(testCase, protData.abundances, [5;5], 'AbsTol', 1e-12)
+    end
+end
+
+function testLoadProtDataKeepsMeasuredZeroWithOption_tc0299(testCase)
+    % With zerosAsMeasured Z1 stays 0 and the 0 of Z2 enters its mean
+    adapter = getTestAdapter();
+    file = writeProteomics({'Z1','Z2','Z3'}, [0 0 0; 0 4 6; 5 5 5]);
+    for filterData = [true false]
+        protData = loadProtData(3, 'protDataFile', file, 'modelAdapter', adapter, ...
+            'filterData', filterData, 'addStdevs', 0, 'cutLowest', 0, 'zerosAsMeasured', true);
+        verifyEqual(testCase, protData.uniprotIDs, {'Z1';'Z2';'Z3'})
+        verifyEqual(testCase, protData.abundances, [0; 10/3; 5], 'AbsTol', 1e-12)
+    end
+end
+
+function testLoadProtDataMeasuredZeroIsExemptFromMinValAndCutLowest_tc0313(testCase)
+    % P1 is 0; P2 to P10 are 2 to 10. minVal 2.5 removes P2, then cutLowest
+    % 20 percent removes one of the eight positive values (P3) and not P1.
+    adapter = getTestAdapter();
+    ids = strcat('P', string(1:10));
+    values = repmat([0; (2:10)'], 1, 3);
+    file = writeProteomics(cellstr(ids), values);
+    protData = loadProtData(3, 'protDataFile', file, 'modelAdapter', adapter, ...
+        'addStdevs', 0, 'minVal', 2.5, 'cutLowest', 20, 'zerosAsMeasured', true);
+    verifyEqual(testCase, protData.uniprotIDs, cellstr(strcat('P', string([1 4:10])))')
+    verifyEqual(testCase, protData.abundances, [0; (4:10)'], 'AbsTol', 1e-12)
+    protData = loadProtData(3, 'protDataFile', file, 'modelAdapter', adapter, ...
+        'addStdevs', 0, 'minVal', 2.5, 'cutLowest', 20);
+    verifyEqual(testCase, protData.uniprotIDs, cellstr(strcat('P', string(4:10)))')
+end

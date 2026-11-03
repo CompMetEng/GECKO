@@ -28,6 +28,12 @@ function model = constrainEnzConcs(model, varargin)
 % A negative concentration in model.ec.concs is contradictory data and
 % raises the error constrainEnzConcs:negativeConcentration. To populate model.ec.concs you should run fillEnzConcs.
 %
+% A NaN entry means that the enzyme was not measured, and its usage draws
+% from the protein pool. An entry of 0 means that the enzyme was measured as
+% absent: its usage upper bound is 0, which removes every flux through the
+% enzyme. flexibilizeEnzConcs multiplies the concentration and cannot raise a
+% bound of 0; relaxProteomicsGreedy sets the bound back to its default.
+%
 % Examples
 % --------
 %     % optional arguments may be given positionally or as name-value pairs:
