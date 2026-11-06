@@ -92,7 +92,7 @@ nVec = numel(vectors);
 rmses = zeros(nVec,1);
 
 if nProc == 1
-    % Serial path: carry the excarbon-augmented model from one call into
+    % Serial path: pass the excarbon-augmented model from one call to
     % the next, so the metabolite-formula scan behind it (evotuneScore's
     % 4th output) runs once for the whole screen rather than once per
     % probe vector.

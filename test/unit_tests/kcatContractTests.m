@@ -28,7 +28,7 @@ end
 function testMergeKcatsMatchesOkpTaggedSources_tc0301(testCase)
     % The OKP- tag is dropped for matching: OKP-BRENDA is an exact database
     % hit and OKP-CataPro matches the priority entry catapro; the rows keep
-    % their labels and win over DLKcat.
+    % their labels and are kept over DLKcat.
     list = struct('source', 'x', 'rxns', {{'A'; 'A'; 'B'; 'B'}}, 'kcats', [3; 9; 4; 9], ...
         'kcatSource', {{'OKP-BRENDA'; 'DLKcat'; 'OKP-CataPro'; 'DLKcat'}});
     merged = mergeKcats({list}, {'database_exact', 'catapro', 'dlkcat'});

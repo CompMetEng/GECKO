@@ -636,7 +636,7 @@ function testCalculateFfactor_tc0014(testCase)
     model = getGeckoTestModel();
     ecModel = makeEcModel(model, false, adapter);
 
-    % ecTestGEM ships no data/paxDB.tsv, so with no protData supplied
+    % ecTestGEM includes no data/paxDB.tsv, so with no protData supplied
     % calculateFfactor must fall back to its documented default of 0.5.
     [~, f] = evalc("calculateFfactor(ecModel, [], [], adapter)");
     verifyEqual(testCase,f,0.5)
@@ -752,7 +752,7 @@ function testAddNewRxnsToEC_tc0018(testCase)
     verifyEqual(testCase, sort(rxnsAdded), sort(expRxnsAdded))
     verifyEqual(testCase, sort(enzAdded), sort(newEnzymes.enzymes))
 
-    % Each split reaction must carry exactly the one gene it was split from --- not the
+    % Each split reaction must have exactly the one gene it was split from --- not the
     % unsplit "X or Y" string the bug left on the second (and later) reaction, nor a
     % double-suffixed id from re-splitting an already-split entry.
     [~, idxA1] = ismember('RNEWA_EXP_1', ecModel.rxns);
@@ -904,7 +904,7 @@ function testFuzzyKcatMatchingTieBreakRespectsWildcardCount_tc0022(testCase)
     % Verifies fuzzyKcatMatching's cross-EC-token tie-break: when a
     % reaction's multiple EC tokens match BRENDA at the same origin (organism
     % tier) but different wildcard levels, the token matched with fewer
-    % wildcards must win, even if a more-wildcarded token happens to carry a
+    % wildcards must be selected, even if a more-wildcarded token happens to have a
     % larger kcat. The fixture gives one reaction two EC tokens that both
     % resolve at the same origin -- one an exact (0-wildcard) match with a
     % small kcat, the other a 2-wildcard match with a larger kcat -- and
@@ -1580,10 +1580,10 @@ end
 function testFindECInDBIntersectionDedupesWildcardPair_tc0032(testCase)
     % Verifies that reconciling EC annotations across an AND-complex's genes
     % via findECInDB de-duplicates a code that matches via both itself and
-    % its own wildcard parent. Gene 1's protein carries two EC tokens,
+    % its own wildcard parent. Gene 1's protein has two EC tokens,
     % '1.1.1.1' and its own wildcard parent '1.1.1.-' (space-separated, the
     % format getECstring expects for one protein's multiple activities);
-    % gene 2's protein carries just '1.1.1.1'. The intersection across both
+    % gene 2's protein has the single token '1.1.1.1'. The intersection across both
     % genes must return '1.1.1.1' once, not twice.
     geneHashMap = containers.Map({'G1','G2'}, {1,2});
     geneIndex = {1; 2};
@@ -1650,7 +1650,7 @@ function testGetStandardKcatUsesSubsystemKcatWheneverAnyMatches_tc0034(testCase)
     % the model has more than one distinct subsystem. R1 has no GPR and
     % shares subSystem 'SubA' with R3 (kcat 50); R5 sits in a different
     % subSystem 'SubB' (kcat 999, deliberately large so it would skew the
-    % model-wide fallback if picked by mistake). R1 must be assigned SubA's
+    % model-wide fallback if selected by mistake). R1 must be assigned SubA's
     % kcat (50), not the model-wide standardKcat fallback.
     geckoPath = findGECKOroot;
     adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
@@ -1882,7 +1882,7 @@ function testMergeKcatsGeneralizesToNSourcesWithExactTier_tc0041(testCase)
 
     % R1: fuzzy gives 'database_top' (wc=0, origin=1); OKP's BRENDA row has
     % no wildcard/origin metadata at all, so it is an exact hit --
-    % 'database_exact' outranks 'database_top', so OKP's 99 wins, not
+    % 'database_exact' outranks 'database_top', so OKP's 99 is kept, not
     % fuzzy's 5 or DLKcat's 50 (DLKcat is never even reached for R1).
     r1 = strcmp(mergedKcatList.rxns, 'R1');
     verifyEqual(testCase, sum(r1), 1)
@@ -1926,7 +1926,7 @@ function testMergeDLKcatAndFuzzyKcatsDelegatesToMergeKcats_tc0042(testCase)
 
     mergedKcatList = mergeDLKcatAndFuzzyKcats(dlkcatList, fuzzyList);
 
-    % R1: BRENDA top-tier match (5) wins over DLKcat (50).
+    % R1: BRENDA top-tier match (5) is selected over DLKcat (50).
     r1 = strcmp(mergedKcatList.rxns, 'R1');
     verifyEqual(testCase, mergedKcatList.kcats(r1), 5)
     % R2: no BRENDA row -- DLKcat (80) is the only candidate.
@@ -1988,7 +1988,7 @@ end
 function testMakeEcModelFallsBackToKeggForUnmatchedGenes_tc0044(testCase)
     % Verifies that makeEcModel falls back to databases.kegg for a gene with
     % no UniProt match: ec.mw and ec.sequence are filled from the KEGG row,
-    % and ec.enzymes gets the UniProt accession carried on that row, or --
+    % and ec.enzymes gets the UniProt accession held on that row, or --
     % when that column is itself empty, as tested here -- the bare KEGG gene
     % id as a fallback identifier. Such a gene must not appear in the
     % noUniprot output.
@@ -2002,7 +2002,7 @@ function testMakeEcModelFallsBackToKeggForUnmatchedGenes_tc0044(testCase)
     % G5 is deliberately absent from uniprot.tsv (only G1-G4 are UniProt-matched)
     % but present in kegg.tsv with an empty UniProt-accession column (col 1),
     % forcing the bare-KEGG-gene-id fallback rather than the more common
-    % KEGG-row-carries-a-UniProt-accession case.
+    % KEGG-row-has-a-UniProt-accession case.
     fid = fopen(fullfile(scratchDir,'data','uniprot.tsv'), 'w');
     fprintf(fid, 'Entry\tGene Names (ordered locus)\tEC number\tMass\tSequence\n');
     fprintf(fid, 'P1\tG1\t1.1.1.1\t10000\tMRAL\n');
@@ -2304,8 +2304,8 @@ function testApplyCustomKcatsModeAWritesSourceAndNotes_tc0054(testCase)
     ecModel = makeEcModel(model, false, adapter);
     ecModel = getECfromGEM(ecModel);
 
-    % R3 already carries a real, non-custom kcat, as it would after
-    % selectKcatValue picked a BRENDA-derived value earlier in the
+    % R3 already has a real, non-custom kcat, as it would after
+    % selectKcatValue selected a BRENDA-derived value earlier in the
     % pipeline.
     r3 = strcmp(ecModel.ec.rxns, 'R3');
     ecModel.ec.kcat(r3) = 46.5;

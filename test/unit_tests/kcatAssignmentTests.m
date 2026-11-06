@@ -35,8 +35,8 @@ function testAssignKcatsReproducesChain_tc0079(testCase)
 end
 
 function testCollectKcatsLeavesModel_tc0080(testCase)
-    % collectKcats decides without changing the model; a missing source is
-    % reported; custom.tsv decides first.
+    % collectKcats selects kcats without changing the model; a missing source is
+    % reported; custom.tsv is used first.
     [base, adapter, project] = buildProject();
     adapter.params.kcat_assignment = struct('preset', 'gecko_median');
     kcatsFromBrenda(base, 'modelAdapter', adapter);

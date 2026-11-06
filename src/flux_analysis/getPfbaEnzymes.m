@@ -5,7 +5,7 @@ function solution = getPfbaEnzymes(model, varargin)
 % value of the current objective, finds the one that minimises total
 % enzyme usage: the smallest sum of usage_prot_* fluxes. This is the
 % enzyme-aware analogue of classical pFBA, which minimises total flux
-% instead --- for ecModels this usually picks the most parsimonious
+% instead --- for ecModels this usually selects the most parsimonious
 % *proteome*, not just the most parsimonious fluxes.
 %
 % Parameters
@@ -21,7 +21,7 @@ function solution = getPfbaEnzymes(model, varargin)
 %     (default: use model.c as given).
 % fractionOfOptimum : double
 %     fraction of the optimal objective value to fix before minimising
-%     enzyme usage (default 1.0). A value below 1.0 lets the objective fall
+%     enzyme usage (default 1.0). A value below 1.0 allows the objective to fall
 %     by (1 - fractionOfOptimum) times the magnitude of its optimum, so it
 %     also applies to a negative optimum (for example the exchange flux of
 %     a nutrient that is maximised).

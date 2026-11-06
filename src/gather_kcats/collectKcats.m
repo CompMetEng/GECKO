@@ -24,7 +24,7 @@ function [decisions, report, ecModel] = collectKcats(model, varargin)
 %     [kcat_sources.okp]
 %     methods = ["CataPro", "UniKP"]   # the okp source group
 %
-% A stage decides the reactions that are still open:
+% A stage sets the kcat of the reactions that are still open:
 % - select: the first listed source with a value (see mergeKcats). Sources
 %   are the names of source files (custom, ec_tree, dlkcat, okp_catapro,
 %   ...) and the BRENDA quality tiers database_exact, database_top and

@@ -51,7 +51,7 @@ function result = relaxProteomicsGreedy(model, varargin)
 % Different relaxation strategy from flexibilizeEnzConcs: this one is
 % shadow-price-ordered (one solve per step) and often converges in fewer
 % iterations when one or two enzymes dominate the infeasibility. The
-% trade-off is that it fully unconstrains each picked enzyme with no
+% trade-off is that it fully unconstrains each selected enzyme with no
 % tighten-back pass, so the result is looser (less proteomics-faithful).
 %
 % There are two distinct non-convergence outcomes: running out of

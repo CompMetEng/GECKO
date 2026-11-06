@@ -4,7 +4,7 @@ function [file, report] = convertCustomKcats(model, varargin)
 % Writes the custom kcats of a GECKO 3 project as the curated kcat source
 % file data/kcats/custom.tsv, which collectKcats reads first. The kcats are
 % those applyCustomKcats gives the ecModel, including which of two entries
-% for the same reaction wins: one row per reaction, keyed by conventional
+% for the same reaction is kept: one row per reaction, keyed by conventional
 % reaction and enzyme set (see getEcRxnKeys), with the entry's notes in the
 % note column. The stoicho column is left out: complex stoichiometry comes
 % from applyComplexData. Unlike applyCustomKcats, custom.tsv also applies to

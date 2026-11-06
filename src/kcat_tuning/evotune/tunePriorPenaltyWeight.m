@@ -1,7 +1,7 @@
 function sweepTable = tunePriorPenaltyWeight(ecModel,varargin)
 % tunePriorPenaltyWeight  Sweep priorPenaltyWeight and report the
-% fit/reproducibility trade-off, so the value doesn't have to be picked
-% blind.
+% fit/reproducibility trade-off, so the value can be selected from the reported
+% results.
 %
 % priorPenaltyWeight charges for moving a kcat away from its prior, and
 % mainly exists to keep large corrections reproducible across seeds

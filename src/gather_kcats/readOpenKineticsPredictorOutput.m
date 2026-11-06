@@ -87,7 +87,7 @@ if isempty(outFile)
     outFile = fullfile(fPath, fName);
 end
 
-%% Read OKP output file using readcell to correctly handle quoted fields
+%% Read OKP output file using readcell to correctly read quoted fields
 % that may contain commas in the 'Extra Info kcat' column.
 if ~exist(outFile,'file')
     error('Cannot find file: %s', outFile)
