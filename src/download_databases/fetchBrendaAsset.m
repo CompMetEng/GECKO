@@ -1,7 +1,7 @@
 function folder = fetchBrendaAsset(files)
 % fetchBrendaAsset  Download (once) GECKO's BRENDA files and return their folder.
 %
-% GECKO does not ship BRENDA data. The files of the toolbox-assets release
+% GECKO does not include BRENDA data. The files of the toolbox-assets release
 % brenda-2026.1-1 (BRENDA 2026.1, CC BY 4.0) are downloaded on first use
 % with RAVEN's fetchToolboxAsset, which checks them against the checksums
 % of the toolbox-assets manifest, and are unpacked into

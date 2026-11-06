@@ -5,7 +5,7 @@ function point = bestParsimonious(points,varargin)
 % Defaults to 2%, which is the scale of alternate-optimum noise typically
 % seen from re-solving an LP with a slightly different kcat vector --
 % below that, two vectors are not meaningfully different in fit, so the
-% sparser one wins.
+% sparser one is kept.
 %
 % Parameters
 % ----------

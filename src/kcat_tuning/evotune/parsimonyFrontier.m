@@ -8,7 +8,7 @@ function points = parsimonyFrontier(scoreFcn,kcat,kcat0,sigma0log,varargin)
 % units of each kcat's own prior sigma) and reports how RMSE trades off
 % against how many kcats stayed at their tuned value, so a sparser
 % result within noise of the best fit can be preferred over the raw
-% tuner output. See bestParsimonious to pick a point off this frontier.
+% tuner output. See bestParsimonious to select a point on this frontier.
 %
 % Parameters
 % ----------

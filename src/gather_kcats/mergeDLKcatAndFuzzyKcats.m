@@ -3,7 +3,7 @@ function mergedKcatList = mergeDLKcatAndFuzzyKcats(kcatListDLKcat, kcatListFuzzy
 %
 % Deprecated thin wrapper around mergeKcats, kept for the common DLKcat +
 % fuzzy-BRENDA case. New code should call mergeKcats directly, which also
-% handles a single list that mixes several sources (e.g. an
+% accepts a single list that mixes several sources (e.g. an
 % OpenKineticsPredictor result with BRENDA/Sabio-RK/CataPro rows).
 %
 % Merges the results from DLKcat and fuzzy matching to the BRENDA database.

@@ -7,7 +7,7 @@ function [KCATcell, SAcell] = loadBRENDAdata(varargin)
 % and specific activities (the latter converted to kcat values using the
 % molecular weights).
 %
-% kcat.tsv and sa.tsv each carry both a max and a median aggregate per
+% kcat.tsv and sa.tsv each have both a max and a median aggregate per
 % (EC, substrate, organism) triple; kcatAggregation selects which of the
 % two is read. Each file starts with a `#`-prefixed release-version line
 % followed by a tab-delimited column header, both skipped on read.

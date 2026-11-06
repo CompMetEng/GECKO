@@ -5,7 +5,7 @@ function jobId = submitOpenKineticsPredictor(model, varargin)
 % SMILES, via writeOpenKineticsPredictorInput) and submits a kcat prediction
 % job to the OKP REST API (https://predictor.openkinetics.org/). The returned
 % job id is also stored in data/OKP_job.txt, so fetchOpenKineticsPredictor can
-% pick it up later.
+% read it later.
 %
 % Predictors available via OKP: CataPro, CatPred, CatRange, DLKcat, EITLEM,
 % KinForm-H, KinForm-L, OmniESI, OmniESI-O2DENet, TurNup, UniKP (see GET
@@ -19,7 +19,7 @@ function jobId = submitOpenKineticsPredictor(model, varargin)
 %     2. In the "API key generator" section, click "Generate".
 %     3. Copy the key shown (it is displayed only once). If you lose it,
 %        revoke it on the same page and generate a new one.
-%   Keys are tied to your IP and carry a daily prediction quota that resets
+%   Keys are tied to your IP and have a daily prediction quota that resets
 %   at midnight UTC.
 %
 %   The key is a secret; do NOT put it in the model adapter (which is

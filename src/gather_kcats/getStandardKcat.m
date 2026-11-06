@@ -145,7 +145,7 @@ if isfield(model,'subSystems') && ~all(cellfun(@isempty, model.subSystems))
     enzSubSystem_names = enzSubSystems(firstOccurrence);
     % Calculate the median kcat per subSystem, counting only reactions
     % with a real (nonzero, non-NaN) kcat toward both the median itself
-    % and the threshold that decides whether a subSystem-specific value
+    % and the threshold that determines whether a subSystem-specific value
     % is used at all.
     numSubSystem = numel(enzSubSystem_names);
     kcatsPerSubSystem = zeros(numSubSystem,1);
