@@ -1,7 +1,7 @@
 function report = upgradeGECKOproject(projectPath, varargin)
 % upgradeGECKOproject  Bring a GECKO 3 project to the GECKO 4 layout.
 %
-% Lists, and with 'dryRun', false carries out, the steps that bring a
+% Lists, and with 'dryRun', false performs, the steps that bring a
 % project made with GECKO 3 (or an earlier GECKO 4) to the current layout:
 %
 % 1. adapter: an adapter class without model_adapter.toml gets one

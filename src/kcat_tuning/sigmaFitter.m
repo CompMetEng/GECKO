@@ -1,7 +1,7 @@
 function [model, sigma] = sigmaFitter(model, varargin)
 % sigmaFitter  Fit the average enzyme saturation factor of an ecModel.
 %
-% Scans candidate sigma-factors from 0.01 to 1 in steps of 0.01 and picks the
+% Scans candidate sigma-factors from 0.01 to 1 in steps of 0.01 and selects the
 % one whose simulated growth rate best matches the provided experimental
 % growth rate, then applies it to the model's protein pool constraint.
 %

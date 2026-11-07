@@ -44,7 +44,7 @@ function [model, flexEnz] = flexibilizeEnzConcs(model, varargin)
 %     enzyme (default false). Enzymes and complexes are then ranked by the
 %     growth gained per foldChange of raising all their usage upper bounds
 %     together (a levelled complex binds on all subunits at once, so no
-%     single subunit shows a gain), every measured subunit of the picked
+%     single subunit shows a gain), every measured subunit of the selected
 %     complex is raised by the same factor, iterations are counted per
 %     complex, and one factor per complex is kept in the final pass, so that
 %     concentrations levelled by levelComplexConcs stay levelled. An upper

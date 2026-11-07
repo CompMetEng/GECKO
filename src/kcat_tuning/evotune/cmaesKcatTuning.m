@@ -7,7 +7,7 @@ function [ecModel,result] = cmaesKcatTuning(ecModel,varargin)
 % maxGenerations/rmseThreshold are its stopping conditions.
 %
 % Vendors a separable (diagonal-covariance) CMA-ES -- MATLAB has no
-% built-in implementation and Global Optimization Toolbox doesn't ship
+% built-in implementation and Global Optimization Toolbox does not include
 % one either. Separable rather than full-covariance because that is what
 % geckopy's own port actually runs (cma's CMA_diagonal=True) and what its
 % defaults were validated against; it is also lower risk to implement
@@ -45,7 +45,7 @@ function [ecModel,result] = cmaesKcatTuning(ecModel,varargin)
 % Returns
 % -------
 % ecModel : struct
-%     mutated: tunable rows carry the best kcat vector CMA-ES found, with
+%     mutated: tunable rows hold the best kcat vector CMA-ES found, with
 %     kcat constraints already applied. MATLAB structs are copied on
 %     assignment, so -- unlike geckopy's in-place mutation -- this output
 %     must be captured by the caller.
@@ -129,8 +129,8 @@ popsize = max(4, round(popsize));
 
 expand = @(Xlog) exp(Xlog(assign,:));
 
-% Baseline: score the untouched prior, and pick up the excarbon-augmented
-% model to carry through the rest of the run (see evotuneScore's 4th
+% Baseline: score the untouched prior, and keep the excarbon-augmented
+% model to use in the rest of the run (see evotuneScore's 4th
 % output -- avoids rescanning metabolite formulas on every candidate).
 [obj0,rmse0,~,baseModel] = scoreCandidate(ecModel,tunableIdx,ecRxnIdsTunable,evoData,modelAdapter,params,kcat0,kcat0,sigma0log);
 bestObj = obj0; bestRmse = rmse0; bestVec = kcat0;

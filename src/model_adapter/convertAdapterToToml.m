@@ -9,7 +9,7 @@ function report = convertAdapterToToml(adapter, tomlFile)
 % [matlab.params], so that loadAdapterParams gives back the same params.
 %
 % Methods that the adapter class overrides cannot be written to TOML.
-% They are listed in the report, with how to carry them over:
+% They are listed in the report, with how to convert them:
 % - getSpontaneousReactions: set [spontaneous] name_contains or file;
 % - makeModelAnaerobic, changeProteinBiomass: set [matlab]
 %   make_model_anaerobic or change_protein_biomass to a function name;

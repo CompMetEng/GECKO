@@ -46,7 +46,7 @@ function [objective,rmse,rmseDetail,ecModel] = evotuneScore(ecModel,evoData,vara
 %     the input ecModel, with ec.excarbon cached on it if it wasn't
 %     already present. MATLAB structs are copied on assignment, not
 %     shared by reference like a Python object, so callers scoring many
-%     candidates in a loop should carry this output back in as the base
+%     candidates in a loop should pass this output back in as the base
 %     copy for the next candidate, rather than recomputing excarbon (an
 %     expensive metabolite-formula scan) on every single call.
 %
@@ -146,7 +146,7 @@ for i = 1:length(data.conds)
     sol = solveLP(model_tmp);
     if checkSolution(sol)
         bioRxn  = getIndexes(model_tmp,data.biomass,'rxns');
-        % Biomass carries an assumed 41 Cmmol/gDCW, matching fillCarbonNum.
+        % Biomass has an assumed 41 Cmmol/gDCW, matching fillCarbonNum.
         bioMeas = data.grRate(i) * 41;
         bioSim  = sol.x(bioRxn) * 41;
 

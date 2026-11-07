@@ -5,9 +5,9 @@ function mergedKcatList = mergeKcats(kcatLists, sourcePriority, varargin)
 % Generalizes mergeDLKcatAndFuzzyKcats: instead of two fixed inputs (DLKcat
 % + fuzzy BRENDA) it accepts a cell array of kcatLists, each of which may
 % itself mix several sources (for example the output of
-% fetchOpenKineticsPredictor, carrying BRENDA, Sabio-RK and CataPro values
-% in its kcatSource field). A caller-supplied sourcePriority decides which
-% source wins for each reaction.
+% fetchOpenKineticsPredictor, holding BRENDA, Sabio-RK and CataPro values
+% in its kcatSource field). A caller-supplied sourcePriority determines which
+% source is kept for each reaction.
 %
 % Parameters
 % ----------
@@ -120,7 +120,7 @@ end
 
 dbSources = cellfun(@normalizeSource, databaseSources, 'UniformOutput', false);
 
-% Rank map: normalised priority token -> rank (1 = best). First wins.
+% Rank map: normalised priority token -> rank (1 = best). The first is kept.
 rankMap = containers.Map('KeyType','char','ValueType','double');
 for r = 1:numel(sourcePriority)
     key = normalizeSource(sourcePriority{r});

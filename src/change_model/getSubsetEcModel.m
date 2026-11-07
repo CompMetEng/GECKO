@@ -72,7 +72,7 @@ keepRxns = ismember(trimRxns,smallGEM.rxns) | protRxns;
 smallEcModel = removeReactions(smallEcModel,~keepRxns, true, true, true);
 
 % Remove reactions from ec-structure
-% The reaction identifiers of a light ecModel carry a 4 character prefix
+% The reaction identifiers of a light ecModel have a 4 character prefix
 if smallEcModel.ec.geckoLight
     ecModelRxns = extractAfter(smallEcModel.ec.rxns,4);
 else

@@ -169,7 +169,7 @@ end
 
 function testFlexibilizePerComplexKeepsMeasuredZeroOutOfTheReport_tc0317(testCase)
     % X1 has a concentration of 0 but an open usage bound, X2 limits the
-    % complex. X2 is raised and carries the count; X1 is not reported.
+    % complex. X2 is raised and holds the count; X1 is not reported.
     adapter = getAdapter();
     model = complexZeroToy([0 1], [1000 1]);
     warning('off', 'flexibilizeEnzConcs:measuredZero')

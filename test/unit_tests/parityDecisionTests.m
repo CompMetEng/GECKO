@@ -27,7 +27,7 @@ function testMergeDLKcatAndFuzzyKcatsDefaultTopOriginLimitIs4_tc0241(testCase)
 end
 
 function testFindECInDBSingleGeneDropsWildcardParent_tc0242(testCase)
-    % One gene whose protein carries '1.1.1.4 1.1.1.- 1.1.1.303' keeps the
+    % One gene whose protein has '1.1.1.4 1.1.1.- 1.1.1.303' keeps the
     % two specific codes and loses the wildcard of the same prefix.
     geneHashMap = containers.Map({'G1'}, {1});
     geneIndex = {1};
@@ -61,7 +61,7 @@ function testFindECInDBComplexDropsWildcardParent_tc0244(testCase)
     geneIndex = {1; 2; 3};
     EC = findECInDB({'G1','G2'}, {'1.1.1.4 1.1.1.-'; '1.1.1.4 1.1.1.-'; ''}, DBMW, geneIndex, geneHashMap);
     verifyEqual(testCase, EC, '1.1.1.4')
-    % A wildcard that only the union carries is dropped too
+    % A wildcard that only the union contains is dropped too
     EC = findECInDB({'G1','G2','G3'}, {'1.1.1.4'; '1.1.1.- 2.2.2.2'; '5.5.5.5'}, DBMW, geneIndex, geneHashMap);
     verifyEqual(testCase, EC, '1.1.1.4;2.2.2.2;5.5.5.5')
     % A wildcard shared by every gene stays, as nothing more specific exists

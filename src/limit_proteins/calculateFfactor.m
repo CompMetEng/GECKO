@@ -70,7 +70,7 @@ end
 if ischar(protData) && endsWith(protData,'paxDB.tsv')
     % Gather Uniprot database for finding MW. Only needed here, to map paxDB.tsv's gene
     % identifiers onto UniProt IDs and molecular weights --- a protData struct supplied by
-    % the caller already carries UniProt IDs and needs no lookup, so this stays inside the
+    % the caller already has UniProt IDs and needs no lookup, so this stays inside the
     % branch that actually uses it rather than running (and potentially downloading or
     % reading UniProt data) on every call.
     uniprotDB = loadDatabases('uniprot', modelAdapter);

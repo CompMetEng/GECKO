@@ -10,7 +10,7 @@
 
 ### BRENDA
 
-GECKO does not ship BRENDA data. `fetchBrendaAsset` downloads the files of the [toolbox-assets](https://github.com/CompMetEng/toolbox-assets) release `brenda-2026.1-1` ([BRENDA](https://www.brenda-enzymes.org) 2026.1, CC BY 4.0) on first use into `databases/brenda-2026.1-1`, checked against the manifest checksums. geckopy uses the same release. A project can use its own BRENDA files instead, in `data/brenda`, written by the `geckopy brenda-refresh` CLI of [geckopy](https://github.com/CompMetEng/geckopy).
+GECKO does not include BRENDA data. `fetchBrendaAsset` downloads the files of the [toolbox-assets](https://github.com/CompMetEng/toolbox-assets) release `brenda-2026.1-1` ([BRENDA](https://www.brenda-enzymes.org) 2026.1, CC BY 4.0) on first use into `databases/brenda-2026.1-1`, checked against the manifest checksums. geckopy uses the same release. A project can use its own BRENDA files instead, in `data/brenda`, written by the `geckopy brenda-refresh` CLI of [geckopy](https://github.com/CompMetEng/geckopy).
 
 - `kcat.tsv`: kcat values per organism, reaction and substrate. Both a per-triple maximum (`kcat_max`) and median (`kcat_median`) are recorded. Which one is used is set by `params.kcatAggregation` on the model adapter, or per call with `fuzzyKcatMatching(model,'kcatAggregation','median')`; the default is `max`.
 - `sa.tsv`: specific activities per organism, reaction and substrate, with a maximum (`sa_max`) and median (`sa_median`); `loadBRENDAdata` uses `sa_max`.
