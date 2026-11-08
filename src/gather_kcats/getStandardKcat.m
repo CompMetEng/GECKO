@@ -28,8 +28,9 @@ function [model, rxnsMissingGPR, standardMW, standardKcat, rxnsNoKcat] = getStan
 % linked to the "standard" pseudoenzyme, but will use the enzyme that they
 % had already been associated with.
 %
-% Any pre-existing standard kcat assignments (identified by 'standard'
-% entries in model.ec.source) are removed when applying this function.
+% Any pre-existing standard kcat assignments (the entries of model.ec.source
+% whose origin is 'standard' and that have no tuning status) are removed when
+% applying this function.
 %
 % Parameters
 % ----------
@@ -259,7 +260,10 @@ end
 stdMetIdx = find(strcmpi(model.ec.enzymes, 'standard'));
 
 % Remove previous standard kcat assignment
-oldStandardEnz = find(strcmp(model.ec.source,'standard'));
+% A row with a tuning status was changed on purpose and is kept.
+oldSource = parseKcatSource(model.ec.source);
+oldStandardEnz = find(strcmp({oldSource.origin}, 'standard') & cellfun(@isempty, {oldSource.tuned}));
+oldStandardEnz = oldStandardEnz(:);
 if ~isempty(oldStandardEnz)
     oldStandardProt = logical(model.ec.rxnEnzMat(oldStandardEnz,stdMetIdx));
     % If annotated with real enzyme => set kcat to zero
@@ -303,7 +307,7 @@ for i = 1:numel(rxnsMissingGPR)
         model.ec.kcat(end+1) = standardKcat;
     end
 
-    model.ec.source(end+1)   = {'standard'};
+    model.ec.source(end+1)   = {formatKcatSource('standard')};
     model.ec.notes(end+1)    = {''};
     model.ec.eccodes(end+1)  = {''};
 
@@ -316,7 +320,7 @@ rxnsMissingGPR = model.rxns(rxnsMissingGPR);
 if fillZeroKcat
     zeroKcat = model.ec.kcat == 0 | isnan(model.ec.kcat);
     model.ec.kcat(zeroKcat)     = standardKcat;
-    model.ec.source(zeroKcat)   = {'standard'};
+    model.ec.source(zeroKcat)   = {formatKcatSource('standard')};
     rxnsNoKcat = model.ec.rxns(zeroKcat);
 else
     rxnsNoKcat = [];

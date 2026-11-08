@@ -5,11 +5,13 @@ function [tunableIdx,ecRxnIdsTunable,kcat0,groups,sigma0log,tieMap] = resolveTun
 % Shared by screenKcatLeverage and cmaesKcatTuning so a screen and the
 % tuning run it feeds are always looking at exactly the same parameters.
 %
-% A kcat belongs to the group whose params.kcatSources entry equals its
-% ec.source, or the part of ec.source before ' (' (case-insensitive), so
-% 'brenda (wc=0, origin=1)' is in the group of 'brenda' and
-% 'combined (sd=0.10, n=2)' in the group of 'combined', with that group's
-% sigma0logSource.
+% A kcat belongs to the group whose params.kcatSources entry equals the
+% origin of its ec.source or its whole ec.source (case-insensitive, see
+% parseKcatSource), so
+% 'brenda (wc=0, origin=1)' is in the group of 'brenda',
+% 'combined (sd=0.10, n=2)' in the group of 'combined' and
+% 'brenda (wc=0, origin=1) | tuned=cmaes (prior=2)' in the group of 'brenda',
+% with that group's sigma0logSource.
 %
 % Parameters
 % ----------
@@ -54,14 +56,13 @@ end
 ecRxnIdsTunable = ecModel.ec.rxns(tunableIdx);
 kcat0           = ecModel.ec.kcat(tunableIdx);
 sources         = ecModel.ec.source(tunableIdx);
-% A source with a detail, such as 'combined (sd=0.10, n=2)', is also matched by
-% its name before ' ('.
-sourceNames     = strtrim(regexprep(sources, ' \(.*$', ''));
+sourceInfo      = parseKcatSource(sources);
+sourceNames     = {sourceInfo.origin}';
 
 groups    = repmat({'unlabelled'}, numel(tunableIdx), 1);
 sigma0log = params.sigma0logDefault * ones(numel(tunableIdx),1);
 for i = 1:numel(params.kcatSources)
-    idx = strcmpi(sources, params.kcatSources{i}) | strcmpi(sourceNames, params.kcatSources{i});
+    idx = strcmpi(sourceNames, params.kcatSources{i}) | strcmpi(sources, params.kcatSources{i});
     groups(idx)    = params.kcatSources(i);
     sigma0log(idx) = params.sigma0logSource(i);
 end
