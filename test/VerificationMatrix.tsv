@@ -7,7 +7,7 @@ change_model/applyKcatConstraints.m	tc0011, tc0215, tc0235, tc0238, tc0250, tc05
 change_model/findMetSmiles.m	tc0012	
 change_model/getComplexData.m	tc0003, tc0004, tc0705 - File download not covered by test cases but is tested manually and works.	
 change_model/makeEcModel.m	tc0001, tc0002, tc0210, tc0212, tc0233, tc0234	
-change_model/setProtPoolSize.m	tc0005	
+change_model/setProtPoolSize.m	tc0005, tc0720	
 change_model/getKcatAcrossIsoenzymes.m	tc0011, tc0252	
 change_model/getSubsetEcModel.m	tc0258, tc0259	
 change_model/applyCustomKcats.m	tc0227, tc0228, tc0229, tc0230	

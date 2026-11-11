@@ -28,6 +28,11 @@ function model = setProtPoolSize(model, varargin)
 % model : struct
 %     ecModel with protein pool constraint set.
 %
+% Notes
+% -----
+% A model without a prot_pool_exchange reaction raises the error
+% setProtPoolSize:noPoolExchange.
+%
 % Examples
 % --------
 %     % optional arguments may be given positionally or as name-value pairs:
@@ -65,6 +70,11 @@ if isempty(Ptot)
     Ptot = modelAdapter.getParameters().Ptot;
 end
 
-model.ub(strcmp(model.rxns, 'prot_pool_exchange')) = Ptot*f*sigma*1000;
+poolIdx = strcmp(model.rxns, 'prot_pool_exchange');
+if ~any(poolIdx)
+    error('setProtPoolSize:noPoolExchange', ...
+        'The model has no prot_pool_exchange reaction; makeEcModel adds it.')
+end
+model.ub(poolIdx) = Ptot*f*sigma*1000;
 end
 

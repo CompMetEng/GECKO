@@ -2973,6 +2973,13 @@ function testResolveTunableContextFirstGroupWins_tc0719(testCase)
     verifyEqual(testCase, sigma0log, [0.2; 0.1])
 end
 
+function testSetProtPoolSizeWithoutPoolErrors_tc0720(testCase)
+    % A model without prot_pool_exchange cannot get a protein pool size.
+    model = getGeckoTestModel();
+    verifyError(testCase, @() setProtPoolSize(model, 0.5, 0.5, 0.5), ...
+        'setProtPoolSize:noPoolExchange')
+end
+
 function [ecModel, adapter, project] = buildScratchProject()
     % An ecModel of the test model with a temporary copy of the test
     % project folder (the tracked test data is not modified).
