@@ -14,7 +14,8 @@ function [model, sigma] = sigmaFitter(model, varargin)
 % --------------------
 % growthRate : double
 %     growth rate that should be reached (default: read from the model
-%     adapter).
+%     adapter). A growth rate that is not positive raises the error
+%     sigmaFitter:growthRate.
 % Ptot : double
 %     total cellular protein content in g/gDCW (default: read from the model
 %     adapter; if not specified there, 0.5 g/gDCW is assumed).
@@ -72,6 +73,9 @@ end
 if isempty(growthRate)
     growthRate = modelAdapter.getParameters().gR_exp;
 end
+if ~(growthRate > 0)
+    error('sigmaFitter:growthRate', 'The growth rate to fit sigma to must be positive, not %g.', growthRate)
+end
 
 objValues = [];
 errors    = [];
@@ -90,9 +94,7 @@ for i=1:100
         solution.x=zeros(length(model.rxns),1);
     end
     objValues = [objValues; solution.x(objPos)];
-    error     = abs(((growthRate-solution.x(objPos))/growthRate)*100);
-    errors    = [errors; error];
-    error     = num2str(((growthRate-solution.x(objPos))/growthRate)*100);
+    errors    = [errors; abs(((growthRate-solution.x(objPos))/growthRate)*100)];
     sigParam  = [sigParam; sigma];
 end
 % Growth that is flat from some sigma on (a target above what the model can

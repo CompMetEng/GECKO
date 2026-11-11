@@ -2798,6 +2798,15 @@ function testEvotuneWithoutDataErrors_tc0709(testCase)
     verifyError(testCase, @() screenKcatLeverage(ecModel, 'modelAdapter', adapter), 'evotune:noData')
 end
 
+function testSigmaFitterZeroGrowthErrors_tc0710(testCase)
+    % A target growth rate of 0 has no relative error to minimise.
+    ecModel = fixtureForRelaxProteomicsGreedy();
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));
+    verifyError(testCase, @() sigmaFitter(ecModel, 'growthRate', 0, 'makePlot', false, ...
+        'modelAdapter', adapter), 'sigmaFitter:growthRate')
+end
+
 function [ecModel, adapter, project] = buildScratchProject()
     % An ecModel of the test model with a temporary copy of the test
     % project folder (the tracked test data is not modified).
