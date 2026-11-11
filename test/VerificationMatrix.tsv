@@ -84,7 +84,7 @@ limit_proteins/fitGAM.m
 limit_proteins/flexibilizeProteins.m	Not explicitly tested - The code has existed for a long time	Probably not relevant anymore, remove?
 limit_proteins/readProteomics.m	tc0013	
 limit_proteins/flexibilizeProtConcs.m	tc0013	
-limit_proteins/getConcControlCoeffs.m	tc0013, tc0712	
+limit_proteins/getConcControlCoeffs.m	tc0013, tc0712, tc0718	
 limit_proteins/flexibilizeEnzConcs.m	tc0013, tc0273, tc0274, tc0275, tc0276 (perComplex option), tc0296, tc0297, tc0317 (measured zero), tc0713, tc0717	
 limit_proteins/getComplexFamilies.m	tc0262, tc0263, tc0264, tc0265, tc0266	
 limit_proteins/levelComplexConcs.m	tc0267, tc0268, tc0269, tc0270, tc0271, tc0272, tc0315, tc0316	

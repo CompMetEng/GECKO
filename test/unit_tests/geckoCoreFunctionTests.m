@@ -2942,6 +2942,22 @@ function testFlexibilizeEnzConcsKeepsHigherBound_tc0717(testCase)
     verifyEqual(testCase, flexEnz.flexConcs, 50)
 end
 
+
+function testGetConcControlCoeffsShadowPrice_tc0718(testCase)
+    % Both methods give P5, the only binding enzyme, a coefficient of 0.72
+    % (growth per mg/gDCW) and do not evaluate P4, whose usage is 0.
+    ecModel = fixtureForRelaxProteomicsGreedy();
+    proteins = {'P5';'P4'};
+    [enz, coeffs] = getConcControlCoeffs(ecModel, 'proteins', proteins);
+    verifyEqual(testCase, enz, [true; false])
+    verifyEqual(testCase, coeffs, [0.72; 0], 'AbsTol', 1e-9)
+    [enz, coeffs] = getConcControlCoeffs(ecModel, 'proteins', proteins, 'method', 'shadow_price');
+    verifyEqual(testCase, enz, [true; false])
+    verifyEqual(testCase, coeffs, [0.72; 0], 'AbsTol', 1e-9)
+    verifyError(testCase, @() getConcControlCoeffs(ecModel, 'method', 'dual'), ...
+        'getConcControlCoeffs:method')
+end
+
 function [ecModel, adapter, project] = buildScratchProject()
     % An ecModel of the test model with a temporary copy of the test
     % project folder (the tracked test data is not modified).
