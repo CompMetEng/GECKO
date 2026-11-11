@@ -3087,8 +3087,10 @@ function kcatList = runDLKcatWithFakeDocker(testCase, ecModel, adapter, ecRxns)
     % a docker script on the PATH in place of Docker: it reports a version
     % and turns the DLKcat input into an output with a header and a kcat of
     % 2.5 on every row. Every metabolite gets a SMILES, so that every
-    % enzyme-substrate pair is in the input.
-    assumeTrue(testCase, isunix, 'The docker script needs a Unix shell.')
+    % enzyme-substrate pair is in the input. On macOS, kcatsFromDLKcat puts
+    % /usr/local/bin first on the PATH, where a real docker can come before
+    % the script, so the helper runs on Linux only.
+    assumeTrue(testCase, isunix && ~ismac, 'The docker script needs Linux.')
     binDir = tempname;
     mkdir(binDir);
     script = fullfile(binDir, 'docker');
