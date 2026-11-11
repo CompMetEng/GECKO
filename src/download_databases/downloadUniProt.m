@@ -23,12 +23,12 @@ function downloadUniProt(uniprotID, filePath, geneIDfield, type, reviewed)
 %     'taxonomy_id'). 'taxonomy' is accepted as an alias.
 % reviewed : logical
 %     whether to restrict the query to reviewed (Swiss-Prot) entries
-%     (optional, default true).
+%     (optional, default false: reviewed and unreviewed entries).
 %
 % Examples
 % --------
 %     downloadUniProt(559292, 'uniprot.tsv');
-%     downloadUniProt(559292, 'uniprot.tsv', 'gene_oln', 'taxonomy_id', true);
+%     downloadUniProt(559292, 'uniprot.tsv', 'gene_oln', 'taxonomy_id', true);  % reviewed only
 %
 % See also
 % --------
@@ -41,7 +41,7 @@ if nargin < 4 || isempty(type)
     type = 'taxonomy_id';
 end
 if nargin < 5 || isempty(reviewed)
-    reviewed = true;
+    reviewed = false;
 end
 if strcmp(type,'taxonomy')
     type = 'taxonomy_id';
