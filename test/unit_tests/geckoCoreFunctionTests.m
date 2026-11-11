@@ -2863,6 +2863,51 @@ function testKcatDecisionsFileHeader_tc0714(testCase)
         sprintf('ec_rxn\tstage\tsource\tkcat\tcandidates\tspread_log10\tsd_log10'))
 end
 
+function testRelaxEnzConcs_tc0715(testCase)
+    % relaxEnzConcs raises P5, the only binding enzyme, by the least fold
+    % that reaches the target: 0.72 growth per mg/gDCW gives 50/0.72 =
+    % 69.44 for a growth of 50. Above the growth of 90 that the protein pool
+    % allows, the pool is raised as well. geckopy's relax_enz_concs gives the
+    % same bounds on this model.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));
+    ecModel = fixtureForRelaxProteomicsGreedy();
+    usageP5 = strcmp(ecModel.rxns, 'usage_prot_P5');
+    pool = strcmp(ecModel.rxns, 'prot_pool_exchange');
+
+    [~, relaxed, flexEnz] = evalc('relaxEnzConcs(ecModel, ''expGrowth'', 50, ''bioRxn'', ''R5'', ''modelAdapter'', adapter)');
+    verifyEqual(testCase, relaxed.ub(usageP5), 50/0.72, 'RelTol', 1e-6)
+    verifyEqual(testCase, relaxed.ub(pool), ecModel.ub(pool))
+    verifyEqual(testCase, relaxed.ub(strcmp(ecModel.rxns, 'usage_prot_P4')), 5)
+    verifyEqual(testCase, flexEnz.uniprotIDs, {'P5'})
+    verifyEqual(testCase, flexEnz.oldConcs, 10)
+    verifyEqual(testCase, flexEnz.ratioIncr, 5/0.72, 'RelTol', 1e-6)
+    verifyEqual(testCase, flexEnz.frequence, 1)
+    sol = solveLP(relaxed);
+    verifyEqual(testCase, sol.f, 50, 'RelTol', 1e-6)
+
+    [~, relaxed, flexEnz] = evalc('relaxEnzConcs(ecModel, ''expGrowth'', 100, ''bioRxn'', ''R5'', ''modelAdapter'', adapter)');
+    verifyEqual(testCase, relaxed.ub(usageP5), 100/0.72, 'RelTol', 1e-6)
+    verifyEqual(testCase, relaxed.ub(pool), 125*100/90, 'RelTol', 1e-6)
+    verifyEqual(testCase, sort(flexEnz.uniprotIDs), {'P5';'prot_pool'})
+    sol = solveLP(relaxed);
+    verifyEqual(testCase, sol.f, 100, 'RelTol', 1e-6)
+
+    % A target the model already reaches relaxes nothing
+    [~, same, flexEnz] = evalc('relaxEnzConcs(ecModel, ''expGrowth'', 5, ''bioRxn'', ''R5'', ''modelAdapter'', adapter)');
+    verifyEmpty(testCase, flexEnz.uniprotIDs)
+    verifyEqual(testCase, same.ub, ecModel.ub)
+
+    % A target that no protein relaxation reaches is an error
+    blocked = ecModel;
+    blocked.ub(strcmp(blocked.rxns, 'S1')) = 0;
+    blocked.lb(strcmp(blocked.rxns, 'S1')) = 0;
+    verifyError(testCase, @() relaxEnzConcs(blocked, 'expGrowth', 50, 'bioRxn', 'R5', ...
+        'modelAdapter', adapter), 'relaxEnzConcs:infeasible')
+    verifyError(testCase, @() relaxEnzConcs(ecModel, 'expGrowth', 50, 'bioRxn', 'R5', ...
+        'weight', 'max', 'modelAdapter', adapter), 'relaxEnzConcs:arguments')
+end
+
 function [ecModel, adapter, project] = buildScratchProject()
     % An ecModel of the test model with a temporary copy of the test
     % project folder (the tracked test data is not modified).
