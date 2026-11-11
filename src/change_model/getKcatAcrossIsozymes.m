@@ -1,6 +1,9 @@
 function model = getKcatAcrossIsozymes(model)
 % getKcatAcrossIsozymes  Fill missing kcats from isozymes of the same reaction.
 %
+% Low-level: collectKcats and assignKcats run this function; call it
+% directly only to change kcats by hand.
+%
 % For reactions without kcat value (0 in model.ec.kcat), isozymes are found
 % (being based on the same reaction in the conventional GEM), that do have a
 % kcat value assigned. The mean kcat value of these isozymes is then used to

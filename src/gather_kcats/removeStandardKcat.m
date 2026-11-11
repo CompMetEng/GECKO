@@ -1,6 +1,9 @@
 function model = removeStandardKcat(model)
 % removeStandardKcat  Remove the standard pseudoenzyme and standard kcats.
 %
+% Low-level: it undoes getStandardKcat, which collectKcats and
+% assignKcats run; call it directly only to change kcats by hand.
+%
 % Removes the "standard" pseudoenzyme and standard kcat and MW values, as
 % they were introduced by getStandardKcat. Also standard kcat values that
 % were assigned by getStandardKcat if fillZeroKcat was set to true are

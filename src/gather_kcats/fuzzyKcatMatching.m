@@ -1,6 +1,9 @@
 function kcatList = fuzzyKcatMatching(model, varargin)
 % fuzzyKcatMatching  Match model EC numbers and substrates to BRENDA kcats.
 %
+% Low-level: kcatsFromBrenda runs this function; call it directly only to
+% inspect or change the BRENDA matches by hand.
+%
 % Matches the model EC numbers and substrates to the BRENDA database, to
 % return the corresponding kcats for each reaction. If no exact match is
 % found, less specific kcat values are found from (a) evolutionary closely

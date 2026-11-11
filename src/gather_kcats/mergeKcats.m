@@ -2,6 +2,9 @@ function mergedKcatList = mergeKcats(kcatLists, sourcePriority, varargin)
 % mergeKcats  Merge any number of kcatLists, keeping the highest-priority
 % source for each reaction.
 %
+% Low-level: collectKcats runs this function; call it directly only to
+% merge kcat lists by hand.
+%
 % Generalizes mergeDLKcatAndFuzzyKcats: instead of two fixed inputs (DLKcat
 % + fuzzy BRENDA) it accepts a cell array of kcatLists, each of which may
 % itself mix several sources (for example the output of

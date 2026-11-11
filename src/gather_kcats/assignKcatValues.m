@@ -1,6 +1,9 @@
 function [model, rxnIdx] = assignKcatValues(model,kcatList,varargin)
 % assignKcatValues  Select one kcat value per reaction and write to model.ec.
 %
+% Low-level: collectKcats and assignKcats run this function; call it
+% directly only to change kcats by hand.
+%
 % From a kcatList with predicted or suggested kcat values, where each
 % reaction may have multiple entries, one kcat value is selected and written
 % to model.ec.kcat. Zero values are discarded from the start. By default,
