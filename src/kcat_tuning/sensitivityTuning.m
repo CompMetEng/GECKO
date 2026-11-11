@@ -167,17 +167,17 @@ else
             break;
         end
         if ~isnan(lastGrowth) && res.f <= lastGrowth + growthStallTol
-            printOrange('No growth increase from increased kcats - check if the constraints on the uptake reactions are too tight.\n');
+            printOrange('WARNING: No growth increase from increased kcats - check if the constraints on the uptake reactions are too tight.\n');
             break;
         end
         lastGrowth = res.f;
+        if verbose; disp(['Iteration ' num2str(iteration) ': Growth: ' num2str(lastGrowth)]); end
         if (lastGrowth >= desiredGrowthRate)
             break;
         end
         %If you get an error here, it is likely due to numerical issues in the solver
         %The trick where we don't allow low kcats is to fix that, but maybe
         %it is not enough.
-        if verbose; disp(['Iteration ' num2str(iteration) ': Growth: ' num2str(lastGrowth)]); end
         iteration       = iteration + 1;
         %find the highest protein usage flux
         protPoolStoich  = m.S(strcmp(m.mets, 'prot_pool'),:).';
