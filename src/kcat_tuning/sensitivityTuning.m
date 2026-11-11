@@ -6,6 +6,10 @@ function [model, tunedKcats] = sensitivityTuning(model, varargin)
 % tuned values in model.ec.kcat. The loop also stops, with a warning, when an
 % iteration raises growth by less than 1e-9.
 %
+% This is the standard kcat tuning: it needs one maximum growth rate.
+% cmaesKcatTuning is the advanced tuning, which fits kcats to maximum
+% growth rates and exchange fluxes, measured in one or more conditions.
+%
 % Parameters
 % ----------
 % model : struct

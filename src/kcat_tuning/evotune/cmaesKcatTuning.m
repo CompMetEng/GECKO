@@ -1,6 +1,12 @@
 function [ecModel,result] = cmaesKcatTuning(ecModel,varargin)
 % cmaesKcatTuning  Tune kcats against experimental data with CMA-ES.
 %
+% This is the advanced kcat tuning: it fits kcats to maximum growth rates
+% and exchange fluxes, measured in one or more conditions (see
+% loadEvotuneData).
+% sensitivityTuning is the standard tuning, which needs one maximum growth
+% rate.
+%
 % Configuration comes entirely from modelAdapter.params.evotune: trust
 % tiers (kcatSources/sigma0logSource/sigma0logDefault), maxGrowthWeight,
 % priorPenaltyWeight and tieIsozymes control the search, and
