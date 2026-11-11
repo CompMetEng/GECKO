@@ -59,7 +59,7 @@ function [model, rxnIdx] = assignKcatValues(model,kcatList,varargin)
 %
 % See also
 % --------
-% readDLKcatOutput, mergeDLKcatAndFuzzyKcats, applyKcatConstraints
+% readDLKcatOutput, mergeKcats, assignKcats, applyKcatConstraints
 
 p = parseGECKOargs(varargin, { ...
     'criteria',  []; ...

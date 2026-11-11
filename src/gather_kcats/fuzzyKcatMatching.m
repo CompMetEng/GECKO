@@ -75,7 +75,7 @@ function kcatList = fuzzyKcatMatching(model, varargin)
 %
 % See also
 % --------
-% mergeDLKcatAndFuzzyKcats, assignKcatValues
+% mergeKcats, assignKcats, assignKcatValues
 
 % Validators reject a name that landed in a positional slot, which
 % happens when positional and name-value arguments are mixed. Without
