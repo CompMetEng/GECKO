@@ -3030,6 +3030,19 @@ function testLegacyCustomKcats_tc0725(testCase)
     verifyTrue(testCase, any(strcmp(decisions.source, 'custom')))
 end
 
+function testRelaxProteomicsGreedyLastIterationUsesUpCandidates_tc0726(testCase)
+    % When the last allowed relaxation uses up the candidates (P5, then P4)
+    % without reaching the target, relaxProteomicsGreedy warns and returns
+    % converged false instead of raising the iteration error.
+    ecModel = fixtureForRelaxProteomicsGreedy();
+    lastwarn('', '');
+    result = relaxProteomicsGreedy(ecModel, 'minimalGrowth', 1000, 'maxIterations', 2);
+    verifyFalse(testCase, result.converged)
+    verifyEqual(testCase, sort(fieldnames(result.relaxed)), sort({'P5';'P4'}))
+    verifyEqual(testCase, result.finalGrowth, 90, 'AbsTol', 1e-9)
+    verifySubstring(testCase, lastwarn(), 'no more candidates')
+end
+
 function [ecModel, adapter, project] = buildScratchProject()
     % An ecModel of the test model with a temporary copy of the test
     % project folder (the tracked test data is not modified).

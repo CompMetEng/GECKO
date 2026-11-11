@@ -51,7 +51,7 @@ limit_proteins/calculateFfactor.m	tc0502
 limit_proteins/constrainEnzConcs.m	tc0503, tc0296, tc0297, tc0716	
 limit_proteins/constrainFluxData.m	tc0505	
 limit_proteins/fillEnzConcs.m	tc0504	
-limit_proteins/relaxProteomicsGreedy.m	tc0511, tc0707, tc0708	
+limit_proteins/relaxProteomicsGreedy.m	tc0511, tc0707, tc0708, tc0726	
 limit_proteins/relaxEnzConcs.m	tc0715	
 utilities/upgradeGECKOproject.m	tc0094, tc0099	
 gather_kcats/reviewKcatAssignment.m	Has only been tested by running it manually, not tested by test cases
