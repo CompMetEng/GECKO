@@ -2807,6 +2807,27 @@ function testSigmaFitterZeroGrowthErrors_tc0710(testCase)
         'modelAdapter', adapter), 'sigmaFitter:growthRate')
 end
 
+function testLoadConventionalGEMFilename_tc0711(testCase)
+    % The filename option keeps an .xml or .yml extension and appends .xml
+    % to any other name; a convGEM with another extension raises an error.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));
+    project = tempname;
+    cleanupDir = onCleanup(@() rmdir(project, 's'));
+    mkdir(fullfile(project, 'models'));
+    copyfile(adapter.params.convGEM, fullfile(project, 'models', 'testModel.xml'));
+    adapter.params.path = project;
+    [~, fromName] = evalc('loadConventionalGEM(''filename'', ''testModel'', ''modelAdapter'', adapter);');
+    [~, fromXml] = evalc('loadConventionalGEM(''filename'', ''testModel.xml'', ''modelAdapter'', adapter);');
+    verifyEqual(testCase, fromXml, fromName)
+    writeYAMLmodel(fromName, fullfile(project, 'models', 'testModel.yml'));
+    [~, fromYml] = evalc('loadConventionalGEM(''filename'', ''testModel.yml'', ''modelAdapter'', adapter);');
+    verifyEqual(testCase, fromYml.rxns, fromName.rxns)
+    adapter.params.convGEM = fullfile(project, 'models', 'testModel.mat');
+    verifyError(testCase, @() loadConventionalGEM('modelAdapter', adapter), ...
+        'loadConventionalGEM:extension')
+end
+
 function [ecModel, adapter, project] = buildScratchProject()
     % An ecModel of the test model with a temporary copy of the test
     % project folder (the tracked test data is not modified).
