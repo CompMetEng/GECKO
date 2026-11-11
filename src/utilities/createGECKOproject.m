@@ -89,6 +89,11 @@ if ~exist(fullPath, 'dir')
     fid = fopen(filename, 'w');
     fwrite(fid, f);
     fclose(fid);
+
+    % Keep the OpenKineticsPredictor API key out of version control
+    fid = fopen(fullfile(fullPath, '.gitignore'), 'w');
+    fprintf(fid, 'data/okpApiKey.txt\n');
+    fclose(fid);
 else
     printOrange('WARNING: A project with the same name exits at the same location. The project was not created.\n');
 end

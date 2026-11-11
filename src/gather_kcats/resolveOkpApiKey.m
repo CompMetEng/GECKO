@@ -5,8 +5,9 @@ function key = resolveOkpApiKey(argKey, basePath)
 % fetchOpenKineticsPredictor; not intended to be called directly.
 %
 % Checked in order: the argKey input, the OKP_API_KEY environment variable,
-% then a plain-text file data/okpApiKey.txt under basePath (this name is
-% git-ignored by GECKO). The key is a secret and must never be read from the
+% then a plain-text file data/okpApiKey.txt under basePath (the GECKO
+% repository and the .gitignore that createGECKOproject writes ignore this
+% file). The key is a secret and must never be read from the
 % model adapter, which is shared/committed.
 %
 % Parameters

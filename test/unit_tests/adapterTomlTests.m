@@ -208,6 +208,7 @@ function testCreateGECKOprojectToml_tc0068(testCase)
     createGECKOproject('name', 'ecTestProject', 'path', root);
     folder = fullfile(root, 'ecTestProject');
     verifyTrue(testCase, isfile(fullfile(folder, 'model_adapter.toml')))
+    verifyEqual(testCase, strtrim(fileread(fullfile(folder, '.gitignore'))), 'data/okpApiKey.txt')
     adapter = ModelAdapterManager.getAdapter(folder);
     verifyEqual(testCase, adapter.params.org_name, 'genus species')
     verifyEqual(testCase, adapter.params.evotune.kcatSources, {'dlkcat','brenda','custom'})
