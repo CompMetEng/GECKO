@@ -427,23 +427,12 @@ function testKcats_tc0011(testCase)
     ecModel = applyComplexData(ecModel, [], adapter, false);
 
     kcatListFuzzy = fuzzyKcatMatching(ecModel, [], adapter);
-    %test to write a DLKcat
-    filepath = fullfile(adapter.getParameters().path,'data','DLKcat_input_test.tsv');
-    if exist(filepath, 'file')==2
-      delete(filepath);
-    end
-    verifyTrue(testCase,~(exist(filepath, 'file')==2))
-    [~, writtenTable] = evalc('writeDLKcatInput(ecModel, [], adapter, false, filepath)');
-    verifyTrue(testCase,exist(filepath, 'file')==2) %check that we write a file, we don't check the contents
-    if exist(filepath, 'file')==2 %clean up
-      delete(filepath);
-    end
-    verifyEqual(testCase,writtenTable(1,:), {'R2_EXP_1','R2_EXP_1','R2_EXP_2','R2_REV_EXP_1','R2_REV_EXP_1','R2_REV_EXP_2','R2a_EXP_1','R2a_EXP_1','R2a_EXP_2','R3','R3b','R5'})
-    verifyEqual(testCase,writtenTable(2,:), {'G1','G2','G3','G1','G2','G3','G1','G2','G3','G4','G4','G5'})
-    verifyEqual(testCase,writtenTable(3,:), {'m1','m1','m1','m2','m2','m2','m1','m1','m1','m1','m1','m2'})
-    %skip line 4, not set here since our fake metabolites don't have any smiles - could perhaps be fixed at some point
-    verifyEqual(testCase,writtenTable(5,:), {'MRAL','MNTD','MSYN','MRAL','MNTD','MSYN','MRAL','MNTD','MSYN','MDFM','MDFM','MLFK'})
-    %skip line 6, always set to 'NA' it seems
+    % The DLKcat input of every enzyme-substrate pair, read back from a
+    % DLKcat run that is replaced by a script (see runDLKcatWithFakeDocker)
+    kcatList = runDLKcatWithFakeDocker(testCase, ecModel, adapter, []);
+    verifyEqual(testCase,kcatList.rxns', {'R2_EXP_1','R2_EXP_1','R2_EXP_2','R2_REV_EXP_1','R2_REV_EXP_1','R2_REV_EXP_2','R2a_EXP_1','R2a_EXP_1','R2a_EXP_2','R3','R3b','R5'})
+    verifyEqual(testCase,kcatList.genes', {'G1','G2','G3','G1','G2','G3','G1','G2','G3','G4','G4','G5'})
+    verifyEqual(testCase,kcatList.substrates', {'m1','m1','m1','m2','m2','m2','m1','m1','m1','m1','m1','m2'})
     
     %Create a suitable kcatlist from dlkcat
     dlkcatList = struct();
@@ -642,7 +631,7 @@ function testCalculateFfactor_tc0014(testCase)
     verifyEqual(testCase,f,0.5)
 end
 
-function testWriteDLKcatInputSubset_tc0015(testCase)
+function testKcatsFromDLKcatDockerSubset_tc0015(testCase)
     geckoPath = findGECKOroot;
     adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
     model = getGeckoTestModel();
@@ -655,30 +644,13 @@ function testWriteDLKcatInputSubset_tc0015(testCase)
     ecModel = makeEcModel(model, false, adapter);
     ecModel = getECfromGEM(ecModel);
 
-    % A non-trivial ecRxns subset --- neither "all reactions" (ecRxns=[]) nor a subset
-    % that happens to start at index 1 --- is the ordinary, documented way to call
-    % writeDLKcatInput (e.g. "only the reactions fuzzy matching couldn't find a kcat
-    % for"), but was never exercised by any existing test: every prior call site here
-    % and in the manual tests either omits ecRxns or passes a full-length mask. With
-    % R2a_EXP_1/R2a_EXP_2 in the middle of ec.rxns rather than at its start, this used
-    % to silently write zero rows (an internal filtering step re-used already-consumed
-    % indices from ec.rxns space to index into the already-filtered, subset-length
-    % array, clearing every row it should have kept), and after a first, incomplete fix
-    % it wrote the right *number* of rows but attributed them to the wrong reactions
-    % (the same re-used-index mistake, one step further down).
+    % An ecRxns subset in the middle of ec.rxns gives the input rows of those
+    % reactions only, attributed to the right reactions.
     ecRxns = ismember(ecModel.ec.rxns, {'R2a_EXP_1','R2a_EXP_2'});
-    filepath = fullfile(adapter.getParameters().path,'data','DLKcat_input_subset_test.tsv');
-    if exist(filepath, 'file')==2
-      delete(filepath);
-    end
-    writtenTable = writeDLKcatInput(ecModel, 'ecRxns', ecRxns, 'modelAdapter', adapter, ...
-        'onlyWithSmiles', false, 'filename', filepath, 'overwrite', true);
-    if exist(filepath, 'file')==2 %clean up
-      delete(filepath);
-    end
-    verifyEqual(testCase,writtenTable(1,:), {'R2a_EXP_1','R2a_EXP_1','R2a_EXP_2'})
-    verifyEqual(testCase,writtenTable(2,:), {'G1','G2','G3'})
-    verifyEqual(testCase,writtenTable(3,:), {'m1','m1','m1'})
+    kcatList = runDLKcatWithFakeDocker(testCase, ecModel, adapter, ecRxns);
+    verifyEqual(testCase,kcatList.rxns', {'R2a_EXP_1','R2a_EXP_1','R2a_EXP_2'})
+    verifyEqual(testCase,kcatList.genes', {'G1','G2','G3'})
+    verifyEqual(testCase,kcatList.substrates', {'m1','m1','m1'})
 end
 
 
@@ -1683,8 +1655,8 @@ function testGetStandardKcatUsesSubsystemKcatWheneverAnyMatches_tc0034(testCase)
 end
 
 
-function testReadDLKcatOutputSubstrateMatchIsCaseInsensitive_tc0035(testCase)
-    % Verifies readDLKcatOutput matches a DLKcat output file's substrate
+function testKcatsFromDLKcatSubstrateMatchIsCaseInsensitive_tc0035(testCase)
+    % Verifies kcatsFromDLKcat matches a DLKcat output file's substrate
     % names against model.metNames case-insensitively, so an output file
     % whose substrate names differ only in case from model.metNames (e.g.
     % 'M1' vs. 'm1') is still recognized rather than reported as
@@ -1696,16 +1668,16 @@ function testReadDLKcatOutputSubstrateMatchIsCaseInsensitive_tc0035(testCase)
     ecModel = getECfromGEM(ecModel);
 
     scratchDir = fullfile(tempname);
+    mkdir(fullfile(scratchDir, 'data'));
     cleanupDir = onCleanup(@() rmdir(scratchDir, 's'));
-    mkdir(scratchDir);
-    outFile = fullfile(scratchDir,'DLKcat_output_test.tsv');
-    fid = fopen(outFile,'w');
+    adapter.params.path = scratchDir;
+    fid = fopen(fullfile(scratchDir, 'data', 'DLKcat.tsv'),'w');
     fprintf(fid,'rxns\tgenes\tsubstrates\tsmiles\tsequence\tkcat\n');
     % 'M1' (uppercase) against the model's own lowercase 'm1' -- must still match.
     fprintf(fid,'R2_EXP_1\tG1\tM1\tsmiles\tseq\t12.5\n');
     fclose(fid);
 
-    kcatList = readDLKcatOutput(ecModel, 'outFile', outFile, 'modelAdapter', adapter);
+    kcatList = kcatsFromDLKcat(ecModel, 'via', 'file', 'save', false, 'modelAdapter', adapter);
     verifyEqual(testCase, kcatList.kcats, 12.5)
     verifyEqual(testCase, kcatList.substrates, {'M1'})
 end
@@ -1738,10 +1710,9 @@ function testMakeEcModelSortsEcGenes_tc0036(testCase)
 end
 
 
-function testReadDLKcatOutputUnrecognizedSubstrateErrorsCleanly_tc0037(testCase)
-    % Verifies that readDLKcatOutput reports a genuinely unrecognized
-    % substrate with a clean error naming the substrate, rather than
-    % crashing.
+function testKcatsFromDLKcatUnrecognizedSubstrate_tc0037(testCase)
+    % A row with a substrate that is not in the model is left out with a
+    % warning.
     geckoPath = findGECKOroot;
     adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
     model = getGeckoTestModel();
@@ -1749,27 +1720,19 @@ function testReadDLKcatOutputUnrecognizedSubstrateErrorsCleanly_tc0037(testCase)
     ecModel = getECfromGEM(ecModel);
 
     scratchDir = fullfile(tempname);
+    mkdir(fullfile(scratchDir, 'data'));
     cleanupDir = onCleanup(@() rmdir(scratchDir, 's'));
-    mkdir(scratchDir);
-    outFile = fullfile(scratchDir,'DLKcat_output_test.tsv');
-    fid = fopen(outFile,'w');
+    adapter.params.path = scratchDir;
+    fid = fopen(fullfile(scratchDir, 'data', 'DLKcat.tsv'),'w');
     fprintf(fid,'rxns\tgenes\tsubstrates\tsmiles\tsequence\tkcat\n');
-    fprintf(fid,'R2_EXP_1\tG1\tNOTAREALMETABOLITE\tsmiles\tseq\t12.5\n');
+    fprintf(fid,'R2_EXP_1\tG1\tm1\tsmiles\tseq\t12.5\n');
+    fprintf(fid,'R2_EXP_2\tG3\tNOTAREALMETABOLITE\tsmiles\tseq\t7\n');
     fclose(fid);
 
-    try
-        readDLKcatOutput(ecModel, 'outFile', outFile, 'modelAdapter', adapter, 'strict', true);
-        errored = false;
-        msg = '';
-    catch ME
-        errored = true;
-        msg = ME.message;
-    end
-    verifyTrue(testCase, errored)
-    verifyFalse(testCase, contains(msg, 'dispEM'))
-    verifyTrue(testCase, contains(msg, 'NOTAREALMETABOLITE'))
+    kcatList = verifyWarning(testCase, @() kcatsFromDLKcat(ecModel, 'via', 'file', 'save', false, ...
+        'modelAdapter', adapter), 'readDLKcatOutput:unknownSubstrate');
+    verifyEqual(testCase, kcatList.rxns, {'R2_EXP_1'})
 end
-
 
 function testLoadDatabasesDuplicateUniprotEntriesErrorsCleanly_tc0038(testCase)
     % Verifies that loadDatabases reports duplicate UniProt entries with a
@@ -3023,6 +2986,27 @@ function testOkpSourceGroupDefault_tc0723(testCase)
     verifyEqual(testCase, config.okpMethods, {'CataPro', 'UniKP'})
 end
 
+function testDeprecatedDLKcatFunctions_tc0724(testCase)
+    % readDLKcatOutput warns and reads a DLKcat output file through
+    % kcatsFromDLKcat; runDLKcat and writeDLKcatInput warn and raise an
+    % error that names kcatsFromDLKcat.
+    [ecModel, adapter, project] = buildScratchProject();
+    cleanupDir = onCleanup(@() rmdir(project, 's'));
+    outFile = fullfile(project, 'output.tsv');
+    fid = fopen(outFile, 'w');
+    fprintf(fid, 'rxns\tgenes\tsubstrates\tsmiles\tsequence\tkcat\n');
+    fprintf(fid, 'R2_EXP_1\tG1\tm1\tsmiles\tseq\t12.5\n');
+    fclose(fid);
+    kcatList = verifyWarning(testCase, @() readDLKcatOutput(ecModel, 'outFile', outFile, ...
+        'modelAdapter', adapter), 'GECKO:deprecatedFunction');
+    verifyEqual(testCase, kcatList.rxns, {'R2_EXP_1'})
+    verifyEqual(testCase, kcatList.kcats, 12.5)
+    state = warning('off', 'GECKO:deprecatedFunction');
+    restore = onCleanup(@() warning(state));
+    verifyError(testCase, @() runDLKcat('modelAdapter', adapter), 'GECKO:deprecatedFunction')
+    verifyError(testCase, @() writeDLKcatInput(ecModel, 'modelAdapter', adapter), 'GECKO:deprecatedFunction')
+end
+
 function [ecModel, adapter, project] = buildScratchProject()
     % An ecModel of the test model with a temporary copy of the test
     % project folder (the tracked test data is not modified).
@@ -3033,4 +3017,40 @@ function [ecModel, adapter, project] = buildScratchProject()
     adapter.params.path = project;
     ecModel = makeEcModel(getGeckoTestModel(), false, adapter);
     ecModel = getECfromGEM(ecModel);
+end
+
+
+function kcatList = runDLKcatWithFakeDocker(testCase, ecModel, adapter, ecRxns)
+    % Runs kcatsFromDLKcat with 'via', 'docker' in a temporary project, with
+    % a docker script on the PATH in place of Docker: it reports a version
+    % and turns the DLKcat input into an output with a header and a kcat of
+    % 2.5 on every row. Every metabolite gets a SMILES, so that every
+    % enzyme-substrate pair is in the input.
+    assumeTrue(testCase, isunix, 'The docker script needs a Unix shell.')
+    binDir = tempname;
+    mkdir(binDir);
+    script = fullfile(binDir, 'docker');
+    fid = fopen(script, 'w');
+    fprintf(fid, '%s\n', ...
+        '#!/bin/bash', ...
+        'if [ "$1" = "--version" ]; then echo "Docker version 0 (test)"; exit 0; fi', ...
+        'while [ $# -gt 0 ]; do', ...
+        '  if [ "$1" = "-v" ]; then dir="${2%:/data}"; fi', ...
+        '  shift', ...
+        'done', ...
+        'printf ''rxns\tgenes\tsubstrates\tsmiles\tsequence\tkcat\n'' > "$dir/tempDLKcatOutput.tsv"', ...
+        'awk ''BEGIN{FS=OFS="\t"} {$6="2.5"; print}'' "$dir/tempDLKcat.tsv" >> "$dir/tempDLKcatOutput.tsv"');
+    fclose(fid);
+    system(['chmod +x "' script '"']);
+    oldPath = getenv('PATH');
+    cleanupPath = onCleanup(@() setenv('PATH', oldPath));
+    setenv('PATH', [binDir pathsep oldPath]);
+    project = tempname;
+    mkdir(fullfile(project, 'data'));
+    cleanupDirs = onCleanup(@() cellfun(@(d) rmdir(d, 's'), {project, binDir}));
+    adapter.params.path = project;
+    ecModel.metSmiles = repmat({'C'}, numel(ecModel.mets), 1);
+    [~, kcatList] = evalc(['kcatsFromDLKcat(ecModel, ''via'', ''docker'', ''ecRxns'', ecRxns, ' ...
+        '''save'', false, ''modelAdapter'', adapter)']);
+    verifyTrue(testCase, all(kcatList.kcats == 2.5))
 end

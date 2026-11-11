@@ -7,13 +7,13 @@ end
 
 function testAssignKcatsReproducesChain_tc0079(testCase)
     % The gecko_classic preset gives the same model as the steps it
-    % replaces: fuzzyKcatMatching, readDLKcatOutput, mergeKcats,
+    % replaces: fuzzyKcatMatching, the DLKcat output, mergeKcats,
     % assignKcatValues, applyCustomKcats, getKcatAcrossIsozymes,
     % getStandardKcat and applyKcatConstraints.
     [base, adapter, project] = buildProject();
     adapter.params.kcat_assignment = struct('preset', 'gecko_classic');
     fuzzy = fuzzyKcatMatching(base, [], adapter);
-    dlkcat = readDLKcatOutput(base, 'modelAdapter', adapter);
+    dlkcat = kcatsFromDLKcat(base, 'via', 'file', 'save', false, 'modelAdapter', adapter);
     % gecko_classic ranks the specific-activity matches (origin 5 and 6) above DLKcat
     merged = mergeKcats({fuzzy, dlkcat}, {'database_top','dlkcat','database_bottom'}, 'topOriginLimit', 6);
     A = assignKcatValues(base, merged);

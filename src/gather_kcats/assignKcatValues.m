@@ -8,8 +8,8 @@ function [model, rxnIdx] = assignKcatValues(model,kcatList,varargin)
 % reaction may have multiple entries, one kcat value is selected and written
 % to model.ec.kcat. Zero values are discarded from the start. By default,
 % the maximum value is chosen, but alternatives are available. The kcatList
-% structure is an output of e.g. readDLKcatOutput, readGotEnzymesOutput,
-% readManualKcatList.
+% structure is an output of e.g. kcatsFromBrenda, kcatsFromDLKcat or
+% kcatsFromOKP.
 %
 % Parameters
 % ----------
@@ -62,7 +62,7 @@ function [model, rxnIdx] = assignKcatValues(model,kcatList,varargin)
 %
 % See also
 % --------
-% readDLKcatOutput, mergeKcats, assignKcats, applyKcatConstraints
+% kcatsFromDLKcat, mergeKcats, assignKcats, applyKcatConstraints
 
 p = parseGECKOargs(varargin, { ...
     'criteria',  []; ...

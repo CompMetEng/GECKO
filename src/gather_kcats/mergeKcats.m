@@ -93,7 +93,7 @@ function mergedKcatList = mergeKcats(kcatLists, sourcePriority, varargin)
 %
 % See also
 % --------
-% assignKcats, readDLKcatOutput, fuzzyKcatMatching, assignKcatValues
+% assignKcats, kcatsFromDLKcat, fuzzyKcatMatching, assignKcatValues
 
 p = parseGECKOargs(varargin, { ...
     'topOriginLimit',    4; ...

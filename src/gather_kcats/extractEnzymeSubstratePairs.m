@@ -36,7 +36,7 @@ function pairs = extractEnzymeSubstratePairs(model, varargin)
 %
 % See also
 % --------
-% writeDLKcatInput, kcatsFromHomologs
+% kcatsFromDLKcat, kcatsFromHomologs
 
 [geckoPath, ~] = findGECKOroot();
 p = parseGECKOargs(varargin, {'ecRxns', []; 'modelAdapter', []});

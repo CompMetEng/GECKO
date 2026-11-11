@@ -16,15 +16,15 @@ enzyme_usage/reportEnzymeUsage.m	tc0286, tc0508, tc0509
 gather_kcats/fuzzyKcatMatching.m	tc0010, tc0223, tc0224, tc0225, tc0226, tc0231, tc0239	
 gather_kcats/getStandardKcat.m	tc0256, tc0257, tc0309, tc0310	
 deprecated/mergeDLKcatAndFuzzyKcats.m	tc0011; tc0241; tc0703 (deprecation warning)	
-gather_kcats/readDLKcatOutput.m	tcm0001, tcm0002, tc0303, tc0304 - The test doesn't really check the function, only that some output is read	
-gather_kcats/runDLKcat.m	tcm0001, tcm0002 - The test doesn't really check the function, only that we get something
+deprecated/readDLKcatOutput.m	tc0724 (forwards to kcatsFromDLKcat)	
+deprecated/runDLKcat.m	tc0724 (deprecation error)
 gather_kcats/assignKcatValues.m	tc0011 - we did not test all possible parameterizations here; also tc0104, tc0311
-gather_kcats/writeDLKcatInput.m	partly by tc0011, tc0305
+deprecated/writeDLKcatInput.m	tc0724 (deprecation error)
 gather_kcats/getEcRxnKeys.m	tc0070, tc0076	
 gather_kcats/saveKcatSource.m	tc0071, tc0073, tc0076, tc0078	
 gather_kcats/loadKcatSource.m	tc0071, tc0072, tc0073, tc0076, tc0077, tc0078, tc0302	
 gather_kcats/kcatsFromBrenda.m	tc0074, tc0078, tc0226	
-gather_kcats/kcatsFromDLKcat.m	tc0074, tc0078, tc0701 - reads an existing DLKcat output; the default 'via' reads data/DLKcat.tsv or goes to OKP (tc0701 stops at the missing API key); a run with Docker is not tested	
+gather_kcats/kcatsFromDLKcat.m	tc0011, tc0015 (Docker replaced by a script), tc0035, tc0037, tc0074, tc0078, tc0303, tc0304, tc0701 - the default 'via' reads data/DLKcat.tsv or goes to OKP (tc0701 stops at the missing API key)	
 gather_kcats/kcatsFromOKP.m	tc0023 (input of a job), tc0030 (fetch with a replaced webread), tc0069 (CatRange), tc0075 - reads a stored result; the submit request itself needs the OKP service	
 gather_kcats/collectKcats.m	tc0079, tc0080, tc0081, tc0083, tc0087, tc0088, tc0089, tc0090, tc0098, tc0300, tc0714	
 gather_kcats/assignKcats.m	tc0079, tc0083	
