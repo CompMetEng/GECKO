@@ -71,6 +71,9 @@ function [model, flexEnz] = flexibilizeEnzConcs(model, varargin)
 %
 % Notes
 % -----
+% When the input model has no optimal solution, the warning
+% flexibilizeEnzConcs:infeasible is raised and flexEnz is empty.
+%
 % The usage upper bound of an enzyme is raised by a factor of its
 % concentration, so an enzyme with a concentration of 0 in model.ec.concs
 % stays at 0 and is never flexibilized. If such enzymes exist, the warning
@@ -152,6 +155,17 @@ predGrowth = sol.f;
 
 % Get those proteins with a concentration defined
 protConcs = find(~isnan(model.ec.concs));
+if sol.stat ~= 1 && ~isempty(protConcs)
+    warning('flexibilizeEnzConcs:infeasible', ['The input model has no optimal solution, so ' ...
+        'there is no growth to flexibilize towards and no enzyme is flexibilized. Check the ' ...
+        'enzyme concentration and exchange constraints.'])
+    flexEnz.uniprotIDs = cell(0, 1);
+    flexEnz.oldConcs   = zeros(0, 1);
+    flexEnz.flexConcs  = zeros(0, 1);
+    flexEnz.frequence  = zeros(0, 1);
+    flexEnz.ratioIncr  = zeros(0, 1);
+    return
+end
 measuredZero = model.ec.enzymes(model.ec.concs == 0);
 if ~isempty(measuredZero)
     listed = strjoin(measuredZero(1:min(10, end))', ', ');

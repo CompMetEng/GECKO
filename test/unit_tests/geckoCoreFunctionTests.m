@@ -2836,6 +2836,20 @@ function testGetConcControlCoeffsInfeasibleErrors_tc0712(testCase)
     verifyError(testCase, @() getConcControlCoeffs(ecModel), 'getConcControlCoeffs:infeasible')
 end
 
+
+function testFlexibilizeEnzConcsInfeasibleWarns_tc0713(testCase)
+    % An infeasible input model gives a warning and an empty result.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));
+    adapter.params.bioRxn = 'R5';
+    ecModel = fixtureForRelaxProteomicsGreedy();
+    ecModel.lb(strcmp(ecModel.rxns, 'R5')) = 1000;
+    [~, flexEnz] = verifyWarning(testCase, @() flexibilizeEnzConcs(ecModel, 'expGrowth', 80, ...
+        'modelAdapter', adapter, 'verbose', false), 'flexibilizeEnzConcs:infeasible');
+    verifyEmpty(testCase, flexEnz.uniprotIDs)
+    verifyEmpty(testCase, flexEnz.flexConcs)
+end
+
 function [ecModel, adapter, project] = buildScratchProject()
     % An ecModel of the test model with a temporary copy of the test
     % project folder (the tracked test data is not modified).
