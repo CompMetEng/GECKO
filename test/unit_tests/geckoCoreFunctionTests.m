@@ -2724,6 +2724,19 @@ function testCreateGECKOprojectGitignore_tc0704(testCase)
 end
 
 
+function testGetComplexDataWithoutTaxonomicID_tc0705(testCase)
+    % Without a taxonomicID, getComplexData warns and returns an empty
+    % complexInfo with the fields of a downloaded one.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));
+    adapter.params.complex.taxonomicID = [];
+    complexInfo = verifyWarning(testCase, @() getComplexData('modelAdapter', adapter), ...
+        'getComplexData:noTaxonomicID');
+    verifyEmpty(testCase, complexInfo)
+    verifyEqual(testCase, fieldnames(complexInfo), ...
+        {'complexID';'name';'species';'geneName';'protID';'stochiometry';'defined'})
+end
+
 function [ecModel, adapter, project] = buildScratchProject()
     % An ecModel of the test model with a temporary copy of the test
     % project folder (the tracked test data is not modified).
