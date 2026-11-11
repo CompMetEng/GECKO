@@ -2958,6 +2958,21 @@ function testGetConcControlCoeffsShadowPrice_tc0718(testCase)
         'getConcControlCoeffs:method')
 end
 
+function testResolveTunableContextFirstGroupWins_tc0719(testCase)
+    % A source label listed in two groups takes the prior width of the
+    % first group, as in geckopy.
+    model.ec.rxns = {'R1'; 'R2'};
+    model.ec.kcat = [1; 2];
+    model.ec.source = {'brenda (wc=0, origin=1)'; 'custom'};
+    params.kcatSources = {'brenda', 'custom', 'brenda'};
+    params.sigma0logSource = [0.2; 0.1; 0.4];
+    params.sigma0logDefault = 1;
+    params.tieIsozymes = false;
+    [~, ~, ~, groups, sigma0log] = resolveTunableContext(model, params, []);
+    verifyEqual(testCase, groups, {'brenda'; 'custom'})
+    verifyEqual(testCase, sigma0log, [0.2; 0.1])
+end
+
 function [ecModel, adapter, project] = buildScratchProject()
     % An ecModel of the test model with a temporary copy of the test
     % project folder (the tracked test data is not modified).

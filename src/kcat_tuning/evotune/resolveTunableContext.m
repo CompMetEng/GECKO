@@ -9,7 +9,8 @@ function [tunableIdx,ecRxnIdsTunable,kcat0,groups,sigma0log,tieMap] = resolveTun
 % ec.source, or the part of ec.source before ' (' (case-insensitive), so
 % 'brenda (wc=0, origin=1)' is in the group of 'brenda' and
 % 'combined (sd=0.10, n=2)' in the group of 'combined', with that group's
-% sigma0logSource.
+% sigma0logSource. When a source matches the entries of several groups, the
+% first matching entry in params.kcatSources gives the group.
 %
 % Parameters
 % ----------
@@ -60,8 +61,10 @@ sourceNames     = strtrim(regexprep(sources, ' \(.*$', ''));
 
 groups    = repmat({'unlabelled'}, numel(tunableIdx), 1);
 sigma0log = params.sigma0logDefault * ones(numel(tunableIdx),1);
+assigned  = false(numel(tunableIdx),1);
 for i = 1:numel(params.kcatSources)
-    idx = strcmpi(sources, params.kcatSources{i}) | strcmpi(sourceNames, params.kcatSources{i});
+    idx = ~assigned & (strcmpi(sources, params.kcatSources{i}) | strcmpi(sourceNames, params.kcatSources{i}));
+    assigned(idx)  = true;
     groups(idx)    = params.kcatSources(i);
     sigma0log(idx) = params.sigma0logSource(i);
 end
