@@ -3003,6 +3003,10 @@ function testDeprecatedDLKcatFunctions_tc0724(testCase)
     verifyEqual(testCase, kcatList.rxns, {'R2_EXP_1'})
     verifyEqual(testCase, kcatList.kcats, 12.5)
     state = warning('off', 'GECKO:deprecatedFunction');
+    % The strict option of earlier versions is accepted and ignored
+    kcatList = verifyWarning(testCase, @() readDLKcatOutput(ecModel, 'outFile', outFile, ...
+        'modelAdapter', adapter, 'strict', true), 'GECKO:deprecatedOption');
+    verifyEqual(testCase, kcatList.rxns, {'R2_EXP_1'})
     restore = onCleanup(@() warning(state));
     verifyError(testCase, @() runDLKcat('modelAdapter', adapter), 'GECKO:deprecatedFunction')
     verifyError(testCase, @() writeDLKcatInput(ecModel, 'modelAdapter', adapter), 'GECKO:deprecatedFunction')

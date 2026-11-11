@@ -11,6 +11,9 @@ function kcatList = readDLKcatOutput(model, varargin)
 %     the DLKcat output file (default: data/DLKcat.tsv of the project).
 % modelAdapter : ModelAdapter
 %     a loaded model adapter (default: the current default model adapter).
+% strict : logical
+%     ignored, with a warning: rows with a substrate that is not in
+%     model.metNames are always left out with a warning.
 %
 % See also
 % --------
@@ -18,7 +21,11 @@ function kcatList = readDLKcatOutput(model, varargin)
 
 warning('GECKO:deprecatedFunction', ['readDLKcatOutput is deprecated; use ' ...
     'kcatsFromDLKcat(model, ''via'', ''file''). It will be removed in a future release.'])
-p = parseGECKOargs(varargin, {'outFile', []; 'modelAdapter', []});
+p = parseGECKOargs(varargin, {'outFile', []; 'modelAdapter', []; 'strict', []});
+if ~isempty(p.strict)
+    warning('GECKO:deprecatedOption', ['The strict option of readDLKcatOutput is ignored: rows ' ...
+        'with a substrate that is not in model.metNames are left out with a warning.'])
+end
 modelAdapter = p.modelAdapter;
 if isempty(modelAdapter)
     modelAdapter = ModelAdapterManager.getDefault();
