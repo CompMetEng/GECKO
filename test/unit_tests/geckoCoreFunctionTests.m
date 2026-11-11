@@ -2908,6 +2908,22 @@ function testRelaxEnzConcs_tc0715(testCase)
         'weight', 'max', 'modelAdapter', adapter), 'relaxEnzConcs:arguments')
 end
 
+function testConstrainEnzConcsRestrictTo_tc0716(testCase)
+    % restrictTo processes only the listed enzymes; the usage reactions of
+    % the others keep their bounds, and an unknown ID is ignored.
+    ecModel = fixtureForRelaxProteomicsGreedy();
+    usageP4 = strcmp(ecModel.rxns, 'usage_prot_P4');
+    usageP5 = strcmp(ecModel.rxns, 'usage_prot_P5');
+    ecModel.ec.concs(strcmp(ecModel.ec.enzymes, 'P4')) = 7;
+    ecModel.ec.concs(strcmp(ecModel.ec.enzymes, 'P5')) = 20;
+    restricted = constrainEnzConcs(ecModel, 'restrictTo', {'P5', 'unknown'});
+    verifyEqual(testCase, restricted.ub(usageP5), 20)
+    verifyEqual(testCase, restricted.ub(usageP4), 5)
+    released = constrainEnzConcs(ecModel, 'removeConstraints', true, 'restrictTo', {'P4'});
+    verifyEqual(testCase, released.ub(usageP4), 1000)
+    verifyEqual(testCase, released.ub(usageP5), 10)
+end
+
 function [ecModel, adapter, project] = buildScratchProject()
     % An ecModel of the test model with a temporary copy of the test
     % project folder (the tracked test data is not modified).

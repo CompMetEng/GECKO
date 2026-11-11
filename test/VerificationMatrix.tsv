@@ -48,7 +48,7 @@ change_model/mapRxnsToConv.m	tc0213
 flux_analysis/ecFVA.m	tc0214	
 flux_analysis/ecFSEOF.m	tc0100, tc0236, tc0706	
 limit_proteins/calculateFfactor.m	tc0502	
-limit_proteins/constrainEnzConcs.m	tc0503, tc0296, tc0297	
+limit_proteins/constrainEnzConcs.m	tc0503, tc0296, tc0297, tc0716	
 limit_proteins/constrainFluxData.m	tc0505	
 limit_proteins/fillEnzConcs.m	tc0504	
 limit_proteins/relaxProteomicsGreedy.m	tc0511, tc0707, tc0708	
