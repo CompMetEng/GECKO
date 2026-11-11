@@ -161,6 +161,9 @@ loaded = struct();
             error('collectKcats:legacyCustomKcats', ['%s is a GECKO 3 custom kcats file, which ' ...
                 'collectKcats does not read. convertCustomKcats(ecModel) writes it as %s.'], ...
                 fullfile(params.path, 'data', 'customKcats.tsv'), file)
+        elseif strcmp(name, 'custom')
+            report.missing{end+1} = name;
+            printOrange(sprintf('No custom kcats file %s; it is left out.\n', file));
         else
             report.missing{end+1} = name;
             printOrange(sprintf(['No kcat source file %s; it is left out. ' ...
