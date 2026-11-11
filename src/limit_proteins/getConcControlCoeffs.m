@@ -35,6 +35,11 @@ function [enz, controlCoeffs] = getConcControlCoeffs(model, varargin)
 %     control coefficient per input protein (0 for proteins not evaluated
 %     or whose increase did not measurably raise growth).
 %
+% Notes
+% -----
+% When the model has no feasible solution, the error
+% getConcControlCoeffs:infeasible is raised.
+%
 % Examples
 % --------
 %     % optional arguments may be given positionally or as name-value pairs:
@@ -70,6 +75,10 @@ enz = false(length(proteins),1);
 controlCoeffs = zeros(length(proteins),1);
 
 [sol,hs] = solveLP(model);
+if sol.stat ~= 1
+    error('getConcControlCoeffs:infeasible', ...
+        'The model has no optimal solution, so no control coefficients can be calculated.')
+end
 initialGrowth = sol.f;
 
 % Get enzyme index

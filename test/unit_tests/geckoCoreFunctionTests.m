@@ -2828,6 +2828,14 @@ function testLoadConventionalGEMFilename_tc0711(testCase)
         'loadConventionalGEM:extension')
 end
 
+
+function testGetConcControlCoeffsInfeasibleErrors_tc0712(testCase)
+    % An infeasible model raises an error instead of returning coefficients.
+    ecModel = fixtureForRelaxProteomicsGreedy();
+    ecModel.lb(strcmp(ecModel.rxns, 'R5')) = 1000;
+    verifyError(testCase, @() getConcControlCoeffs(ecModel), 'getConcControlCoeffs:infeasible')
+end
+
 function [ecModel, adapter, project] = buildScratchProject()
     % An ecModel of the test model with a temporary copy of the test
     % project folder (the tracked test data is not modified).
