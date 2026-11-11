@@ -2704,8 +2704,10 @@ function testGetComplexDataWithoutTaxonomicID_tc0705(testCase)
 end
 
 function testEcFSEOFWithoutRangeErrors_tc0706(testCase)
-    % When the production cannot rise above its value at maximum growth,
-    % there is no range to scan and ecFSEOF raises ecFSEOF:noRange.
+    % When the top of the scan (90% of the maximum production) is not above
+    % the production at maximum growth, there is no range to scan and
+    % ecFSEOF raises ecFSEOF:noRange: a blocked target, and a target whose
+    % production at maximum growth is above the top.
     geckoPath = findGECKOroot;
     adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));
     model = getGeckoTestModel();
@@ -2719,6 +2721,10 @@ function testEcFSEOFWithoutRangeErrors_tc0706(testCase)
     ecModel = setProtPoolSize(ecModel, [], [], [], adapter);
     adapter.params.bioRxn = 'R5';
     verifyError(testCase, @() ecFSEOF(ecModel, 'R3', 'S1', 'nSteps', 6, 'modelAdapter', adapter), ...
+        'ecFSEOF:noRange')
+    % The biomass reaction as target: its flux at maximum growth is above 90%
+    % of its maximum, so the scan would go down
+    verifyError(testCase, @() ecFSEOF(ecModel, 'R5', 'S1', 'nSteps', 6, 'modelAdapter', adapter), ...
         'ecFSEOF:noRange')
 end
 

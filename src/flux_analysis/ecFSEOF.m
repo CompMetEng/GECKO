@@ -60,9 +60,10 @@ function fseof = ecFSEOF(model,prodTargetRxn,csRxn,varargin)
 % knocked out (KO) when it decreases and is at most 1e-8 at the last step,
 % and knocked down (KD) when it decreases otherwise.
 %
-% When the production at maximum growth equals 90% of the maximum
-% production, there is no range to scan and ecFSEOF raises the error
-% ecFSEOF:noRange.
+% When the production at maximum growth is not below 90% of the maximum
+% production (within 1e-9 times max(1, |90% of the maximum|)), there is no
+% range to scan and ecFSEOF raises the error ecFSEOF:noRange. geckopy's
+% ec_fseof raises an error in the same case.
 %
 % Examples
 % --------
@@ -122,9 +123,9 @@ model     = setParam(model,'obj',prodTargetRxn,1);
 sol       = solveLP(model,1);
 % Set to 90%% based on https://doi.org/10.1128/AEM.00115-10
 maxTarget = sol.x(prodTargetRxnIdx) * 0.9;
-if maxTarget == iniTarget
-    error('ecFSEOF:noRange', ['The production of %s at maximum growth (%g) equals 90%% of ' ...
-        'its maximum production, so there is no range to scan.'], prodTargetRxn, iniTarget)
+if maxTarget <= iniTarget + 1e-9*max(1, abs(maxTarget))
+    error('ecFSEOF:noRange', ['The production of %s at maximum growth (%g) is not below 90%% ' ...
+        'of its maximum production (%g), so there is no range to scan.'], prodTargetRxn, iniTarget, maxTarget)
 end
 
 % Define alpha vector for suboptimal enforced objective values between
