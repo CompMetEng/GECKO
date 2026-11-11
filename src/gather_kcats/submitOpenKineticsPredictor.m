@@ -45,7 +45,7 @@ function jobId = submitOpenKineticsPredictor(model, varargin)
 %     OKP API key (default: resolved from OKP_API_KEY or data/okpApiKey.txt,
 %     see above).
 % method : char
-%     predictor to use (default: params.okp.method, or 'CataPro').
+%     predictor to use (default: params.okp.method, or 'KinForm-H').
 % modelAdapter : ModelAdapter
 %     a loaded model adapter (default: the current default model adapter).
 %
@@ -96,7 +96,7 @@ apiKey = resolveOkpApiKey(apiKey, params.path);
 
 % Resolve predictor method and request options: defaults -> params.okp.* ->
 % the method argument (highest priority, applied last).
-okp = struct('method','CataPro', ...
+okp = struct('method','KinForm-H', ...
              'handleLongSequences','truncate', ...
              'includeSimilarityColumns',true,'canonicalizeSubstrates',true);
 if isfield(params,'okp')

@@ -99,7 +99,7 @@ model_adapter/writeAdapterToml.m	tc0063
 model_adapter/loadAdapterParams.m	tc0064, tc0065	
 model_adapter/convertAdapterToToml.m	tc0066	
 model_adapter/TomlAdapter.m	tc0066, tc0067	
-model_adapter/adapterParameters.tsv	tc0064, tc0065	
+model_adapter/adapterParameters.tsv	tc0064, tc0065, tc0722	
 model_adapter/adapterTemplate.toml	tc0068	
 utilities/createGECKOproject.m	tc0068, tc0703 (deprecated 'class' format), tc0704 (.gitignore)	
 utilities/*	Not explicitly tested - The code has existed for a long time. There are a lot of functions in here, unclear which of them are still useful and functional.	

@@ -29,7 +29,7 @@ function [kcatList, done] = kcatsFromOKP(model, varargin)
 % method : char
 %     OKP method, e.g. 'CataPro', 'CatPred', 'CatRange', 'DLKcat',
 %     'EITLEM', 'KinForm-H', 'KinForm-L', 'OmniESI', 'TurNup', 'UniKP'
-%     (default: params.okp.method of the model adapter, or 'CataPro').
+%     (default: params.okp.method of the model adapter, or 'KinForm-H').
 % wait : logical
 %     wait until the job is done (default false).
 % resubmit : logical
@@ -90,7 +90,7 @@ if isempty(method)
     if isfield(params, 'okp') && isfield(params.okp, 'method') && ~isempty(params.okp.method)
         method = char(params.okp.method);
     else
-        method = 'CataPro';
+        method = 'KinForm-H';
     end
 end
 if any(strcmp(method, {'CatPred', 'TurNup'}))
