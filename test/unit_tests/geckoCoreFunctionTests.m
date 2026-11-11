@@ -2980,6 +2980,18 @@ function testSetProtPoolSizeWithoutPoolErrors_tc0720(testCase)
         'setProtPoolSize:noPoolExchange')
 end
 
+function testKcatSourcesTableMergesWithPreset_tc0721(testCase)
+    % A [kcat_sources.<name>] table overrides only the keys it sets: the
+    % preset's other settings for that source stay.
+    params.kcat_assignment = struct('preset', 'brenda_ec_tree');
+    params.kcat_sources.ec_tree = struct('min_n', 3);
+    params.kcat_sources.brenda = struct('aggregation', 'max');
+    config = kcatAssignmentConfig(params);
+    verifyEqual(testCase, config.sources.ec_tree.k, 5)
+    verifyEqual(testCase, config.sources.ec_tree.min_n, 3)
+    verifyEqual(testCase, config.sources.brenda.aggregation, 'max')
+end
+
 function [ecModel, adapter, project] = buildScratchProject()
     % An ecModel of the test model with a temporary copy of the test
     % project folder (the tracked test data is not modified).

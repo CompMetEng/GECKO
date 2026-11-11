@@ -25,8 +25,9 @@ function config = kcatAssignmentConfig(params)
 %       bottomOriginLimit and wildcardLimit;
 %     - okpMethods: the OKP methods of the okp source group ([kcat_sources.okp]
 %       methods; default all methods with combination parameters);
-%     - sources: per source name its options (from [kcat_sources] and the
-%       preset).
+%     - sources: per source name its options: those of the preset, with
+%       the keys that a [kcat_sources.<name>] table sets taking their value
+%       from that table.
 %
 % Examples
 % --------
@@ -65,9 +66,18 @@ else
     config.preset = preset;
 end
 if isfield(params, 'kcat_sources') && isstruct(params.kcat_sources)
+    % A [kcat_sources.<name>] table overrides only the keys it sets
     names = fieldnames(params.kcat_sources);
     for k = 1:numel(names)
-        config.sources.(names{k}) = params.kcat_sources.(names{k});
+        given = params.kcat_sources.(names{k});
+        if ~isfield(config.sources, names{k}) || ~isstruct(given)
+            config.sources.(names{k}) = given;
+            continue
+        end
+        keys = fieldnames(given);
+        for j = 1:numel(keys)
+            config.sources.(names{k}).(keys{j}) = given.(keys{j});
+        end
     end
 end
 % The okp group: the OKP methods of [kcat_sources.okp] methods.
