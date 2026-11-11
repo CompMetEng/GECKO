@@ -2605,3 +2605,133 @@ function testEcFSEOFGeneTargetsComeFromReportedReactions_tc0236(testCase)
         verifyEqual(testCase, fseof.geneTargets{i,3}, fseof.rxnTargets{rxnRow,3}, 'AbsTol', 1e-9)
     end
 end
+
+
+function testKcatsFromDLKcatViaDefault_tc0701(testCase)
+    % The default 'via' reads data/DLKcat.tsv when it exists and goes to
+    % OpenKineticsPredictor otherwise. No key is set, so the OKP way ends in
+    % the key resolution, before any request is made.
+    oldEnv = getenv('OKP_API_KEY');
+    cleanupEnv = onCleanup(@() setenv('OKP_API_KEY', oldEnv));
+    setenv('OKP_API_KEY', '');
+    [ecModel, adapter, project] = buildScratchProject();
+    cleanupDir = onCleanup(@() rmdir(project, 's'));
+
+    [kcatList, done] = kcatsFromDLKcat(ecModel, 'save', false, 'modelAdapter', adapter);
+    verifyTrue(testCase, done)
+    verifyTrue(testCase, isstruct(kcatList))
+
+    delete(fullfile(project, 'data', 'DLKcat.tsv'))
+    try
+        kcatsFromDLKcat(ecModel, 'save', false, 'modelAdapter', adapter);
+        err = [];
+    catch err
+    end
+    verifyNotEmpty(testCase, err)
+    verifySubstring(testCase, err.message, 'OpenKineticsPredictor API key')
+    verifyNotEqual(testCase, err.identifier, 'kcatsFromDLKcat:noDocker')
+
+    verifyError(testCase, @() kcatsFromDLKcat(ecModel, 'via', 'file', 'save', false, ...
+        'modelAdapter', adapter), 'kcatsFromDLKcat:noOutput')
+    verifyError(testCase, @() kcatsFromDLKcat(ecModel, 'run', true, 'via', 'okp', ...
+        'modelAdapter', adapter), 'kcatsFromDLKcat:arguments')
+end
+
+
+function testUpdateKcatSourcesDLKcatNeedsKey_tc0702(testCase)
+    % gecko_classic needs the dlkcat source. Without data/DLKcat.tsv and
+    % without an OKP key the dlkcat row fails with the key message, not a
+    % Docker message.
+    oldEnv = getenv('OKP_API_KEY');
+    cleanupEnv = onCleanup(@() setenv('OKP_API_KEY', oldEnv));
+    setenv('OKP_API_KEY', '');
+    [ecModel, adapter, project] = buildScratchProject();
+    cleanupDir = onCleanup(@() rmdir(project, 's'));
+    delete(fullfile(project, 'data', 'DLKcat.tsv'))
+    adapter.params.kcat_assignment = struct('preset', 'gecko_classic');
+
+    report = updateKcatSources(ecModel, 'modelAdapter', adapter);
+    row = strcmp(report.source, 'dlkcat');
+    verifyEqual(testCase, sum(row), 1)
+    verifyEqual(testCase, report.status{row}, 'failed')
+    verifySubstring(testCase, report.note{row}, 'OpenKineticsPredictor API key')
+    verifyFalse(testCase, contains(report.note{row}, 'Docker'))
+end
+
+
+function testDeprecationWarnings_tc0703(testCase)
+    % The deprecated function, name and option warn, and updateProtPool
+    % still refuses an ecModel of GECKO 3.2 or later.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));
+    ecModel = makeEcModel(getGeckoTestModel(), false, adapter);
+    usage = find(startsWith(ecModel.rxns, 'usage_prot_'), 1);
+    ecModel.ub(usage) = 0.5; % a protein with a measured concentration
+    verifyNotEmpty(testCase, full(ecModel.S(strcmp(ecModel.mets, 'prot_pool'), usage)))
+    lastwarn('', '');
+    try
+        updateProtPool(ecModel, 'modelAdapter', adapter);
+        err = [];
+    catch err
+    end
+    [~, warnId] = lastwarn();
+    verifyEqual(testCase, warnId, 'GECKO:deprecatedFunction')
+    verifyNotEmpty(testCase, err)
+    verifySubstring(testCase, err.message, 'setProtPoolSize')
+
+    fuzzyList.rxns        = {'R1'};
+    fuzzyList.kcats       = 5;
+    fuzzyList.genes       = {{}};
+    fuzzyList.substrates  = {{}};
+    fuzzyList.eccodes     = {'1.1.1.1'};
+    fuzzyList.wildcardLvl = 0;
+    fuzzyList.origin      = 1;
+    fuzzyList.source      = 'brenda';
+    dlkcatList.rxns       = {'R1'};
+    dlkcatList.kcats      = 50;
+    dlkcatList.genes      = {'G1'};
+    dlkcatList.substrates = {'m1'};
+    dlkcatList.source     = 'DLKcat';
+    lastwarn('', '');
+    mergeDLKcatAndFuzzyKcats(dlkcatList, fuzzyList);
+    [~, warnId] = lastwarn();
+    verifyEqual(testCase, warnId, 'GECKO:deprecatedName')
+
+    origDir = pwd;
+    cleanupDir = onCleanup(@() cd(origDir));
+    root = tempname; mkdir(root);
+    cleanupRoot = onCleanup(@() rmdir(root, 's'));
+    lastwarn('', '');
+    createGECKOproject('name', 'classProj', 'path', root, 'adapterFormat', 'class');
+    cd(origDir)
+    [~, warnId] = lastwarn();
+    verifyEqual(testCase, warnId, 'GECKO:deprecatedOption')
+    verifyTrue(testCase, isfile(fullfile(root, 'classProj', 'classProjAdapter.m')))
+end
+
+
+function testCreateGECKOprojectGitignore_tc0704(testCase)
+    % A new project ignores the OpenKineticsPredictor API key file.
+    origDir = pwd;
+    cleanupDir = onCleanup(@() cd(origDir));
+    root = tempname; mkdir(root);
+    cleanupRoot = onCleanup(@() rmdir(root, 's'));
+    createGECKOproject('name', 'gitignoreProj', 'path', root);
+    cd(origDir)
+    file = fullfile(root, 'gitignoreProj', '.gitignore');
+    verifyTrue(testCase, isfile(file))
+    verifyEqual(testCase, strtrim(fileread(file)), 'data/okpApiKey.txt')
+end
+
+
+function [ecModel, adapter, project] = buildScratchProject()
+    % An ecModel of the test model with a temporary copy of the test
+    % project folder (the tracked test data is not modified).
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));
+    project = tempname;
+    copyfile(fullfile(adapter.params.path, 'data'), fullfile(project, 'data'));
+    adapter.params.path = project;
+    ecModel = makeEcModel(getGeckoTestModel(), false, adapter);
+    ecModel = getECfromGEM(ecModel);
+end

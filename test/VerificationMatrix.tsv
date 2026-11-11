@@ -15,7 +15,7 @@ enzyme_usage/getEnzymeUsage.m	tc0286, tc0507, tc0508
 enzyme_usage/reportEnzymeUsage.m	tc0286, tc0508, tc0509	
 gather_kcats/fuzzyKcatMatching.m	tc0010, tc0223, tc0224, tc0225, tc0226, tc0231, tc0239	
 gather_kcats/getStandardKcat.m	tc0256, tc0257, tc0309, tc0310	
-deprecated/mergeDLKcatAndFuzzyKcats.m	tc0011; tc0241	
+deprecated/mergeDLKcatAndFuzzyKcats.m	tc0011; tc0241; tc0703 (deprecation warning)	
 gather_kcats/readDLKcatOutput.m	tcm0001, tcm0002, tc0303, tc0304 - The test doesn't really check the function, only that some output is read	
 gather_kcats/runDLKcat.m	tcm0001, tcm0002 - The test doesn't really check the function, only that we get something
 gather_kcats/assignKcatValues.m	tc0011 - we did not test all possible parameterizations here; also tc0104, tc0311
@@ -24,11 +24,11 @@ gather_kcats/getEcRxnKeys.m	tc0070, tc0076
 gather_kcats/saveKcatSource.m	tc0071, tc0073, tc0076, tc0078	
 gather_kcats/loadKcatSource.m	tc0071, tc0072, tc0073, tc0076, tc0077, tc0078, tc0302	
 gather_kcats/kcatsFromBrenda.m	tc0074, tc0078, tc0226	
-gather_kcats/kcatsFromDLKcat.m	tc0074, tc0078 - reads an existing DLKcat output; running DLKcat needs Docker	
+gather_kcats/kcatsFromDLKcat.m	tc0074, tc0078, tc0701 - reads an existing DLKcat output; the default 'via' reads data/DLKcat.tsv or goes to OKP (tc0701 stops at the missing API key); a run with Docker is not tested	
 gather_kcats/kcatsFromOKP.m	tc0075 - reads a stored result; submitting needs the OKP service	
 gather_kcats/collectKcats.m	tc0079, tc0080, tc0081, tc0083, tc0087, tc0088, tc0089, tc0090, tc0098, tc0300	
 gather_kcats/assignKcats.m	tc0079, tc0083	
-gather_kcats/updateKcatSources.m	tc0082, tc0087	
+gather_kcats/updateKcatSources.m	tc0082, tc0087, tc0702 (dlkcat without data/DLKcat.tsv needs an OKP key)	
 gather_kcats/kcatAssignmentConfig.m	tc0079, tc0081, tc0083, tc0087, tc0088, tc0089, tc0090, tc0306	
 gather_kcats/loadBrendaMeasurements.m	tc0085	
 gather_kcats/ecTreeEstimate.m	tc0084, tc0307	
@@ -89,7 +89,8 @@ limit_proteins/getComplexFamilies.m	tc0262, tc0263, tc0264, tc0265, tc0266
 limit_proteins/levelComplexConcs.m	tc0267, tc0268, tc0269, tc0270, tc0271, tc0272, tc0315, tc0316	
 limit_proteins/getIsozymeCoverage.m	tc0287, tc0288, tc0289, tc0290, tc0291, tc0314	
 limit_proteins/zeroUnmeasuredIsozymes.m	tc0292, tc0293, tc0294, tc0295	
-deprecated/updateProtPool.m		
+deprecated/updateProtPool.m	tc0703 (deprecation warning; errors on a GECKO 3.2+ ecModel)	
+deprecated/adapterTemplate.m	tc0703 (via createGECKOproject with adapterFormat 'class')	
 model_adapter/ModelAdapter.m	Base class for adapters, not explicitly tested.	
 model_adapter/ModelAdapterManager.m	tc0008, tc0067	
 model_adapter/readAdapterToml.m	tc0061, tc0062	
@@ -99,6 +100,7 @@ model_adapter/convertAdapterToToml.m	tc0066
 model_adapter/TomlAdapter.m	tc0066, tc0067	
 model_adapter/adapterParameters.tsv	tc0064, tc0065	
 model_adapter/adapterTemplate.toml	tc0068	
+utilities/createGECKOproject.m	tc0068, tc0703 (deprecated 'class' format), tc0704 (.gitignore)	
 utilities/*	Not explicitly tested - The code has existed for a long time. There are a lot of functions in here, unclear which of them are still useful and functional.	
 io/loadConventionalGEM.m	tc0009
 io/loadEcModel.m	tc0009, tc0099
