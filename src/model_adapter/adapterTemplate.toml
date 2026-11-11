@@ -126,8 +126,7 @@ isozymes = true
 standard = true
 
 # Settings per kcat source, used by updateKcatSources, for example the OKP
-# methods the presets combine (default: all methods with combination
-# parameters):
+# methods the presets combine (default: KinForm-H):
 # [kcat_sources.okp]
 # methods = ["CataPro", "KinForm-H", "UniKP"]
 

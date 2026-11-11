@@ -29,7 +29,7 @@ gather_kcats/kcatsFromOKP.m	tc0075 - reads a stored result; submitting needs the
 gather_kcats/collectKcats.m	tc0079, tc0080, tc0081, tc0083, tc0087, tc0088, tc0089, tc0090, tc0098, tc0300, tc0714	
 gather_kcats/assignKcats.m	tc0079, tc0083	
 gather_kcats/updateKcatSources.m	tc0082, tc0087, tc0702 (dlkcat without data/DLKcat.tsv needs an OKP key)	
-gather_kcats/kcatAssignmentConfig.m	tc0079, tc0081, tc0083, tc0087, tc0088, tc0089, tc0090, tc0306, tc0721	
+gather_kcats/kcatAssignmentConfig.m	tc0079, tc0081, tc0083, tc0087, tc0088, tc0089, tc0090, tc0306, tc0721, tc0723	
 gather_kcats/loadBrendaMeasurements.m	tc0085	
 gather_kcats/ecTreeEstimate.m	tc0084, tc0307	
 gather_kcats/kcatsFromECTree.m	tc0086, tc0087, tc0308	

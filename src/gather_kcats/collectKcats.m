@@ -37,7 +37,7 @@ function [decisions, report, ecModel] = collectKcats(model, varargin)
 %   (kcatCombineParams.tsv). model.ec.source reads 'combined (sd=<log10
 %   sd>, n=<sources>)'; sd is the uncertainty for a new measurement.
 % In both, okp stands for the OKP methods of [kcat_sources.okp] methods
-% (default: all methods with combination parameters).
+% (default: KinForm-H).
 %
 % The presets:
 % - brenda_ec_tree (the default): custom kcats, the BRENDA median of

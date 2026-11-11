@@ -3002,6 +3002,18 @@ function testOkpMethodDefault_tc0722(testCase)
     verifyEqual(testCase, params.okp.method, 'KinForm-H')
 end
 
+function testOkpSourceGroupDefault_tc0723(testCase)
+    % The okp source group of the presets is KinForm-H, unless the project
+    % sets [kcat_sources.okp] methods.
+    config = kcatAssignmentConfig(struct('kcat_assignment', struct('preset', 'okp')));
+    verifyEqual(testCase, config.okpMethods, {'KinForm-H'})
+    verifyTrue(testCase, any(strcmp(config.stages(end).files, 'okp_kinform_h')))
+    params.kcat_assignment = struct('preset', 'okp');
+    params.kcat_sources.okp = struct('methods', {{'CataPro', 'UniKP'}});
+    config = kcatAssignmentConfig(params);
+    verifyEqual(testCase, config.okpMethods, {'CataPro', 'UniKP'})
+end
+
 function [ecModel, adapter, project] = buildScratchProject()
     % An ecModel of the test model with a temporary copy of the test
     % project folder (the tracked test data is not modified).

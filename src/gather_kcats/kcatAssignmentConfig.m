@@ -24,7 +24,7 @@ function config = kcatAssignmentConfig(params)
 %       replaced by the files of its methods), criteria, topOriginLimit,
 %       bottomOriginLimit and wildcardLimit;
 %     - okpMethods: the OKP methods of the okp source group ([kcat_sources.okp]
-%       methods; default all methods with combination parameters);
+%       methods; default {'KinForm-H'});
 %     - sources: per source name its options: those of the preset, with
 %       the keys that a [kcat_sources.<name>] table sets taking their value
 %       from that table.
@@ -83,10 +83,8 @@ end
 % The okp group: the OKP methods of [kcat_sources.okp] methods.
 known = {'CataPro','CatPred','CatRange','DLKcat','EITLEM','KinForm-H','KinForm-L', ...
     'OmniESI','OmniESI-O2DENet','TurNup','UniKP'};
-% The default: methods that read enzyme-substrate pairs and have combination
-% parameters (CatRange predicts classes; CatPred and TurNup read whole
-% reactions, which kcatsFromOKP does not submit).
-config.okpMethods = known(~ismember(known, {'CatRange', 'CatPred', 'TurNup'}));
+% The default: KinForm-H, as the default of params.okp.method.
+config.okpMethods = {'KinForm-H'};
 if isfield(config.sources, 'okp') && isfield(config.sources.okp, 'methods') && ~isempty(config.sources.okp.methods)
     config.okpMethods = cellstr(config.sources.okp.methods);
     config.okpMethods = config.okpMethods(:)';
