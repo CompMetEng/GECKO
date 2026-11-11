@@ -1,4 +1,4 @@
-function runDLKcat(varargin)
+function varargout = runDLKcat(varargin) %#ok<STOUT>
 % runDLKcat  Deprecated: use kcatsFromDLKcat(model, 'via', 'docker').
 %
 % kcatsFromDLKcat writes the DLKcat input of the ecModel, runs DLKcat in its

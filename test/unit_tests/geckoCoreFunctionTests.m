@@ -2990,7 +2990,7 @@ end
 function testDeprecatedDLKcatFunctions_tc0724(testCase)
     % readDLKcatOutput warns and reads a DLKcat output file through
     % kcatsFromDLKcat; runDLKcat and writeDLKcatInput warn and raise an
-    % error that names kcatsFromDLKcat.
+    % error that names kcatsFromDLKcat, also when an output is taken.
     [ecModel, adapter, project] = buildScratchProject();
     cleanupDir = onCleanup(@() rmdir(project, 's'));
     outFile = fullfile(project, 'output.tsv');
@@ -3006,6 +3006,13 @@ function testDeprecatedDLKcatFunctions_tc0724(testCase)
     restore = onCleanup(@() warning(state));
     verifyError(testCase, @() runDLKcat('modelAdapter', adapter), 'GECKO:deprecatedFunction')
     verifyError(testCase, @() writeDLKcatInput(ecModel, 'modelAdapter', adapter), 'GECKO:deprecatedFunction')
+    % A caller that takes an output gets the same error
+    try
+        written = writeDLKcatInput(ecModel, 'modelAdapter', adapter); %#ok<NASGU>
+        err = [];
+    catch err
+    end
+    verifyEqual(testCase, err.identifier, 'GECKO:deprecatedFunction')
 end
 
 function testLegacyCustomKcats_tc0725(testCase)
