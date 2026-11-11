@@ -60,8 +60,10 @@ function [decisions, report, ecModel] = collectKcats(model, varargin)
 %   tutorial.
 % Against measured kcats hidden from the search, the EC tree was closer
 % than the BRENDA median at origins 2 and 4 and with EC wildcards and as
-% close at origins 1 and 3; the EC tree combined with the OKP methods was
-% slightly closer than the EC tree, and the OKP methods combined as close.
+% close at origins 1 and 3; the EC tree combined with eight OKP methods
+% (CataPro, DLKcat, EITLEM, KinForm-H, KinForm-L, OmniESI, OmniESI-O2DENet
+% and UniKP) was slightly closer than the EC tree, and these eight methods
+% combined as close. The default okp source group is KinForm-H alone.
 % In ecModels, values combined with predictions set high-turnover enzymes
 % such as ATP synthase too low, which is why the default uses predictions
 % only where there is no value from measurements. The BRENDA aggregation is
@@ -97,7 +99,7 @@ function [decisions, report, ecModel] = collectKcats(model, varargin)
 % -------
 % decisions : table
 %     one row per model.ec reaction: ecRxn, stage (the stage number, or
-%     custom, isozymes, standard, or empty when no kcat was found), source
+%     isozymes, standard, or empty when no kcat was found), source
 %     (as in model.ec.source), kcat, candidates (the number of values the
 %     deciding source had for the reaction, or of sources combined),
 %     spreadLog10 (their range, in log10 units) and sdLog10 (the
