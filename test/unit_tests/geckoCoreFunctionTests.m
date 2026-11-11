@@ -2924,6 +2924,24 @@ function testConstrainEnzConcsRestrictTo_tc0716(testCase)
     verifyEqual(testCase, released.ub(usageP5), 10)
 end
 
+
+function testFlexibilizeEnzConcsKeepsHigherBound_tc0717(testCase)
+    % An upper bound above the next relaxation step is kept: with P5 raised
+    % to 50 and one iteration allowed, P5 stays at 50 instead of being set to
+    % 10*(1+2) = 30.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));
+    adapter.params.bioRxn = 'R5';
+    ecModel = fixtureForRelaxProteomicsGreedy();
+    usageP5 = strcmp(ecModel.rxns, 'usage_prot_P5');
+    ecModel.ub(usageP5) = 50;
+    [~, flexModel, flexEnz] = evalc(['flexibilizeEnzConcs(ecModel, ''expGrowth'', 80, ''iterPerEnzyme'', 1, ' ...
+        '''modelAdapter'', adapter, ''verbose'', false)']);
+    verifyEqual(testCase, flexModel.ub(usageP5), 50)
+    verifyEqual(testCase, flexEnz.uniprotIDs, {'P5'})
+    verifyEqual(testCase, flexEnz.flexConcs, 50)
+end
+
 function [ecModel, adapter, project] = buildScratchProject()
     % An ecModel of the test model with a temporary copy of the test
     % project folder (the tracked test data is not modified).

@@ -47,9 +47,9 @@ function [model, flexEnz] = flexibilizeEnzConcs(model, varargin)
 %     single subunit shows a gain), every measured subunit of the selected
 %     complex is raised by the same factor, iterations are counted per
 %     complex, and one factor per complex is kept in the final pass, so that
-%     concentrations levelled by levelComplexConcs stay levelled. An upper
-%     bound is never lowered below its current value. The frequence of a
-%     complex is recorded on its first subunit with a concentration above 0.
+%     concentrations levelled by levelComplexConcs stay levelled. The
+%     frequence of a complex is recorded on its first subunit with a
+%     concentration above 0.
 %
 % Returns
 % -------
@@ -71,7 +71,11 @@ function [model, flexEnz] = flexibilizeEnzConcs(model, varargin)
 %
 % Notes
 % -----
-% When the input model has no optimal solution, the warning
+% While flexibilizing, an upper bound is never lowered below its current
+% value. The total number of iterations is limited to (iterPerEnzyme + 1)
+% times the number of measured enzymes, with 1000 for iterPerEnzyme when it
+% is 0 (no limit per enzyme); at that limit flexibilizing stops with a
+% warning. When the input model has no optimal solution, the warning
 % flexibilizeEnzConcs:infeasible is raised and flexEnz is empty.
 %
 % The usage upper bound of an enzyme is raised by a factor of its
@@ -190,9 +194,25 @@ if perComplex
     return
 end
 
+% Backstop on the iterations when the number per enzyme is not limited
+if isinf(iterPerEnzyme)
+    capPerEnzyme = 1000;
+else
+    capPerEnzyme = iterPerEnzyme;
+end
+maxTotalIter = numel(proteins) * capPerEnzyme + numel(proteins);
+iterCount    = 0;
+
 flexBreak=false;
 if any(protConcs)
     while predGrowth < expGrowth
+        iterCount = iterCount + 1;
+        if iterCount > maxTotalIter
+            printOrange(['WARNING: The global iteration limit has been reached without reaching expGrowth. ' ...
+                         'The target may be unreachable even with relaxed enzyme bounds.\n']);
+            flexBreak = true;
+            break
+        end
 
         % Get the control coefficients
         [~, controlCoeffs] = getConcControlCoeffs(model, proteins, foldChange, 0.75);
@@ -215,8 +235,8 @@ if any(protConcs)
                 % Get usage rxn for the highest coeff
                 protUsageIdx = strcmpi(model.rxns, strcat('usage_prot_', proteins(maxIdx)));
 
-                % replace the UB
-                model.ub(protUsageIdx) = model.ec.concs(protConcs(maxIdx)) * (1+increase);
+                % raise the UB, never below its current value
+                model.ub(protUsageIdx) = max(model.ub(protUsageIdx), model.ec.concs(protConcs(maxIdx)) * (1+increase));
 
                 % Get the new growth rate
                 sol = solveLP(model,0,[],hs);
