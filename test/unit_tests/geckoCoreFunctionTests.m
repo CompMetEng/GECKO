@@ -2784,6 +2784,20 @@ function testRelaxProteomicsGreedyReturnsModel_tc0708(testCase)
     verifyEqual(testCase, sameModel.ub, ecModel.ub)
 end
 
+function testEvotuneWithoutDataErrors_tc0709(testCase)
+    % Without flux data and maximum growth data there is nothing to tune
+    % against: screenKcatLeverage and cmaesKcatTuning raise evotune:noData.
+    [ecModel, adapter, project] = buildScratchProject();
+    cleanupDir = onCleanup(@() rmdir(project, 's'));
+    evoData = struct('fluxData', [], 'maxGrate', [], 'zeroFlux', {{}});
+    verifyError(testCase, @() screenKcatLeverage(ecModel, 'modelAdapter', adapter, ...
+        'evoData', evoData), 'evotune:noData')
+    verifyError(testCase, @() cmaesKcatTuning(ecModel, 'modelAdapter', adapter, ...
+        'evoData', evoData), 'evotune:noData')
+    % The test project has no evotune files, so the loaded data is empty too
+    verifyError(testCase, @() screenKcatLeverage(ecModel, 'modelAdapter', adapter), 'evotune:noData')
+end
+
 function [ecModel, adapter, project] = buildScratchProject()
     % An ecModel of the test model with a temporary copy of the test
     % project folder (the tracked test data is not modified).
