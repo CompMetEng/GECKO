@@ -75,8 +75,9 @@ function [model, flexEnz] = flexibilizeEnzConcs(model, varargin)
 % value. The total number of iterations is limited to (iterPerEnzyme + 1)
 % times the number of measured enzymes, with 1000 for iterPerEnzyme when it
 % is 0 (no limit per enzyme); at that limit flexibilizing stops with a
-% warning. When the input model has no optimal solution, the warning
-% flexibilizeEnzConcs:infeasible is raised and flexEnz is empty.
+% warning. When the input model has no optimal solution,
+% flexibilizeEnzConcs warns with the identifier
+% flexibilizeEnzConcs:infeasible and returns an empty flexEnz.
 %
 % The usage upper bound of an enzyme is raised by a factor of its
 % concentration, so an enzyme with a concentration of 0 in model.ec.concs
