@@ -2770,6 +2770,20 @@ function testRelaxProteomicsGreedyLastIteration_tc0707(testCase)
     verifyTrue(testCase, result.converged)
 end
 
+
+function testRelaxProteomicsGreedyReturnsModel_tc0708(testCase)
+    % The relaxed model is the second output: P5 is back at the default
+    % upper bound, P4 keeps its bound, and the model grows at 90.
+    ecModel = fixtureForRelaxProteomicsGreedy();
+    [~, relaxedModel] = relaxProteomicsGreedy(ecModel, 'minimalGrowth', 50);
+    verifyEqual(testCase, relaxedModel.ub(strcmp(relaxedModel.rxns, 'usage_prot_P5')), 1000)
+    verifyEqual(testCase, relaxedModel.ub(strcmp(relaxedModel.rxns, 'usage_prot_P4')), 5)
+    sol = solveLP(relaxedModel);
+    verifyEqual(testCase, sol.f, 90, 'AbsTol', 1e-9)
+    [~, sameModel] = relaxProteomicsGreedy(ecModel, 'minimalGrowth', 5);
+    verifyEqual(testCase, sameModel.ub, ecModel.ub)
+end
+
 function [ecModel, adapter, project] = buildScratchProject()
     % An ecModel of the test model with a temporary copy of the test
     % project folder (the tracked test data is not modified).

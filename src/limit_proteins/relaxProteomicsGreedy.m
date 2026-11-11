@@ -1,4 +1,4 @@
-function result = relaxProteomicsGreedy(model, varargin)
+function [result, model] = relaxProteomicsGreedy(model, varargin)
 % relaxProteomicsGreedy  Greedy shadow-price-ordered relaxation of proteomics
 % constraints.
 %
@@ -42,10 +42,13 @@ function result = relaxProteomicsGreedy(model, varargin)
 %       shadowPrice.
 %     - finalGrowth : objective value when the loop stopped.
 %     - converged : true iff finalGrowth >= minimalGrowth.
+% model : struct
+%     the ecModel with the usage_prot_<id> upper bounds of the relaxed
+%     enzymes set to defaultUpperBound.
 %
 % Examples
 % --------
-%     result = relaxProteomicsGreedy(ecModel, 'minimalGrowth', 0.1);
+%     [result, ecModel] = relaxProteomicsGreedy(ecModel, 'minimalGrowth', 0.1);
 %
 % Notes
 % -----
