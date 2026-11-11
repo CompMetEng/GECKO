@@ -9,13 +9,14 @@ function report = updateKcatSources(model, varargin)
 %   [kcat_sources.<name>] asks for (presets set these for brenda and
 %   ec_tree), or, for brenda and ec_tree, another BRENDA release than the
 %   BRENDA files in use;
-% - brenda and ec_tree are made again; dlkcat reads data/DLKcat.tsv if it exists and
-%   runs DLKcat (Docker) otherwise; okp_<method> submits or fetches a job,
-%   and reports it as pending while the job runs;
+% - brenda and ec_tree are made again; dlkcat reads data/DLKcat.tsv if it
+%   exists and otherwise predicts with the DLKcat method of
+%   OpenKineticsPredictor (see kcatsFromDLKcat); okp_<method> and dlkcat
+%   submit or fetch a job, and report it as pending while the job runs;
 % - custom.tsv and other files it cannot gather are left as they are.
 %
-% Requirements are checked first: Docker for a DLKcat run and an
-% OpenKineticsPredictor API key for OKP. Calling it again is safe: files
+% Requirements are checked first: an OpenKineticsPredictor API key for
+% OKP and for dlkcat without data/DLKcat.tsv. Calling it again is safe: files
 % that are current are not gathered again.
 %
 % Per-source settings are read from model_adapter.toml, for instance:
@@ -151,15 +152,13 @@ try
         if isfield(wanted, 'coverage'), args = [args, {'coverage', double(wanted.coverage)}]; end
         kcatsFromHomologs(model, args{:}, 'modelAdapter', modelAdapter);
     elseif strcmp(name, 'dlkcat')
-        run = ~isfile(fullfile(modelAdapter.params.path, 'data', 'DLKcat.tsv'));
-        if run
-            [status, ~] = system('docker --version');
-            if status ~= 0
-                st = 'failed'; nt = 'DLKcat needs Docker to run';
-                return
-            end
+        if ~isfile(fullfile(modelAdapter.params.path, 'data', 'DLKcat.tsv'))
+            resolveOkpApiKey('', modelAdapter.params.path); % errors without a key
         end
-        kcatsFromDLKcat(model, 'run', run, 'modelAdapter', modelAdapter);
+        [~, done] = kcatsFromDLKcat(model, 'modelAdapter', modelAdapter);
+        if ~done
+            st = 'pending'; nt = 'OKP job for DLKcat still running; call again later';
+        end
     else % okp_<method>
         method = okpMethod(name, wanted);
         resolveOkpApiKey('', modelAdapter.params.path); % errors without a key
