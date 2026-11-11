@@ -31,7 +31,7 @@ function solution = getPfbaEnzymes(model, varargin)
 % solution : struct
 %     - x : flux distribution (indexed by model.rxns) at the
 %       enzyme-usage-minimising solution.
-%     - getEnzymeUsage : the minimised sum of usage_prot_* fluxes.
+%     - enzymeUsage : the minimised sum of usage_prot_* fluxes.
 %     - objectiveValue : the fixed objective's own value at this solution.
 %     - stat : solveLP exit flag.
 %
@@ -42,8 +42,8 @@ function solution = getPfbaEnzymes(model, varargin)
 %
 % Notes
 % -----
-% usage_prot_<id> reactions must be forward-only (lb=0), the standard
-% GECKO 3 layout; if any has a negative lower bound (reverse flux enabled),
+% usage_prot_<id> reactions must be forward-only (lb=0), as makeEcModel
+% makes them; if any has a negative lower bound (reverse flux enabled),
 % getPfbaEnzymes errors instead of building an objective that would fail to
 % minimise |flux| for that reaction.
 %

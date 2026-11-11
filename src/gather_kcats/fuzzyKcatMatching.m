@@ -52,12 +52,15 @@ function kcatList = fuzzyKcatMatching(model, varargin)
 %   (0: w.x.y.z; 1: w.x.y.-; 2: w.x.-.-; 3: w.-.-.-; 4: -.-.-.-, which
 %   matches every EC number in BRENDA).
 % - origin : which level of specificity was necessary to find a match
-%   (1: correct organism, correct substrate, kcat; 2: any organism, correct
-%   substrate, kcat; 3: correct organism, any substrate, kcat; 4: any
-%   organism, any substrate, kcat; 5: correct organism, specific activity;
-%   6: any organism, specific activity). Levels are tried in the order
-%   1, 2, 3, 5, 4, 6: a specific activity from the correct organism is
-%   preferred over a kcat from any organism with any substrate. When a
+%   (1: correct organism, correct substrate, kcat; 2: closest organism,
+%   correct substrate, kcat; 3: correct organism, any substrate, kcat; 4:
+%   closest organism, any substrate, kcat; 5: correct organism, specific
+%   activity; 6: closest organism, specific activity). The closest organism
+%   is the organism with data that is nearest to the model organism in the
+%   KEGG phylogeny; when the model organism is not in KEGG, any organism is
+%   used. Levels are tried in the order 1, 2, 3, 5, 4, 6: a specific
+%   activity from the correct organism is preferred over a kcat from the
+%   closest organism with any substrate. When a
 %   reaction has multiple EC numbers, the EC with the fewest wildcards and
 %   the earliest-tried level is selected, and among those the highest kcat
 %   (the first one when several EC numbers share it); the wildcardLvl and

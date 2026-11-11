@@ -2,9 +2,9 @@ function model = constrainEnzConcs(model, varargin)
 % constrainEnzConcs  Constrain enzyme usages by their concentration.
 %
 % Constrain enzyme usages by their concentration as provided in
-% model.ec.concs. For enzymes with non-NaN entries in model.ec.concs, their
-% enzyme usage reaction will no longer draw from the protein pool, but is
-% rather constraint by the measured protein abundance.
+% model.ec.concs. For enzymes with non-NaN entries in model.ec.concs, the
+% upper bound of their enzyme usage reaction becomes the measured
+% concentration. Their usage reactions keep drawing from the protein pool.
 %
 % Parameters
 % ----------

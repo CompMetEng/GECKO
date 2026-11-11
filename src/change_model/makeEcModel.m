@@ -88,9 +88,9 @@ function [model, noUniprot] = makeEcModel(model, varargin)
 % genes, mapping which genes are connected to which reaction (where isozymes
 % have different reactions).
 %
-% The light model works a bit differently. The model has the same number of
-% rxns as the original model, but expanded since it is reversible + one the
-% extra prot maintenance rxn and one extra prot_pool rxn. However, the ec
+% The light model works a bit differently. The model keeps the rxns of the
+% original model, with reversible reactions split in two directions, and
+% gets one extra reaction: prot_pool_exchange. The ec
 % fields rxns, eccodes, kcat, source and notes are duplicated for each
 % isozyme, sorted the same way as model.rxns. So, in model.ec.rxns, the same
 % reaction will appear several times after one another, one entry per

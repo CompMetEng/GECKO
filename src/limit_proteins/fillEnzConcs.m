@@ -11,7 +11,7 @@ function model = fillEnzConcs(model, protData, varargin)
 % model : struct
 %     an ecModel (with ecModel.ec structure).
 % protData : struct
-%     structure with proteome data, from loadProtFluxData, with the fields:
+%     structure with proteome data, from loadProtData, with the fields:
 %
 %     - uniprotIDs : cell array with Uniprot IDs matching protData.abundances.
 %     - abundances : matrix of proteomics data.
@@ -52,7 +52,7 @@ function model = fillEnzConcs(model, protData, varargin)
 %
 % See also
 % --------
-% constrainEnzConcs, loadProtFluxData
+% constrainEnzConcs, loadProtData
 
 p = parseGECKOargs(varargin, { ...
     'dataCol', 1});

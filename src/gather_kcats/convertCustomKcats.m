@@ -52,8 +52,8 @@ if isempty(modelAdapter)
     end
 end
 if model.ec.geckoLight
-    error('convertCustomKcats:light', ['applyCustomKcats does not work on light ecModels; give ' ...
-        'the full ecModel. The custom.tsv written applies to light ecModels too.'])
+    error('convertCustomKcats:light', ['convertCustomKcats needs the full ecModel, as its ' ...
+        'rows are keyed by enzyme set. The custom.tsv written applies to light ecModels too.'])
 end
 inFile = p.customKcats;
 if isempty(inFile)

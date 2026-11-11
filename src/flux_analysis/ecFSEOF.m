@@ -24,10 +24,11 @@ function fseof = ecFSEOF(model,prodTargetRxn,csRxn,varargin)
 % outputFile : logical
 %     boolean option to save results in a file (default false).
 % filePath : char
-%     file path for results output. It will store two files: at the genes
-%     level, ecFSEOF_genes.tsv; and at the reactions level,
-%     ecFSEOF_rxns.tsv (default: the 'output' sub-folder taken from
-%     modelAdapter, e.g. output/ecFSEOF_rxns.tsv).
+%     file path for results output. It will store three files: at the genes
+%     level, ecFSEOF_genes.tsv; at the reactions level, ecFSEOF_rxns.tsv;
+%     and for the transport reactions, ecFSEOF_transporter.tsv (default: the
+%     'output' sub-folder taken from modelAdapter, e.g.
+%     output/ecFSEOF_rxns.tsv).
 % modelAdapter : ModelAdapter
 %     a loaded model adapter (default: the current default model adapter).
 % corrThreshold : double

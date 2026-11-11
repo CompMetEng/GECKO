@@ -34,7 +34,7 @@ function f = calculateFfactor(model, varargin)
 %
 % See also
 % --------
-% loadProtData, getProtFromProteomics
+% loadProtData, fillEnzConcs
 
 p = parseGECKOargs(varargin, { ...
     'protData',     []; ...

@@ -250,7 +250,7 @@ if any(protConcs)
         end
     end
 else
-    error('Protein concentrations have not been defined. Please run readProteomics and constrainEnzConcs')
+    error('Protein concentrations have not been defined. Run loadProtData, fillEnzConcs and constrainEnzConcs first.')
 end
 
 protFlex         = proteins(frequence>0);
@@ -311,7 +311,7 @@ end
 function [model, flexEnz] = flexibilizePerComplex(model, proteins, protConcs, predGrowth, expGrowth, foldChange, iterPerEnzyme, params, verbose)
 % Flexibilize with every complex as one unit, see the perComplex option.
 if isempty(protConcs)
-    error('Protein concentrations have not been defined. Please run readProteomics and constrainEnzConcs')
+    error('Protein concentrations have not been defined. Run loadProtData, fillEnzConcs and constrainEnzConcs first.')
 end
 limit = 0.75;
 nProt = numel(proteins);

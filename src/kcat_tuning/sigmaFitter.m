@@ -104,11 +104,8 @@ end
 errTol    = 1e-9*100*abs(objValues(minIndx))/abs(growthRate);
 minIndx   = find(errors <= minError + errTol, 1);
 sigma     = sigParam(minIndx);
-% The loop above leaves the protein pool sized for the *last* sigma tried
-% (i=100, i.e. sigma=1), not the best-fitting one found by the search --
-% re-apply it here so the returned model actually matches the returned
-% sigma, per this function's own documented contract ("ecModel with
-% protein pool exchange upper bound adapted to the optimal sigma-factor").
+% The loop leaves the protein pool sized for the last sigma tried (1), so
+% the selected sigma is applied to the returned model.
 model = setProtPoolSize(model, Ptot, f, sigma, modelAdapter);
 if makePlot
     figure

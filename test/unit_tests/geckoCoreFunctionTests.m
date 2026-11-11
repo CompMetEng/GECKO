@@ -596,7 +596,7 @@ function testfindMetSmiles_tc0012(testCase)
     verifyEqual(testCase,ecModel.metSmiles,{'C(C1C)O';'C1C(=NC2)';'C(C1C)O';'C1C(=NC2)';'';'';'';'';'';''})
 end
 
-%Tests readProteomics, constrainEnzConcs, flexibilizeEnzConcs, and getConcControlCoeffs.
+%Tests loadProtData, fillEnzConcs, constrainEnzConcs and flexibilizeEnzConcs.
 function testProteomcisIntegration_tc0013(testCase)
     geckoPath = findGECKOroot;
     adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
