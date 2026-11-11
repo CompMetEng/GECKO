@@ -11,7 +11,7 @@ function model = getKcatAcrossIsozymes(model)
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in full GECKO 3 format (with ecModel.ec structure), not
+%     a full ecModel (with ecModel.ec structure), not
 %     GECKO light.
 %
 % Returns

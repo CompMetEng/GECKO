@@ -31,7 +31,7 @@ function jobId = submitOpenKineticsPredictor(model, varargin)
 % Parameters
 % ----------
 % model : struct
-%     ecModel in GECKO 3 format (with ecModel.ec structure).
+%     ecModel (with ecModel.ec structure).
 %
 % Name-Value Arguments
 % --------------------

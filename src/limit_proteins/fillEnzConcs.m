@@ -9,7 +9,7 @@ function model = fillEnzConcs(model, protData, varargin)
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 % protData : struct
 %     structure with proteome data, from loadProtFluxData, with the fields:
 %

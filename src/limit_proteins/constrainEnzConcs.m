@@ -9,7 +9,7 @@ function model = constrainEnzConcs(model, varargin)
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure) with enzyme
+%     an ecModel (with ecModel.ec structure) with enzyme
 %     concentrations in model.ec.concs.
 %
 % Name-Value Arguments

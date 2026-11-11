@@ -13,7 +13,7 @@ function [done, kcatList] = fetchOpenKineticsPredictor(model, varargin)
 % Parameters
 % ----------
 % model : struct
-%     ecModel in GECKO 3 format (with ecModel.ec structure; model.metSmiles
+%     ecModel (with ecModel.ec structure; model.metSmiles
 %     is required to map results back).
 %
 % Name-Value Arguments

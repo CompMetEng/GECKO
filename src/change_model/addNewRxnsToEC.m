@@ -8,7 +8,7 @@ function [model, rxnsAdded, enzAdded] = addNewRxnsToEC(model, newRxns, varargin)
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 % newRxns : struct
 %     structure with the new reaction information (see Notes for fields).
 %
@@ -87,7 +87,7 @@ end
 
 % Validate if GECKO version 3
 if ~isfield(model, 'ec')
-    error('Input model is not an ecModel in GECKO 3 format (with ecModel.ec structure)')
+    error('Input model is not an ecModel (with ecModel.ec structure)')
 end
 
 if model.ec.geckoLight

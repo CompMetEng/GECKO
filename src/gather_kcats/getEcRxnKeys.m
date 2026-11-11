@@ -9,7 +9,7 @@ function [baseRxns, enzymeSets] = getEcRxnKeys(model)
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 %
 % Returns
 % -------

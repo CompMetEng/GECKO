@@ -11,7 +11,7 @@ function [model, rxnIdx] = assignKcatValues(model,kcatList,varargin)
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 % kcatList : struct
 %     structure array with separate entries for each kcat value, with the
 %     following fields:

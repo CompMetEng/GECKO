@@ -10,7 +10,7 @@ function model = removeStandardKcat(model)
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure) that has
+%     an ecModel (with ecModel.ec structure) that has
 %     standard kcat values implemented by getStandardKcat.
 %
 % Returns

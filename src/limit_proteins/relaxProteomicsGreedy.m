@@ -12,7 +12,7 @@ function result = relaxProteomicsGreedy(model, varargin)
 % Parameters
 % ----------
 % model : struct
-%     a full ecModel in GECKO 3 format, with some usage_prot_<id> reactions
+%     a full ecModel, with some usage_prot_<id> reactions
 %     constrained below defaultUpperBound (e.g. by constrainEnzConcs).
 %
 % Name-Value Arguments

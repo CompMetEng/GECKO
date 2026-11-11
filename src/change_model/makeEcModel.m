@@ -23,7 +23,7 @@ function [model, noUniprot] = makeEcModel(model, varargin)
 % Returns
 % -------
 % model : struct
-%     an ecModel in GECKO 3 format, with a model.ec structure where enzyme
+%     an ecModel, with a model.ec structure where enzyme
 %     and kcat information are stored. Protein pseudometabolites and their
 %     draw reactions are added to the model, but their usage is not yet
 %     implemented (due to absent kcat values at this stage).

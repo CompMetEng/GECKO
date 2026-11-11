@@ -11,7 +11,7 @@ function solution = getPfbaEnzymes(model, varargin)
 % Parameters
 % ----------
 % model : struct
-%     a full ecModel in GECKO 3 format (with ecModel.ec structure and
+%     a full ecModel (with ecModel.ec structure and
 %     usage_prot_<id> reactions). Not supported for gecko-light models.
 %
 % Name-Value Arguments
