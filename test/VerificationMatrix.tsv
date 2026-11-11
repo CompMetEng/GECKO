@@ -24,7 +24,7 @@ gather_kcats/getEcRxnKeys.m	tc0070, tc0076
 gather_kcats/saveKcatSource.m	tc0071, tc0073, tc0076, tc0078	
 gather_kcats/loadKcatSource.m	tc0071, tc0072, tc0073, tc0076, tc0077, tc0078, tc0302	
 gather_kcats/kcatsFromBrenda.m	tc0074, tc0078, tc0226	
-gather_kcats/kcatsFromDLKcat.m	tc0011, tc0015 (Docker replaced by a script), tc0035, tc0037, tc0074, tc0078, tc0303, tc0304, tc0701 - the default 'via' reads data/DLKcat.tsv or goes to OKP (tc0701 stops at the missing API key)	
+gather_kcats/kcatsFromDLKcat.m	tc0015, tc0727 (Docker replaced by a script), tc0035, tc0037, tc0074, tc0078, tc0303, tc0304, tc0701 - the default 'via' reads data/DLKcat.tsv or goes to OKP (tc0701 stops at the missing API key)	
 gather_kcats/kcatsFromOKP.m	tc0023 (input of a job), tc0030 (fetch with a replaced webread), tc0069 (CatRange), tc0075 - reads a stored result; the submit request itself needs the OKP service	
 gather_kcats/collectKcats.m	tc0079, tc0080, tc0081, tc0083, tc0087, tc0088, tc0089, tc0090, tc0098, tc0300, tc0714, tc0725	
 gather_kcats/assignKcats.m	tc0079, tc0083	

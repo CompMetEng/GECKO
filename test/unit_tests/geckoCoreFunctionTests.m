@@ -427,12 +427,6 @@ function testKcats_tc0011(testCase)
     ecModel = applyComplexData(ecModel, [], adapter, false);
 
     kcatListFuzzy = fuzzyKcatMatching(ecModel, [], adapter);
-    % The DLKcat input of every enzyme-substrate pair, read back from a
-    % DLKcat run that is replaced by a script (see runDLKcatWithFakeDocker)
-    kcatList = runDLKcatWithFakeDocker(testCase, ecModel, adapter, []);
-    verifyEqual(testCase,kcatList.rxns', {'R2_EXP_1','R2_EXP_1','R2_EXP_2','R2_REV_EXP_1','R2_REV_EXP_1','R2_REV_EXP_2','R2a_EXP_1','R2a_EXP_1','R2a_EXP_2','R3','R3b','R5'})
-    verifyEqual(testCase,kcatList.genes', {'G1','G2','G3','G1','G2','G3','G1','G2','G3','G4','G4','G5'})
-    verifyEqual(testCase,kcatList.substrates', {'m1','m1','m1','m2','m2','m2','m1','m1','m1','m1','m1','m2'})
     
     %Create a suitable kcatlist from dlkcat
     dlkcatList = struct();
@@ -3052,6 +3046,27 @@ function testRelaxProteomicsGreedyLastIterationUsesUpCandidates_tc0726(testCase)
     verifyEqual(testCase, sort(fieldnames(result.relaxed)), sort({'P5';'P4'}))
     verifyEqual(testCase, result.finalGrowth, 90, 'AbsTol', 1e-9)
     verifySubstring(testCase, lastwarn(), 'no more candidates')
+end
+
+function testKcatsFromDLKcatDockerInput_tc0727(testCase)
+    % The DLKcat input of every enzyme-substrate pair, read back from a
+    % DLKcat run that is replaced by a script (see runDLKcatWithFakeDocker).
+    % The model is that of tc0011.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    model = getGeckoTestModel();
+    rxnsToAdd = struct();
+    rxnsToAdd.rxns = {'R2a';'R3b'};
+    rxnsToAdd.grRules = {'G1 and G2 or G3';'G4'};
+    rxnsToAdd.equations = {'m1[c] => m2[c]'; 'm1[c] => m2[c]'};
+    model = addRxns(model,rxnsToAdd, 3);
+    ecModel = makeEcModel(model, false, adapter);
+    ecModel = getECfromGEM(ecModel);
+    ecModel = applyComplexData(ecModel, [], adapter, false);
+    kcatList = runDLKcatWithFakeDocker(testCase, ecModel, adapter, []);
+    verifyEqual(testCase,kcatList.rxns', {'R2_EXP_1','R2_EXP_1','R2_EXP_2','R2_REV_EXP_1','R2_REV_EXP_1','R2_REV_EXP_2','R2a_EXP_1','R2a_EXP_1','R2a_EXP_2','R3','R3b','R5'})
+    verifyEqual(testCase,kcatList.genes', {'G1','G2','G3','G1','G2','G3','G1','G2','G3','G4','G4','G5'})
+    verifyEqual(testCase,kcatList.substrates', {'m1','m1','m1','m2','m2','m2','m1','m1','m1','m1','m1','m2'})
 end
 
 function [ecModel, adapter, project] = buildScratchProject()
