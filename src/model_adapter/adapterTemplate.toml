@@ -34,8 +34,9 @@ enzyme_comp = "cytoplasm"
 kcat_aggregate_brenda = "max"
 
 [kegg]
-# KEGG organism code, from https://www.genome.jp/kegg/catalog/org_list.html
-id = "sce"
+# KEGG organism code, from https://www.genome.jp/kegg/catalog/org_list.html,
+# for example "sce" for Saccharomyces cerevisiae. Empty: KEGG is not used.
+id = ""
 # Field for the KEGG gene identifier; it should match the gene identifiers
 # of the model. "kegg" takes the KEGG entry identifier (for example
 # YER023W: https://www.genome.jp/dbget-bin/www_bget?sce:YER023W). Gene
@@ -46,9 +47,11 @@ gene_id = "kegg"
 
 [uniprot]
 # "proteome" (https://www.uniprot.org/proteomes/) or "taxonomy"
-# (https://www.uniprot.org/taxonomy), and the matching identifier.
+# (https://www.uniprot.org/taxonomy), and the matching identifier, for
+# example "559292" (taxonomy) or "UP000002311" (proteome) for
+# Saccharomyces cerevisiae. Required unless data/uniprot.tsv is provided.
 type = "taxonomy"
-id = "559292"
+id = ""
 # UniProt field that matches the gene identifiers of the model: one of the
 # "Returned Field" entries under "Names & Taxonomy" at
 # https://www.uniprot.org/help/return_fields

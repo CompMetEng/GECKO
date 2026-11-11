@@ -3108,6 +3108,20 @@ function testRelaxEnzConcsPerComplex_tc0728(testCase)
     verifyLessThan(testCase, perEnzyme.ub(usageP1), perEnzyme.ub(usageP2))
 end
 
+function testLoadDatabasesNeedsUniprotID_tc0729(testCase)
+    % Without data/uniprot.tsv and without a UniProt identifier in the
+    % adapter, loadDatabases raises an error that names the key; nothing is
+    % downloaded.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    scratchDir = tempname;
+    cleanupDir = onCleanup(@() rmdir(scratchDir, 's'));
+    mkdir(fullfile(scratchDir,'data'));
+    adapter.params.path = scratchDir;
+    adapter.params.uniprot.ID = '';
+    verifyError(testCase, @() loadDatabases('uniprot', adapter), 'loadDatabases:noUniprotID')
+end
+
 function [ecModel, adapter, project] = buildScratchProject()
     % An ecModel of the test model with a temporary copy of the test
     % project folder (the tracked test data is not modified).
