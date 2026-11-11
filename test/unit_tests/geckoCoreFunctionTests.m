@@ -3075,6 +3075,39 @@ function testKcatsFromDLKcatDockerInput_tc0727(testCase)
     verifyEqual(testCase,kcatList.substrates', {'m1','m1','m1','m2','m2','m2','m1','m1','m1','m1','m1','m2'})
 end
 
+function testRelaxEnzConcsPerComplex_tc0728(testCase)
+    % With all flux through R2 by the complex P1 + P2 (P2 has twice the MW
+    % of P1, so its measured concentration binds first), perComplex raises
+    % both subunits by one fold; without it, P1 needs less than P2.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));
+    ecModel = makeEcModel(getGeckoTestModel(), false, adapter);
+    ecModel = getECfromGEM(ecModel);
+    ecModel.ec.kcat(:) = 10;
+    ecModel.ec.source(:) = {'manual'};
+    ecModel = applyKcatConstraints(ecModel);
+    ecModel = setProtPoolSize(ecModel, 0.5, 0.5, 0.5, adapter);
+    blocked = ismember(ecModel.rxns, {'R3','R4','R2_EXP_2','R2_REV_EXP_1','R2_REV_EXP_2'});
+    ecModel.lb(blocked) = 0;
+    ecModel.ub(blocked) = 0;
+    ecModel.ec.concs(:) = NaN;
+    ecModel.ec.concs(ismember(ecModel.ec.enzymes, {'P1','P2'})) = 1;
+    ecModel = constrainEnzConcs(ecModel);
+    sol = solveLP(ecModel);
+    target = 2 * sol.f;
+    usageP1 = strcmp(ecModel.rxns, 'usage_prot_P1');
+    usageP2 = strcmp(ecModel.rxns, 'usage_prot_P2');
+
+    [~, perComplex] = evalc('relaxEnzConcs(ecModel, ''expGrowth'', target, ''bioRxn'', ''R5'', ''perComplex'', true, ''modelAdapter'', adapter)');
+    verifyGreaterThan(testCase, perComplex.ub(usageP1), 1)
+    verifyEqual(testCase, perComplex.ub(usageP1), perComplex.ub(usageP2), 'RelTol', 1e-9)
+    sol = solveLP(perComplex);
+    verifyEqual(testCase, sol.f, target, 'RelTol', 1e-6)
+
+    [~, perEnzyme] = evalc('relaxEnzConcs(ecModel, ''expGrowth'', target, ''bioRxn'', ''R5'', ''modelAdapter'', adapter)');
+    verifyLessThan(testCase, perEnzyme.ub(usageP1), perEnzyme.ub(usageP2))
+end
+
 function [ecModel, adapter, project] = buildScratchProject()
     % An ecModel of the test model with a temporary copy of the test
     % project folder (the tracked test data is not modified).
