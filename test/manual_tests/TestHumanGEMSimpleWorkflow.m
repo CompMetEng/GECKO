@@ -4,7 +4,8 @@
 GECKORoot = findGECKOroot();
 
 humanAdapter = ModelAdapterManager.getAdapter(humanAdapterPath);
-HumanGEMRoot = HumanGEMAdapter.getHumanGEMRootPath();
+% Human-GEM root: the folder above model/Human-GEM.mat, which is on the path.
+HumanGEMRoot = fileparts(fileparts(which('Human-GEM.mat')));
 
 ihuman = load(fullfile(HumanGEMRoot, 'model', 'Human-GEM.mat')).ihuman;
 % Remove dead-end reactions
@@ -87,7 +88,8 @@ humanAdapter = ModelAdapterManager.getAdapter(humanAdapterPath);
 %humanAdapterTemp = ModelAdapterManager.getAdapter(fullfile(GECKORoot, 'tutorials', 'tutorial_Human-GEMTemp'), false); %should give warning + error
 %humanAdapterTemp = ModelAdapterManager.getAdapter(fullfile(GECKORoot, 'tutorials', 'tutorial_Human-GEMTemp'), true);
 %humanAdapterTemp.getParameters
-HumanGEMRoot = HumanGEMAdapter.getHumanGEMRootPath();
+% Human-GEM root: the folder above model/Human-GEM.mat, which is on the path.
+HumanGEMRoot = fileparts(fileparts(which('Human-GEM.mat')));
 
 ihuman = load(fullfile(HumanGEMRoot, 'model', 'Human-GEM.mat')).ihuman;
 modSimp = simplifyModel(ihuman,false,false,true,true); %remove dead-end reactions
