@@ -956,42 +956,43 @@ function testFuzzyKcatMatchingTieBreakRespectsWildcardCount_tc0022(testCase)
 end
 
 
-function testWriteOpenKineticsPredictorInputReactionSubsetIndex_tc0023(testCase)
-    % Verifies writeOpenKineticsPredictorInput correctly maps a
-    % caller-supplied ecRxns subset back to the right ec.rxns rows even when
-    % that subset excludes entries that fall between the requested reactions
-    % in ec.rxns order: requesting a subset whose reactions are not
-    % contiguous in ec.rxns (excluding two entries in between) must still
-    % write the substrate/gene-sequence pairs belonging to the requested
-    % reactions, not those of the skipped-over entries.
+function testKcatsFromOKPWritesInputSubset_tc0023(testCase)
+    % kcatsFromOKP writes the input of a job before it needs the API key:
+    % with no key, data/OKP.csv is written and the key resolution then
+    % fails. An ecRxns subset whose reactions are not contiguous in ec.rxns
+    % gives the sequence-substrate pairs of those reactions, not of the
+    % entries in between.
+    oldEnv = getenv('OKP_API_KEY');
+    cleanupEnv = onCleanup(@() setenv('OKP_API_KEY', oldEnv));
+    setenv('OKP_API_KEY', '');
     geckoPath = findGECKOroot;
     adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
     model = getGeckoTestModel();
     ecModel = makeEcModel(model, false, adapter);
     ecModel = getECfromGEM(ecModel);
-
-    % Self-contained SMILES: only m1c (R2/R3's shared substrate) needs one for
-    % this test, so skip findMetSmiles/PubChem entirely.
+    % Only m1c (R2/R3's shared substrate) needs a SMILES for this test
     ecModel.metSmiles = repmat({''}, numel(ecModel.mets), 1);
     ecModel.metSmiles(strcmp(ecModel.mets,'m1c')) = {'C(C1C)O'};
 
     scratchDir = fullfile(tempname);
     mkdir(fullfile(scratchDir,'data'));
     cleanupDir = onCleanup(@() rmdir(scratchDir, 's'));
-    % writeOpenKineticsPredictorInput resolves its own output path through
-    % params.path/data --- value-class copy, same redirect pattern as every
-    % other scenario/test in this file that writes a file.
     writeAdapter = adapter;
     writeAdapter.params.path = scratchDir;
 
-    writeOpenKineticsPredictorInput(ecModel, 'ecRxns', ismember(ecModel.ec.rxns, {'R2_EXP_1','R2_EXP_2','R3'}), ...
-        'modelAdapter', writeAdapter, 'onlyWithSmiles', true, 'overwrite', true);
+    ecRxns = ismember(ecModel.ec.rxns, {'R2_EXP_1','R2_EXP_2','R3'});
+    try
+        evalc('kcatsFromOKP(ecModel, ''method'', ''KinForm-H'', ''ecRxns'', ecRxns, ''modelAdapter'', writeAdapter);');
+        err = [];
+    catch err
+    end
+    verifyNotEmpty(testCase, err)
+    verifySubstring(testCase, err.message, 'OpenKineticsPredictor API key')
 
     fID = fopen(fullfile(scratchDir,'data','OKP.csv'));
     raw = textscan(fID, '%s %s', 'Delimiter', ',', 'HeaderLines', 1);
     fclose(fID);
     rows = sort(strcat(raw{1}, ',', raw{2}));
-
     expected = sort({'MRAL,C(C1C)O'; 'MNTD,C(C1C)O'; 'MSYN,C(C1C)O'; 'MDFM,C(C1C)O'});
     verifyEqual(testCase, rows, expected)
 end
@@ -1456,11 +1457,7 @@ end
 function testResolveOkpApiKeyResolutionOrder_tc0029(testCase)
     % resolveOkpApiKey: argKey beats the OKP_API_KEY environment variable,
     % which beats data/okpApiKey.txt, which beats erroring when none are set.
-    % Shared by submitOpenKineticsPredictor and fetchOpenKineticsPredictor;
-    % tested directly since neither caller can be run end-to-end without a
-    % live API key (same reasoning runDLKcat's own Docker dependency keeps
-    % it out of this suite --- external-service calls aren't unit tested
-    % here, only the logic that doesn't need one).
+    % Used by kcatsFromOKP and updateKcatSources.
     scratchDir = fullfile(tempname);
     mkdir(fullfile(scratchDir,'data'));
     cleanupDir = onCleanup(@() rmdir(scratchDir, 's'));
@@ -1493,7 +1490,7 @@ function testResolveOkpApiKeyResolutionOrder_tc0029(testCase)
 end
 
 
-function testReadOpenKineticsPredictorCatRange_tc0069(testCase)
+function testKcatsFromOKPCatRange_tc0069(testCase)
     % CatRange's prediction is a class range ('10 to 100 s^-1'), read as its
     % geometric midpoint, or half the upper bound for the class from 0.
     geckoPath = findGECKOroot;
@@ -1503,32 +1500,51 @@ function testReadOpenKineticsPredictorCatRange_tc0069(testCase)
     ecModel = getECfromGEM(ecModel);
     ecModel.metSmiles = repmat({''}, numel(ecModel.mets), 1);
     ecModel.metSmiles(strcmp(ecModel.mets,'m1c')) = {'C(C1C)O'};
+    scratchDir = tempname;
+    mkdir(fullfile(scratchDir,'data'));
+    cleanupDir = onCleanup(@() rmdir(scratchDir, 's'));
+    adapter.params.path = scratchDir;
+    writelines(["jobId: j1"; "method: CatRange"; "resultOf: j1"], ...
+        fullfile(scratchDir, 'data', 'OKP_job_catrange.txt'));
+    resultFile = fullfile(scratchDir, 'data', 'OKP_output_catrange.csv');
 
-    resultFile = [tempname '.csv'];
-    fid = fopen(resultFile,'w');
-    fprintf(fid,'Predicted kcat range: kcat (1/s),Source kcat,Extra Info kcat,Protein Sequence,Substrate\n');
-    fprintf(fid,'10 to 100 s^-1,Prediction from CatRange,Predicted range: 10 to 100 s^-1,MRAL,C(C1C)O\n');
-    fclose(fid);
-    cleanupFile = onCleanup(@() delete(resultFile));
-    kcatList = readOpenKineticsPredictorOutput(ecModel, 'outFile', resultFile, 'modelAdapter', adapter);
+    writelines(["Predicted kcat range: kcat (1/s),Source kcat,Extra Info kcat,Protein Sequence,Substrate"; ...
+        "10 to 100 s^-1,Prediction from CatRange,Predicted range: 10 to 100 s^-1,MRAL,C(C1C)O"], resultFile);
+    kcatList = kcatsFromOKP(ecModel, 'method', 'CatRange', 'useStored', true, 'save', false, ...
+        'modelAdapter', adapter);
     verifyEqual(testCase, kcatList.kcats, 10^1.5, 'RelTol', 1e-12)
     verifyEqual(testCase, kcatList.kcatSource, {'OKP-CatRange'})
 
-    fid = fopen(resultFile,'w');
-    fprintf(fid,'Predicted kcat range: kcat (1/s),Source kcat,Extra Info kcat,Protein Sequence,Substrate\n');
-    fprintf(fid,'0 to 1e-08 s^-1,Prediction from CatRange,,MRAL,C(C1C)O\n');
-    fclose(fid);
-    kcatList = readOpenKineticsPredictorOutput(ecModel, 'outFile', resultFile, 'modelAdapter', adapter);
+    writelines(["Predicted kcat range: kcat (1/s),Source kcat,Extra Info kcat,Protein Sequence,Substrate"; ...
+        "0 to 1e-08 s^-1,Prediction from CatRange,,MRAL,C(C1C)O"], resultFile);
+    kcatList = kcatsFromOKP(ecModel, 'method', 'CatRange', 'useStored', true, 'save', false, ...
+        'modelAdapter', adapter);
     verifyEqual(testCase, kcatList.kcats, 5e-9, 'RelTol', 1e-12)
 end
 
-function testFetchOpenKineticsPredictorUseStoredMatchesReader_tc0030(testCase)
-    % Verifies fetchOpenKineticsPredictor's 'useStored' path (parsing an
-    % already-downloaded result file, the only path testable without a live
-    % API call) delegates to readOpenKineticsPredictorOutput and produces an
-    % identical kcatList struct: the 'OKP-' prefix on kcatSource, and the
-    % constant source 'OpenKineticsPredictor' used by every kcat-gathering
-    % function.
+function testKcatsFromOKPFetchesJob_tc0030(testCase)
+    % With a submitted job, kcatsFromOKP fetches the result from the OKP
+    % API, stores it and records which job it came from. The API is
+    % replaced by a webread on the path that reports the job as completed
+    % and returns a result, so no request leaves the machine.
+    oldEnv = getenv('OKP_API_KEY');
+    cleanupEnv = onCleanup(@() setenv('OKP_API_KEY', oldEnv));
+    setenv('OKP_API_KEY', 'ak_test');
+    stubDir = tempname;
+    mkdir(stubDir);
+    fid = fopen(fullfile(stubDir, 'webread.m'), 'w');
+    fprintf(fid, '%s\n', ...
+        'function out = webread(url, varargin)', ...
+        'if contains(url, ''/status/'')', ...
+        '    out = struct(''status'', ''completed'');', ...
+        'else', ...
+        '    out = sprintf(''kcat (1/s),Source kcat,Extra Info kcat,Protein Sequence,Substrate\n12.5,Prediction from KinForm-H,,MRAL,C(C1C)O\n'');', ...
+        'end', ...
+        'end');
+    fclose(fid);
+    addpath(stubDir, '-begin');
+    cleanupStub = onCleanup(@() rmpath(stubDir));
+
     geckoPath = findGECKOroot;
     adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
     model = getGeckoTestModel();
@@ -1536,26 +1552,19 @@ function testFetchOpenKineticsPredictorUseStoredMatchesReader_tc0030(testCase)
     ecModel = getECfromGEM(ecModel);
     ecModel.metSmiles = repmat({''}, numel(ecModel.mets), 1);
     ecModel.metSmiles(strcmp(ecModel.mets,'m1c')) = {'C(C1C)O'};
-
-    scratchDir = fullfile(tempname);
+    scratchDir = tempname;
     mkdir(fullfile(scratchDir,'data'));
     cleanupDir = onCleanup(@() rmdir(scratchDir, 's'));
-    fetchAdapter = adapter;
-    fetchAdapter.params.path = scratchDir;
+    adapter.params.path = scratchDir;
+    writelines(["jobId: j7"; "method: KinForm-H"], fullfile(scratchDir, 'data', 'OKP_job_kinform_h.txt'));
 
-    resultFile = fullfile(scratchDir,'data','OKP_output.csv');
-    fid = fopen(resultFile,'w');
-    fprintf(fid,'kcat (1/s),Source kcat,Extra Info kcat,Protein Sequence,Substrate\n');
-    fprintf(fid,'12.5,Prediction from CataPro,,MRAL,C(C1C)O\n');
-    fclose(fid);
-
-    [done, viaFetch] = fetchOpenKineticsPredictor(ecModel, 'useStored', true, 'modelAdapter', fetchAdapter);
+    [~, kcatList, done] = evalc('kcatsFromOKP(ecModel, ''method'', ''KinForm-H'', ''save'', false, ''modelAdapter'', adapter);');
     verifyTrue(testCase, done)
-
-    viaReader = readOpenKineticsPredictorOutput(ecModel, 'outFile', resultFile, 'modelAdapter', fetchAdapter);
-    verifyEqual(testCase, viaFetch, viaReader)
-    verifyEqual(testCase, viaFetch.kcatSource, {'OKP-CataPro'})
-    verifyEqual(testCase, viaFetch.source, 'OpenKineticsPredictor')
+    verifyEqual(testCase, kcatList.kcats, 12.5)
+    verifyEqual(testCase, kcatList.kcatSource, {'OKP-KinForm-H'})
+    verifyEqual(testCase, kcatList.source, 'OpenKineticsPredictor')
+    verifyTrue(testCase, isfile(fullfile(scratchDir, 'data', 'OKP_output_kinform_h.csv')))
+    verifySubstring(testCase, fileread(fullfile(scratchDir, 'data', 'OKP_job_kinform_h.txt')), 'resultOf: j7')
 end
 
 
@@ -1853,7 +1862,7 @@ function testMergeKcatsGeneralizesToNSourcesWithExactTier_tc0041(testCase)
     % mergeKcats generalizes mergeDLKcatAndFuzzyKcats (kept as a thin,
     % deprecated wrapper around it) from two fixed inputs to any number of
     % kcatLists, each of which may itself mix several sources via a per-row
-    % kcatSource field -- e.g. fetchOpenKineticsPredictor's own output,
+    % kcatSource field -- e.g. the output of kcatsFromOKP,
     % modelled here as okpList, carrying both an exact BRENDA hit (no
     % wildcard/origin metadata at all) and a CataPro prediction.
     fuzzyList.rxns        = {'R1'; 'R2'};

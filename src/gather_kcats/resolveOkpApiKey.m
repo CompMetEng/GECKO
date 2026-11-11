@@ -1,8 +1,8 @@
 function key = resolveOkpApiKey(argKey, basePath)
 % resolveOkpApiKey  Resolve the OpenKineticsPredictor API key.
 %
-% Internal helper shared by submitOpenKineticsPredictor and
-% fetchOpenKineticsPredictor; not intended to be called directly.
+% Used by kcatsFromOKP and updateKcatSources; not intended to be called
+% directly.
 %
 % Checked in order: the argKey input, the OKP_API_KEY environment variable,
 % then a plain-text file data/okpApiKey.txt under basePath (the GECKO
@@ -26,7 +26,7 @@ function key = resolveOkpApiKey(argKey, basePath)
 %
 % See also
 % --------
-% submitOpenKineticsPredictor, fetchOpenKineticsPredictor
+% kcatsFromOKP, updateKcatSources
 
 if ~isempty(argKey)
     key = strtrim(char(argKey));

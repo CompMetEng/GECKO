@@ -25,7 +25,7 @@ gather_kcats/saveKcatSource.m	tc0071, tc0073, tc0076, tc0078
 gather_kcats/loadKcatSource.m	tc0071, tc0072, tc0073, tc0076, tc0077, tc0078, tc0302	
 gather_kcats/kcatsFromBrenda.m	tc0074, tc0078, tc0226	
 gather_kcats/kcatsFromDLKcat.m	tc0074, tc0078, tc0701 - reads an existing DLKcat output; the default 'via' reads data/DLKcat.tsv or goes to OKP (tc0701 stops at the missing API key); a run with Docker is not tested	
-gather_kcats/kcatsFromOKP.m	tc0075 - reads a stored result; submitting needs the OKP service	
+gather_kcats/kcatsFromOKP.m	tc0023 (input of a job), tc0030 (fetch with a replaced webread), tc0069 (CatRange), tc0075 - reads a stored result; the submit request itself needs the OKP service	
 gather_kcats/collectKcats.m	tc0079, tc0080, tc0081, tc0083, tc0087, tc0088, tc0089, tc0090, tc0098, tc0300, tc0714	
 gather_kcats/assignKcats.m	tc0079, tc0083	
 gather_kcats/updateKcatSources.m	tc0082, tc0087, tc0702 (dlkcat without data/DLKcat.tsv needs an OKP key)	
@@ -54,7 +54,6 @@ limit_proteins/fillEnzConcs.m	tc0504
 limit_proteins/relaxProteomicsGreedy.m	tc0511, tc0707, tc0708	
 limit_proteins/relaxEnzConcs.m	tc0715	
 utilities/upgradeGECKOproject.m	tc0094, tc0099	
-gather_kcats/readOpenKineticsPredictorOutput.m	tc0030, tc0069	
 gather_kcats/reviewKcatAssignment.m	Has only been tested by running it manually, not tested by test cases
 gather_kcats/ecStatsFromBrenda.m	Not verified against real BRENDA data in this environment -- see its own TODO comment
 gather_kcats/mergeKcats.m	tc0240, tc0301	

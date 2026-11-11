@@ -24,7 +24,7 @@ function filename = saveKcatSource(model, kcatList, name, varargin)
 %     the ecModel the kcatList refers to.
 % kcatList : struct
 %     kcat values as returned by kcatsFromBrenda, fuzzyKcatMatching,
-%     readDLKcatOutput, readOpenKineticsPredictorOutput or mergeKcats:
+%     kcatsFromDLKcat, kcatsFromOKP or mergeKcats:
 %     fields rxns and kcats, optionally source, substrates, eccodes,
 %     wildcardLvl, origin, kcatSource, log10sd and detail (further
 %     key=value pairs for the detail column).

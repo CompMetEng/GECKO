@@ -7,8 +7,8 @@ function mergedKcatList = mergeKcats(kcatLists, sourcePriority, varargin)
 %
 % Generalizes mergeDLKcatAndFuzzyKcats: instead of two fixed inputs (DLKcat
 % + fuzzy BRENDA) it accepts a cell array of kcatLists, each of which may
-% itself mix several sources (for example the output of
-% fetchOpenKineticsPredictor, holding BRENDA, Sabio-RK and CataPro values
+% itself mix several sources (for example the output of kcatsFromOKP,
+% holding BRENDA, Sabio-RK and CataPro values
 % in its kcatSource field). A caller-supplied sourcePriority determines which
 % source is kept for each reaction.
 %
@@ -16,7 +16,7 @@ function mergedKcatList = mergeKcats(kcatLists, sourcePriority, varargin)
 % ----------
 % kcatLists : cell
 %     cell array of kcatList structs (as produced by fuzzyKcatMatching,
-%     readDLKcatOutput, fetchOpenKineticsPredictor, ...).
+%     kcatsFromDLKcat, kcatsFromOKP, ...).
 % sourcePriority : cell
 %     cell array of tier tokens / source labels, best first. Three
 %     reserved tier tokens may be used instead of a literal source label:

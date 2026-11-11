@@ -129,7 +129,7 @@ end
 
 function testKcatsFromOKPStored_tc0075(testCase)
     % Stored OKP results: a method's own result of its current job, or a
-    % result stored by fetchOpenKineticsPredictor alone when its predictions
+    % result stored outside kcatsFromOKP when its predictions
     % are of the requested method.
     [full, ~, adapter] = buildKcatModels();
     full.metSmiles = repmat({''}, numel(full.mets), 1);

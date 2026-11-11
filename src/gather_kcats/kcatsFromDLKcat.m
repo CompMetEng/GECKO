@@ -45,8 +45,8 @@ function [kcatList, done] = kcatsFromDLKcat(model, varargin)
 % Returns
 % -------
 % kcatList : struct
-%     the kcat values, as returned by readDLKcatOutput or
-%     readOpenKineticsPredictorOutput; empty while an OKP job runs.
+%     the kcat values (see kcatsFromOKP for the fields of an OKP result);
+%     empty while an OKP job runs.
 % done : logical
 %     whether the kcats were available.
 %
