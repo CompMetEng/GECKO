@@ -68,14 +68,16 @@ function [decisions, report, ecModel] = collectKcats(model, varargin)
 % [kcat_sources.brenda] aggregation (see updateKcatSources).
 %
 % After the stages:
-% - custom kcats of data/customKcats.tsv are applied (applyCustomKcats),
-%   when a stage lists custom but there is no data/kcats/custom.tsv;
 % - with isozymes, reactions without a kcat take one from their isozymes
 %   (getKcatAcrossIsozymes);
 % - with standard, the remaining reactions get the standard kcat
 %   (getStandardKcat).
 %
 % A source file a stage names that does not exist is reported and left out.
+% When a stage lists custom, data/kcats/custom.tsv does not exist and the
+% GECKO 3 file data/customKcats.tsv does, the error
+% collectKcats:legacyCustomKcats is raised: convertCustomKcats writes
+% data/customKcats.tsv as data/kcats/custom.tsv.
 %
 % Parameters
 % ----------
@@ -145,7 +147,6 @@ report.preset = config.preset;
 report.missing = {};
 report.sources = struct();
 loaded = struct();
-legacyCustom = false;
 
     function list = loadSource(name)
         % The kcat list of a source file, or [] when it does not exist.
@@ -155,7 +156,9 @@ legacyCustom = false;
             [list, rep] = loadKcatSource(ecModel, file);
             report.sources.(name) = rep;
         elseif strcmp(name, 'custom') && isfile(fullfile(params.path, 'data', 'customKcats.tsv'))
-            legacyCustom = true;
+            error('collectKcats:legacyCustomKcats', ['%s is a GECKO 3 custom kcats file, which ' ...
+                'collectKcats does not read. convertCustomKcats(ecModel) writes it as %s.'], ...
+                fullfile(params.path, 'data', 'customKcats.tsv'), file)
         else
             report.missing{end+1} = name;
             printOrange(sprintf(['No kcat source file %s; it is left out. ' ...
@@ -244,14 +247,6 @@ for s = 1:numel(config.stages)
     end
 end
 
-if legacyCustom
-    before = ecModel.ec.kcat;
-    ecModel = applyCustomKcats(ecModel, 'modelAdapter', modelAdapter);
-    changed = ecModel.ec.kcat ~= before;
-    stage(changed) = {'custom'};
-    candidates(changed) = 1;
-    spread(changed) = 0;
-end
 if config.isozymes && ~ecModel.ec.geckoLight
     before = ecModel.ec.kcat == 0;
     ecModel = getKcatAcrossIsozymes(ecModel);

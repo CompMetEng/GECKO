@@ -7,8 +7,8 @@ function [file, report] = convertCustomKcats(model, varargin)
 % for the same reaction is kept: one row per reaction, keyed by conventional
 % reaction and enzyme set (see getEcRxnKeys), with the entry's notes in the
 % note column. The stoicho column is left out: complex stoichiometry comes
-% from applyComplexData. Unlike applyCustomKcats, custom.tsv also applies to
-% light ecModels. geckopy has the same (convert_custom_kcats).
+% from applyComplexData. custom.tsv also applies to light ecModels. geckopy
+% has the same (convert_custom_kcats).
 %
 % Parameters
 % ----------
@@ -72,7 +72,11 @@ end
 
 base = model;
 base.ec.notes(:) = {''};
+% applyCustomKcats is deprecated for users; here it reads the file it was made for
+state = warning('off', 'GECKO:deprecatedFunction');
+restore = onCleanup(@() warning(state));
 [applied, rxnUpdated, notMatch] = applyCustomKcats(base, 'customKcats', inFile, 'modelAdapter', modelAdapter);
+clear restore
 idx = find(ismember(applied.ec.rxns, rxnUpdated));
 [baseRxns, enzymeSets] = getEcRxnKeys(applied);
 rows = strings(numel(idx), 9);

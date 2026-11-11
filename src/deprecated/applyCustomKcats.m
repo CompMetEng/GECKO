@@ -1,5 +1,9 @@
 function [model, rxnUpdated, notMatch] = applyCustomKcats(model, varargin)
-% applyCustomKcats  Apply user-defined kcats to an ecModel.
+% applyCustomKcats  Deprecated: use convertCustomKcats and data/kcats/custom.tsv.
+%
+% Deprecated. convertCustomKcats writes data/customKcats.tsv as
+% data/kcats/custom.tsv, which collectKcats and assignKcats read. Will be
+% removed in a future release.
 %
 % Reads data/customKcats.tsv in the obj.params.path specified in the model
 % adapter. Alternatively, a customKcats structure can be provided, as
@@ -81,6 +85,8 @@ function [model, rxnUpdated, notMatch] = applyCustomKcats(model, varargin)
 % --------
 % applyKcatConstraints, makeEcModel
 
+warning('GECKO:deprecatedFunction', ['applyCustomKcats is deprecated; use convertCustomKcats, ' ...
+    'which writes data/kcats/custom.tsv for collectKcats and assignKcats.'])
 p = parseGECKOargs(varargin, { ...
     'customKcats',  []; ...
     'modelAdapter', []});

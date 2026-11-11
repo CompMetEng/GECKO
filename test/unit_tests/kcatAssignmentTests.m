@@ -17,13 +17,16 @@ function testAssignKcatsReproducesChain_tc0079(testCase)
     % gecko_classic ranks the specific-activity matches (origin 5 and 6) above DLKcat
     merged = mergeKcats({fuzzy, dlkcat}, {'database_top','dlkcat','database_bottom'}, 'topOriginLimit', 6);
     A = assignKcatValues(base, merged);
+    state = warning('off', 'GECKO:deprecatedFunction');
     A = applyCustomKcats(A, 'modelAdapter', adapter);
+    warning(state);
     A = getKcatAcrossIsozymes(A);
     A = getStandardKcat(A, 'modelAdapter', adapter);
     A = applyKcatConstraints(A);
 
     kcatsFromBrenda(base, 'modelAdapter', adapter);
     kcatsFromDLKcat(base, 'modelAdapter', adapter);
+    convertCustomKcats(base, 'modelAdapter', adapter);
     [B, decisions, report] = assignKcats(base, 'modelAdapter', adapter);
     verifyEqual(testCase, B.ec.rxns, A.ec.rxns)
     verifyEqual(testCase, B.ec.kcat, A.ec.kcat)
@@ -38,11 +41,12 @@ function testCollectKcatsLeavesModel_tc0080(testCase)
     % collectKcats selects kcats without changing the model; a missing source is
     % reported; custom.tsv is used first.
     [base, adapter, project] = buildProject();
+    delete(fullfile(project, 'data', 'customKcats.tsv'));
     adapter.params.kcat_assignment = struct('preset', 'gecko_median');
     kcatsFromBrenda(base, 'modelAdapter', adapter);
     [decisions, report, decided] = collectKcats(base, 'modelAdapter', adapter, 'writeReport', false);
     verifyEqual(testCase, base.ec.kcat, zeros(numel(base.ec.rxns), 1))
-    verifyEqual(testCase, report.missing, {'dlkcat'})
+    verifyEqual(testCase, report.missing, {'custom', 'dlkcat'})
     verifyTrue(testCase, any(decided.ec.kcat > 0))
 
     [baseRxns, enz] = getEcRxnKeys(base);
@@ -111,10 +115,13 @@ function testGeckoMedianPreset_tc0083(testCase)
     dlkcat = kcatsFromDLKcat(base, 'modelAdapter', adapter);
     merged = mergeKcats({fuzzy, dlkcat}, {'database_top','dlkcat','database_bottom'}, 'topOriginLimit', 4);
     A = assignKcatValues(base, merged);
+    state = warning('off', 'GECKO:deprecatedFunction');
     A = applyCustomKcats(A, 'modelAdapter', adapter);
+    warning(state);
     A = getKcatAcrossIsozymes(A);
     A = getStandardKcat(A, 'modelAdapter', adapter);
     A = applyKcatConstraints(A);
+    convertCustomKcats(base, 'modelAdapter', adapter);
     [B, ~, report] = assignKcats(base, 'modelAdapter', adapter, 'writeReport', false);
     verifyEqual(testCase, report.preset, 'gecko_median')
     verifyEqual(testCase, B.ec.kcat, A.ec.kcat)

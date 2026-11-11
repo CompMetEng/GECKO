@@ -2827,6 +2827,7 @@ function testKcatDecisionsFileHeader_tc0714(testCase)
     % writes; the returned table keeps the camelCase names.
     [ecModel, adapter, project] = buildScratchProject();
     cleanupDir = onCleanup(@() rmdir(project, 's'));
+    delete(fullfile(project, 'data', 'customKcats.tsv'));
     [~, decisions] = evalc('collectKcats(ecModel, ''modelAdapter'', adapter);');
     verifyEqual(testCase, decisions.Properties.VariableNames, ...
         {'ecRxn','stage','source','kcat','candidates','spreadLog10','sdLog10'})
@@ -3005,6 +3006,28 @@ function testDeprecatedDLKcatFunctions_tc0724(testCase)
     restore = onCleanup(@() warning(state));
     verifyError(testCase, @() runDLKcat('modelAdapter', adapter), 'GECKO:deprecatedFunction')
     verifyError(testCase, @() writeDLKcatInput(ecModel, 'modelAdapter', adapter), 'GECKO:deprecatedFunction')
+end
+
+function testLegacyCustomKcats_tc0725(testCase)
+    % applyCustomKcats warns that it is deprecated. collectKcats does not
+    % read data/customKcats.tsv: without data/kcats/custom.tsv it raises an
+    % error that names convertCustomKcats, and after the conversion it uses
+    % the converted custom kcats.
+    [ecModel, adapter, project] = buildScratchProject();
+    cleanupDir = onCleanup(@() rmdir(project, 's'));
+    verifyWarning(testCase, @() applyCustomKcats(ecModel, 'modelAdapter', adapter), ...
+        'GECKO:deprecatedFunction');
+    try
+        evalc('collectKcats(ecModel, ''modelAdapter'', adapter, ''writeReport'', false);');
+        err = [];
+    catch err
+    end
+    verifyNotEmpty(testCase, err)
+    verifyEqual(testCase, err.identifier, 'collectKcats:legacyCustomKcats')
+    verifySubstring(testCase, err.message, 'convertCustomKcats')
+    evalc('convertCustomKcats(ecModel, ''modelAdapter'', adapter);');
+    [~, decisions] = evalc('collectKcats(ecModel, ''modelAdapter'', adapter, ''writeReport'', false);');
+    verifyTrue(testCase, any(strcmp(decisions.source, 'custom')))
 end
 
 function [ecModel, adapter, project] = buildScratchProject()

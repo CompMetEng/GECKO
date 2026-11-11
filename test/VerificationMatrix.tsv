@@ -10,7 +10,7 @@ change_model/makeEcModel.m	tc0001, tc0002, tc0210, tc0212, tc0233, tc0234
 change_model/setProtPoolSize.m	tc0005, tc0720	
 change_model/getKcatAcrossIsoenzymes.m	tc0011, tc0252	
 change_model/getSubsetEcModel.m	tc0258, tc0259	
-change_model/applyCustomKcats.m	tc0227, tc0228, tc0229, tc0230	
+deprecated/applyCustomKcats.m	tc0227, tc0228, tc0229, tc0230, tc0725 (deprecation warning)	
 enzyme_usage/getEnzymeUsage.m	tc0286, tc0507, tc0508	
 enzyme_usage/reportEnzymeUsage.m	tc0286, tc0508, tc0509	
 gather_kcats/fuzzyKcatMatching.m	tc0010, tc0223, tc0224, tc0225, tc0226, tc0231, tc0239	
@@ -26,7 +26,7 @@ gather_kcats/loadKcatSource.m	tc0071, tc0072, tc0073, tc0076, tc0077, tc0078, tc
 gather_kcats/kcatsFromBrenda.m	tc0074, tc0078, tc0226	
 gather_kcats/kcatsFromDLKcat.m	tc0011, tc0015 (Docker replaced by a script), tc0035, tc0037, tc0074, tc0078, tc0303, tc0304, tc0701 - the default 'via' reads data/DLKcat.tsv or goes to OKP (tc0701 stops at the missing API key)	
 gather_kcats/kcatsFromOKP.m	tc0023 (input of a job), tc0030 (fetch with a replaced webread), tc0069 (CatRange), tc0075 - reads a stored result; the submit request itself needs the OKP service	
-gather_kcats/collectKcats.m	tc0079, tc0080, tc0081, tc0083, tc0087, tc0088, tc0089, tc0090, tc0098, tc0300, tc0714	
+gather_kcats/collectKcats.m	tc0079, tc0080, tc0081, tc0083, tc0087, tc0088, tc0089, tc0090, tc0098, tc0300, tc0714, tc0725	
 gather_kcats/assignKcats.m	tc0079, tc0083	
 gather_kcats/updateKcatSources.m	tc0082, tc0087, tc0702 (dlkcat without data/DLKcat.tsv needs an OKP key)	
 gather_kcats/kcatAssignmentConfig.m	tc0079, tc0081, tc0083, tc0087, tc0088, tc0089, tc0090, tc0306, tc0721, tc0723	
@@ -39,7 +39,7 @@ gather_kcats/ecTreeEstimate.m	tc0084
 gather_kcats/kcatsFromECTree.m	tc0086, tc0087	
 gather_kcats/kcatsFromHomologs.m	tc0095, tc0096	
 gather_kcats/extractEnzymeSubstratePairs.m	tc0096, tc0015	
-gather_kcats/convertCustomKcats.m	tc0091, tc0092, tc0094	
+gather_kcats/convertCustomKcats.m	tc0091, tc0092, tc0094, tc0725	
 change_model/upgradeEcModel.m	tc0093, tc0094, tc0099	
 io/loadFluxData.m	tc0506	
 io/loadProtData.m	tc0101, tc0102, tc0260, tc0298, tc0299, tc0313	
