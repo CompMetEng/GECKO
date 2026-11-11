@@ -2850,6 +2850,19 @@ function testFlexibilizeEnzConcsInfeasibleWarns_tc0713(testCase)
     verifyEmpty(testCase, flexEnz.flexConcs)
 end
 
+function testKcatDecisionsFileHeader_tc0714(testCase)
+    % The decisions file has the snake_case column names that geckopy
+    % writes; the returned table keeps the camelCase names.
+    [ecModel, adapter, project] = buildScratchProject();
+    cleanupDir = onCleanup(@() rmdir(project, 's'));
+    [~, decisions] = evalc('collectKcats(ecModel, ''modelAdapter'', adapter);');
+    verifyEqual(testCase, decisions.Properties.VariableNames, ...
+        {'ecRxn','stage','source','kcat','candidates','spreadLog10','sdLog10'})
+    lines = readlines(fullfile(project, 'output', [char(ecModel.id) '_kcatDecisions.tsv']));
+    verifyEqual(testCase, char(lines(1)), ...
+        sprintf('ec_rxn\tstage\tsource\tkcat\tcandidates\tspread_log10\tsd_log10'))
+end
+
 function [ecModel, adapter, project] = buildScratchProject()
     % An ecModel of the test model with a temporary copy of the test
     % project folder (the tracked test data is not modified).

@@ -88,7 +88,8 @@ function [decisions, report, ecModel] = collectKcats(model, varargin)
 %     a loaded model adapter (default: the current default model adapter).
 % writeReport : logical
 %     write the decisions to output/<model id>_kcatDecisions.tsv (default
-%     true).
+%     true). The file has the columns of decisions in snake_case (ec_rxn,
+%     spread_log10, sd_log10), as geckopy writes it.
 %
 % Returns
 % -------
@@ -278,7 +279,11 @@ if p.writeReport
     if isfield(model, 'id') && ~isempty(model.id)
         id = char(model.id);
     end
-    writetable(decisions, fullfile(outDir, [id '_kcatDecisions.tsv']), 'FileType', 'text', ...
+    % The file has the snake_case column names that geckopy writes
+    fileTable = decisions;
+    fileTable.Properties.VariableNames = {'ec_rxn','stage','source','kcat','candidates', ...
+        'spread_log10','sd_log10'};
+    writetable(fileTable, fullfile(outDir, [id '_kcatDecisions.tsv']), 'FileType', 'text', ...
         'Delimiter', '\t');
 end
 nOpen = sum(strcmp(stage, ''));
