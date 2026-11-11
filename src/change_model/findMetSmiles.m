@@ -59,8 +59,9 @@ if exist(smilesDBfile,'file')==2
     %The last row of a name that occurs more than once is used
     smilesDB.names = flipud(raw{1});
     smilesDB.smile = flipud(raw{2});
-    [metMatch, metIdx] = ismember(uniqueNames,smilesDB.names);
-    uniqueSmiles(metMatch) = smilesDB.smile(metIdx(metMatch));
+    [inDB, metIdx] = ismember(uniqueNames,smilesDB.names);
+    uniqueSmiles(inDB) = smilesDB.smile(metIdx(inDB));
+    metMatch = metMatch | inDB;
     if verbose; fprintf('done.\n'); end
 else
     if verbose; fprintf('not found.\n'); end
