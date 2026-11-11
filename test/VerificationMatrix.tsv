@@ -46,7 +46,7 @@ io/loadProtData.m	tc0101, tc0102, tc0260, tc0298, tc0299, tc0313
 change_model/addNewRxnsToEC.m	tc0211, tc0232, tc0237, tc0500	
 change_model/mapRxnsToConv.m	tc0213	
 flux_analysis/ecFVA.m	tc0214	
-flux_analysis/ecFSEOF.m	tc0100, tc0236	
+flux_analysis/ecFSEOF.m	tc0100, tc0236, tc0706	
 limit_proteins/calculateFfactor.m	tc0502	
 limit_proteins/constrainEnzConcs.m	tc0503, tc0296, tc0297	
 limit_proteins/constrainFluxData.m	tc0505	

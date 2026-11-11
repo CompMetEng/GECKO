@@ -2737,6 +2737,25 @@ function testGetComplexDataWithoutTaxonomicID_tc0705(testCase)
         {'complexID';'name';'species';'geneName';'protID';'stochiometry';'defined'})
 end
 
+function testEcFSEOFWithoutRangeErrors_tc0706(testCase)
+    % When the production cannot rise above its value at maximum growth,
+    % there is no range to scan and ecFSEOF raises ecFSEOF:noRange.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));
+    model = getGeckoTestModel();
+    model.geneShortNames = model.genes;
+    model.ub(strcmp(model.rxns, 'R3')) = 0;
+    ecModel = makeEcModel(model, false, adapter);
+    ecModel = getECfromGEM(ecModel);
+    ecModel.ec.kcat(:) = 10;
+    ecModel.ec.source(:) = {'manual'};
+    ecModel = applyKcatConstraints(ecModel);
+    ecModel = setProtPoolSize(ecModel, [], [], [], adapter);
+    adapter.params.bioRxn = 'R5';
+    verifyError(testCase, @() ecFSEOF(ecModel, 'R3', 'S1', 'nSteps', 6, 'modelAdapter', adapter), ...
+        'ecFSEOF:noRange')
+end
+
 function [ecModel, adapter, project] = buildScratchProject()
     % An ecModel of the test model with a temporary copy of the test
     % project folder (the tracked test data is not modified).
