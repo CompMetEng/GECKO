@@ -25,8 +25,9 @@ function result = relaxProteomicsGreedy(model, varargin)
 %     no enzyme is eligible (converged is false unless the model already
 %     reaches minimalGrowth); [] means the default.
 % maxIterations : double
-%     safety cap; errors if exceeded while eligible enzymes still remained
-%     (default 100).
+%     safety cap on the number of relaxations; errors when this many
+%     relaxations were made, minimalGrowth is still not reached and
+%     eligible enzymes remain (default 100).
 % defaultUpperBound : double
 %     value to restore on a relaxed usage reaction, matching the shared-pool
 %     default makeEcModel itself sets (default 1000).
@@ -56,8 +57,8 @@ function result = relaxProteomicsGreedy(model, varargin)
 %
 % There are two distinct non-convergence outcomes: running out of
 % eligible candidates before reaching minimalGrowth returns normally with
-% converged=false; exhausting maxIterations while candidates still
-% remained raises an error instead.
+% converged=false; making maxIterations relaxations without reaching
+% minimalGrowth while candidates still remain raises an error instead.
 %
 % See also
 % --------
@@ -115,23 +116,8 @@ else
     growth = -inf;
 end
 
-for it = 0:(maxIterations - 1)
-    if growth >= minimalGrowth
-        result.relaxed = relaxed;
-        result.trace = trace;
-        result.finalGrowth = growth;
-        result.converged = true;
-        return
-    end
-    if isempty(candidates)
-        warning('relaxProteomicsGreedy: no more candidates to relax; stopping.')
-        result.relaxed = relaxed;
-        result.trace = trace;
-        result.finalGrowth = growth;
-        result.converged = false;
-        return
-    end
-
+it = 0;
+while growth < minimalGrowth && ~isempty(candidates) && it < maxIterations
     shadowPrices = abs(sol.sPrice(protMetIdx(candidates)));
     [~, bestPos] = max(shadowPrices);
     targetIdx = candidates(bestPos);
@@ -154,8 +140,19 @@ for it = 0:(maxIterations - 1)
 
     growth = newGrowth;
     sol = newSol;
+    it = it + 1;
 end
 
-error('relaxProteomicsGreedy: did not converge in %d iterations (final growth %.4g < target %.4g).', ...
-    maxIterations, growth, minimalGrowth)
+result.relaxed = relaxed;
+result.trace = trace;
+result.finalGrowth = growth;
+result.converged = growth >= minimalGrowth;
+if ~result.converged
+    if isempty(candidates)
+        warning('relaxProteomicsGreedy: no more candidates to relax; stopping.')
+    else
+        error('relaxProteomicsGreedy: did not converge in %d iterations (final growth %.4g < target %.4g).', ...
+            maxIterations, growth, minimalGrowth)
+    end
+end
 end

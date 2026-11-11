@@ -2756,6 +2756,20 @@ function testEcFSEOFWithoutRangeErrors_tc0706(testCase)
         'ecFSEOF:noRange')
 end
 
+
+function testRelaxProteomicsGreedyLastIteration_tc0707(testCase)
+    % A relaxation that reaches the target with the last allowed iteration
+    % converges instead of raising. With no relaxation allowed, a model that
+    % already reaches the target converges.
+    ecModel = fixtureForRelaxProteomicsGreedy();
+    result = relaxProteomicsGreedy(ecModel, 'minimalGrowth', 50, 'maxIterations', 1);
+    verifyTrue(testCase, result.converged)
+    verifyEqual(testCase, fieldnames(result.relaxed), {'P5'})
+    verifyEqual(testCase, result.finalGrowth, 90, 'AbsTol', 1e-9)
+    result = relaxProteomicsGreedy(ecModel, 'minimalGrowth', 5, 'maxIterations', 0);
+    verifyTrue(testCase, result.converged)
+end
+
 function [ecModel, adapter, project] = buildScratchProject()
     % An ecModel of the test model with a temporary copy of the test
     % project folder (the tracked test data is not modified).
