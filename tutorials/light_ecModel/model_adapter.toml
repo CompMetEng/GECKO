@@ -1,5 +1,5 @@
 # Model adapter for the light_ecModel tutorial (Human-GEM).
-# Read by GECKO through HumanGEMAdapter, which adds custom code, and by
+# Read by GECKO (ModelAdapterManager.setDefault on this folder) and by
 # geckopy (ModelAdapter.from_folder). Paths are relative to this folder.
 # Every key, its MATLAB name and its default are listed in GECKO's
 # src/model_adapter/adapterParameters.tsv.
@@ -53,6 +53,18 @@ taxonomic_id = 9606
 [spontaneous]
 file = "data/spontaneousReactions.tsv"
 
+# Kcats are assigned with the default preset: the BRENDA median of
+# measurements of the organism on the substrate of the reaction, the EC
+# tree, then the predictions of the OpenKineticsPredictor method KinForm-H
+# (see kcatAssignmentConfig).
+[kcat_assignment]
+preset = "brenda_ec_tree"
+
+# The OpenKineticsPredictor methods of the okp stage of the preset.
+[kcat_sources.okp]
+methods = ["KinForm-H"]
+
 [matlab.params]
 # Glucose uptake, average across NCI60 cell lines [mmol/gDW/h].
 c_UptakeExp = 0.641339301
+
