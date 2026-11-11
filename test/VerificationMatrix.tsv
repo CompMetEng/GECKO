@@ -15,7 +15,7 @@ enzyme_usage/getEnzymeUsage.m	tc0286, tc0507, tc0508
 enzyme_usage/reportEnzymeUsage.m	tc0286, tc0508, tc0509	
 gather_kcats/fuzzyKcatMatching.m	tc0010, tc0223, tc0224, tc0225, tc0226, tc0231, tc0239	
 gather_kcats/getStandardKcat.m	tc0256, tc0257, tc0309, tc0310	
-gather_kcats/mergeDlkcatAndFuzzyKcats.m	tc0011; tc0241	
+deprecated/mergeDLKcatAndFuzzyKcats.m	tc0011; tc0241	
 gather_kcats/readDLKcatOutput.m	tcm0001, tcm0002, tc0303, tc0304 - The test doesn't really check the function, only that some output is read	
 gather_kcats/runDLKcat.m	tcm0001, tcm0002 - The test doesn't really check the function, only that we get something
 gather_kcats/assignKcatValues.m	tc0011 - we did not test all possible parameterizations here; also tc0104, tc0311
@@ -77,7 +77,6 @@ kcat_tuning/findTopLimitations.m	Not explicitly tested - The code has existed fo
 kcat_tuning/sensitivityTuning.m	tcm0001, tc0251, tc0253, tc0254
 kcat_tuning/sigmaFitter.m	tc0020, tc0255
 kcat_tuning/topUsedEnzymes.m	Not explicitly tested - The code has existed for a long time	Not sure this works anymore - written for the old model structure?
-kcat_tuning/truncateValues.m	tc0510	
 limit_proteins/constrainProtConcs.m	tc0013	
 limit_proteins/findLimitingUBs.m	Not explicitly tested - The code has existed for a long time	Probably not relevant anymore, remove?
 limit_proteins/fitGAM.m		
@@ -90,7 +89,7 @@ limit_proteins/getComplexFamilies.m	tc0262, tc0263, tc0264, tc0265, tc0266
 limit_proteins/levelComplexConcs.m	tc0267, tc0268, tc0269, tc0270, tc0271, tc0272, tc0315, tc0316	
 limit_proteins/getIsozymeCoverage.m	tc0287, tc0288, tc0289, tc0290, tc0291, tc0314	
 limit_proteins/zeroUnmeasuredIsozymes.m	tc0292, tc0293, tc0294, tc0295	
-limit_proteins/updateProtPool.m		
+deprecated/updateProtPool.m		
 model_adapter/ModelAdapter.m	Base class for adapters, not explicitly tested.	
 model_adapter/ModelAdapterManager.m	tc0008, tc0067	
 model_adapter/readAdapterToml.m	tc0061, tc0062	
