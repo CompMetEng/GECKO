@@ -277,6 +277,64 @@ fprintf(fid, '%s\n', lines{:});
 fclose(fid);
 end
 
+function testWildkcatImport_tc0732(testCase)
+    % A WILDkCAT table is matched by reaction, direction and genes; of
+    % several rows for one model.ec row the lowest penalty wins; predictions
+    % and high penalties can be left out; the file applies to the light model.
+    [full, light, adapter] = buildKcatModels();
+    [base, ~] = getEcRxnKeys(full);
+    hasEnz = any(full.ec.rxnEnzMat, 2);
+    genesOf = @(i) strjoin(unique(full.ec.genes(full.ec.rxnEnzMat(i, :) ~= 0))', ';');
+    fwd = find(strcmp(full.ec.rxns, 'R2_EXP_1'));
+    rev = find(strcmp(full.ec.rxns, 'R2_REV_EXP_2'));
+    other = find(hasEnz & ~startsWith(base, 'R2'), 1);
+    otherRxn = regexprep(base{other}, '_REV$', '');
+    otherDir = 'forward';
+    if endsWith(base{other}, '_REV')
+        otherDir = 'reverse';
+    end
+    header = {'rxn','ec_code','direction','genes','uniprot','kcat','db','penalty_score', ...
+        'kcat_substrate','kcat_organism','kcat_temperature','kcat_ph','kcat_id_percent'};
+    rows = {
+        'R2', '1.1.1.1', 'forward', genesOf(fwd), '', '10', 'brenda', '3', 'A', 'Homo sapiens', '30', '7', '80'
+        'R2', '1.1.1.1', 'forward', genesOf(fwd), '', '20', 'sabio_rk', '0', 'A', 'Homo sapiens', '25', '7.5', '100'
+        'R2', '1.1.1.1', 'reverse', genesOf(rev), '', '5', 'brenda', '6', 'B', '', '', '', ''
+        otherRxn, '', otherDir, genesOf(other), '', '7', 'catapro', '16', '', '', '', '', ''
+        'R2', '', 'forward', 'noSuchGene', '', '9', 'brenda', '0', '', '', '', '', ''
+        'R2', '', 'forward', genesOf(fwd), '', '', '', '16', '', '', '', '', ''};
+    folder = tempname; mkdir(folder);
+    file = fullfile(folder, 'kcat_full.tsv');
+    fid = fopen(file, 'w');
+    fprintf(fid, '%s\n', strjoin(header, sprintf('\t')));
+    for i = 1:size(rows, 1)
+        fprintf(fid, '%s\n', strjoin(rows(i, :), sprintf('\t')));
+    end
+    fclose(fid);
+
+    [list, report] = kcatsFromWILDkCAT(full, file, 'save', false);
+    verifyEqual(testCase, report.rows, 6)
+    verifyEqual(testCase, report.noValue, 1)
+    verifyEqual(testCase, report.excluded, 0)
+    verifyEqual(testCase, report.matched, 4)
+    verifyEqual(testCase, report.unmatched, {'R2|forward|noSuchGene'})
+    verifyEqual(testCase, list.kcats(strcmp(list.rxns, 'R2_EXP_1')), 20)
+    verifyEqual(testCase, list.kcats(strcmp(list.rxns, 'R2_REV_EXP_2')), 5)
+    verifyEqual(testCase, list.detail{strcmp(list.rxns, 'R2_EXP_1')}, ...
+        'db=sabio_rk; penalty=0; organism=Homo sapiens; temperature=25; pH=7.5; identity=100')
+    verifyTrue(testCase, any(strcmp(list.rxns, full.ec.rxns{other})))
+
+    [list, report] = kcatsFromWILDkCAT(full, file, 'save', false, 'maxPenalty', 4, 'predictions', false);
+    verifyEqual(testCase, report.excluded, 2)
+    verifyEqual(testCase, sort(list.rxns), {'R2_EXP_1'})
+
+    out = tempname;
+    saved = saveKcatSource(full, kcatsFromWILDkCAT(full, file, 'save', false), 'wildkcat', 'folder', out);
+    [loaded, loadReport] = loadKcatSource(light, saved);
+    verifyEmpty(testCase, loadReport.unmatched)
+    verifyEqual(testCase, numel(loaded.kcats), 3)
+    verifyError(testCase, @() kcatsFromWILDkCAT(full, file, 'maxpenalty', 1), 'kcatsFromWILDkCAT:arguments')
+end
+
 function [full, light, adapter] = buildKcatModels()
     geckoPath = findGECKOroot;
     adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));

@@ -13,7 +13,8 @@ function report = updateKcatSources(model, varargin)
 %   exists and otherwise predicts with the DLKcat method of
 %   OpenKineticsPredictor (see kcatsFromDLKcat); okp_<method> and dlkcat
 %   submit or fetch a job, and report it as pending while the job runs;
-% - custom.tsv and other files it cannot gather are left as they are.
+% - custom.tsv, wildkcat.tsv (made by kcatsFromWILDkCAT from a WILDkCAT run)
+%   and other files it cannot gather are left as they are.
 %
 % Requirements are checked first: an OpenKineticsPredictor API key for
 % OKP and for dlkcat without data/DLKcat.tsv. Calling it again is safe: files
@@ -101,6 +102,9 @@ disp(report)
         st = 'current'; nt = '';
         if strcmp(name, 'custom')
             st = 'skipped'; nt = 'curated by hand';
+            return
+        elseif strcmp(name, 'wildkcat')
+            st = 'skipped'; nt = 'imported from a WILDkCAT run with kcatsFromWILDkCAT';
             return
         elseif ~any(strcmp(name, {'brenda','ec_tree','homologs','dlkcat'})) && ~startsWith(name, 'okp_')
             st = 'skipped'; nt = 'not a source GECKO gathers';
