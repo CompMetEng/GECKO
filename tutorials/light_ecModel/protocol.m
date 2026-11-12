@@ -65,7 +65,7 @@ fprintf('%d genes without a UniProt or KEGG match.\n', numel(noUniprot))
 % tutorial: the BRENDA median of measurements of the organism on the
 % substrate of the reaction, the EC tree, then the predictions of the
 % OpenKineticsPredictor (OKP) method KinForm-H. The project has no
-% data/kcats/custom.tsv, so assignKcats reports the custom stage as left
+% data/kcats/custom.tsv, and assignKcats prints that this file is left
 % out.
 
 % EC numbers from Human-GEM, and from UniProt and KEGG for the reactions
@@ -74,24 +74,32 @@ ecModel = getECfromGEM(ecModel);
 noEC = cellfun(@isempty, ecModel.ec.eccodes);
 ecModel = getECfromDatabase(ecModel,'ecRxns',noEC);
 
-% SMILES of the substrates, for the OKP predictions.
+% SMILES of the substrates, which an OKP job reads.
 [ecModel, noSmiles] = findMetSmiles(ecModel);
 
 % The kcat source files are keyed by the reaction of the GEM and the
 % enzyme set. They do not depend on the number prefixes of a light
 % ecModel, so the same kind of file serves full and light ecModels. The
-% tutorial includes brenda.tsv, ec_tree.tsv and okp_kinform_h.tsv, and
-% updateKcatSources reports them as current. In a new project it gathers
-% them; tutorials/full_ecModel/protocol.m describes the BRENDA download
-% and the OKP API key.
+% tutorial includes brenda.tsv and ec_tree.tsv, and updateKcatSources
+% reports them as current. It does not include okp_kinform_h.tsv: the
+% script runs without an OKP API key. Without a key, updateKcatSources
+% reports okp_kinform_h as failed, with "No OpenKineticsPredictor API key
+% found" in the note. With a key (environment variable OKP_API_KEY, or
+% data/okpApiKey.txt), updateKcatSources submits the OKP job, reports the
+% source as pending, and writes okp_kinform_h.tsv at a later call when the
+% job has finished; tutorials/full_ecModel/protocol.m describes the key
+% and the BRENDA download.
 kcatReport = updateKcatSources(ecModel);
 
-% assignKcats selects and applies the kcats. A light ecModel skips the
-% step that gives a reaction without a kcat the mean kcat of its isozymes.
-% Reactions without a kcat get the standard kcat (getStandardKcat). In a
-% light ecModel, a reaction without a gene association draws from the
-% protein pool with the cost standardMW/standardKcat; it has no
-% pseudo-enzyme prot_standard.
+% assignKcats selects and applies the kcats. Without okp_kinform_h.tsv, it
+% prints that this file is left out, and the reactions without a BRENDA or
+% EC tree value get the standard kcat. A light ecModel skips the step that
+% gives a reaction without a kcat the mean kcat of its isozymes. The
+% standard kcat (getStandardKcat) is the median kcat of the subsystem of
+% the reaction, or of all kcats when the subsystem has fewer than 10
+% reactions with a kcat. In a light ecModel, a reaction without a gene
+% association draws from the protein pool with the cost
+% standardMW/standardKcat; it has no pseudo-enzyme prot_standard.
 [ecModel, kcatDecisions] = assignKcats(ecModel);
 groupcounts(kcatDecisions,'stage')
 
