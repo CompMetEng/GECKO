@@ -115,3 +115,12 @@ tutorials/tutorial_yeast-GEM/code/removeIncorrectPathways.m	Not explicitly teste
 tutorials/tutorial_yeast-GEM/code/scaleBioMass.m	Not explicitly tested - The code has existed for a long time	
 tutorials/tutorial_yeast-GEM/code/sumBioMass.m	Not explicitly tested - The code has existed for a long time	
 tutorials/tutorial_yeast-GEM/code/sumProtein.m	Not explicitly tested - The code has existed for a long time	
+gather_kcats/formatKcatSource.m	tc0701, tc0702, tc0703, tc0706, tc0707, tc0713, tc0714, tc0718	
+gather_kcats/parseKcatSource.m	tc0704, tc0705, tc0706, tc0709, tc0710, tc0711, tc0712, tc0715, tc0716, tc0717, tc0719, tc0720, tc0721, tc0722	
+gather_kcats/assignKcatValues.m	tc0707 - the source text of a match	
+gather_kcats/getStandardKcat.m	tc0709 - the tuned standard row is kept	
+gather_kcats/removeStandardKcat.m	tc0710	
+gather_kcats/reviewKcatAssignment.m	tc0711 - the labels custom and standard are recognised by their origin	
+change_model/setKcatForReactions.m	tc0708	
+kcat_tuning/sensitivityTuning.m	tc0713, tc0714 - the tuning status of the source	
+kcat_tuning/evotune/*	resolveTunableContext by tc0712; the tuning status that cmaesKcatTuning writes into the source has not been tested by a test case	

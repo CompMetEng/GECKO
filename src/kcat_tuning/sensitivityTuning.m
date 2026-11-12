@@ -50,9 +50,10 @@ function [model, tunedKcats] = sensitivityTuning(model, varargin)
 % - source : source label of each kcat, taken from the input model before
 %   tuning.
 %
-% The model.ec.notes field will contain the original kcat value and source,
-% unless the kcat has previously been set by sensitivityTuning, in which case
-% the notes field remains unchanged.
+% model.ec.source of a tuned kcat keeps its origin and detail and gains the
+% tuning status, e.g. 'brenda (wc=0, origin=1) | tuned=sensitivity
+% (prior=0.05)', where prior is the kcat before the first tuning (see
+% formatKcatSource). An origin that is missing is written as 'unknown'.
 %
 % Examples
 % --------
@@ -138,16 +139,8 @@ if ~m.ec.geckoLight
         kcatList             = [kcatList, rxnSel];
         rxn                  = m.rxns(rxnSel);
         targetSubRxn         = strcmp(m.ec.rxns, rxn);
-        if ~strcmp(m.ec.source(targetSubRxn),'sensitivityTuning')
-            oldNote          = m.ec.notes{targetSubRxn};
-            newNote          = ['preTuneKcat=' num2str(m.ec.kcat(targetSubRxn)) ' | source:' m.ec.source{targetSubRxn}];
-            if ~isempty(oldNote)
-                newNote      = [oldNote '; ' newNote];
-            end
-            m.ec.notes{targetSubRxn}    = newNote;
-        end
+        m                    = markTuned(m,targetSubRxn);
         m.ec.kcat(targetSubRxn)     = m.ec.kcat(targetSubRxn) .* foldChange;
-        m.ec.source(targetSubRxn)   = {'sensitivityTuning'};
         m                    = applyKcatConstraints(m,targetSubRxn);
     end
 
@@ -190,6 +183,7 @@ else
         kcatList        = [kcatList, sel];
         rxn             = m.rxns(sel.');
         targetSubRxns   = strcmp(origRxns, rxn);
+        m               = markTuned(m,targetSubRxns);
         m.ec.kcat(targetSubRxns) = m.ec.kcat(targetSubRxns) .* foldChange;
         m               = applyKcatConstraints(m,rxn);
     end
@@ -213,4 +207,25 @@ tunedKcats.newKcat  = m.ec.kcat(rxnIdx);
 tunedKcats.source   = model.ec.source(rxnIdx);
 
 model = m;
+end
+
+function m = markTuned(m,rows)
+% Add the tuning method sensitivity to the source of the ec rows, with the
+% kcat before the first tuning as prior. Called before the kcat changes.
+for i = find(rows(:))'
+    info = parseKcatSource(m.ec.source{i});
+    origin = info.origin;
+    if isempty(origin)
+        origin = 'unknown';
+    end
+    tuned = info.tuned;
+    if ~any(strcmp(tuned,'sensitivity'))
+        tuned{end+1} = 'sensitivity';
+    end
+    prior = info.prior;
+    if isnan(prior)
+        prior = m.ec.kcat(i);
+    end
+    m.ec.source{i} = formatKcatSource(origin,info.detail,tuned,prior);
+end
 end
