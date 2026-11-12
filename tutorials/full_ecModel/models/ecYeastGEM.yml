@@ -212812,8 +212812,7 @@
   - !!omap
     - id: r_0005_EXP_3
     - kcat: 33.45061082208184
-    - source: sensitivityTuning
-    - notes: preTuneKcat=3.3451 | source:ec_tree
+    - source: ec_tree | tuned=sensitivity (prior=3.34506)
     - eccodes:
       - 2.4.1.34
       - 3.6.5.2
@@ -213758,8 +213757,7 @@
   - !!omap
     - id: r_0109
     - kcat: 55.12498553593922
-    - source: sensitivityTuning
-    - notes: preTuneKcat=0.55125 | source:ec_tree
+    - source: ec_tree | tuned=sensitivity (prior=0.55125)
     - eccodes: 6.3.4.14
     - enzymes: !!omap
       - P48445: 1.0
@@ -214231,8 +214229,7 @@
   - !!omap
     - id: r_0157
     - kcat: 5.410244432499249
-    - source: sensitivityTuning
-    - notes: preTuneKcat=0.54102 | source:ec_tree
+    - source: ec_tree | tuned=sensitivity (prior=0.541024)
     - eccodes: 6.1.1.7
     - enzymes: !!omap
       - P40825: 1.0
@@ -214966,8 +214963,7 @@
   - !!omap
     - id: r_0209
     - kcat: 3.9054177527985354
-    - source: sensitivityTuning
-    - notes: preTuneKcat=0.39054 | source:ec_tree
+    - source: ec_tree | tuned=sensitivity (prior=0.390542)
     - eccodes: 6.1.1.19
     - enzymes: !!omap
       - Q05506: 1.0
@@ -215067,8 +215063,7 @@
   - !!omap
     - id: r_0220
     - kcat: 2.6570268537222312
-    - source: sensitivityTuning
-    - notes: preTuneKcat=0.2657 | source:ec_tree
+    - source: ec_tree | tuned=sensitivity (prior=0.265703)
     - eccodes: 6.1.1.12
     - enzymes: !!omap
       - P04802: 1.0
@@ -215537,8 +215532,7 @@
   - !!omap
     - id: r_0279
     - kcat: 0.8652192852595073
-    - source: sensitivityTuning
-    - notes: preTuneKcat=0.086522 | source:ec_tree
+    - source: ec_tree | tuned=sensitivity (prior=0.0865219)
     - eccodes: 4.2.3.5
     - enzymes: !!omap
       - P28777: 1.0
@@ -216750,8 +216744,7 @@
   - !!omap
     - id: r_0439_EXP_2
     - kcat: 165.7186426291828
-    - source: sensitivityTuning
-    - notes: preTuneKcat=16.5719 | source:ec_tree
+    - source: ec_tree | tuned=sensitivity (prior=16.5719)
     - eccodes: 7.1.1.8
     - enzymes: !!omap
       - P00044: 1.0
@@ -216868,8 +216861,7 @@
   - !!omap
     - id: r_0450
     - kcat: 325.0
-    - source: sensitivityTuning
-    - notes: preTuneKcat=32.5 | source:custom
+    - source: custom | tuned=sensitivity (prior=32.5)
     - eccodes: 4.1.2.13
     - enzymes: !!omap
       - P14540: 1.0
@@ -217238,8 +217230,7 @@
   - !!omap
     - id: r_0486_EXP_2
     - kcat: 290.0
-    - source: sensitivityTuning
-    - notes: preTuneKcat=29 | source:custom
+    - source: custom | tuned=sensitivity (prior=29)
     - eccodes: 1.2.1.12
     - enzymes: !!omap
       - P00360: 1.0
@@ -217495,8 +217486,7 @@
   - !!omap
     - id: r_0510_EXP_3
     - kcat: 2.8418235611352753
-    - source: sensitivityTuning
-    - notes: preTuneKcat=0.28418 | source:ec_tree
+    - source: ec_tree | tuned=sensitivity (prior=0.284182)
     - eccodes:
       - 2.4.1.186
       - 2.4.1.11
@@ -219167,8 +219157,7 @@
   - !!omap
     - id: r_0711
     - kcat: 4.0578072192021875
-    - source: sensitivityTuning
-    - notes: preTuneKcat=0.40578 | source:ec_tree
+    - source: ec_tree | tuned=sensitivity (prior=0.405781)
     - eccodes: 6.1.1.6
     - enzymes: !!omap
       - P15180: 1.0
@@ -219350,8 +219339,7 @@
   - !!omap
     - id: r_0727
     - kcat: 3.3000000000000003
-    - source: sensitivityTuning
-    - notes: preTuneKcat=0.33 | source:brenda (wc=0, origin=1)
+    - source: brenda (wc=0, origin=1) | tuned=sensitivity (prior=0.33)
     - eccodes: 2.1.1.14
     - enzymes: !!omap
       - P05694: 1.0
@@ -220431,8 +220419,7 @@
   - !!omap
     - id: r_0886
     - kcat: 6420.0
-    - source: sensitivityTuning
-    - notes: preTuneKcat=642 | source:custom
+    - source: custom | tuned=sensitivity (prior=642)
     - eccodes: 2.7.1.11
     - enzymes: !!omap
       - P16861: 4.0
@@ -220792,8 +220779,7 @@
   - !!omap
     - id: r_0917
     - kcat: 5.937482130219212
-    - source: sensitivityTuning
-    - notes: preTuneKcat=0.59375 | source:ec_tree
+    - source: ec_tree | tuned=sensitivity (prior=0.593748)
     - eccodes: 3.1.3.3
     - enzymes: !!omap
       - P42941: 1.0
@@ -221006,8 +220992,7 @@
   - !!omap
     - id: r_0959_EXP_2
     - kcat: 1450.0
-    - source: sensitivityTuning
-    - notes: preTuneKcat=145 | source:custom
+    - source: custom | tuned=sensitivity (prior=145)
     - eccodes:
       - 4.1.1.43
       - 4.1.1.72
@@ -221057,8 +221042,7 @@
   - !!omap
     - id: r_0961
     - kcat: 2308.896944490895
-    - source: sensitivityTuning
-    - notes: preTuneKcat=230.8897 | source:ec_tree
+    - source: ec_tree | tuned=sensitivity (prior=230.89)
     - eccodes:
       - 1.2.4.1
       - 1.8.1.4
@@ -221889,8 +221873,7 @@
   - !!omap
     - id: r_1041
     - kcat: 4.205310424590907
-    - source: sensitivityTuning
-    - notes: preTuneKcat=0.42053 | source:ec_tree
+    - source: ec_tree | tuned=sensitivity (prior=0.420531)
     - eccodes: 4.2.3.1
     - enzymes: !!omap
       - P16120: 1.0
@@ -222698,8 +222681,7 @@
   - !!omap
     - id: r_1115_EXP_1
     - kcat: 29.799291083131383
-    - source: sensitivityTuning
-    - notes: preTuneKcat=2.9799 | source:standard
+    - source: standard | tuned=sensitivity (prior=2.97993)
     - enzymes: !!omap
       - Q12359: 1.0
   - !!omap
@@ -223323,8 +223305,7 @@
   - !!omap
     - id: r_1166_EXP_9
     - kcat: 565.3865923708306
-    - source: sensitivityTuning
-    - notes: preTuneKcat=5.6539 | source:combined (sd=1.94, n=1)
+    - source: combined (sd=1.94, n=1) | tuned=sensitivity (prior=5.65387)
     - enzymes: !!omap
       - P32467: 1.0
   - !!omap
@@ -223723,8 +223704,7 @@
   - !!omap
     - id: r_1194
     - kcat: 18.651975200273757
-    - source: sensitivityTuning
-    - notes: preTuneKcat=1.8652 | source:combined (sd=1.94, n=1)
+    - source: combined (sd=1.94, n=1) | tuned=sensitivity (prior=1.8652)
     - enzymes: !!omap
       - Q12482: 1.0
   - !!omap
@@ -224832,8 +224812,7 @@
   - !!omap
     - id: r_1277_REV_EXP_1
     - kcat: 29.799291083131383
-    - source: sensitivityTuning
-    - notes: preTuneKcat=2.9799 | source:standard
+    - source: standard | tuned=sensitivity (prior=2.97993)
     - enzymes: !!omap
       - P0CD90: 1.0
   - !!omap
@@ -225374,8 +225353,7 @@
   - !!omap
     - id: r_1838_EXP_2
     - kcat: 4.475
-    - source: sensitivityTuning
-    - notes: preTuneKcat=0.4475 | source:brenda (wc=0, origin=1)
+    - source: brenda (wc=0, origin=1) | tuned=sensitivity (prior=0.4475)
     - eccodes: 2.3.3.14
     - enzymes: !!omap
       - P48570: 1.0
@@ -226346,8 +226324,7 @@
   - !!omap
     - id: r_2182
     - kcat: 0.8911555236445015
-    - source: sensitivityTuning
-    - notes: preTuneKcat=0.089116 | source:ec_tree
+    - source: ec_tree | tuned=sensitivity (prior=0.0891156)
     - eccodes: 1.14.19.1
     - enzymes: !!omap
       - P21147: 1.0
@@ -229833,8 +229810,7 @@
   - !!omap
     - id: r_2492
     - kcat: 0.4652272089588491
-    - source: sensitivityTuning
-    - notes: preTuneKcat=0.046523 | source:ec_tree
+    - source: ec_tree | tuned=sensitivity (prior=0.0465227)
     - eccodes: 2.1.1.17
     - enzymes: !!omap
       - P05374: 1.0
@@ -229898,8 +229874,7 @@
   - !!omap
     - id: r_2500
     - kcat: 0.4652272089588491
-    - source: sensitivityTuning
-    - notes: preTuneKcat=0.046523 | source:ec_tree
+    - source: ec_tree | tuned=sensitivity (prior=0.0465227)
     - eccodes:
       - 2.1.1.17
       - 2.1.1.71
