@@ -3192,3 +3192,22 @@ function testDeprecatedFunctionsSayTheyWillBeRemoved_tc0730(testCase)
         verifySubstring(testCase, msg, 'will be removed in a future release')
     end
 end
+
+
+function testRemovedGECKO3FunctionsNameTheirReplacement_tc0731(testCase)
+    % The stubs of removed GECKO 3 functions raise an error that names the
+    % GECKO 4 replacement.
+    cases = {@abc_max, 'cmaesKcatTuning'; @getrSample, 'cmaesKcatTuning'; ...
+        @updateprior, 'cmaesKcatTuning'; @getcarbonnum, 'fillCarbonNum'; ...
+        @findMaxValue, 'kcatsFromBrenda'};
+    for k = 1:size(cases, 1)
+        try
+            cases{k, 1}();
+            err = [];
+        catch err
+        end
+        verifyNotEmpty(testCase, err)
+        verifyEqual(testCase, err.identifier, 'GECKO:removedFunction')
+        verifySubstring(testCase, err.message, cases{k, 2})
+    end
+end
