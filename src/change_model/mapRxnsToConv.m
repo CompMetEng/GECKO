@@ -9,7 +9,7 @@ function [mappedFlux, enzUsageFlux, usageEnz] = mapRxnsToConv(ecModel, model, fl
 % Parameters
 % ----------
 % ecModel : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure), that was
+%     an ecModel (with ecModel.ec structure), that was
 %     used to obtain fluxVect.
 % model : struct
 %     the starting model for ecModel, to which the reactions should be

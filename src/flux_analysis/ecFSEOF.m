@@ -10,7 +10,7 @@ function fseof = ecFSEOF(model,prodTargetRxn,csRxn,varargin)
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 % prodTargetRxn : char
 %     rxn ID for the production target reaction, an exchange reaction is
 %     recommended.
@@ -24,10 +24,11 @@ function fseof = ecFSEOF(model,prodTargetRxn,csRxn,varargin)
 % outputFile : logical
 %     boolean option to save results in a file (default false).
 % filePath : char
-%     file path for results output. It will store two files: at the genes
-%     level, ecFSEOF_genes.tsv; and at the reactions level,
-%     ecFSEOF_rxns.tsv (default: the 'output' sub-folder taken from
-%     modelAdapter, e.g. output/ecFSEOF_rxns.tsv).
+%     file path for results output. It will store three files: at the genes
+%     level, ecFSEOF_genes.tsv; at the reactions level, ecFSEOF_rxns.tsv;
+%     and for the transport reactions, ecFSEOF_transporter.tsv (default: the
+%     'output' sub-folder taken from modelAdapter, e.g.
+%     output/ecFSEOF_rxns.tsv).
 % modelAdapter : ModelAdapter
 %     a loaded model adapter (default: the current default model adapter).
 % corrThreshold : double
@@ -58,6 +59,11 @@ function fseof = ecFSEOF(model,prodTargetRxn,csRxn,varargin)
 % A reaction is over expressed (OE) when its flux increases with production,
 % knocked out (KO) when it decreases and is at most 1e-8 at the last step,
 % and knocked down (KD) when it decreases otherwise.
+%
+% When the production at maximum growth is not below 90% of the maximum
+% production (within 1e-9 times max(1, |90% of the maximum|)), there is no
+% range to scan and ecFSEOF raises the error ecFSEOF:noRange. geckopy's
+% ec_fseof raises an error in the same case.
 %
 % Examples
 % --------
@@ -117,6 +123,10 @@ model     = setParam(model,'obj',prodTargetRxn,1);
 sol       = solveLP(model,1);
 % Set to 90%% based on https://doi.org/10.1128/AEM.00115-10
 maxTarget = sol.x(prodTargetRxnIdx) * 0.9;
+if maxTarget <= iniTarget + 1e-9*max(1, abs(maxTarget))
+    error('ecFSEOF:noRange', ['The production of %s at maximum growth (%g) is not below 90%% ' ...
+        'of its maximum production (%g), so there is no range to scan.'], prodTargetRxn, iniTarget, maxTarget)
+end
 
 % Define alpha vector for suboptimal enforced objective values between
 % minimal production and 90%% of the maximum theoretical yield, initialize

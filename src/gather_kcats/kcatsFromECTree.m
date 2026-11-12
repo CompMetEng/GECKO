@@ -13,7 +13,7 @@ function kcatList = kcatsFromECTree(model, varargin)
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure), with EC
+%     an ecModel (with ecModel.ec structure), with EC
 %     numbers (getECfromDatabase or getECfromGEM).
 %
 % Name-Value Arguments

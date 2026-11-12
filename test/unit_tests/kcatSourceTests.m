@@ -129,7 +129,7 @@ end
 
 function testKcatsFromOKPStored_tc0075(testCase)
     % Stored OKP results: a method's own result of its current job, or a
-    % result stored by fetchOpenKineticsPredictor alone when its predictions
+    % result stored outside kcatsFromOKP when its predictions
     % are of the requested method.
     [full, ~, adapter] = buildKcatModels();
     full.metSmiles = repmat({''}, numel(full.mets), 1);
@@ -187,6 +187,8 @@ function testGuardsNumbersAndJson_tc0078(testCase)
     verifyError(testCase, @() kcatsFromBrenda(full, 'saveAs', "custom", 'modelAdapter', adapter), 'saveKcatSource:curated')
     verifyError(testCase, @() kcatsFromDLKcat(full, 'ecRxns', true(numel(full.ec.rxns), 1), ...
         'modelAdapter', adapter), 'kcatsFromDLKcat:ecRxns')
+    verifyError(testCase, @() kcatsFromDLKcat(full, 'run', true, 'via', 'okp', ...
+        'modelAdapter', adapter), 'kcatsFromDLKcat:arguments')
 
     % Infinite, NaN and non-positive kcats are not written, and not applied.
     list.kcats(1) = Inf; list.kcats(2) = NaN; list.kcats(3) = -2;

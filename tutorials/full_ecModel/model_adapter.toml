@@ -64,9 +64,15 @@ rmse_threshold = 0.2
 max_generations = 212
 
 # Kcat sources, from least to most trusted, each with its prior width
-# (lower is more trusted).
-[evotune.source_groups.dlkcat]
-sources = ["dlkcat"]
+# (lower is more trusted). The groups match the labels of ec.source that
+# the preset brenda_ec_tree gives: combined (the KinForm-H predictions of
+# the okp stage), ec_tree, brenda and custom. Kcats with another label,
+# such as standard, take sigma0_log_default.
+[evotune.source_groups.combined]
+sources = ["combined"]
+
+[evotune.source_groups.ec_tree]
+sources = ["ec_tree"]
 
 [evotune.source_groups.brenda]
 sources = ["brenda"]
@@ -75,15 +81,21 @@ sources = ["brenda"]
 sources = ["custom"]
 
 [evotune.sigma0_log_source]
-dlkcat = 0.4
+combined = 0.4
+ec_tree = 0.3
 brenda = 0.2
 custom = 0.1
 
-# Kcats are assigned as in the GECKO 3 tutorial: custom kcats, BRENDA
-# without wildcards, DLKcat, then the other BRENDA matches, using the BRENDA
-# maximum (see collectKcats).
+# Kcats are assigned with the default preset: custom kcats
+# (data/kcats/custom.tsv), the BRENDA median of measurements of the organism
+# on the substrate of the reaction, the EC tree, then the predictions of
+# the OpenKineticsPredictor method KinForm-H (see kcatAssignmentConfig).
 [kcat_assignment]
-preset = "gecko_classic"
+preset = "brenda_ec_tree"
+
+# The OpenKineticsPredictor methods of the okp stage of the preset.
+[kcat_sources.okp]
+methods = ["KinForm-H"]
 
 # Read by GECKO only. During kcat tuning, anaerobic conditions are set by
 # anaerobicModel_GECKO in the code folder, which GECKO adds to the path.

@@ -32,7 +32,7 @@ function [kcatList, report] = loadKcatSource(model, name, varargin)
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 % name : char
 %     name of the source (data/kcats/<name>.tsv in the project folder), or
 %     the path to a kcat source file.

@@ -1,6 +1,12 @@
 function [ecModel,result] = cmaesKcatTuning(ecModel,varargin)
 % cmaesKcatTuning  Tune kcats against experimental data with CMA-ES.
 %
+% This is the advanced kcat tuning: it fits kcats to maximum growth rates
+% and exchange fluxes, measured in one or more conditions (see
+% loadEvotuneData).
+% sensitivityTuning is the standard tuning, which needs one maximum growth
+% rate.
+%
 % Configuration comes entirely from modelAdapter.params.evotune: trust
 % tiers (kcatSources/sigma0logSource/sigma0logDefault), maxGrowthWeight,
 % priorPenaltyWeight and tieIsozymes control the search, and
@@ -24,6 +30,7 @@ function [ecModel,result] = cmaesKcatTuning(ecModel,varargin)
 %     a loaded model adapter (default: the current default model adapter).
 % evoData : struct
 %     as returned by loadEvotuneData (default: loaded from modelAdapter).
+%     Without fluxData and maxGrate, the error evotune:noData is raised.
 % tunableMask, screen, targetImpactShare
 %     control which kcats are searched over, in order of precedence. Pass
 %     tunableMask to fix the set yourself. Otherwise, a mask is built by
@@ -95,10 +102,14 @@ if isempty(modelAdapter)
         error('Either send in a modelAdapter or set the default ecModel adapter in the ModelAdapterManager.')
     end
 end
-params = modelAdapter.params.evotune;
 if isempty(evoData)
     evoData = loadEvotuneData('modelAdapter', modelAdapter);
 end
+if isempty(evoData.fluxData) && isempty(evoData.maxGrate)
+    error('evotune:noData', ['evoData has neither fluxData nor maxGrate (from ' ...
+        'data/evotuneFluxData.tsv and data/evotuneMaxGrowth.tsv); there is nothing to tune against.'])
+end
+params = modelAdapter.params.evotune;
 
 if isempty(tunableMask)
     if isempty(screen)

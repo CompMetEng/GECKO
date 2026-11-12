@@ -9,9 +9,9 @@ function model = fillEnzConcs(model, protData, varargin)
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 % protData : struct
-%     structure with proteome data, from loadProtFluxData, with the fields:
+%     structure with proteome data, from loadProtData, with the fields:
 %
 %     - uniprotIDs : cell array with Uniprot IDs matching protData.abundances.
 %     - abundances : matrix of proteomics data.
@@ -52,7 +52,7 @@ function model = fillEnzConcs(model, protData, varargin)
 %
 % See also
 % --------
-% constrainEnzConcs, loadProtFluxData
+% constrainEnzConcs, loadProtData
 
 p = parseGECKOargs(varargin, { ...
     'dataCol', 1});

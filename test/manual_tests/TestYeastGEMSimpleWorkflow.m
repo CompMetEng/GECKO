@@ -13,16 +13,14 @@ fullECModel = makeEcModel(yeastGEM, false, yeastAdapter);
 
 %Run DLKcat
 fullECModel = findMetSmiles(fullECModel, yeastAdapter);
-writeDLKcatInput(fullECModel, [], yeastAdapter, [], [], true);
-runDLKcat(yeastAdapter);
-kcatListFullDlKcat = readDLKcatOutput(fullECModel, [], yeastAdapter);
+kcatListFullDlKcat = kcatsFromDLKcat(fullECModel, 'via', 'docker', 'save', false, 'modelAdapter', yeastAdapter);
 
 %Run fuzzy matching
 %fullECModel = getECfromDatabase(fullECModel, [], 'display', yeastAdapter);
 fullECModel = getECfromGEM(fullECModel);
 kcatListFullFuzzy = fuzzyKcatMatching(fullECModel, [], yeastAdapter);
 
-mergedKcatListFull = mergeDLKcatAndFuzzyKcats(kcatListFullDlKcat, kcatListFullFuzzy);
+mergedKcatListFull = mergeKcats({kcatListFullFuzzy, kcatListFullDlKcat}, {'database_top', 'dlkcat', 'database_bottom'}, 'topOriginLimit', 4);
 
 fullECModelMerged = assignKcatValues(fullECModel,mergedKcatListFull);
 fullECModelMerged = applyKcatConstraints(fullECModelMerged);
@@ -49,15 +47,13 @@ lightECModel = makeEcModel(yeastGEM, true, yeastAdapter);
 
 %Run DLKcat
 lightECModel = findMetSmiles(lightECModel, yeastAdapter);
-writeDLKcatInput(lightECModel, [], yeastAdapter, [], [], true);
-runDLKcat(yeastAdapter);
-kcatListLightDlKcat = readDLKcatOutput(lightECModel, [], yeastAdapter);
+kcatListLightDlKcat = kcatsFromDLKcat(lightECModel, 'via', 'docker', 'save', false, 'modelAdapter', yeastAdapter);
 
 %Run fuzzy matching
 lightECModel = getECfromGEM(lightECModel);
 kcatListLightFuzzy = fuzzyKcatMatching(lightECModel, [], yeastAdapter);
 
-mergedKcatListLight = mergeDLKcatAndFuzzyKcats(kcatListLightDlKcat, kcatListLightFuzzy);
+mergedKcatListLight = mergeKcats({kcatListLightFuzzy, kcatListLightDlKcat}, {'database_top', 'dlkcat', 'database_bottom'}, 'topOriginLimit', 4);
 
 lightECModelMerged = assignKcatValues(lightECModel, mergedKcatListLight);
 lightECModelMerged = applyKcatConstraints(lightECModelMerged);

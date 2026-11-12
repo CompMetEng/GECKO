@@ -8,7 +8,7 @@ function [model, rxnsAdded, enzAdded] = addNewRxnsToEC(model, newRxns, varargin)
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 % newRxns : struct
 %     structure with the new reaction information (see Notes for fields).
 %
@@ -52,9 +52,10 @@ function [model, rxnsAdded, enzAdded] = addNewRxnsToEC(model, newRxns, varargin)
 %    defined will be used to expand the model (add _EXP_n).
 % 2. When all the genes of the new reactions already have enzymes, no
 %    newEnzymes are needed.
-% 3. After adding the new reactions, setKcatForReactions or
-%    applyCustomKcats should be run to add the kcat to the reactions, and
-%    subsequently applyKcatConstraints.
+% 3. After adding the new reactions, setKcatForReactions should be run to
+%    add the kcat to the reactions, and subsequently applyKcatConstraints.
+%    Alternatively, rows for the new reactions in data/kcats/custom.tsv are
+%    used by assignKcats.
 %
 % Examples
 % --------
@@ -64,7 +65,7 @@ function [model, rxnsAdded, enzAdded] = addNewRxnsToEC(model, newRxns, varargin)
 %
 % See also
 % --------
-% applyKcatConstraints, applyCustomKcats
+% applyKcatConstraints, setKcatForReactions, assignKcats
 
 p = parseGECKOargs(varargin, { ...
     'newEnzymes',   []; ...
@@ -87,7 +88,7 @@ end
 
 % Validate if GECKO version 3
 if ~isfield(model, 'ec')
-    error('Input model is not an ecModel in GECKO 3 format (with ecModel.ec structure)')
+    error('Input model is not an ecModel (with ecModel.ec structure)')
 end
 
 if model.ec.geckoLight

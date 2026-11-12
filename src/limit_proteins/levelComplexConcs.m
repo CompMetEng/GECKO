@@ -23,7 +23,7 @@ function [model, result] = levelComplexConcs(model, varargin)
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure), with
+%     an ecModel (with ecModel.ec structure), with
 %     ec.concs filled.
 %
 % Name-Value Arguments

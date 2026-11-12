@@ -1,5 +1,9 @@
 % KEY_CLASSNAME  Template ModelAdapter to copy and adapt per organism.
 %
+% Deprecated: a project is configured by model_adapter.toml (see
+% adapterTemplate.toml and TomlAdapter), and createGECKOproject writes it.
+% convertAdapterToToml converts an adapter class.
+%
 % Starting point for a species-specific adapter. Copy this file, rename
 % the class, and edit the parameter values set in the constructor and the
 % getSpontaneousReactions method to match the target organism and model.

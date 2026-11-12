@@ -1,9 +1,11 @@
-% This code requires that Human-GEM is installed
+% This code requires that Human-GEM is installed, and humanAdapterPath set to
+% the model adapter of a Human-GEM project (GECKO has no Human-GEM tutorial).
 
 GECKORoot = findGECKOroot();
 
-humanAdapter = ModelAdapterManager.getAdapter(fullfile(GECKORoot, 'tutorials', 'tutorial_Human-GEM', 'HumanGEMAdapter.m'));
-HumanGEMRoot = HumanGEMAdapter.getHumanGEMRootPath();
+humanAdapter = ModelAdapterManager.getAdapter(humanAdapterPath);
+% Human-GEM root: the folder above model/Human-GEM.mat, which is on the path.
+HumanGEMRoot = fileparts(fileparts(which('Human-GEM.mat')));
 
 ihuman = load(fullfile(HumanGEMRoot, 'model', 'Human-GEM.mat')).ihuman;
 % Remove dead-end reactions
@@ -19,16 +21,14 @@ fullECModel = makeEcModel(modExp, false, humanAdapter);
 
 % Run DLKcat
 fullECModel = findMetSmiles(fullECModel, humanAdapter);
-writeDLKcatInput(fullECModel, [], humanAdapter, [], [], true);
-runDLKcat(humanAdapter);
-kcatListFullDlKcat = readDLKcatOutput(fullECModel, [], humanAdapter);
+kcatListFullDlKcat = kcatsFromDLKcat(fullECModel, 'via', 'docker', 'save', false, 'modelAdapter', humanAdapter);
 
 %Run fuzzy matching
 %ecModel         = getECfromDatabase(ecModel, [], 'display', humanAdapter);
 ecModel         = getECfromGEM(ecModel);
 kcatListFullFuzzy = fuzzyKcatMatching(fullECModel, [], humanAdapter);
 
-mergedKcatListFull = mergeDLKcatAndFuzzyKcats(kcatListFullDlKcat, kcatListFullFuzzy);
+mergedKcatListFull = mergeKcats({kcatListFullFuzzy, kcatListFullDlKcat}, {'database_top', 'dlkcat', 'database_bottom'}, 'topOriginLimit', 4);
 
 fullECModelMerged = assignKcatValues(fullECModel,mergedKcatListFull);
 fullECModelMerged = applyKcatConstraints(fullECModelMerged);
@@ -45,15 +45,13 @@ lightECModel = makeEcModel(modExp, true, humanAdapter);
 
 %Run DLKcat
 lightECModel = findMetSmiles(lightECModel, humanAdapter);
-writeDLKcatInput(lightECModel, [], humanAdapter, [], [], true);
-runDLKcat(humanAdapter);
-kcatListLightDlKcat = readDLKcatOutput(lightECModel, [], humanAdapter);
+kcatListLightDlKcat = kcatsFromDLKcat(lightECModel, 'via', 'docker', 'save', false, 'modelAdapter', humanAdapter);
 
 %Run fuzzy matching
 lightECModel = getECfromGEM(lightECModel);
 kcatListLightFuzzy = fuzzyKcatMatching(lightECModel, [], humanAdapter);
 
-mergedKcatListLight = mergeDLKcatAndFuzzyKcats(kcatListLightDlKcat, kcatListLightFuzzy);
+mergedKcatListLight = mergeKcats({kcatListLightFuzzy, kcatListLightDlKcat}, {'database_top', 'dlkcat', 'database_bottom'}, 'topOriginLimit', 4);
 
 lightECModelMerged = assignKcatValues(lightECModel, mergedKcatListLight);
 lightECModelMerged = applyKcatConstraints(lightECModelMerged);
@@ -84,13 +82,14 @@ lightECModelMerged = setProtPoolSize(lightECModelMerged, [], [], [], humanAdapte
 
 GECKORoot = findGECKOroot();
 
-humanAdapter = ModelAdapterManager.getAdapter(fullfile(GECKORoot, 'tutorials', 'tutorial_Human-GEM', 'HumanGEMAdapter.m'));
+humanAdapter = ModelAdapterManager.getAdapter(humanAdapterPath);
 
 %test that the path stuff works
 %humanAdapterTemp = ModelAdapterManager.getAdapter(fullfile(GECKORoot, 'tutorials', 'tutorial_Human-GEMTemp'), false); %should give warning + error
 %humanAdapterTemp = ModelAdapterManager.getAdapter(fullfile(GECKORoot, 'tutorials', 'tutorial_Human-GEMTemp'), true);
 %humanAdapterTemp.getParameters
-HumanGEMRoot = HumanGEMAdapter.getHumanGEMRootPath();
+% Human-GEM root: the folder above model/Human-GEM.mat, which is on the path.
+HumanGEMRoot = fileparts(fileparts(which('Human-GEM.mat')));
 
 ihuman = load(fullfile(HumanGEMRoot, 'model', 'Human-GEM.mat')).ihuman;
 modSimp = simplifyModel(ihuman,false,false,true,true); %remove dead-end reactions
@@ -143,9 +142,7 @@ kcatListLightFuzzy = fuzzyKcatMatching(lightECModel, [], humanAdapter);
 
 % Run dlKcat
 fullECModel = findMetSmiles(fullECModel, humanAdapter);
-testFull = writeDLKcatInput(fullECModel, [], humanAdapter);
-runDLKcat(humanAdapter);
-kcatListFullDlKcat = readDLKcatOutput(fullECModel, [], humanAdapter);
+kcatListFullDlKcat = kcatsFromDLKcat(fullECModel, 'via', 'docker', 'save', false, 'modelAdapter', humanAdapter);
 
 %fullECModel2 = fullECModel;
 %fullECModel2.metSmiles = [];
@@ -158,12 +155,10 @@ kcatListFullDlKcat = readDLKcatOutput(fullECModel, [], humanAdapter);
 
 
 lightECModel = findMetSmiles(lightECModel, humanAdapter);
-testLight = writeDLKcatInput(lightECModel, [], humanAdapter);
-runDLKcat(humanAdapter);
-kcatListLightDlKcat = readDLKcatOutput(lightECModel, [], humanAdapter);
+kcatListLightDlKcat = kcatsFromDLKcat(lightECModel, 'via', 'docker', 'save', false, 'modelAdapter', humanAdapter);
 
 %now join the fuzzy and dlkcat ckats for light
-mergedKcatListLight = mergeDlkcatAndFuzzyKcats(kcatListLightDlKcat, kcatListLightFuzzy);
+mergedKcatListLight = mergeKcats({kcatListLightFuzzy, kcatListLightDlKcat}, {'database_top', 'dlkcat', 'database_bottom'}, 'topOriginLimit', 4);
 lightECModelMerged  = assignKcatValues(lightECModel,mergedKcatListLight);
 lightECModelMerged = applyKcatConstraints(lightECModelMerged);
 
@@ -182,7 +177,7 @@ lightECModelTuned = sensitivityTuning(lightECModel, 0.07, humanAdapter);
 
 % full
 kcatListFullFuzzy = fuzzyKcatMatching(fullECModel, [], humanAdapter);
-mergedKcatListFull = mergeDlkcatAndFuzzyKcats(kcatListFullDlKcat, kcatListFullFuzzy);
+mergedKcatListFull = mergeKcats({kcatListFullFuzzy, kcatListFullDlKcat}, {'database_top', 'dlkcat', 'database_bottom'}, 'topOriginLimit', 4);
 
 fullECModelMerged = assignKcatValues(fullECModel,mergedKcatListFull);
 fullECModelMerged = applyKcatConstraints(fullECModelMerged);
@@ -194,7 +189,7 @@ fullECModelMerged = setProtPoolSize(fullECModelMerged, [], humanAdapter);
 
 
 % Now merge the kcats from dlkcat and fuzzy
-mergedKcatList = mergeDlkcatAndFuzzyKcats(kcatListFullDlKcat, kcatListFullFuzzy);
+mergedKcatList = mergeKcats({kcatListFullFuzzy, kcatListFullDlKcat}, {'database_top', 'dlkcat', 'database_bottom'}, 'topOriginLimit', 4);
 fullECModelMerged  = assignKcatValues(fullECModelMerged,mergedKcatList);
 fullECModelMerged = applyKcatConstraints(fullECModelMerged);
 

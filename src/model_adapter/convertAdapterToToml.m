@@ -41,7 +41,10 @@ function report = convertAdapterToToml(adapter, tomlFile)
 % TomlAdapter, loadAdapterParams, writeAdapterToml
 
 if ischar(adapter) || isstring(adapter)
+    state = warning('off', 'GECKO:deprecatedAdapterClass');
+    restoreWarning = onCleanup(@() warning(state));
     adapter = ModelAdapterManager.getAdapter(char(adapter));
+    clear restoreWarning
 end
 params = adapter.params;
 if isfield(params,'path') && isstruct(params.path)

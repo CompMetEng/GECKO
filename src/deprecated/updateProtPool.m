@@ -1,5 +1,9 @@
 function ecModel  = updateProtPool(ecModel, varargin)
-% updateProtPool  Update the protein pool to compensate for proteomics.
+% updateProtPool  Deprecated: update the protein pool to compensate for proteomics.
+%
+% Deprecated and removed in a future release: in every ecModel made with
+% GECKO 3.2.0 or later, measured enzymes draw from the protein pool, and
+% setProtPoolSize sets the pool for a condition.
 %
 % Only applicable to ecModels where unmeasured enzymes draw from the
 % protein pool while measured enzymes (constrained via model.ec.concs) do
@@ -14,7 +18,7 @@ function ecModel  = updateProtPool(ecModel, varargin)
 % Parameters
 % ----------
 % ecModel : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 %
 % Name-Value Arguments
 % --------------------
@@ -41,6 +45,9 @@ function ecModel  = updateProtPool(ecModel, varargin)
 % See also
 % --------
 % setProtPoolSize, loadFluxData
+
+warning('GECKO:deprecatedFunction', ['updateProtPool is deprecated; use setProtPoolSize ' ...
+    'instead. The function will be removed in a future release.']);
 
 p = parseGECKOargs(varargin, { ...
     'Ptot',         []; ...

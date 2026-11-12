@@ -7,15 +7,15 @@ function usageReport = reportEnzymeUsage(ecModel, usageData, varargin)
 % Parameters
 % ----------
 % ecModel : struct
-%     a GECKO3 ecModel.
+%     an ecModel (with ecModel.ec structure).
 % usageData : struct
 %     output from getEnzymeUsage.
 %
 % Name-Value Arguments
 % --------------------
 % highCapUsage : double
-%     minimum fraction of enzyme capacity usage to be listed as high usage
-%     (default 0.9, i.e. at least 90% capacity usage).
+%     fraction of enzyme capacity usage above which an enzyme is listed as
+%     high usage (default 0.9, i.e. more than 90% capacity usage).
 % topAbsUsage : double
 %     how many top enzymes by absolute usage to list (default 10). Use 0
 %     or Inf to list all enzymes instead. Enzymes whose reactions carry no
@@ -26,7 +26,7 @@ function usageReport = reportEnzymeUsage(ecModel, usageData, varargin)
 % -------
 % usageReport : struct
 %     highCapUsage : table
-%         enzymes at or above the highCapUsage threshold.
+%         enzymes above the highCapUsage threshold.
 %     topAbsUsage : table
 %         the topAbsUsage enzymes with the highest absolute usage.
 %     totalUsageFlux : double

@@ -25,17 +25,17 @@ function testConvertCustomKcats_tc0091(testCase)
     verifyError(testCase, @() convertCustomKcats(model, 'modelAdapter', adapter), 'convertCustomKcats:exists')
 end
 
-function testConvertedCustomKcatsGiveSameKcats_tc0092(testCase)
-    % The ecTestGEM customKcats.tsv: assignKcats with data/customKcats.tsv
-    % and with the converted data/kcats/custom.tsv give the same kcats.
+function testCollectKcatsNeedsConvertedCustomKcats_tc0092(testCase)
+    % The ecTestGEM customKcats.tsv: collectKcats does not read
+    % data/customKcats.tsv and raises an error naming convertCustomKcats;
+    % with the converted data/kcats/custom.tsv it uses the custom kcats.
     [model, adapter, project] = buildProject();
     adapter.params.kcat_assignment = struct('preset', 'gecko_median');
     kcatsFromBrenda(model, 'modelAdapter', adapter);
-    a = collectKcats(model, 'modelAdapter', adapter, 'writeReport', false);
+    verifyError(testCase, @() collectKcats(model, 'modelAdapter', adapter, 'writeReport', false), ...
+        'collectKcats:legacyCustomKcats')
     convertCustomKcats(model, 'modelAdapter', adapter);
     b = collectKcats(model, 'modelAdapter', adapter, 'writeReport', false);
-    verifyEqual(testCase, b.kcat, a.kcat)
-    verifyEqual(testCase, strcmp(b.source, 'custom'), strcmp(a.source, 'custom'))
     verifyTrue(testCase, any(strcmp(b.source, 'custom')))
     verifyTrue(testCase, isfile(fullfile(project, 'data', 'kcats', 'custom.tsv')))
 end

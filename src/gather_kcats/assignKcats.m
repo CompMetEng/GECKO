@@ -10,7 +10,7 @@ function [model, decisions, report] = assignKcats(model, varargin)
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 %
 % Name-Value Arguments
 % --------------------
@@ -18,7 +18,8 @@ function [model, decisions, report] = assignKcats(model, varargin)
 %     a loaded model adapter (default: the current default model adapter).
 % writeReport : logical
 %     write the decisions to output/<model id>_kcatDecisions.tsv (default
-%     true).
+%     true). The file has the columns of decisions in snake_case (ec_rxn,
+%     spread_log10, sd_log10), as geckopy writes it.
 %
 % Returns
 % -------

@@ -1,7 +1,7 @@
 function [model,noSMILES] = findMetSmiles(model, varargin)
 % findMetSmiles  Query PubChem by metabolite names to obtain SMILES.
 %
-% Matches are cached in tutorials/***/data/smilesDB.tsv, which is checked
+% Matches are cached in <params.path>/data/smilesDB.tsv, which is checked
 % first on subsequent runs so repeated queries are avoided. If the model
 % already has a metSmiles field, non-empty entries are left unchanged. When
 % the cache holds a name more than once, the last row is used. A metabolite
@@ -59,8 +59,9 @@ if exist(smilesDBfile,'file')==2
     %The last row of a name that occurs more than once is used
     smilesDB.names = flipud(raw{1});
     smilesDB.smile = flipud(raw{2});
-    [metMatch, metIdx] = ismember(uniqueNames,smilesDB.names);
-    uniqueSmiles(metMatch) = smilesDB.smile(metIdx(metMatch));
+    [inDB, metIdx] = ismember(uniqueNames,smilesDB.names);
+    uniqueSmiles(inDB) = smilesDB.smile(metIdx(inDB));
+    metMatch = metMatch | inDB;
     if verbose; fprintf('done.\n'); end
 else
     if verbose; fprintf('not found.\n'); end
