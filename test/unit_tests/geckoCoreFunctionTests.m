@@ -3171,3 +3171,24 @@ function kcatList = runDLKcatWithFakeDocker(testCase, ecModel, adapter, ecRxns)
         '''save'', false, ''modelAdapter'', adapter)']);
     verifyTrue(testCase, all(kcatList.kcats == 2.5))
 end
+
+
+function testDeprecatedFunctionsSayTheyWillBeRemoved_tc0730(testCase)
+    % applyCustomKcats, runDLKcat and writeDLKcatInput warn that they will
+    % be removed; runDLKcat and writeDLKcatInput then raise an error.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));
+    ecModel = makeEcModel(getGeckoTestModel(), false, adapter);
+    lastwarn('', '');
+    applyCustomKcats(ecModel, [], adapter);
+    [msg, warnId] = lastwarn();
+    verifyEqual(testCase, warnId, 'GECKO:deprecatedFunction')
+    verifySubstring(testCase, msg, 'will be removed in a future release')
+    for f = {@runDLKcat, @writeDLKcatInput}
+        lastwarn('', '');
+        verifyError(testCase, @() f{1}(ecModel), 'GECKO:deprecatedFunction')
+        [msg, warnId] = lastwarn();
+        verifyEqual(testCase, warnId, 'GECKO:deprecatedFunction')
+        verifySubstring(testCase, msg, 'will be removed in a future release')
+    end
+end

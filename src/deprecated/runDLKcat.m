@@ -10,7 +10,7 @@ function varargout = runDLKcat(varargin) %#ok<STOUT>
 % kcatsFromDLKcat
 
 warning('GECKO:deprecatedFunction', ['runDLKcat is deprecated; use ' ...
-    'kcatsFromDLKcat(model, ''via'', ''docker'').'])
+    'kcatsFromDLKcat(model, ''via'', ''docker''). It will be removed in a future release.'])
 error('GECKO:deprecatedFunction', ['runDLKcat no longer runs DLKcat on its own. Use ' ...
     'kcatsFromDLKcat(ecModel, ''via'', ''docker''), which also writes the input.'])
 end

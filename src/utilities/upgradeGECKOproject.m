@@ -248,7 +248,10 @@ function adapter = projectAdapter(projectPath)
 if isfile(fullfile(projectPath, 'model_adapter.toml'))
     adapter = TomlAdapter(projectPath);
 else
+    state = warning('off', 'GECKO:deprecatedAdapterClass');
+    restoreWarning = onCleanup(@() warning(state));
     adapter = ModelAdapterManager.getAdapter(adapterClass(projectPath));
+    clear restoreWarning
     adapter.params.path = projectPath;
 end
 end

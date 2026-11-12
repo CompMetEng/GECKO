@@ -11,7 +11,7 @@ function varargout = writeDLKcatInput(varargin) %#ok<STOUT>
 % kcatsFromDLKcat, extractEnzymeSubstratePairs
 
 warning('GECKO:deprecatedFunction', ['writeDLKcatInput is deprecated; use ' ...
-    'kcatsFromDLKcat(model, ''via'', ''docker'').'])
+    'kcatsFromDLKcat(model, ''via'', ''docker''). It will be removed in a future release.'])
 error('GECKO:deprecatedFunction', ['writeDLKcatInput no longer writes the DLKcat input on ' ...
     'its own. Use kcatsFromDLKcat(ecModel, ''via'', ''docker''), which also runs DLKcat.'])
 end
