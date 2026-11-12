@@ -26,8 +26,9 @@ function findings = reviewKcatAssignment(rxnIds,kcats,sources,ecCodes,varargin)
 % ----------
 % rxnIds, kcats, sources, ecCodes : cell/double
 %     ec.rxns, ec.kcat, ec.source, ec.eccodes (or the equivalent
-%     subset), all the same length. The source labels 'custom' and
-%     'standard' are recognised without regard to letter case.
+%     subset), all the same length. The origins 'custom' and 'standard'
+%     of the source (see parseKcatSource) are recognised without regard to
+%     letter case.
 %
 % Name-Value Arguments
 % --------------------
@@ -109,6 +110,13 @@ else
     lev = leverage(:);
 end
 
+sourceText = sources(:);
+if ~iscell(sourceText)
+    sourceText = cellstr(sourceText);
+end
+sourceInfo = parseKcatSource(sourceText);
+origins = {sourceInfo.origin}';
+
 tie = isozymeTieMap(rxnIds,kcats,'sources',sources);
 reps = unique(tie);
 memberLists = cell(numel(reps),1);
@@ -179,7 +187,7 @@ for r = 1:numel(reps)
         checks{end+1} = 'magnitude'; %#ok<AGROW>
         detail{end+1} = sprintf('%g 1/s is outside %g-%g', kcats(i), slow, fast); %#ok<AGROW>
     end
-    if strcmpi(sources{i},'custom') && ~isempty(st) && ismember(round(kcats(i),6), st.values)
+    if strcmpi(origins{i},'custom') && ~isempty(st) && ismember(round(kcats(i),6), st.values)
         checks{end+1} = 'custom-duplicate'; %#ok<AGROW>
         detail{end+1} = 'custom value equals a database value for its own EC'; %#ok<AGROW>
     end
@@ -189,7 +197,7 @@ for r = 1:numel(reps)
         end
         detail{end+1} = sprintf('%d isozyme copies share this value', numel(idx)); %#ok<AGROW>
     end
-    if strcmpi(sources{i},'standard')
+    if strcmpi(origins{i},'standard')
         if ~ismember('standard-fallback',include)
             continue
         end

@@ -190,7 +190,10 @@ for s = 1:numel(config.stages)
         end
         [~, idx] = ismember(c.rxns, ecModel.ec.rxns);
         ecModel.ec.kcat(idx) = c.kcats;
-        ecModel.ec.source(idx) = cellstr(compose('combined (sd=%.2f, n=%d)', c.sd, c.n));
+        for k = 1:numel(idx)
+            ecModel.ec.source{idx(k)} = formatKcatSource('combined', ...
+                struct('sd', sprintf('%.2f', c.sd(k)), 'n', c.n(k)));
+        end
         stage(idx) = {sprintf('%d', s)};
         candidates(idx) = c.n;
         spread(idx) = c.spread;
@@ -263,7 +266,9 @@ if config.standard
     candidates(end+1:n) = 0;
     spread(end+1:n) = NaN;
     sd(end+1:n) = NaN;
-    stage(strcmp(ecModel.ec.source, 'standard') & ecModel.ec.kcat > 0) = {'standard'};
+    sourceInfo = parseKcatSource(ecModel.ec.source);
+    isStandard = strcmp({sourceInfo.origin}', 'standard') & cellfun(@isempty, {sourceInfo.tuned}');
+    stage(isStandard & ecModel.ec.kcat > 0) = {'standard'};
 end
 
 decisions = table(ecModel.ec.rxns(:), stage(:), ecModel.ec.source(:), ecModel.ec.kcat(:), ...

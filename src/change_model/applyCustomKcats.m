@@ -139,7 +139,7 @@ for i = 1:numel(customKcats.proteins)
         model.ec.kcat(rxnIdxs) = customKcats.kcat(i);
 
         % Add note mentioning manual kcat change
-        model.ec.source(rxnIdxs) = {'custom'};
+        model.ec.source(rxnIdxs) = {formatKcatSource('custom')};
         if isfield(customKcats,'notes')
             matchedIdxs = find(rxnIdxs);
             for j = 1:numel(matchedIdxs)
@@ -202,7 +202,7 @@ for i = 1:numel(customKcats.proteins)
                     model.ec.kcat(rxnIdxs(j)) = customKcats.kcat(i);
 
                     % Add note mentioning manual kcat change
-                    model.ec.source{rxnIdxs(j),1} = 'custom';
+                    model.ec.source{rxnIdxs(j),1} = formatKcatSource('custom');
                     if isfield(customKcats,'notes')
                         model.ec.notes{rxnIdxs(j), 1} = appendNote(model.ec.notes{rxnIdxs(j), 1}, customKcats.notes{i});
                     end

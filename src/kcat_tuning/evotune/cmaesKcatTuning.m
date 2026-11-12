@@ -46,9 +46,11 @@ function [ecModel,result] = cmaesKcatTuning(ecModel,varargin)
 % -------
 % ecModel : struct
 %     mutated: tunable rows hold the best kcat vector CMA-ES found, with
-%     kcat constraints already applied. MATLAB structs are copied on
-%     assignment, so -- unlike geckopy's in-place mutation -- this output
-%     must be captured by the caller.
+%     kcat constraints already applied. The source of each changed kcat
+%     keeps its origin and detail and gains the tuning status 'tuned=cmaes'
+%     with the kcat before the first tuning as prior (see formatKcatSource).
+%     MATLAB structs are copied on assignment, so -- unlike geckopy's
+%     in-place mutation -- this output must be captured by the caller.
 % result : struct
 %     rxns/oldKcat/newKcat/groups cover the selected tunable set, tied
 %     groups included (their members share one value in newKcat).
@@ -187,6 +189,23 @@ while generation < params.maxGenerations
         meanX,sigma,D,pSigma,pC,Z,ord,w,mu,cs,ds,cc,c1,cmu,muEff,chiN,generation);
 end
 
+changed = tunableIdx(bestVec ~= kcat0);
+for i = changed(:)'
+    info = parseKcatSource(ecModel.ec.source{i});
+    origin = info.origin;
+    if isempty(origin)
+        origin = 'unknown';
+    end
+    tuned = info.tuned;
+    if ~any(strcmp(tuned,'cmaes'))
+        tuned{end+1} = 'cmaes';
+    end
+    prior = info.prior;
+    if isnan(prior)
+        prior = ecModel.ec.kcat(i);
+    end
+    ecModel.ec.source{i} = formatKcatSource(origin,info.detail,tuned,prior);
+end
 ecModel.ec.kcat(tunableIdx) = bestVec;
 ecModel = applyKcatConstraints(ecModel,'updateRxns',ecRxnIdsTunable);
 
