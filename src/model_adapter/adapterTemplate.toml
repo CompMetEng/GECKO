@@ -16,9 +16,10 @@ sigma = 0.5
 p_tot = 0.5
 # Fraction of enzymes in the model [g enzyme/g protein].
 f = 0.5
-# Growth rate the model should reach when not limited by nutrient uptake,
-# for example the maximum growth rate [1/h].
-gr_exp = 0.41
+# Growth rate the model should reach when not limited by nutrient uptake
+# [1/h]. Required by the functions that tune kcats or fit sigma; there is no
+# default.
+# gr_exp =
 
 # Exchange reaction of glucose, or another preferred carbon source.
 c_source = "r_1714"

@@ -408,6 +408,39 @@ function testOkpMethodsAtLoad_tc0744(testCase)
     end
 end
 
+function testGrExpNotSet_tc0739(testCase)
+    % gr_exp has no default; a function that needs it says so.
+    folder = tempname; mkdir(folder);
+    cleanupDir = onCleanup(@() rmdir(folder, 's'));
+    writeTemp({'conv_gem = "x.xml"', 'org_name = "x"'}, fullfile(folder, 'model_adapter.toml'));
+    adapter = ModelAdapterManager.getAdapter(folder);
+    try
+        sensitivityTuning(struct(), 'modelAdapter', adapter);
+        err = [];
+    catch err
+    end
+    verifyEqual(testCase, err.identifier, 'GECKO:grExpNotSet')
+    verifyEqual(testCase, err.message, 'gr_exp is not set in model_adapter.toml')
+    try
+        sigmaFitter(struct(), 'modelAdapter', adapter, 'makePlot', false);
+        err = [];
+    catch err
+    end
+    verifyEqual(testCase, err.message, 'gr_exp is not set in model_adapter.toml')
+    try
+        flexibilizeEnzConcs(struct(), 'modelAdapter', adapter);
+        err = [];
+    catch err
+    end
+    verifyEqual(testCase, err.message, 'gr_exp is not set in model_adapter.toml')
+    try
+        relaxEnzConcs(struct(), 'modelAdapter', adapter);
+        err = [];
+    catch err
+    end
+    verifyEqual(testCase, err.message, 'gr_exp is not set in model_adapter.toml')
+end
+
 function s = keepFields(s, template)
 % s reduced to the fields (recursively) that template has.
 fields = fieldnames(s);

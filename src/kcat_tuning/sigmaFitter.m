@@ -71,7 +71,11 @@ if isempty(Ptot)
     Ptot = modelAdapter.getParameters().Ptot;
 end
 if isempty(growthRate)
-    growthRate = modelAdapter.getParameters().gR_exp;
+    params = modelAdapter.getParameters();
+    if ~isfield(params, 'gR_exp') || isempty(params.gR_exp)
+        error('GECKO:grExpNotSet', 'gr_exp is not set in model_adapter.toml')
+    end
+    growthRate = params.gR_exp;
 end
 if ~(growthRate > 0)
     error('sigmaFitter:growthRate', 'The growth rate to fit sigma to must be positive, not %g.', growthRate)

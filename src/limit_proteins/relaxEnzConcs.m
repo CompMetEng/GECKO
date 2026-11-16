@@ -25,7 +25,7 @@ function [model, flexEnz] = relaxEnzConcs(model, varargin)
 % Name-Value Arguments
 % --------------------
 % expGrowth : double
-%     the growth rate to reach (default: gR_exp of the model adapter).
+%     the growth rate to reach (default: gr_exp of the model adapter).
 % bioRxn : char
 %     the biomass reaction (default: bioRxn of the model adapter).
 % perComplex : logical
@@ -108,6 +108,9 @@ if isempty(expGrowth) || isempty(bioRxn)
     end
     params = modelAdapter.getParameters();
     if isempty(expGrowth)
+        if ~isfield(params, 'gR_exp') || isempty(params.gR_exp)
+            error('GECKO:grExpNotSet', 'gr_exp is not set in model_adapter.toml')
+        end
         expGrowth = params.gR_exp;
     end
     if isempty(bioRxn)
