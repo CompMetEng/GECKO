@@ -24,7 +24,7 @@ function testReadAdapterToml_tc0061(testCase)
         '', ...
         '[evotune.source_groups.okp]', ...
         'sources = ["OKP"]', ...
-        'match_okp = true', ...
+        'sigma0_log = 0.25', ...
         '', ...
         '[[stage]]', ...
         'action = "select"', ...
@@ -42,7 +42,7 @@ function testReadAdapterToml_tc0061(testCase)
     verifyEqual(testCase, d.empty, {})
     verifyEqual(testCase, d.kegg.id, 'sce')
     verifyEqual(testCase, d.evotune.source_groups.okp.sources, {'OKP'})
-    verifyTrue(testCase, d.evotune.source_groups.okp.match_okp)
+    verifyEqual(testCase, d.evotune.source_groups.okp.sigma0_log, 0.25)
     verifyEqual(testCase, numel(d.stage), 2)
     verifyEqual(testCase, d.stage(2).action, 'fill')
     verifyEqual(testCase, d.stage(2).sources, {'isozymes'})
@@ -87,9 +87,12 @@ function testLoadAdapterParamsDefaults_tc0064(testCase)
     verifyEqual(testCase, params.sigma, 0.5)
     verifyEqual(testCase, params.kegg.ID, '')
     verifyEqual(testCase, params.uniprot.ID, '')
-    verifyEqual(testCase, params.kcatAggregation, 'max')
-    verifyEqual(testCase, params.evotune.kcatSources, {'dlkcat','brenda','custom'})
-    verifyEqual(testCase, params.evotune.sigma0logSource, [0.4; 0.2; 0.1])
+    verifyFalse(testCase, isfield(params, 'kcatAggregation'))
+    verifyFalse(testCase, isfield(params, 'gR_exp'))
+    verifyFalse(testCase, isfield(params.okp, 'method'))
+    verifyEqual(testCase, params.evotune.kcatSources, {'custom','brenda','ec_tree','combined'})
+    verifyEqual(testCase, params.evotune.sigma0logSource, [0.1; 0.2; 0.3; 0.4])
+    verifyEqual(testCase, params.evotune.kcatGroups, params.evotune.kcatSources)
     verifyEqual(testCase, params.evotune.maxGenerations, 150)
     verifyEqual(testCase, params.okp.handleLongSequences, 'truncate')
     verifyEmpty(testCase, params.complex.taxonomicID)
@@ -99,18 +102,17 @@ function testLoadAdapterParamsDefaults_tc0064(testCase)
 end
 
 function testLoadAdapterParamsSourceGroups_tc0065(testCase)
-    % Trust tiers with several sources and the OKP method.
+    % Trust tiers with several sources, a prefix pattern and a group width.
     folder = tempname; mkdir(folder);
     writeTemp({'conv_gem = "x.xml"', 'org_name = "x"', ...
-        '[okp]', 'method = "EITLEM"', ...
-        '[evotune.source_groups.okp]', 'sources = ["OpenKineticsPredictor"]', 'match_okp = true', ...
-        '[evotune.source_groups.database]', 'sources = ["brenda", "okp_brenda"]', ...
-        '[evotune.sigma0_log_source]', 'okp = 0.25', 'database = 0.2', ...
+        '[evotune.source_groups.okp]', 'sources = ["okp_*"]', 'sigma0_log = 0.25', ...
+        '[evotune.source_groups.database]', 'sources = ["brenda", "okp_brenda"]', 'sigma0_log = 0.2', ...
         '[matlab]', 'make_model_anaerobic = "anaerobicModel_GECKO"', ...
         '[matlab.params]', 'c_UptakeExp = 0.64'}, fullfile(folder, 'model_adapter.toml'));
     params = loadAdapterParams(fullfile(folder, 'model_adapter.toml'));
-    verifyEqual(testCase, params.evotune.kcatSources, {'OpenKineticsPredictor','EITLEM','brenda','okp_brenda'})
-    verifyEqual(testCase, params.evotune.sigma0logSource, [0.25; 0.25; 0.2; 0.2])
+    verifyEqual(testCase, params.evotune.kcatSources, {'okp_*','brenda','okp_brenda'})
+    verifyEqual(testCase, params.evotune.kcatGroups, {'okp','database','database'})
+    verifyEqual(testCase, params.evotune.sigma0logSource, [0.25; 0.2; 0.2])
     verifyEqual(testCase, params.matlab.makeModelAnaerobic, 'anaerobicModel_GECKO')
     verifyEqual(testCase, params.c_UptakeExp, 0.64)
 end
@@ -131,6 +133,15 @@ function testConvertAdapterToToml_tc0066(testCase)
         verifyTrue(testCase, any(strcmp(report.methods, 'getSpontaneousReactions')))
         converted = TomlAdapter(file);
         expected = original.params;
+        % Fields without a key in model_adapter.toml are not carried over.
+        if k == 2
+            verifyEqual(testCase, report.notCarried, ...
+                {'kcatAggregation', 'evotune.kcatSources', 'evotune.sigma0logSource'})
+            expected = rmfield(expected, 'kcatAggregation');
+            expected.evotune = rmfield(expected.evotune, {'kcatSources', 'sigma0logSource'});
+        else
+            verifyEmpty(testCase, report.notCarried)
+        end
         actual = converted.params;
         % The project folder is where the TOML file is; the model path is
         % relative to it.
@@ -144,8 +155,9 @@ function testConvertAdapterToToml_tc0066(testCase)
 end
 
 function lines = legacyAdapterClass()
-% An adapter class as written for GECKO 3 and 4: evotune trust tiers and a
-% parameter that geckopy does not know.
+% An adapter class as written for GECKO 3 and 4: fields that
+% model_adapter.toml has no key for (kcatAggregation, evotune trust tiers)
+% and a parameter that geckopy does not know.
 lines = { ...
     'classdef LegacyFixtureAdapter < ModelAdapter', ...
     '    methods', ...
@@ -212,8 +224,89 @@ function testCreateGECKOprojectToml_tc0068(testCase)
     verifyEqual(testCase, strtrim(fileread(fullfile(folder, '.gitignore'))), 'data/okpApiKey.txt')
     adapter = ModelAdapterManager.getAdapter(folder);
     verifyEqual(testCase, adapter.params.org_name, 'genus species')
-    verifyEqual(testCase, adapter.params.evotune.kcatSources, {'dlkcat','brenda','custom'})
+    verifyEqual(testCase, adapter.params.evotune.kcatSources, {'custom','brenda','ec_tree','combined'})
+    verifyEqual(testCase, adapter.params.evotune.sigma0logSource, [0.1; 0.2; 0.3; 0.4])
+    verifyFalse(testCase, isfield(adapter.params, 'gR_exp'))
     verifyEqual(testCase, adapter.params.spontaneous.name_contains, 'spontaneous')
+end
+
+function testKcatsFromOKPDefaultMethod_tc0737(testCase)
+    % Without a method, kcatsFromOKP uses the first of [kcat_sources.okp] methods.
+    adapter = ModelAdapterManager.getAdapter(fullfile(findGECKOroot,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    scratchDir = tempname;
+    mkdir(fullfile(scratchDir, 'data'));
+    cleanupDir = onCleanup(@() rmdir(scratchDir, 's'));
+    adapter.params.path = scratchDir;
+    ecModel.ec.rxns = {'R1'};
+    try
+        kcatsFromOKP(ecModel, 'useStored', true, 'save', false, 'modelAdapter', adapter);
+        err = [];
+    catch err
+    end
+    verifyEqual(testCase, err.identifier, 'kcatsFromOKP:noStored')
+    verifySubstring(testCase, err.message, 'KinForm-H')
+    adapter.params.kcat_sources.okp.methods = {'UniKP', 'CataPro'};
+    try
+        kcatsFromOKP(ecModel, 'useStored', true, 'save', false, 'modelAdapter', adapter);
+        err = [];
+    catch err
+    end
+    verifyEqual(testCase, err.identifier, 'kcatsFromOKP:noStored')
+    verifySubstring(testCase, err.message, 'UniKP')
+end
+
+function testOkpMethodsAndFiles_tc0738(testCase)
+    % CatPred and TurNup are not accepted in [kcat_sources.okp] methods, and
+    % an okp_<x> file that is no known method's file fails naming the file.
+    verifyError(testCase, @() kcatAssignmentConfig(struct('kcat_sources', ...
+        struct('okp', struct('methods', {{'CatPred'}})))), 'kcatAssignment:config')
+    known = 'CataPro, CatRange, DLKcat, EITLEM, KinForm-H, KinForm-L, OmniESI, OmniESI-O2DENet, UniKP';
+    try
+        kcatAssignmentConfig(struct('kcat_sources', struct('okp', struct('methods', {{'Zed', 'UniKP', 'Zed', 'Abc'}}))));
+        err = [];
+    catch err
+    end
+    verifyEqual(testCase, err.message, ['Unknown OKP methods in [kcat_sources.okp] methods: Zed, Abc; methods: ' known '.'])
+    verifyError(testCase, @() kcatAssignmentConfig(struct('kcat_sources', ...
+        struct('okp', struct('methods', {{'TurNup'}})))), 'kcatAssignment:config')
+    folder = tempname; mkdir(folder);
+    cleanupDir = onCleanup(@() rmdir(folder, 's'));
+    writeTemp({'conv_gem = "x.xml"', 'org_name = "x"', '[[kcat_assignment.stage]]', ...
+        'sources = ["okp_nosuchmethod", "okp_kinform_h"]'}, fullfile(folder, 'model_adapter.toml'));
+    adapter = ModelAdapterManager.getAdapter(folder);
+    report = evalc('r = updateKcatSources(struct(), ''modelAdapter'', adapter);'); %#ok<NASGU>
+    row = strcmp(r.source, 'okp_nosuchmethod');
+    verifyEqual(testCase, r.status{row}, 'failed')
+    verifyEqual(testCase, r.note{row}, ['okp_nosuchmethod is not the file of a known OKP method; the files are ' ...
+        'okp_catapro, okp_catrange, okp_dlkcat, okp_eitlem, okp_kinform_h, okp_kinform_l, okp_omniesi, ' ...
+        'okp_omniesi_o2denet, okp_unikp.'])
+end
+
+function testOkpMethodsAtLoad_tc0744(testCase)
+    % The methods are checked when the file is read.
+    base = {'conv_gem = "x.xml"', 'org_name = "x"', '[kcat_sources.okp]'};
+    known = 'CataPro, CatRange, DLKcat, EITLEM, KinForm-H, KinForm-L, OmniESI, OmniESI-O2DENet, UniKP';
+    cases = { ...
+        {'methods = "KinForm-H"'}, 'kcat_sources.okp.methods must be a list of strings'; ...
+        {'methods = [1, 2]'}, 'kcat_sources.okp.methods must be a list of strings'; ...
+        {'methods = ["Zed", "UniKP", "Zed", "CatPred"]'}, ...
+            ['Unknown OKP methods in [kcat_sources.okp] methods: Zed, CatPred; methods: ' known '.']};
+    for k = 1:size(cases, 1)
+        folder = tempname; mkdir(folder);
+        file = fullfile(folder, 'model_adapter.toml');
+        writeTemp([base, cases{k,1}], file);
+        try
+            loadAdapterParams(file);
+            err = [];
+        catch err
+        end
+        verifyNotEmpty(testCase, err)
+        if k < 3
+            verifyEqual(testCase, err.message, [file ': ' cases{k,2}])
+        else
+            verifyEqual(testCase, err.message, cases{k,2})
+        end
+    end
 end
 
 function s = keepFields(s, template)

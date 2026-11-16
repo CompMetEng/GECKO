@@ -81,19 +81,23 @@ if isfield(params, 'kcat_sources') && isstruct(params.kcat_sources)
     end
 end
 % The okp group: the OKP methods of [kcat_sources.okp] methods.
-known = {'CataPro','CatPred','CatRange','DLKcat','EITLEM','KinForm-H','KinForm-L', ...
-    'OmniESI','OmniESI-O2DENet','TurNup','UniKP'};
-% The default: KinForm-H, as the default of params.okp.method.
+% The methods kcatsFromOKP accepts: those that predict from one enzyme and
+% one substrate (CatPred and TurNup read whole reactions).
+known = {'CataPro','CatRange','DLKcat','EITLEM','KinForm-H','KinForm-L', ...
+    'OmniESI','OmniESI-O2DENet','UniKP'};
+% The default: KinForm-H.
 config.okpMethods = {'KinForm-H'};
 if isfield(config.sources, 'okp') && isfield(config.sources.okp, 'methods') && ~isempty(config.sources.okp.methods)
     config.okpMethods = cellstr(config.sources.okp.methods);
     config.okpMethods = config.okpMethods(:)';
 end
-unknown = setdiff(config.okpMethods, known);
+unknown = unique(config.okpMethods(~ismember(config.okpMethods, known)), 'stable');
 if ~isempty(unknown)
     error('kcatAssignment:config', 'Unknown OKP methods in [kcat_sources.okp] methods: %s; methods: %s.', ...
         strjoin(unknown, ', '), strjoin(known, ', '))
 end
+% The file of a method: okp_ and the lower-case method name, with runs of
+% characters other than letters and digits replaced by _.
 okpFiles = cellfun(@(m) ['okp_' lower(regexprep(regexprep(m, '[^A-Za-z0-9]+', '_'), '^_+|_+$', ''))], ...
     config.okpMethods, 'UniformOutput', false);
 for s = 1:numel(config.stages)

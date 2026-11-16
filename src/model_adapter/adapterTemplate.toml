@@ -128,8 +128,13 @@ preset = "brenda_ec_tree"
 isozymes = true
 standard = true
 
-# Settings per kcat source, used by updateKcatSources, for example the OKP
-# methods the presets combine (default: KinForm-H):
+# Settings per kcat source, used by updateKcatSources: aggregation
+# ("max" or "median") and force_wildcard_level for brenda, k for ec_tree,
+# k, min_identity and coverage for homologs, and methods for okp, the OKP
+# methods the presets combine (default: KinForm-H). The BRENDA aggregation
+# of the preset is median, or max for gecko_classic.
+# [kcat_sources.brenda]
+# aggregation = "median"
 # [kcat_sources.okp]
 # methods = ["CataPro", "KinForm-H", "UniKP"]
 

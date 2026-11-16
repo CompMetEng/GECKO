@@ -2965,16 +2965,6 @@ function testKcatSourcesTableMergesWithPreset_tc0721(testCase)
     verifyEqual(testCase, config.sources.brenda.aggregation, 'max')
 end
 
-function testOkpMethodDefault_tc0722(testCase)
-    % Without an [okp] table, the OpenKineticsPredictor method is KinForm-H.
-    folder = tempname; mkdir(folder);
-    cleanupDir = onCleanup(@() rmdir(folder, 's'));
-    writelines(["conv_gem = ""models/x.xml"""; "org_name = ""testus testus"""], ...
-        fullfile(folder, 'model_adapter.toml'));
-    params = loadAdapterParams(folder);
-    verifyEqual(testCase, params.okp.method, 'KinForm-H')
-end
-
 function testOkpSourceGroupDefault_tc0723(testCase)
     % The okp source group of the presets is KinForm-H, unless the project
     % sets [kcat_sources.okp] methods.
