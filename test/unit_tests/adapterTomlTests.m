@@ -525,6 +525,50 @@ function testKcatSourcesTableAndAggregation_tc0745(testCase)
     verifyEqual(testCase, err.message, 'aggregation must be max or median')
 end
 
+function testNoEvotuneGroups_tc0746(testCase)
+    % evotune needs groups; an adapter class without them gets a message.
+    model.ec.rxns = {'R1'};
+    model.ec.kcat = 1;
+    model.ec.source = {'brenda'};
+    params = struct('sigma0logDefault', 0.5, 'tieIsozymes', false, 'kcatSources', {{'brenda'}}, ...
+        'sigma0logSource', 0.2);
+    try
+        resolveTunableContext(model, params, []);
+        err = [];
+    catch err
+    end
+    verifyEqual(testCase, err.message, 'No evotune source groups: set [evotune.source_groups] in model_adapter.toml')
+    % showAdapterParams of an adapter class without evotune settings.
+    adapter = ModelAdapterManager.getAdapter(fullfile(findGECKOroot,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    lines = splitlines(strtrim(evalc('showAdapterParams(adapter)')));
+    verifyTrue(testCase, ismember('evotune.source_groups =  [not set]', lines))
+end
+
+function testShowAdapterParamsOrder_tc0747(testCase)
+    % Lines follow the parameter table; kcat sources and their keys are
+    % ordered; whole numbers print without decimals at any size.
+    folder = tempname; mkdir(folder);
+    cleanupDir = onCleanup(@() rmdir(folder, 's'));
+    writeTemp({'conv_gem = "x.xml"', 'org_name = "x"', 'f = 1000000', ...
+        '[kcat_sources.homologs]', 'min_identity = 40', 'k = 3', 'coverage = 0.5', ...
+        '[kcat_sources.okp_unikp]'}, fullfile(folder, 'model_adapter.toml'));
+    lines = splitlines(strtrim(evalc('showAdapterParams(ModelAdapterManager.getAdapter(folder))')));
+    verifyTrue(testCase, ismember('f = 1000000  [file]', lines))
+    fid = fopen(fullfile(findGECKOroot, 'src', 'model_adapter', 'adapterParameters.tsv'), 'r');
+    cols = textscan(fid, '%s %*[^\n]', 'Delimiter', '\t', 'HeaderLines', 1);
+    fclose(fid);
+    position = zeros(numel(cols{1}), 1);
+    for k = 1:numel(cols{1})
+        position(k) = find(startsWith(lines, [cols{1}{k} ' =']) | startsWith(lines, [cols{1}{k} '.']) | ...
+            startsWith(lines, [cols{1}{k} '[']), 1);
+    end
+    verifyEqual(testCase, position, sort(position))
+    sourceLines = lines(startsWith(lines, 'kcat_sources.'));
+    verifyEqual(testCase, cellfun(@(l) l(1:find(l == ' ', 1)-1), sourceLines, 'UniformOutput', false), ...
+        {'kcat_sources.brenda.aggregation'; 'kcat_sources.ec_tree.k'; 'kcat_sources.homologs.coverage'; ...
+         'kcat_sources.homologs.k'; 'kcat_sources.homologs.min_identity'; 'kcat_sources.okp.methods'})
+end
+
 function testGrExpNotSet_tc0739(testCase)
     % gr_exp has no default; a function that needs it says so.
     folder = tempname; mkdir(folder);
@@ -556,6 +600,45 @@ function testGrExpNotSet_tc0739(testCase)
     catch err
     end
     verifyEqual(testCase, err.message, 'gr_exp is not set in model_adapter.toml')
+end
+
+function testShowAdapterParams_tc0740(testCase)
+    % One line per item, <key> = <value>  [<origin>].
+    folder = tempname; mkdir(folder);
+    cleanupDir = onCleanup(@() rmdir(folder, 's'));
+    writeTemp({'conv_gem = "x.xml"', 'org_name = "x"', 'p_tot = 0.4', ...
+        '[kcat_assignment]', 'preset = "gecko_classic"', ...
+        '[kcat_sources.okp]', 'methods = ["UniKP", "CataPro"]'}, fullfile(folder, 'model_adapter.toml'));
+    lines = splitlines(strtrim(evalc('showAdapterParams(ModelAdapterManager.getAdapter(folder))')));
+    verifyTrue(testCase, ismember('p_tot = 0.4  [file]', lines))
+    verifyTrue(testCase, ismember('sigma = 0.5  [default]', lines))
+    verifyTrue(testCase, ismember('gr_exp =  [not set]', lines))
+    verifyTrue(testCase, ismember('uniprot.reviewed = false  [default]', lines))
+    verifyTrue(testCase, ismember('kegg.id =   [default]', lines))
+    verifyTrue(testCase, ismember('complex.taxonomic_id =  [not set]', lines))
+    verifyTrue(testCase, ismember('kcat_assignment.preset = gecko_classic  [file]', lines))
+    verifyTrue(testCase, ismember(['kcat_assignment.stage[1] = select: custom, database_top, dlkcat, database_bottom; ' ...
+        'top_origin_limit=6  [preset gecko_classic]'], lines))
+    verifyTrue(testCase, ismember('kcat_sources.brenda.aggregation = max  [preset gecko_classic]', lines))
+    verifyTrue(testCase, ismember('kcat_sources.okp.methods = UniKP, CataPro  [file]', lines))
+    verifyTrue(testCase, ismember('evotune.source_groups.custom = custom; sigma0_log 0.1  [default]', lines))
+    verifyTrue(testCase, ismember('evotune.source_groups.combined = combined; sigma0_log 0.4  [default]', lines))
+    % Integer-valued numbers print whole, other numbers with %g.
+    writeTemp({'conv_gem = "x.xml"', 'org_name = "x"', 'f = 0.25', ...
+        '[complex]', 'taxonomic_id = 5592920'}, fullfile(folder, 'model_adapter.toml'));
+    lines = splitlines(strtrim(evalc('showAdapterParams(ModelAdapterManager.getAdapter(folder))')));
+    verifyTrue(testCase, ismember('complex.taxonomic_id = 5592920  [file]', lines))
+    verifyTrue(testCase, ismember('f = 0.25  [file]', lines))
+    % Stages from the file show only what they set.
+    writeTemp({'conv_gem = "x.xml"', 'org_name = "x"', ...
+        '[[kcat_assignment.stage]]', 'sources = ["custom", "okp"]', 'criteria = "median"', ...
+        '[evotune.source_groups.a]', 'sources = ["a", "b_*"]', 'sigma0_log = 0.25'}, fullfile(folder, 'model_adapter.toml'));
+    lines = splitlines(strtrim(evalc('showAdapterParams(ModelAdapterManager.getAdapter(folder))')));
+    verifyTrue(testCase, ismember('kcat_assignment.preset = none (stages are given)  [file]', lines))
+    verifyTrue(testCase, ismember('kcat_assignment.stage[1] = select: custom, okp; criteria=median  [file]', lines))
+    verifyTrue(testCase, ismember('evotune.source_groups.a = a, b_*; sigma0_log 0.25  [file]', lines))
+    T = showAdapterParams(ModelAdapterManager.getAdapter(folder));
+    verifyEqual(testCase, T.Properties.VariableNames, {'key', 'value', 'origin'})
 end
 
 function s = keepFields(s, template)
