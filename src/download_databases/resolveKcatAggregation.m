@@ -4,9 +4,11 @@ function kcatAggregation = resolveKcatAggregation(kcatAggregation, modelAdapter)
 %
 % The BRENDA snapshot records both a maximum and a median per
 % (EC, substrate, organism) triple. Which one a run uses can be given per
-% call, or once on the model adapter as params.kcatAggregation; an
-% adapter that sets neither gets 'max', which is what GECKO has always
-% used.
+% call. Without one, it is [kcat_sources.brenda] aggregation of the kcat
+% assignment configuration (kcatAssignmentConfig): the preset's, which is
+% 'median' for the default preset brenda_ec_tree and 'max' for
+% gecko_classic, or the one that model_adapter.toml sets. A configuration
+% in which no stage sets an aggregation for brenda gives 'max'.
 %
 % Input Arguments
 % ---------------
@@ -25,18 +27,17 @@ function kcatAggregation = resolveKcatAggregation(kcatAggregation, modelAdapter)
 % loadBRENDAdata, fuzzyKcatMatching
 
 if isempty(kcatAggregation)
-    params = modelAdapter.getParameters();
-    if isfield(params,'kcatAggregation') && ~isempty(params.kcatAggregation)
-        kcatAggregation = params.kcatAggregation;
-    else
-        kcatAggregation = 'max';
+    config = kcatAssignmentConfig(modelAdapter.getParameters());
+    kcatAggregation = 'max';
+    if isfield(config.sources, 'brenda') && isfield(config.sources.brenda, 'aggregation')
+        kcatAggregation = config.sources.brenda.aggregation;
     end
 end
 
 if ~(ischar(kcatAggregation) || isstring(kcatAggregation)) || ...
         ~any(strcmpi(kcatAggregation,{'max','median'}))
     error('resolveKcatAggregation:invalidKcatAggregation', ...
-        'kcatAggregation must be ''max'' or ''median''.')
+        'aggregation must be max or median')
 end
 kcatAggregation = lower(char(kcatAggregation));
 end

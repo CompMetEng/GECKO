@@ -29,10 +29,6 @@ bio_rxn = "r_4041"
 # cytoplasm.
 enzyme_comp = "cytoplasm"
 
-# Which BRENDA aggregate fuzzyKcatMatching reads for each (EC, substrate,
-# organism): "max" (the highest turnover reported) or "median".
-kcat_aggregate_brenda = "max"
-
 [kegg]
 # KEGG organism code, from https://www.genome.jp/kegg/catalog/org_list.html,
 # for example "sce" for Saccharomyces cerevisiae. Empty: KEGG is not used.

@@ -295,6 +295,40 @@ function testResolveTunableContextUnlabelled_tc0735(testCase)
     verifyWarningFree(testCase, @() resolveTunableContext(model, params, []))
 end
 
+function testBrendaAggregationFromPreset_tc0736(testCase)
+    % Without an argument the BRENDA aggregate is the one the kcat
+    % assignment configuration gives brenda.
+    adapter = ModelAdapterManager.getAdapter(fullfile(findGECKOroot,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    verifyEqual(testCase, resolveKcatAggregation([], adapter), 'median')
+    adapter.params.kcat_assignment = struct('preset', 'gecko_classic');
+    verifyEqual(testCase, resolveKcatAggregation([], adapter), 'max')
+    verifyEqual(testCase, resolveKcatAggregation('median', adapter), 'median')
+    adapter.params.kcat_assignment = struct('preset', 'brenda_ec_tree');
+    adapter.params.kcat_sources.brenda = struct('aggregation', 'max');
+    verifyEqual(testCase, resolveKcatAggregation([], adapter), 'max')
+    adapter.params.kcat_assignment = struct('stage', struct('action', 'select', 'sources', {{'custom'}}));
+    adapter.params = rmfield(adapter.params, 'kcat_sources');
+    verifyEqual(testCase, resolveKcatAggregation([], adapter), 'max')
+end
+
+function testBrendaDirectCallsUsePresetAggregation_tc0743(testCase)
+    % kcatsFromBrenda and fuzzyKcatMatching without an aggregation: the
+    % median of the default preset, or max when stages give no brenda table.
+    adapter = ModelAdapterManager.getAdapter(fullfile(findGECKOroot,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    ecModel = getECfromGEM(makeEcModel(getGeckoTestModel(), false, adapter));
+    medianK = [0.5;0.5;4;4;40;0.5];
+    maxK = [1;1;10;10;100;1];
+    list = kcatsFromBrenda(ecModel, 'save', false, 'modelAdapter', adapter);
+    verifyEqual(testCase, list.kcats, medianK)
+    list = fuzzyKcatMatching(ecModel, 'ecRxns', [], 'modelAdapter', adapter);
+    verifyEqual(testCase, list.kcats, medianK)
+    adapter.params.kcat_assignment = struct('stage', struct('action', 'select', 'sources', {{'custom'}}));
+    list = kcatsFromBrenda(ecModel, 'save', false, 'modelAdapter', adapter);
+    verifyEqual(testCase, list.kcats, maxK)
+    list = fuzzyKcatMatching(ecModel, 'ecRxns', [], 'modelAdapter', adapter);
+    verifyEqual(testCase, list.kcats, maxK)
+end
+
 function testKcatsFromOKPDefaultMethod_tc0737(testCase)
     % Without a method, kcatsFromOKP uses the first of [kcat_sources.okp] methods.
     adapter = ModelAdapterManager.getAdapter(fullfile(findGECKOroot,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));

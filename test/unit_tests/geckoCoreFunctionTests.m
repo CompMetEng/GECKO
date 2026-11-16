@@ -315,7 +315,8 @@ function testfuzzyKcatMatchingMedian_tc0060(testCase)
     ecModel = makeEcModel(model, false, adapter);
     ecModel = getECfromGEM(ecModel);
 
-    kcatListMax = fuzzyKcatMatching(ecModel, [], adapter);
+    kcatListMax = fuzzyKcatMatching(ecModel, 'ecRxns', [], ...
+        'modelAdapter', adapter, 'kcatAggregation', 'max');
     verifyEqual(testCase, kcatListMax.kcats, [1;1;10;10;100;1])
 
     kcatListMedian = fuzzyKcatMatching(ecModel, 'ecRxns', [], ...
@@ -328,10 +329,10 @@ function testfuzzyKcatMatchingMedian_tc0060(testCase)
     verifyEqual(testCase, kcatListMedian.wildcardLvl, kcatListMax.wildcardLvl)
     verifyEqual(testCase, kcatListMedian.origin, kcatListMax.origin)
 
-    % 'max' is the default, and an unknown value is refused.
-    kcatListExplicitMax = fuzzyKcatMatching(ecModel, 'ecRxns', [], ...
-        'modelAdapter', adapter, 'kcatAggregation', 'max');
-    verifyEqual(testCase, kcatListExplicitMax.kcats, kcatListMax.kcats)
+    % Without an argument the aggregate of the default preset (median) is
+    % used, and an unknown value is refused.
+    kcatListDefault = fuzzyKcatMatching(ecModel, [], adapter);
+    verifyEqual(testCase, kcatListDefault.kcats, kcatListMedian.kcats)
     verifyError(testCase, @() fuzzyKcatMatching(ecModel, 'ecRxns', [], ...
         'modelAdapter', adapter, 'kcatAggregation', 'mean'), ...
         'fuzzyKcatMatching:invalidKcatAggregation')
@@ -353,6 +354,7 @@ function testfuzzyKcatMatching_tc0010(testCase)
     % resort.
     geckoPath = findGECKOroot;
     adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    adapter.params.kcat_sources.brenda.aggregation = 'max'; % the default preset's median is not what this test reads
     model = getGeckoTestModel();
     %First all rxns, full model
     ecModel = makeEcModel(model, false, adapter);
@@ -412,6 +414,7 @@ end
 function testKcats_tc0011(testCase)
     geckoPath = findGECKOroot;
     adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    adapter.params.kcat_sources.brenda.aggregation = 'max'; % the default preset's median is not what this test reads
     model = getGeckoTestModel();
     %add an extra R3 reaction to be able to check that wildcards go in if there is no kcat in the dlkcat list
     rxnsToAdd = struct();
@@ -1912,6 +1915,7 @@ function testLoadBRENDAdataParsesNewTsvFormat_tc0043(testCase)
     % is the value used.
     geckoPath = findGECKOroot;
     adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    adapter.params.kcat_sources.brenda.aggregation = 'max'; % the default preset's median is not what this test reads
 
     scratchDir = fullfile(tempname);
     cleanupDir = onCleanup(@() rmdir(scratchDir, 's'));
