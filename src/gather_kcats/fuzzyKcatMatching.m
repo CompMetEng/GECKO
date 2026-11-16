@@ -1,6 +1,9 @@
 function kcatList = fuzzyKcatMatching(model, varargin)
 % fuzzyKcatMatching  Match model EC numbers and substrates to BRENDA kcats.
 %
+% Low-level: kcatsFromBrenda runs this function; call it directly only to
+% inspect or change the BRENDA matches by hand.
+%
 % Matches the model EC numbers and substrates to the BRENDA database, to
 % return the corresponding kcats for each reaction. If no exact match is
 % found, less specific kcat values are found from (a) evolutionary closely
@@ -14,7 +17,7 @@ function kcatList = fuzzyKcatMatching(model, varargin)
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 %
 % Name-Value Arguments
 % --------------------
@@ -52,12 +55,15 @@ function kcatList = fuzzyKcatMatching(model, varargin)
 %   (0: w.x.y.z; 1: w.x.y.-; 2: w.x.-.-; 3: w.-.-.-; 4: -.-.-.-, which
 %   matches every EC number in BRENDA).
 % - origin : which level of specificity was necessary to find a match
-%   (1: correct organism, correct substrate, kcat; 2: any organism, correct
-%   substrate, kcat; 3: correct organism, any substrate, kcat; 4: any
-%   organism, any substrate, kcat; 5: correct organism, specific activity;
-%   6: any organism, specific activity). Levels are tried in the order
-%   1, 2, 3, 5, 4, 6: a specific activity from the correct organism is
-%   preferred over a kcat from any organism with any substrate. When a
+%   (1: correct organism, correct substrate, kcat; 2: closest organism,
+%   correct substrate, kcat; 3: correct organism, any substrate, kcat; 4:
+%   closest organism, any substrate, kcat; 5: correct organism, specific
+%   activity; 6: closest organism, specific activity). The closest organism
+%   is the organism with data that is nearest to the model organism in the
+%   KEGG phylogeny; when the model organism is not in KEGG, any organism is
+%   used. Levels are tried in the order 1, 2, 3, 5, 4, 6: a specific
+%   activity from the correct organism is preferred over a kcat from the
+%   closest organism with any substrate. When a
 %   reaction has multiple EC numbers, the EC with the fewest wildcards and
 %   the earliest-tried level is selected, and among those the highest kcat
 %   (the first one when several EC numbers share it); the wildcardLvl and
@@ -75,7 +81,7 @@ function kcatList = fuzzyKcatMatching(model, varargin)
 %
 % See also
 % --------
-% mergeDLKcatAndFuzzyKcats, assignKcatValues
+% mergeKcats, assignKcats, assignKcatValues
 
 % Validators reject a name that landed in a positional slot, which
 % happens when positional and name-value arguments are mixed. Without

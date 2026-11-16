@@ -61,7 +61,9 @@ if any(strcmp(selectDatabase,{'uniprot','both'}))
     uniprotPath = fullfile(filePath,'uniprot.tsv');
     if ~exist(uniprotPath,'file')
         if isempty(uniprot.ID)
-            printOrange('WARNING: No uniprot.ID is specified, unable to download UniProt DB.\n');
+            error('loadDatabases:noUniprotID', ['%s does not exist and [uniprot] id in ' ...
+                'model_adapter.toml (uniprot.ID) is empty. Set the UniProt taxonomy or ' ...
+                'proteome identifier of the organism, or provide the file.'], uniprotPath)
         end
         downloadUniProt(uniprot.ID, uniprotPath, uniprot.geneIDfield, uniprot.type, params.uniprot.reviewed);
     end

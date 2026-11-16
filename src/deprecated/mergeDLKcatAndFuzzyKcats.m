@@ -82,8 +82,8 @@ topOriginLimit    = p.topOriginLimit;
 bottomOriginLimit = p.bottomOriginLimit;
 wildcardLimit     = p.wildcardLimit;
 
-warning(['mergeDLKcatAndFuzzyKcats is deprecated; use mergeKcats instead. ' ...
-    'The old name will be removed in a future release.']);
+warning('GECKO:deprecatedName', ['mergeDLKcatAndFuzzyKcats is deprecated; use mergeKcats ' ...
+    'instead. The old name will be removed in a future release.']);
 
 % Fuzzy list first, then DLKcat, so surviving rows keep the legacy order
 % (fuzzy block followed by DLKcat block).

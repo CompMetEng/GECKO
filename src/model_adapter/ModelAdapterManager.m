@@ -6,7 +6,9 @@
 %
 % An adapter is loaded from model_adapter.toml (give the file or the
 % project folder; see TomlAdapter) or from an adapter class (give its .m
-% file).
+% file). Adapter classes that do not subclass TomlAdapter are deprecated:
+% the first one loaded in a MATLAB session raises the warning
+% GECKO:deprecatedAdapterClass.
 %
 % Notes
 % -----
@@ -59,6 +61,9 @@ classdef ModelAdapterManager
 
             end
             adapter = feval(adapterClassName);
+            if ~isa(adapter, 'TomlAdapter')
+                ModelAdapterManager.warnAdapterClass();
+            end
         end
         
         function out = getDefault()
@@ -85,6 +90,21 @@ classdef ModelAdapterManager
                 defaultAdapter = val;
             end
             out = defaultAdapter;
+        end
+
+        function warnAdapterClass()
+            % Warn once per MATLAB session that adapter classes that do
+            % not subclass TomlAdapter are deprecated. A load with the
+            % warning turned off does not count.
+            persistent shown;
+            state = warning('query', 'GECKO:deprecatedAdapterClass');
+            if isempty(shown) && strcmp(state.state, 'on')
+                warning('GECKO:deprecatedAdapterClass', ['Adapter classes are deprecated; ' ...
+                    'model_adapter.toml configures GECKO and geckopy, and convertAdapterToToml ' ...
+                    'writes it from an adapter class. Loading adapter classes will be removed ' ...
+                    'in a future release.']);
+                shown = true;
+            end
         end
 
         function showGECKO4Notice()

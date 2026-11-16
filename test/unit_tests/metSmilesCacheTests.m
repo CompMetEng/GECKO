@@ -20,6 +20,8 @@ function testFindMetSmilesSkipsEmptyNameWithWarning_tc0408(testCase)
     cleanup = onCleanup(@() warning('on', 'findMetSmiles:emptyName')); %#ok<NASGU>
     [~, out] = evalc('findMetSmiles(model, ''modelAdapter'', adapter, ''verbose'', false)');
     verifyEqual(testCase, out.metSmiles, {'CCO';'';''})
+    % The empty name is not queried, so nothing is added to the cache.
+    verifyEqual(testCase, fileread(fullfile(adapter.params.path, 'data', 'smilesDB.tsv')), sprintf('a\tCCO\n'))
 end
 
 function quietFind(model, adapter)

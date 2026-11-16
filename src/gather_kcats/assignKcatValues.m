@@ -1,17 +1,20 @@
 function [model, rxnIdx] = assignKcatValues(model,kcatList,varargin)
 % assignKcatValues  Select one kcat value per reaction and write to model.ec.
 %
+% Low-level: collectKcats and assignKcats run this function; call it
+% directly only to change kcats by hand.
+%
 % From a kcatList with predicted or suggested kcat values, where each
 % reaction may have multiple entries, one kcat value is selected and written
 % to model.ec.kcat. Zero values are discarded from the start. By default,
 % the maximum value is chosen, but alternatives are available. The kcatList
-% structure is an output of e.g. readDLKcatOutput, readGotEnzymesOutput,
-% readManualKcatList.
+% structure is an output of e.g. kcatsFromBrenda, kcatsFromDLKcat or
+% kcatsFromOKP.
 %
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 % kcatList : struct
 %     structure array with separate entries for each kcat value, with the
 %     following fields:
@@ -60,7 +63,7 @@ function [model, rxnIdx] = assignKcatValues(model,kcatList,varargin)
 %
 % See also
 % --------
-% readDLKcatOutput, mergeDLKcatAndFuzzyKcats, applyKcatConstraints
+% kcatsFromDLKcat, mergeKcats, assignKcats, applyKcatConstraints
 
 p = parseGECKOargs(varargin, { ...
     'criteria',  []; ...

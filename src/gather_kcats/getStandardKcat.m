@@ -1,6 +1,9 @@
 function [model, rxnsMissingGPR, standardMW, standardKcat, rxnsNoKcat] = getStandardKcat(model, varargin)
 % getStandardKcat  Assign standard kcat and MW to reactions without enzymes.
 %
+% Low-level: collectKcats and assignKcats run this function; call it
+% directly only to change kcats by hand.
+%
 % Calculates a standard kcat and standard molecular weight (MW) that can be
 % used to apply enzyme constraints to reactions without any associated
 % enzymes. Such reactions have either an empty model.grRules field, or they
@@ -35,7 +38,7 @@ function [model, rxnsMissingGPR, standardMW, standardKcat, rxnsNoKcat] = getStan
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 %
 % Name-Value Arguments
 % --------------------

@@ -25,6 +25,7 @@ function screen = screenKcatLeverage(ecModel,varargin)
 %     a loaded model adapter (default: the current default model adapter).
 % evoData : struct
 %     as returned by loadEvotuneData (default: loaded from modelAdapter).
+%     Without fluxData and maxGrate, the error evotune:noData is raised.
 % tunableMask : logical
 %     restrict which kcats are screened (default: every ec.kcat > 0).
 % fold : double
@@ -64,10 +65,14 @@ if isempty(modelAdapter)
         error('Either send in a modelAdapter or set the default ecModel adapter in the ModelAdapterManager.')
     end
 end
-params = modelAdapter.params.evotune;
 if isempty(evoData)
     evoData = loadEvotuneData('modelAdapter', modelAdapter);
 end
+if isempty(evoData.fluxData) && isempty(evoData.maxGrate)
+    error('evotune:noData', ['evoData has neither fluxData nor maxGrate (from ' ...
+        'data/evotuneFluxData.tsv and data/evotuneMaxGrowth.tsv); there is nothing to tune against.'])
+end
+params = modelAdapter.params.evotune;
 
 [tunableIdx,ecRxnIdsTunable,kcat0,groups,sigma0log,tieMap] = ...
     resolveTunableContext(ecModel,params,tunableMask);

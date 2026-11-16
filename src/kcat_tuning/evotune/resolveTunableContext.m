@@ -11,7 +11,9 @@ function [tunableIdx,ecRxnIdsTunable,kcat0,groups,sigma0log,tieMap] = resolveTun
 % 'brenda (wc=0, origin=1)' is in the group of 'brenda',
 % 'combined (sd=0.10, n=2)' in the group of 'combined' and
 % 'brenda (wc=0, origin=1) | tuned=cmaes (prior=2)' in the group of 'brenda',
-% with that group's sigma0logSource.
+% with that group's sigma0logSource. When a source matches the entries of
+% several groups, the first matching entry in params.kcatSources gives the
+% group.
 %
 % Parameters
 % ----------
@@ -61,8 +63,10 @@ sourceNames     = {sourceInfo.origin}';
 
 groups    = repmat({'unlabelled'}, numel(tunableIdx), 1);
 sigma0log = params.sigma0logDefault * ones(numel(tunableIdx),1);
+assigned  = false(numel(tunableIdx),1);
 for i = 1:numel(params.kcatSources)
-    idx = strcmpi(sourceNames, params.kcatSources{i}) | strcmpi(sources, params.kcatSources{i});
+    idx = ~assigned & (strcmpi(sourceNames, params.kcatSources{i}) | strcmpi(sources, params.kcatSources{i}));
+    assigned(idx)  = true;
     groups(idx)    = params.kcatSources(i);
     sigma0log(idx) = params.sigma0logSource(i);
 end

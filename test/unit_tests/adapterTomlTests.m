@@ -85,7 +85,8 @@ function testLoadAdapterParamsDefaults_tc0064(testCase)
     verifyEqual(testCase, params.convGEM, fullfile(folder, 'models/x.xml'))
     verifyEqual(testCase, params.Ptot, 0.4)
     verifyEqual(testCase, params.sigma, 0.5)
-    verifyEqual(testCase, params.kegg.ID, 'sce')
+    verifyEqual(testCase, params.kegg.ID, '')
+    verifyEqual(testCase, params.uniprot.ID, '')
     verifyEqual(testCase, params.kcatAggregation, 'max')
     verifyEqual(testCase, params.evotune.kcatSources, {'dlkcat','brenda','custom'})
     verifyEqual(testCase, params.evotune.sigma0logSource, [0.4; 0.2; 0.1])
@@ -208,6 +209,7 @@ function testCreateGECKOprojectToml_tc0068(testCase)
     createGECKOproject('name', 'ecTestProject', 'path', root);
     folder = fullfile(root, 'ecTestProject');
     verifyTrue(testCase, isfile(fullfile(folder, 'model_adapter.toml')))
+    verifyEqual(testCase, strtrim(fileread(fullfile(folder, '.gitignore'))), 'data/okpApiKey.txt')
     adapter = ModelAdapterManager.getAdapter(folder);
     verifyEqual(testCase, adapter.params.org_name, 'genus species')
     verifyEqual(testCase, adapter.params.evotune.kcatSources, {'dlkcat','brenda','custom'})

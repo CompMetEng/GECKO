@@ -19,7 +19,7 @@ function bottlenecks = getEnzymeBottlenecks(model, varargin)
 % Parameters
 % ----------
 % model : struct
-%     a full ecModel in GECKO 3 format (with ecModel.ec structure). Not
+%     a full ecModel (with ecModel.ec structure). Not
 %     supported for gecko-light models, which have no per-enzyme
 %     prot_<id> / usage_prot_<id> machinery.
 %

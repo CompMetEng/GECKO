@@ -2,14 +2,14 @@ function model = constrainEnzConcs(model, varargin)
 % constrainEnzConcs  Constrain enzyme usages by their concentration.
 %
 % Constrain enzyme usages by their concentration as provided in
-% model.ec.concs. For enzymes with non-NaN entries in model.ec.concs, their
-% enzyme usage reaction will no longer draw from the protein pool, but is
-% rather constraint by the measured protein abundance.
+% model.ec.concs. For enzymes with non-NaN entries in model.ec.concs, the
+% upper bound of their enzyme usage reaction becomes the measured
+% concentration. Their usage reactions keep drawing from the protein pool.
 %
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure) with enzyme
+%     an ecModel (with ecModel.ec structure) with enzyme
 %     concentrations in model.ec.concs.
 %
 % Name-Value Arguments
@@ -17,6 +17,10 @@ function model = constrainEnzConcs(model, varargin)
 % removeConstraints : logical
 %     whether enzyme concentration constraints should be removed
 %     (model.ec.concs will remain unchanged) (default false).
+% restrictTo : cell
+%     enzymes (Uniprot IDs) to process; the usage reactions of the other
+%     enzymes are left unchanged. IDs that are not in model.ec.enzymes are
+%     ignored (default: all enzymes in model.ec.enzymes).
 %
 % Returns
 % -------
@@ -39,6 +43,7 @@ function model = constrainEnzConcs(model, varargin)
 %     % optional arguments may be given positionally or as name-value pairs:
 %     model = constrainEnzConcs(model);
 %     model = constrainEnzConcs(model, 'removeConstraints', true);
+%     model = constrainEnzConcs(model, 'restrictTo', {'P00330'});
 %
 % See also
 % --------
@@ -49,8 +54,14 @@ function model = constrainEnzConcs(model, varargin)
 %enzyme level as UB
 
 p = parseGECKOargs(varargin, { ...
-    'removeConstraints', false});
+    'removeConstraints', false; ...
+    'restrictTo',        []});
 removeConstraints = p.removeConstraints;
+if isempty(p.restrictTo) && isnumeric(p.restrictTo)
+    selected = true(numel(model.ec.enzymes), 1);
+else
+    selected = ismember(model.ec.enzymes, cellstr(p.restrictTo));
+end
 
 %Get indices of usage reactions 
 usageRxns = strcat('usage_prot_',model.ec.enzymes);
@@ -67,20 +78,20 @@ end
 
 %Protein that should be constraint by UB
 if removeConstraints
-    protCons = [];
+    protCons = false(numel(model.ec.enzymes), 1);
 else
-    protCons = ~isnan(model.ec.concs);
+    protCons = selected & ~isnan(model.ec.concs);
     if any(model.ec.concs(protCons) < 0)
         error('constrainEnzConcs:negativeConcentration', ...
             'model.ec.concs has a negative concentration for %s.', ...
-            strjoin(model.ec.enzymes(model.ec.concs < 0), ', '))
+            strjoin(model.ec.enzymes(protCons & model.ec.concs < 0), ', '))
     end
 end
 
-%Set all reactions to draw from prot_pool (forward: prot_pool -> prot_<id>)
-model.S(protPoolIdx, usageRxnsIdx) = -1;
-model.lb(usageRxnsIdx) = 0;
-model.ub(usageRxnsIdx) = 1000;
+%Set the selected reactions to draw from prot_pool (forward: prot_pool -> prot_<id>)
+model.S(protPoolIdx, usageRxnsIdx(selected)) = -1;
+model.lb(usageRxnsIdx(selected)) = 0;
+model.ub(usageRxnsIdx(selected)) = 1000;
 
 %If non-NaN in model.ec.concs, then constrain by UB
 if any(protCons)

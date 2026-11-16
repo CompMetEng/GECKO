@@ -8,13 +8,14 @@ function [model, sigma] = sigmaFitter(model, varargin)
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 %
 % Name-Value Arguments
 % --------------------
 % growthRate : double
 %     growth rate that should be reached (default: read from the model
-%     adapter).
+%     adapter). A growth rate that is not positive raises the error
+%     sigmaFitter:growthRate.
 % Ptot : double
 %     total cellular protein content in g/gDCW (default: read from the model
 %     adapter; if not specified there, 0.5 g/gDCW is assumed).
@@ -72,6 +73,9 @@ end
 if isempty(growthRate)
     growthRate = modelAdapter.getParameters().gR_exp;
 end
+if ~(growthRate > 0)
+    error('sigmaFitter:growthRate', 'The growth rate to fit sigma to must be positive, not %g.', growthRate)
+end
 
 objValues = [];
 errors    = [];
@@ -90,9 +94,7 @@ for i=1:100
         solution.x=zeros(length(model.rxns),1);
     end
     objValues = [objValues; solution.x(objPos)];
-    error     = abs(((growthRate-solution.x(objPos))/growthRate)*100);
-    errors    = [errors; error];
-    error     = num2str(((growthRate-solution.x(objPos))/growthRate)*100);
+    errors    = [errors; abs(((growthRate-solution.x(objPos))/growthRate)*100)];
     sigParam  = [sigParam; sigma];
 end
 % Growth that is flat from some sigma on (a target above what the model can
@@ -104,11 +106,8 @@ end
 errTol    = 1e-9*100*abs(objValues(minIndx))/abs(growthRate);
 minIndx   = find(errors <= minError + errTol, 1);
 sigma     = sigParam(minIndx);
-% The loop above leaves the protein pool sized for the *last* sigma tried
-% (i=100, i.e. sigma=1), not the best-fitting one found by the search --
-% re-apply it here so the returned model actually matches the returned
-% sigma, per this function's own documented contract ("ecModel with
-% protein pool exchange upper bound adapted to the optimal sigma-factor").
+% The loop leaves the protein pool sized for the last sigma tried (1), so
+% the selected sigma is applied to the returned model.
 model = setProtPoolSize(model, Ptot, f, sigma, modelAdapter);
 if makePlot
     figure

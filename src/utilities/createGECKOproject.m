@@ -15,15 +15,15 @@ function createGECKOproject(varargin)
 %     appear.
 % adapterFormat : char
 %     'toml' (default) writes model_adapter.toml, which GECKO and geckopy
-%     both read (see TomlAdapter); 'class' writes an adapter class
-%     <name>Adapter.m instead.
+%     both read (see TomlAdapter). 'class' writes an adapter class
+%     <name>Adapter.m instead; it is deprecated and removed in a future
+%     release. convertAdapterToToml converts an adapter class.
 %
 % Examples
 % --------
 %     % optional arguments may be given positionally or as name-value pairs:
 %     createGECKOproject(name, path);
 %     createGECKOproject('name', name);
-%     createGECKOproject('name', name, 'adapterFormat', 'class');
 
 p = parseGECKOargs(varargin, { ...
     'name', []; ...
@@ -32,6 +32,11 @@ p = parseGECKOargs(varargin, { ...
 name = p.name;
 path = p.path;
 adapterFormat = validatestring(p.adapterFormat, {'toml','class'});
+if strcmp(adapterFormat, 'class')
+    warning('GECKO:deprecatedOption', ['The adapter format ''class'' is deprecated; ' ...
+        'model_adapter.toml configures GECKO and geckopy. The option will be removed in a ' ...
+        'future release.']);
+end
 
 if isempty(name)
     prompt = {'Please provide a project name (e.g. ecYeastGEM)'};
@@ -66,7 +71,12 @@ if ~exist(fullPath, 'dir')
         template = 'adapterTemplate.m';
         filename = fullfile(path, name, [name 'Adapter.m']);
     end
-    fid = fopen(fullfile(findGECKOroot, 'src', 'model_adapter', template));
+    if strcmp(adapterFormat, 'toml')
+        templateFolder = 'model_adapter';
+    else
+        templateFolder = 'deprecated';
+    end
+    fid = fopen(fullfile(findGECKOroot, 'src', templateFolder, template));
     f = fread(fid, '*char')';
     fclose(fid);
 
@@ -78,6 +88,11 @@ if ~exist(fullPath, 'dir')
     % Save the adapter
     fid = fopen(filename, 'w');
     fwrite(fid, f);
+    fclose(fid);
+
+    % Keep the OpenKineticsPredictor API key out of version control
+    fid = fopen(fullfile(fullPath, '.gitignore'), 'w');
+    fprintf(fid, 'data/okpApiKey.txt\n');
     fclose(fid);
 else
     printOrange('WARNING: A project with the same name exits at the same location. The project was not created.\n');

@@ -427,23 +427,6 @@ function testKcats_tc0011(testCase)
     ecModel = applyComplexData(ecModel, [], adapter, false);
 
     kcatListFuzzy = fuzzyKcatMatching(ecModel, [], adapter);
-    %test to write a DLKcat
-    filepath = fullfile(adapter.getParameters().path,'data','DLKcat_input_test.tsv');
-    if exist(filepath, 'file')==2
-      delete(filepath);
-    end
-    verifyTrue(testCase,~(exist(filepath, 'file')==2))
-    [~, writtenTable] = evalc('writeDLKcatInput(ecModel, [], adapter, false, filepath)');
-    verifyTrue(testCase,exist(filepath, 'file')==2) %check that we write a file, we don't check the contents
-    if exist(filepath, 'file')==2 %clean up
-      delete(filepath);
-    end
-    verifyEqual(testCase,writtenTable(1,:), {'R2_EXP_1','R2_EXP_1','R2_EXP_2','R2_REV_EXP_1','R2_REV_EXP_1','R2_REV_EXP_2','R2a_EXP_1','R2a_EXP_1','R2a_EXP_2','R3','R3b','R5'})
-    verifyEqual(testCase,writtenTable(2,:), {'G1','G2','G3','G1','G2','G3','G1','G2','G3','G4','G4','G5'})
-    verifyEqual(testCase,writtenTable(3,:), {'m1','m1','m1','m2','m2','m2','m1','m1','m1','m1','m1','m2'})
-    %skip line 4, not set here since our fake metabolites don't have any smiles - could perhaps be fixed at some point
-    verifyEqual(testCase,writtenTable(5,:), {'MRAL','MNTD','MSYN','MRAL','MNTD','MSYN','MRAL','MNTD','MSYN','MDFM','MDFM','MLFK'})
-    %skip line 6, always set to 'NA' it seems
     
     %Create a suitable kcatlist from dlkcat
     dlkcatList = struct();
@@ -596,7 +579,7 @@ function testfindMetSmiles_tc0012(testCase)
     verifyEqual(testCase,ecModel.metSmiles,{'C(C1C)O';'C1C(=NC2)';'C(C1C)O';'C1C(=NC2)';'';'';'';'';'';''})
 end
 
-%Tests readProteomics, constrainEnzConcs, flexibilizeEnzConcs, and getConcControlCoeffs.
+%Tests loadProtData, fillEnzConcs, constrainEnzConcs and flexibilizeEnzConcs.
 function testProteomcisIntegration_tc0013(testCase)
     geckoPath = findGECKOroot;
     adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
@@ -642,7 +625,7 @@ function testCalculateFfactor_tc0014(testCase)
     verifyEqual(testCase,f,0.5)
 end
 
-function testWriteDLKcatInputSubset_tc0015(testCase)
+function testKcatsFromDLKcatDockerSubset_tc0015(testCase)
     geckoPath = findGECKOroot;
     adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
     model = getGeckoTestModel();
@@ -655,30 +638,13 @@ function testWriteDLKcatInputSubset_tc0015(testCase)
     ecModel = makeEcModel(model, false, adapter);
     ecModel = getECfromGEM(ecModel);
 
-    % A non-trivial ecRxns subset --- neither "all reactions" (ecRxns=[]) nor a subset
-    % that happens to start at index 1 --- is the ordinary, documented way to call
-    % writeDLKcatInput (e.g. "only the reactions fuzzy matching couldn't find a kcat
-    % for"), but was never exercised by any existing test: every prior call site here
-    % and in the manual tests either omits ecRxns or passes a full-length mask. With
-    % R2a_EXP_1/R2a_EXP_2 in the middle of ec.rxns rather than at its start, this used
-    % to silently write zero rows (an internal filtering step re-used already-consumed
-    % indices from ec.rxns space to index into the already-filtered, subset-length
-    % array, clearing every row it should have kept), and after a first, incomplete fix
-    % it wrote the right *number* of rows but attributed them to the wrong reactions
-    % (the same re-used-index mistake, one step further down).
+    % An ecRxns subset in the middle of ec.rxns gives the input rows of those
+    % reactions only, attributed to the right reactions.
     ecRxns = ismember(ecModel.ec.rxns, {'R2a_EXP_1','R2a_EXP_2'});
-    filepath = fullfile(adapter.getParameters().path,'data','DLKcat_input_subset_test.tsv');
-    if exist(filepath, 'file')==2
-      delete(filepath);
-    end
-    writtenTable = writeDLKcatInput(ecModel, 'ecRxns', ecRxns, 'modelAdapter', adapter, ...
-        'onlyWithSmiles', false, 'filename', filepath, 'overwrite', true);
-    if exist(filepath, 'file')==2 %clean up
-      delete(filepath);
-    end
-    verifyEqual(testCase,writtenTable(1,:), {'R2a_EXP_1','R2a_EXP_1','R2a_EXP_2'})
-    verifyEqual(testCase,writtenTable(2,:), {'G1','G2','G3'})
-    verifyEqual(testCase,writtenTable(3,:), {'m1','m1','m1'})
+    kcatList = runDLKcatWithFakeDocker(testCase, ecModel, adapter, ecRxns);
+    verifyEqual(testCase,kcatList.rxns', {'R2a_EXP_1','R2a_EXP_1','R2a_EXP_2'})
+    verifyEqual(testCase,kcatList.genes', {'G1','G2','G3'})
+    verifyEqual(testCase,kcatList.substrates', {'m1','m1','m1'})
 end
 
 
@@ -956,42 +922,43 @@ function testFuzzyKcatMatchingTieBreakRespectsWildcardCount_tc0022(testCase)
 end
 
 
-function testWriteOpenKineticsPredictorInputReactionSubsetIndex_tc0023(testCase)
-    % Verifies writeOpenKineticsPredictorInput correctly maps a
-    % caller-supplied ecRxns subset back to the right ec.rxns rows even when
-    % that subset excludes entries that fall between the requested reactions
-    % in ec.rxns order: requesting a subset whose reactions are not
-    % contiguous in ec.rxns (excluding two entries in between) must still
-    % write the substrate/gene-sequence pairs belonging to the requested
-    % reactions, not those of the skipped-over entries.
+function testKcatsFromOKPWritesInputSubset_tc0023(testCase)
+    % kcatsFromOKP writes the input of a job before it needs the API key:
+    % with no key, data/OKP.csv is written and the key resolution then
+    % fails. An ecRxns subset whose reactions are not contiguous in ec.rxns
+    % gives the sequence-substrate pairs of those reactions, not of the
+    % entries in between.
+    oldEnv = getenv('OKP_API_KEY');
+    cleanupEnv = onCleanup(@() setenv('OKP_API_KEY', oldEnv));
+    setenv('OKP_API_KEY', '');
     geckoPath = findGECKOroot;
     adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
     model = getGeckoTestModel();
     ecModel = makeEcModel(model, false, adapter);
     ecModel = getECfromGEM(ecModel);
-
-    % Self-contained SMILES: only m1c (R2/R3's shared substrate) needs one for
-    % this test, so skip findMetSmiles/PubChem entirely.
+    % Only m1c (R2/R3's shared substrate) needs a SMILES for this test
     ecModel.metSmiles = repmat({''}, numel(ecModel.mets), 1);
     ecModel.metSmiles(strcmp(ecModel.mets,'m1c')) = {'C(C1C)O'};
 
     scratchDir = fullfile(tempname);
     mkdir(fullfile(scratchDir,'data'));
     cleanupDir = onCleanup(@() rmdir(scratchDir, 's'));
-    % writeOpenKineticsPredictorInput resolves its own output path through
-    % params.path/data --- value-class copy, same redirect pattern as every
-    % other scenario/test in this file that writes a file.
     writeAdapter = adapter;
     writeAdapter.params.path = scratchDir;
 
-    writeOpenKineticsPredictorInput(ecModel, 'ecRxns', ismember(ecModel.ec.rxns, {'R2_EXP_1','R2_EXP_2','R3'}), ...
-        'modelAdapter', writeAdapter, 'onlyWithSmiles', true, 'overwrite', true);
+    ecRxns = ismember(ecModel.ec.rxns, {'R2_EXP_1','R2_EXP_2','R3'});
+    try
+        evalc('kcatsFromOKP(ecModel, ''method'', ''KinForm-H'', ''ecRxns'', ecRxns, ''modelAdapter'', writeAdapter);');
+        err = [];
+    catch err
+    end
+    verifyNotEmpty(testCase, err)
+    verifySubstring(testCase, err.message, 'OpenKineticsPredictor API key')
 
     fID = fopen(fullfile(scratchDir,'data','OKP.csv'));
     raw = textscan(fID, '%s %s', 'Delimiter', ',', 'HeaderLines', 1);
     fclose(fID);
     rows = sort(strcat(raw{1}, ',', raw{2}));
-
     expected = sort({'MRAL,C(C1C)O'; 'MNTD,C(C1C)O'; 'MSYN,C(C1C)O'; 'MDFM,C(C1C)O'});
     verifyEqual(testCase, rows, expected)
 end
@@ -1456,11 +1423,7 @@ end
 function testResolveOkpApiKeyResolutionOrder_tc0029(testCase)
     % resolveOkpApiKey: argKey beats the OKP_API_KEY environment variable,
     % which beats data/okpApiKey.txt, which beats erroring when none are set.
-    % Shared by submitOpenKineticsPredictor and fetchOpenKineticsPredictor;
-    % tested directly since neither caller can be run end-to-end without a
-    % live API key (same reasoning runDLKcat's own Docker dependency keeps
-    % it out of this suite --- external-service calls aren't unit tested
-    % here, only the logic that doesn't need one).
+    % Used by kcatsFromOKP and updateKcatSources.
     scratchDir = fullfile(tempname);
     mkdir(fullfile(scratchDir,'data'));
     cleanupDir = onCleanup(@() rmdir(scratchDir, 's'));
@@ -1493,7 +1456,7 @@ function testResolveOkpApiKeyResolutionOrder_tc0029(testCase)
 end
 
 
-function testReadOpenKineticsPredictorCatRange_tc0069(testCase)
+function testKcatsFromOKPCatRange_tc0069(testCase)
     % CatRange's prediction is a class range ('10 to 100 s^-1'), read as its
     % geometric midpoint, or half the upper bound for the class from 0.
     geckoPath = findGECKOroot;
@@ -1503,32 +1466,51 @@ function testReadOpenKineticsPredictorCatRange_tc0069(testCase)
     ecModel = getECfromGEM(ecModel);
     ecModel.metSmiles = repmat({''}, numel(ecModel.mets), 1);
     ecModel.metSmiles(strcmp(ecModel.mets,'m1c')) = {'C(C1C)O'};
+    scratchDir = tempname;
+    mkdir(fullfile(scratchDir,'data'));
+    cleanupDir = onCleanup(@() rmdir(scratchDir, 's'));
+    adapter.params.path = scratchDir;
+    writelines(["jobId: j1"; "method: CatRange"; "resultOf: j1"], ...
+        fullfile(scratchDir, 'data', 'OKP_job_catrange.txt'));
+    resultFile = fullfile(scratchDir, 'data', 'OKP_output_catrange.csv');
 
-    resultFile = [tempname '.csv'];
-    fid = fopen(resultFile,'w');
-    fprintf(fid,'Predicted kcat range: kcat (1/s),Source kcat,Extra Info kcat,Protein Sequence,Substrate\n');
-    fprintf(fid,'10 to 100 s^-1,Prediction from CatRange,Predicted range: 10 to 100 s^-1,MRAL,C(C1C)O\n');
-    fclose(fid);
-    cleanupFile = onCleanup(@() delete(resultFile));
-    kcatList = readOpenKineticsPredictorOutput(ecModel, 'outFile', resultFile, 'modelAdapter', adapter);
+    writelines(["Predicted kcat range: kcat (1/s),Source kcat,Extra Info kcat,Protein Sequence,Substrate"; ...
+        "10 to 100 s^-1,Prediction from CatRange,Predicted range: 10 to 100 s^-1,MRAL,C(C1C)O"], resultFile);
+    kcatList = kcatsFromOKP(ecModel, 'method', 'CatRange', 'useStored', true, 'save', false, ...
+        'modelAdapter', adapter);
     verifyEqual(testCase, kcatList.kcats, 10^1.5, 'RelTol', 1e-12)
     verifyEqual(testCase, kcatList.kcatSource, {'OKP-CatRange'})
 
-    fid = fopen(resultFile,'w');
-    fprintf(fid,'Predicted kcat range: kcat (1/s),Source kcat,Extra Info kcat,Protein Sequence,Substrate\n');
-    fprintf(fid,'0 to 1e-08 s^-1,Prediction from CatRange,,MRAL,C(C1C)O\n');
-    fclose(fid);
-    kcatList = readOpenKineticsPredictorOutput(ecModel, 'outFile', resultFile, 'modelAdapter', adapter);
+    writelines(["Predicted kcat range: kcat (1/s),Source kcat,Extra Info kcat,Protein Sequence,Substrate"; ...
+        "0 to 1e-08 s^-1,Prediction from CatRange,,MRAL,C(C1C)O"], resultFile);
+    kcatList = kcatsFromOKP(ecModel, 'method', 'CatRange', 'useStored', true, 'save', false, ...
+        'modelAdapter', adapter);
     verifyEqual(testCase, kcatList.kcats, 5e-9, 'RelTol', 1e-12)
 end
 
-function testFetchOpenKineticsPredictorUseStoredMatchesReader_tc0030(testCase)
-    % Verifies fetchOpenKineticsPredictor's 'useStored' path (parsing an
-    % already-downloaded result file, the only path testable without a live
-    % API call) delegates to readOpenKineticsPredictorOutput and produces an
-    % identical kcatList struct: the 'OKP-' prefix on kcatSource, and the
-    % constant source 'OpenKineticsPredictor' used by every kcat-gathering
-    % function.
+function testKcatsFromOKPFetchesJob_tc0030(testCase)
+    % With a submitted job, kcatsFromOKP fetches the result from the OKP
+    % API, stores it and records which job it came from. The API is
+    % replaced by a webread on the path that reports the job as completed
+    % and returns a result, so no request leaves the machine.
+    oldEnv = getenv('OKP_API_KEY');
+    cleanupEnv = onCleanup(@() setenv('OKP_API_KEY', oldEnv));
+    setenv('OKP_API_KEY', 'ak_test');
+    stubDir = tempname;
+    mkdir(stubDir);
+    fid = fopen(fullfile(stubDir, 'webread.m'), 'w');
+    fprintf(fid, '%s\n', ...
+        'function out = webread(url, varargin)', ...
+        'if contains(url, ''/status/'')', ...
+        '    out = struct(''status'', ''completed'');', ...
+        'else', ...
+        '    out = sprintf(''kcat (1/s),Source kcat,Extra Info kcat,Protein Sequence,Substrate\n12.5,Prediction from KinForm-H,,MRAL,C(C1C)O\n'');', ...
+        'end', ...
+        'end');
+    fclose(fid);
+    addpath(stubDir, '-begin');
+    cleanupStub = onCleanup(@() rmpath(stubDir));
+
     geckoPath = findGECKOroot;
     adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
     model = getGeckoTestModel();
@@ -1536,26 +1518,19 @@ function testFetchOpenKineticsPredictorUseStoredMatchesReader_tc0030(testCase)
     ecModel = getECfromGEM(ecModel);
     ecModel.metSmiles = repmat({''}, numel(ecModel.mets), 1);
     ecModel.metSmiles(strcmp(ecModel.mets,'m1c')) = {'C(C1C)O'};
-
-    scratchDir = fullfile(tempname);
+    scratchDir = tempname;
     mkdir(fullfile(scratchDir,'data'));
     cleanupDir = onCleanup(@() rmdir(scratchDir, 's'));
-    fetchAdapter = adapter;
-    fetchAdapter.params.path = scratchDir;
+    adapter.params.path = scratchDir;
+    writelines(["jobId: j7"; "method: KinForm-H"], fullfile(scratchDir, 'data', 'OKP_job_kinform_h.txt'));
 
-    resultFile = fullfile(scratchDir,'data','OKP_output.csv');
-    fid = fopen(resultFile,'w');
-    fprintf(fid,'kcat (1/s),Source kcat,Extra Info kcat,Protein Sequence,Substrate\n');
-    fprintf(fid,'12.5,Prediction from CataPro,,MRAL,C(C1C)O\n');
-    fclose(fid);
-
-    [done, viaFetch] = fetchOpenKineticsPredictor(ecModel, 'useStored', true, 'modelAdapter', fetchAdapter);
+    [~, kcatList, done] = evalc('kcatsFromOKP(ecModel, ''method'', ''KinForm-H'', ''save'', false, ''modelAdapter'', adapter);');
     verifyTrue(testCase, done)
-
-    viaReader = readOpenKineticsPredictorOutput(ecModel, 'outFile', resultFile, 'modelAdapter', fetchAdapter);
-    verifyEqual(testCase, viaFetch, viaReader)
-    verifyEqual(testCase, viaFetch.kcatSource, {'OKP-CataPro'})
-    verifyEqual(testCase, viaFetch.source, 'OpenKineticsPredictor')
+    verifyEqual(testCase, kcatList.kcats, 12.5)
+    verifyEqual(testCase, kcatList.kcatSource, {'OKP-KinForm-H'})
+    verifyEqual(testCase, kcatList.source, 'OpenKineticsPredictor')
+    verifyTrue(testCase, isfile(fullfile(scratchDir, 'data', 'OKP_output_kinform_h.csv')))
+    verifySubstring(testCase, fileread(fullfile(scratchDir, 'data', 'OKP_job_kinform_h.txt')), 'resultOf: j7')
 end
 
 
@@ -1674,8 +1649,8 @@ function testGetStandardKcatUsesSubsystemKcatWheneverAnyMatches_tc0034(testCase)
 end
 
 
-function testReadDLKcatOutputSubstrateMatchIsCaseInsensitive_tc0035(testCase)
-    % Verifies readDLKcatOutput matches a DLKcat output file's substrate
+function testKcatsFromDLKcatSubstrateMatchIsCaseInsensitive_tc0035(testCase)
+    % Verifies kcatsFromDLKcat matches a DLKcat output file's substrate
     % names against model.metNames case-insensitively, so an output file
     % whose substrate names differ only in case from model.metNames (e.g.
     % 'M1' vs. 'm1') is still recognized rather than reported as
@@ -1687,16 +1662,16 @@ function testReadDLKcatOutputSubstrateMatchIsCaseInsensitive_tc0035(testCase)
     ecModel = getECfromGEM(ecModel);
 
     scratchDir = fullfile(tempname);
+    mkdir(fullfile(scratchDir, 'data'));
     cleanupDir = onCleanup(@() rmdir(scratchDir, 's'));
-    mkdir(scratchDir);
-    outFile = fullfile(scratchDir,'DLKcat_output_test.tsv');
-    fid = fopen(outFile,'w');
+    adapter.params.path = scratchDir;
+    fid = fopen(fullfile(scratchDir, 'data', 'DLKcat.tsv'),'w');
     fprintf(fid,'rxns\tgenes\tsubstrates\tsmiles\tsequence\tkcat\n');
     % 'M1' (uppercase) against the model's own lowercase 'm1' -- must still match.
     fprintf(fid,'R2_EXP_1\tG1\tM1\tsmiles\tseq\t12.5\n');
     fclose(fid);
 
-    kcatList = readDLKcatOutput(ecModel, 'outFile', outFile, 'modelAdapter', adapter);
+    kcatList = kcatsFromDLKcat(ecModel, 'via', 'file', 'save', false, 'modelAdapter', adapter);
     verifyEqual(testCase, kcatList.kcats, 12.5)
     verifyEqual(testCase, kcatList.substrates, {'M1'})
 end
@@ -1729,10 +1704,9 @@ function testMakeEcModelSortsEcGenes_tc0036(testCase)
 end
 
 
-function testReadDLKcatOutputUnrecognizedSubstrateErrorsCleanly_tc0037(testCase)
-    % Verifies that readDLKcatOutput reports a genuinely unrecognized
-    % substrate with a clean error naming the substrate, rather than
-    % crashing.
+function testKcatsFromDLKcatUnrecognizedSubstrate_tc0037(testCase)
+    % A row with a substrate that is not in the model is left out with a
+    % warning.
     geckoPath = findGECKOroot;
     adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
     model = getGeckoTestModel();
@@ -1740,27 +1714,19 @@ function testReadDLKcatOutputUnrecognizedSubstrateErrorsCleanly_tc0037(testCase)
     ecModel = getECfromGEM(ecModel);
 
     scratchDir = fullfile(tempname);
+    mkdir(fullfile(scratchDir, 'data'));
     cleanupDir = onCleanup(@() rmdir(scratchDir, 's'));
-    mkdir(scratchDir);
-    outFile = fullfile(scratchDir,'DLKcat_output_test.tsv');
-    fid = fopen(outFile,'w');
+    adapter.params.path = scratchDir;
+    fid = fopen(fullfile(scratchDir, 'data', 'DLKcat.tsv'),'w');
     fprintf(fid,'rxns\tgenes\tsubstrates\tsmiles\tsequence\tkcat\n');
-    fprintf(fid,'R2_EXP_1\tG1\tNOTAREALMETABOLITE\tsmiles\tseq\t12.5\n');
+    fprintf(fid,'R2_EXP_1\tG1\tm1\tsmiles\tseq\t12.5\n');
+    fprintf(fid,'R2_EXP_2\tG3\tNOTAREALMETABOLITE\tsmiles\tseq\t7\n');
     fclose(fid);
 
-    try
-        readDLKcatOutput(ecModel, 'outFile', outFile, 'modelAdapter', adapter, 'strict', true);
-        errored = false;
-        msg = '';
-    catch ME
-        errored = true;
-        msg = ME.message;
-    end
-    verifyTrue(testCase, errored)
-    verifyFalse(testCase, contains(msg, 'dispEM'))
-    verifyTrue(testCase, contains(msg, 'NOTAREALMETABOLITE'))
+    kcatList = verifyWarning(testCase, @() kcatsFromDLKcat(ecModel, 'via', 'file', 'save', false, ...
+        'modelAdapter', adapter), 'readDLKcatOutput:unknownSubstrate');
+    verifyEqual(testCase, kcatList.rxns, {'R2_EXP_1'})
 end
-
 
 function testLoadDatabasesDuplicateUniprotEntriesErrorsCleanly_tc0038(testCase)
     % Verifies that loadDatabases reports duplicate UniProt entries with a
@@ -1853,7 +1819,7 @@ function testMergeKcatsGeneralizesToNSourcesWithExactTier_tc0041(testCase)
     % mergeKcats generalizes mergeDLKcatAndFuzzyKcats (kept as a thin,
     % deprecated wrapper around it) from two fixed inputs to any number of
     % kcatLists, each of which may itself mix several sources via a per-row
-    % kcatSource field -- e.g. fetchOpenKineticsPredictor's own output,
+    % kcatSource field -- e.g. the output of kcatsFromOKP,
     % modelled here as okpList, carrying both an exact BRENDA hit (no
     % wildcard/origin metadata at all) and a CataPro prediction.
     fuzzyList.rxns        = {'R1'; 'R2'};
@@ -2603,5 +2569,645 @@ function testEcFSEOFGeneTargetsComeFromReportedReactions_tc0236(testCase)
         rxnRow = strcmp(fseof.rxnTargets(:,4), fseof.geneTargets{i,1});
         verifyEqual(testCase, sum(rxnRow), 1)
         verifyEqual(testCase, fseof.geneTargets{i,3}, fseof.rxnTargets{rxnRow,3}, 'AbsTol', 1e-9)
+    end
+end
+
+
+function testKcatsFromDLKcatViaDefault_tc0701(testCase)
+    % The default 'via' reads data/DLKcat.tsv when it exists and goes to
+    % OpenKineticsPredictor otherwise. No key is set, so the OKP way ends in
+    % the key resolution, before any request is made.
+    oldEnv = getenv('OKP_API_KEY');
+    cleanupEnv = onCleanup(@() setenv('OKP_API_KEY', oldEnv));
+    setenv('OKP_API_KEY', '');
+    [ecModel, adapter, project] = buildScratchProject();
+    cleanupDir = onCleanup(@() rmdir(project, 's'));
+
+    [kcatList, done] = kcatsFromDLKcat(ecModel, 'save', false, 'modelAdapter', adapter);
+    verifyTrue(testCase, done)
+    verifyTrue(testCase, isstruct(kcatList))
+
+    delete(fullfile(project, 'data', 'DLKcat.tsv'))
+    try
+        kcatsFromDLKcat(ecModel, 'save', false, 'modelAdapter', adapter);
+        err = [];
+    catch err
+    end
+    verifyNotEmpty(testCase, err)
+    verifySubstring(testCase, err.message, 'OpenKineticsPredictor API key')
+    verifyNotEqual(testCase, err.identifier, 'kcatsFromDLKcat:noDocker')
+
+    verifyError(testCase, @() kcatsFromDLKcat(ecModel, 'via', 'file', 'save', false, ...
+        'modelAdapter', adapter), 'kcatsFromDLKcat:noOutput')
+    verifyError(testCase, @() kcatsFromDLKcat(ecModel, 'run', true, 'via', 'okp', ...
+        'modelAdapter', adapter), 'kcatsFromDLKcat:arguments')
+end
+
+
+function testUpdateKcatSourcesDLKcatNeedsKey_tc0702(testCase)
+    % gecko_classic needs the dlkcat source. Without data/DLKcat.tsv and
+    % without an OKP key the dlkcat row fails with the key message, not a
+    % Docker message.
+    oldEnv = getenv('OKP_API_KEY');
+    cleanupEnv = onCleanup(@() setenv('OKP_API_KEY', oldEnv));
+    setenv('OKP_API_KEY', '');
+    [ecModel, adapter, project] = buildScratchProject();
+    cleanupDir = onCleanup(@() rmdir(project, 's'));
+    delete(fullfile(project, 'data', 'DLKcat.tsv'))
+    adapter.params.kcat_assignment = struct('preset', 'gecko_classic');
+
+    report = updateKcatSources(ecModel, 'modelAdapter', adapter);
+    row = strcmp(report.source, 'dlkcat');
+    verifyEqual(testCase, sum(row), 1)
+    verifyEqual(testCase, report.status{row}, 'failed')
+    verifySubstring(testCase, report.note{row}, 'OpenKineticsPredictor API key')
+    verifyFalse(testCase, contains(report.note{row}, 'Docker'))
+end
+
+
+function testDeprecationWarnings_tc0703(testCase)
+    % The deprecated function, name and option warn, and updateProtPool
+    % still refuses an ecModel of GECKO 3.2 or later.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));
+    ecModel = makeEcModel(getGeckoTestModel(), false, adapter);
+    usage = find(startsWith(ecModel.rxns, 'usage_prot_'), 1);
+    ecModel.ub(usage) = 0.5; % a protein with a measured concentration
+    verifyNotEmpty(testCase, full(ecModel.S(strcmp(ecModel.mets, 'prot_pool'), usage)))
+    lastwarn('', '');
+    try
+        updateProtPool(ecModel, 'modelAdapter', adapter);
+        err = [];
+    catch err
+    end
+    [~, warnId] = lastwarn();
+    verifyEqual(testCase, warnId, 'GECKO:deprecatedFunction')
+    verifyNotEmpty(testCase, err)
+    verifySubstring(testCase, err.message, 'setProtPoolSize')
+
+    fuzzyList.rxns        = {'R1'};
+    fuzzyList.kcats       = 5;
+    fuzzyList.genes       = {{}};
+    fuzzyList.substrates  = {{}};
+    fuzzyList.eccodes     = {'1.1.1.1'};
+    fuzzyList.wildcardLvl = 0;
+    fuzzyList.origin      = 1;
+    fuzzyList.source      = 'brenda';
+    dlkcatList.rxns       = {'R1'};
+    dlkcatList.kcats      = 50;
+    dlkcatList.genes      = {'G1'};
+    dlkcatList.substrates = {'m1'};
+    dlkcatList.source     = 'DLKcat';
+    lastwarn('', '');
+    mergeDLKcatAndFuzzyKcats(dlkcatList, fuzzyList);
+    [~, warnId] = lastwarn();
+    verifyEqual(testCase, warnId, 'GECKO:deprecatedName')
+
+    origDir = pwd;
+    cleanupDir = onCleanup(@() cd(origDir));
+    root = tempname; mkdir(root);
+    cleanupRoot = onCleanup(@() rmdir(root, 's'));
+    lastwarn('', '');
+    createGECKOproject('name', 'classProj', 'path', root, 'adapterFormat', 'class');
+    cd(origDir)
+    [~, warnId] = lastwarn();
+    verifyEqual(testCase, warnId, 'GECKO:deprecatedOption')
+    verifyTrue(testCase, isfile(fullfile(root, 'classProj', 'classProjAdapter.m')))
+end
+
+
+function testCreateGECKOprojectGitignore_tc0704(testCase)
+    % A new project ignores the OpenKineticsPredictor API key file.
+    origDir = pwd;
+    cleanupDir = onCleanup(@() cd(origDir));
+    root = tempname; mkdir(root);
+    cleanupRoot = onCleanup(@() rmdir(root, 's'));
+    createGECKOproject('name', 'gitignoreProj', 'path', root);
+    cd(origDir)
+    file = fullfile(root, 'gitignoreProj', '.gitignore');
+    verifyTrue(testCase, isfile(file))
+    verifyEqual(testCase, strtrim(fileread(file)), 'data/okpApiKey.txt')
+end
+
+
+function testGetComplexDataWithoutTaxonomicID_tc0705(testCase)
+    % Without a taxonomicID, getComplexData warns and returns an empty
+    % complexInfo with the fields of a downloaded one.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));
+    adapter.params.complex.taxonomicID = [];
+    complexInfo = verifyWarning(testCase, @() getComplexData('modelAdapter', adapter), ...
+        'getComplexData:noTaxonomicID');
+    verifyEmpty(testCase, complexInfo)
+    verifyEqual(testCase, fieldnames(complexInfo), ...
+        {'complexID';'name';'species';'geneName';'protID';'stochiometry';'defined'})
+end
+
+function testEcFSEOFWithoutRangeErrors_tc0706(testCase)
+    % When the top of the scan (90% of the maximum production) is not above
+    % the production at maximum growth, there is no range to scan and
+    % ecFSEOF raises ecFSEOF:noRange: a blocked target, and a target whose
+    % production at maximum growth is above the top.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));
+    model = getGeckoTestModel();
+    model.geneShortNames = model.genes;
+    model.ub(strcmp(model.rxns, 'R3')) = 0;
+    ecModel = makeEcModel(model, false, adapter);
+    ecModel = getECfromGEM(ecModel);
+    ecModel.ec.kcat(:) = 10;
+    ecModel.ec.source(:) = {'manual'};
+    ecModel = applyKcatConstraints(ecModel);
+    ecModel = setProtPoolSize(ecModel, [], [], [], adapter);
+    adapter.params.bioRxn = 'R5';
+    verifyError(testCase, @() ecFSEOF(ecModel, 'R3', 'S1', 'nSteps', 6, 'modelAdapter', adapter), ...
+        'ecFSEOF:noRange')
+    % The biomass reaction as target: its flux at maximum growth is above 90%
+    % of its maximum, so the scan would go down
+    verifyError(testCase, @() ecFSEOF(ecModel, 'R5', 'S1', 'nSteps', 6, 'modelAdapter', adapter), ...
+        'ecFSEOF:noRange')
+end
+
+
+function testRelaxProteomicsGreedyLastIteration_tc0707(testCase)
+    % A relaxation that reaches the target with the last allowed iteration
+    % converges instead of raising. With no relaxation allowed, a model that
+    % already reaches the target converges.
+    ecModel = fixtureForRelaxProteomicsGreedy();
+    result = relaxProteomicsGreedy(ecModel, 'minimalGrowth', 50, 'maxIterations', 1);
+    verifyTrue(testCase, result.converged)
+    verifyEqual(testCase, fieldnames(result.relaxed), {'P5'})
+    verifyEqual(testCase, result.finalGrowth, 90, 'AbsTol', 1e-9)
+    result = relaxProteomicsGreedy(ecModel, 'minimalGrowth', 5, 'maxIterations', 0);
+    verifyTrue(testCase, result.converged)
+end
+
+
+function testRelaxProteomicsGreedyReturnsModel_tc0708(testCase)
+    % The relaxed model is the second output: P5 is back at the default
+    % upper bound, P4 keeps its bound, and the model grows at 90.
+    ecModel = fixtureForRelaxProteomicsGreedy();
+    [~, relaxedModel] = relaxProteomicsGreedy(ecModel, 'minimalGrowth', 50);
+    verifyEqual(testCase, relaxedModel.ub(strcmp(relaxedModel.rxns, 'usage_prot_P5')), 1000)
+    verifyEqual(testCase, relaxedModel.ub(strcmp(relaxedModel.rxns, 'usage_prot_P4')), 5)
+    sol = solveLP(relaxedModel);
+    verifyEqual(testCase, sol.f, 90, 'AbsTol', 1e-9)
+    [~, sameModel] = relaxProteomicsGreedy(ecModel, 'minimalGrowth', 5);
+    verifyEqual(testCase, sameModel.ub, ecModel.ub)
+end
+
+function testEvotuneWithoutDataErrors_tc0709(testCase)
+    % Without flux data and maximum growth data there is nothing to tune
+    % against: screenKcatLeverage and cmaesKcatTuning raise evotune:noData.
+    [ecModel, adapter, project] = buildScratchProject();
+    cleanupDir = onCleanup(@() rmdir(project, 's'));
+    evoData = struct('fluxData', [], 'maxGrate', [], 'zeroFlux', {{}});
+    verifyError(testCase, @() screenKcatLeverage(ecModel, 'modelAdapter', adapter, ...
+        'evoData', evoData), 'evotune:noData')
+    verifyError(testCase, @() cmaesKcatTuning(ecModel, 'modelAdapter', adapter, ...
+        'evoData', evoData), 'evotune:noData')
+    % The test project has no evotune files, so the loaded data is empty too
+    verifyError(testCase, @() screenKcatLeverage(ecModel, 'modelAdapter', adapter), 'evotune:noData')
+end
+
+function testSigmaFitterZeroGrowthErrors_tc0710(testCase)
+    % A target growth rate of 0 has no relative error to minimise.
+    ecModel = fixtureForRelaxProteomicsGreedy();
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));
+    verifyError(testCase, @() sigmaFitter(ecModel, 'growthRate', 0, 'makePlot', false, ...
+        'modelAdapter', adapter), 'sigmaFitter:growthRate')
+end
+
+function testLoadConventionalGEMFilename_tc0711(testCase)
+    % The filename option keeps an .xml or .yml extension and appends .xml
+    % to any other name; a convGEM with another extension raises an error.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));
+    project = tempname;
+    cleanupDir = onCleanup(@() rmdir(project, 's'));
+    mkdir(fullfile(project, 'models'));
+    copyfile(adapter.params.convGEM, fullfile(project, 'models', 'testModel.xml'));
+    adapter.params.path = project;
+    [~, fromName] = evalc('loadConventionalGEM(''filename'', ''testModel'', ''modelAdapter'', adapter);');
+    [~, fromXml] = evalc('loadConventionalGEM(''filename'', ''testModel.xml'', ''modelAdapter'', adapter);');
+    verifyEqual(testCase, fromXml, fromName)
+    writeYAMLmodel(fromName, fullfile(project, 'models', 'testModel.yml'));
+    [~, fromYml] = evalc('loadConventionalGEM(''filename'', ''testModel.yml'', ''modelAdapter'', adapter);');
+    verifyEqual(testCase, fromYml.rxns, fromName.rxns)
+    adapter.params.convGEM = fullfile(project, 'models', 'testModel.mat');
+    verifyError(testCase, @() loadConventionalGEM('modelAdapter', adapter), ...
+        'loadConventionalGEM:extension')
+end
+
+
+function testGetConcControlCoeffsInfeasibleErrors_tc0712(testCase)
+    % An infeasible model raises an error instead of returning coefficients.
+    ecModel = fixtureForRelaxProteomicsGreedy();
+    ecModel.lb(strcmp(ecModel.rxns, 'R5')) = 1000;
+    verifyError(testCase, @() getConcControlCoeffs(ecModel), 'getConcControlCoeffs:infeasible')
+end
+
+
+function testFlexibilizeEnzConcsInfeasibleWarns_tc0713(testCase)
+    % An infeasible input model gives a warning and an empty result.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));
+    adapter.params.bioRxn = 'R5';
+    ecModel = fixtureForRelaxProteomicsGreedy();
+    ecModel.lb(strcmp(ecModel.rxns, 'R5')) = 1000;
+    [~, flexEnz] = verifyWarning(testCase, @() flexibilizeEnzConcs(ecModel, 'expGrowth', 80, ...
+        'modelAdapter', adapter, 'verbose', false), 'flexibilizeEnzConcs:infeasible');
+    verifyEmpty(testCase, flexEnz.uniprotIDs)
+    verifyEmpty(testCase, flexEnz.flexConcs)
+end
+
+function testKcatDecisionsFileHeader_tc0714(testCase)
+    % The decisions file has the snake_case column names that geckopy
+    % writes; the returned table keeps the camelCase names.
+    [ecModel, adapter, project] = buildScratchProject();
+    cleanupDir = onCleanup(@() rmdir(project, 's'));
+    delete(fullfile(project, 'data', 'customKcats.tsv'));
+    [~, decisions] = evalc('collectKcats(ecModel, ''modelAdapter'', adapter);');
+    verifyEqual(testCase, decisions.Properties.VariableNames, ...
+        {'ecRxn','stage','source','kcat','candidates','spreadLog10','sdLog10'})
+    lines = readlines(fullfile(project, 'output', [char(ecModel.id) '_kcatDecisions.tsv']));
+    verifyEqual(testCase, char(lines(1)), ...
+        sprintf('ec_rxn\tstage\tsource\tkcat\tcandidates\tspread_log10\tsd_log10'))
+end
+
+function testRelaxEnzConcs_tc0715(testCase)
+    % relaxEnzConcs raises P5, the only binding enzyme, by the least fold
+    % that reaches the target: 0.72 growth per mg/gDCW gives 50/0.72 =
+    % 69.44 for a growth of 50. Above the growth of 90 that the protein pool
+    % allows, the pool is raised as well. geckopy's relax_enz_concs gives the
+    % same bounds on this model.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));
+    ecModel = fixtureForRelaxProteomicsGreedy();
+    usageP5 = strcmp(ecModel.rxns, 'usage_prot_P5');
+    pool = strcmp(ecModel.rxns, 'prot_pool_exchange');
+
+    [~, relaxed, flexEnz] = evalc('relaxEnzConcs(ecModel, ''expGrowth'', 50, ''bioRxn'', ''R5'', ''modelAdapter'', adapter)');
+    verifyEqual(testCase, relaxed.ub(usageP5), 50/0.72, 'RelTol', 1e-6)
+    verifyEqual(testCase, relaxed.ub(pool), ecModel.ub(pool))
+    verifyEqual(testCase, relaxed.ub(strcmp(ecModel.rxns, 'usage_prot_P4')), 5)
+    verifyEqual(testCase, flexEnz.uniprotIDs, {'P5'})
+    verifyEqual(testCase, flexEnz.oldConcs, 10)
+    verifyEqual(testCase, flexEnz.ratioIncr, 5/0.72, 'RelTol', 1e-6)
+    verifyEqual(testCase, flexEnz.frequence, 1)
+    sol = solveLP(relaxed);
+    verifyEqual(testCase, sol.f, 50, 'RelTol', 1e-6)
+
+    [~, relaxed, flexEnz] = evalc('relaxEnzConcs(ecModel, ''expGrowth'', 100, ''bioRxn'', ''R5'', ''modelAdapter'', adapter)');
+    verifyEqual(testCase, relaxed.ub(usageP5), 100/0.72, 'RelTol', 1e-6)
+    verifyEqual(testCase, relaxed.ub(pool), 125*100/90, 'RelTol', 1e-6)
+    verifyEqual(testCase, sort(flexEnz.uniprotIDs), {'P5';'prot_pool'})
+    sol = solveLP(relaxed);
+    verifyEqual(testCase, sol.f, 100, 'RelTol', 1e-6)
+
+    % A target the model already reaches relaxes nothing
+    [~, same, flexEnz] = evalc('relaxEnzConcs(ecModel, ''expGrowth'', 5, ''bioRxn'', ''R5'', ''modelAdapter'', adapter)');
+    verifyEmpty(testCase, flexEnz.uniprotIDs)
+    verifyEqual(testCase, same.ub, ecModel.ub)
+
+    % A target that no protein relaxation reaches is an error
+    blocked = ecModel;
+    blocked.ub(strcmp(blocked.rxns, 'S1')) = 0;
+    blocked.lb(strcmp(blocked.rxns, 'S1')) = 0;
+    verifyError(testCase, @() relaxEnzConcs(blocked, 'expGrowth', 50, 'bioRxn', 'R5', ...
+        'modelAdapter', adapter), 'relaxEnzConcs:infeasible')
+    verifyError(testCase, @() relaxEnzConcs(ecModel, 'expGrowth', 50, 'bioRxn', 'R5', ...
+        'weight', 'max', 'modelAdapter', adapter), 'relaxEnzConcs:arguments')
+end
+
+function testConstrainEnzConcsRestrictTo_tc0716(testCase)
+    % restrictTo processes only the listed enzymes; the usage reactions of
+    % the others keep their bounds, and an unknown ID is ignored.
+    ecModel = fixtureForRelaxProteomicsGreedy();
+    usageP4 = strcmp(ecModel.rxns, 'usage_prot_P4');
+    usageP5 = strcmp(ecModel.rxns, 'usage_prot_P5');
+    ecModel.ec.concs(strcmp(ecModel.ec.enzymes, 'P4')) = 7;
+    ecModel.ec.concs(strcmp(ecModel.ec.enzymes, 'P5')) = 20;
+    restricted = constrainEnzConcs(ecModel, 'restrictTo', {'P5', 'unknown'});
+    verifyEqual(testCase, restricted.ub(usageP5), 20)
+    verifyEqual(testCase, restricted.ub(usageP4), 5)
+    released = constrainEnzConcs(ecModel, 'removeConstraints', true, 'restrictTo', {'P4'});
+    verifyEqual(testCase, released.ub(usageP4), 1000)
+    verifyEqual(testCase, released.ub(usageP5), 10)
+end
+
+
+function testFlexibilizeEnzConcsKeepsHigherBound_tc0717(testCase)
+    % An upper bound above the next relaxation step is kept: with P5 raised
+    % to 50 and one iteration allowed, P5 stays at 50 instead of being set to
+    % 10*(1+2) = 30.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));
+    adapter.params.bioRxn = 'R5';
+    ecModel = fixtureForRelaxProteomicsGreedy();
+    usageP5 = strcmp(ecModel.rxns, 'usage_prot_P5');
+    ecModel.ub(usageP5) = 50;
+    [~, flexModel, flexEnz] = evalc(['flexibilizeEnzConcs(ecModel, ''expGrowth'', 80, ''iterPerEnzyme'', 1, ' ...
+        '''modelAdapter'', adapter, ''verbose'', false)']);
+    verifyEqual(testCase, flexModel.ub(usageP5), 50)
+    verifyEqual(testCase, flexEnz.uniprotIDs, {'P5'})
+    verifyEqual(testCase, flexEnz.flexConcs, 50)
+end
+
+
+function testGetConcControlCoeffsShadowPrice_tc0718(testCase)
+    % Both methods give P5, the only binding enzyme, a coefficient of 0.72
+    % (growth per mg/gDCW) and do not evaluate P4, whose usage is 0.
+    ecModel = fixtureForRelaxProteomicsGreedy();
+    proteins = {'P5';'P4'};
+    [enz, coeffs] = getConcControlCoeffs(ecModel, 'proteins', proteins);
+    verifyEqual(testCase, enz, [true; false])
+    verifyEqual(testCase, coeffs, [0.72; 0], 'AbsTol', 1e-9)
+    [enz, coeffs] = getConcControlCoeffs(ecModel, 'proteins', proteins, 'method', 'shadow_price');
+    verifyEqual(testCase, enz, [true; false])
+    verifyEqual(testCase, coeffs, [0.72; 0], 'AbsTol', 1e-9)
+    verifyError(testCase, @() getConcControlCoeffs(ecModel, 'method', 'dual'), ...
+        'getConcControlCoeffs:method')
+end
+
+function testResolveTunableContextFirstGroupWins_tc0719(testCase)
+    % A source label listed in two groups takes the prior width of the
+    % first group, as in geckopy.
+    model.ec.rxns = {'R1'; 'R2'};
+    model.ec.kcat = [1; 2];
+    model.ec.source = {'brenda (wc=0, origin=1)'; 'custom'};
+    params.kcatSources = {'brenda', 'custom', 'brenda'};
+    params.sigma0logSource = [0.2; 0.1; 0.4];
+    params.sigma0logDefault = 1;
+    params.tieIsozymes = false;
+    [~, ~, ~, groups, sigma0log] = resolveTunableContext(model, params, []);
+    verifyEqual(testCase, groups, {'brenda'; 'custom'})
+    verifyEqual(testCase, sigma0log, [0.2; 0.1])
+end
+
+function testSetProtPoolSizeWithoutPoolErrors_tc0720(testCase)
+    % A model without prot_pool_exchange cannot get a protein pool size.
+    model = getGeckoTestModel();
+    verifyError(testCase, @() setProtPoolSize(model, 0.5, 0.5, 0.5), ...
+        'setProtPoolSize:noPoolExchange')
+end
+
+function testKcatSourcesTableMergesWithPreset_tc0721(testCase)
+    % A [kcat_sources.<name>] table overrides only the keys it sets: the
+    % preset's other settings for that source stay.
+    params.kcat_assignment = struct('preset', 'brenda_ec_tree');
+    params.kcat_sources.ec_tree = struct('min_n', 3);
+    params.kcat_sources.brenda = struct('aggregation', 'max');
+    config = kcatAssignmentConfig(params);
+    verifyEqual(testCase, config.sources.ec_tree.k, 5)
+    verifyEqual(testCase, config.sources.ec_tree.min_n, 3)
+    verifyEqual(testCase, config.sources.brenda.aggregation, 'max')
+end
+
+function testOkpMethodDefault_tc0722(testCase)
+    % Without an [okp] table, the OpenKineticsPredictor method is KinForm-H.
+    folder = tempname; mkdir(folder);
+    cleanupDir = onCleanup(@() rmdir(folder, 's'));
+    writelines(["conv_gem = ""models/x.xml"""; "org_name = ""testus testus"""], ...
+        fullfile(folder, 'model_adapter.toml'));
+    params = loadAdapterParams(folder);
+    verifyEqual(testCase, params.okp.method, 'KinForm-H')
+end
+
+function testOkpSourceGroupDefault_tc0723(testCase)
+    % The okp source group of the presets is KinForm-H, unless the project
+    % sets [kcat_sources.okp] methods.
+    config = kcatAssignmentConfig(struct('kcat_assignment', struct('preset', 'okp')));
+    verifyEqual(testCase, config.okpMethods, {'KinForm-H'})
+    verifyTrue(testCase, any(strcmp(config.stages(end).files, 'okp_kinform_h')))
+    params.kcat_assignment = struct('preset', 'okp');
+    params.kcat_sources.okp = struct('methods', {{'CataPro', 'UniKP'}});
+    config = kcatAssignmentConfig(params);
+    verifyEqual(testCase, config.okpMethods, {'CataPro', 'UniKP'})
+end
+
+function testDeprecatedDLKcatFunctions_tc0724(testCase)
+    % readDLKcatOutput warns and reads a DLKcat output file through
+    % kcatsFromDLKcat; runDLKcat and writeDLKcatInput warn and raise an
+    % error that names kcatsFromDLKcat, also when an output is taken.
+    [ecModel, adapter, project] = buildScratchProject();
+    cleanupDir = onCleanup(@() rmdir(project, 's'));
+    outFile = fullfile(project, 'output.tsv');
+    fid = fopen(outFile, 'w');
+    fprintf(fid, 'rxns\tgenes\tsubstrates\tsmiles\tsequence\tkcat\n');
+    fprintf(fid, 'R2_EXP_1\tG1\tm1\tsmiles\tseq\t12.5\n');
+    fclose(fid);
+    kcatList = verifyWarning(testCase, @() readDLKcatOutput(ecModel, 'outFile', outFile, ...
+        'modelAdapter', adapter), 'GECKO:deprecatedFunction');
+    verifyEqual(testCase, kcatList.rxns, {'R2_EXP_1'})
+    verifyEqual(testCase, kcatList.kcats, 12.5)
+    state = warning('off', 'GECKO:deprecatedFunction');
+    % The strict option of earlier versions is accepted and ignored
+    kcatList = verifyWarning(testCase, @() readDLKcatOutput(ecModel, 'outFile', outFile, ...
+        'modelAdapter', adapter, 'strict', true), 'GECKO:deprecatedOption');
+    verifyEqual(testCase, kcatList.rxns, {'R2_EXP_1'})
+    restore = onCleanup(@() warning(state));
+    verifyError(testCase, @() runDLKcat('modelAdapter', adapter), 'GECKO:deprecatedFunction')
+    verifyError(testCase, @() writeDLKcatInput(ecModel, 'modelAdapter', adapter), 'GECKO:deprecatedFunction')
+    % A caller that takes an output gets the same error
+    try
+        written = writeDLKcatInput(ecModel, 'modelAdapter', adapter); %#ok<NASGU>
+        err = [];
+    catch err
+    end
+    verifyEqual(testCase, err.identifier, 'GECKO:deprecatedFunction')
+end
+
+function testLegacyCustomKcats_tc0725(testCase)
+    % applyCustomKcats warns that it is deprecated. collectKcats does not
+    % read data/customKcats.tsv: without data/kcats/custom.tsv it raises an
+    % error that names convertCustomKcats, and after the conversion it uses
+    % the converted custom kcats.
+    [ecModel, adapter, project] = buildScratchProject();
+    cleanupDir = onCleanup(@() rmdir(project, 's'));
+    verifyWarning(testCase, @() applyCustomKcats(ecModel, 'modelAdapter', adapter), ...
+        'GECKO:deprecatedFunction');
+    try
+        evalc('collectKcats(ecModel, ''modelAdapter'', adapter, ''writeReport'', false);');
+        err = [];
+    catch err
+    end
+    verifyNotEmpty(testCase, err)
+    verifyEqual(testCase, err.identifier, 'collectKcats:legacyCustomKcats')
+    verifySubstring(testCase, err.message, 'convertCustomKcats')
+    evalc('convertCustomKcats(ecModel, ''modelAdapter'', adapter);');
+    [~, decisions] = evalc('collectKcats(ecModel, ''modelAdapter'', adapter, ''writeReport'', false);');
+    verifyTrue(testCase, any(strcmp(decisions.source, 'custom')))
+end
+
+function testRelaxProteomicsGreedyLastIterationUsesUpCandidates_tc0726(testCase)
+    % When the last allowed relaxation uses up the candidates (P5, then P4)
+    % without reaching the target, relaxProteomicsGreedy warns and returns
+    % converged false instead of raising the iteration error.
+    ecModel = fixtureForRelaxProteomicsGreedy();
+    lastwarn('', '');
+    result = relaxProteomicsGreedy(ecModel, 'minimalGrowth', 1000, 'maxIterations', 2);
+    verifyFalse(testCase, result.converged)
+    verifyEqual(testCase, sort(fieldnames(result.relaxed)), sort({'P5';'P4'}))
+    verifyEqual(testCase, result.finalGrowth, 90, 'AbsTol', 1e-9)
+    verifySubstring(testCase, lastwarn(), 'no more candidates')
+end
+
+function testKcatsFromDLKcatDockerInput_tc0727(testCase)
+    % The DLKcat input of every enzyme-substrate pair, read back from a
+    % DLKcat run that is replaced by a script (see runDLKcatWithFakeDocker).
+    % The model is that of tc0011.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    model = getGeckoTestModel();
+    rxnsToAdd = struct();
+    rxnsToAdd.rxns = {'R2a';'R3b'};
+    rxnsToAdd.grRules = {'G1 and G2 or G3';'G4'};
+    rxnsToAdd.equations = {'m1[c] => m2[c]'; 'm1[c] => m2[c]'};
+    model = addRxns(model,rxnsToAdd, 3);
+    ecModel = makeEcModel(model, false, adapter);
+    ecModel = getECfromGEM(ecModel);
+    ecModel = applyComplexData(ecModel, [], adapter, false);
+    kcatList = runDLKcatWithFakeDocker(testCase, ecModel, adapter, []);
+    verifyEqual(testCase,kcatList.rxns', {'R2_EXP_1','R2_EXP_1','R2_EXP_2','R2_REV_EXP_1','R2_REV_EXP_1','R2_REV_EXP_2','R2a_EXP_1','R2a_EXP_1','R2a_EXP_2','R3','R3b','R5'})
+    verifyEqual(testCase,kcatList.genes', {'G1','G2','G3','G1','G2','G3','G1','G2','G3','G4','G4','G5'})
+    verifyEqual(testCase,kcatList.substrates', {'m1','m1','m1','m2','m2','m2','m1','m1','m1','m1','m1','m2'})
+end
+
+function testRelaxEnzConcsPerComplex_tc0728(testCase)
+    % With all flux through R2 by the complex P1 + P2 (P2 has twice the MW
+    % of P1, so its measured concentration binds first), perComplex raises
+    % both subunits by one fold; without it, P1 needs less than P2.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));
+    ecModel = makeEcModel(getGeckoTestModel(), false, adapter);
+    ecModel = getECfromGEM(ecModel);
+    ecModel.ec.kcat(:) = 10;
+    ecModel.ec.source(:) = {'manual'};
+    ecModel = applyKcatConstraints(ecModel);
+    ecModel = setProtPoolSize(ecModel, 0.5, 0.5, 0.5, adapter);
+    blocked = ismember(ecModel.rxns, {'R3','R4','R2_EXP_2','R2_REV_EXP_1','R2_REV_EXP_2'});
+    ecModel.lb(blocked) = 0;
+    ecModel.ub(blocked) = 0;
+    ecModel.ec.concs(:) = NaN;
+    ecModel.ec.concs(ismember(ecModel.ec.enzymes, {'P1','P2'})) = 1;
+    ecModel = constrainEnzConcs(ecModel);
+    sol = solveLP(ecModel);
+    target = 2 * sol.f;
+    usageP1 = strcmp(ecModel.rxns, 'usage_prot_P1');
+    usageP2 = strcmp(ecModel.rxns, 'usage_prot_P2');
+
+    [~, perComplex] = evalc('relaxEnzConcs(ecModel, ''expGrowth'', target, ''bioRxn'', ''R5'', ''perComplex'', true, ''modelAdapter'', adapter)');
+    verifyGreaterThan(testCase, perComplex.ub(usageP1), 1)
+    verifyEqual(testCase, perComplex.ub(usageP1), perComplex.ub(usageP2), 'RelTol', 1e-9)
+    sol = solveLP(perComplex);
+    verifyEqual(testCase, sol.f, target, 'RelTol', 1e-6)
+
+    [~, perEnzyme] = evalc('relaxEnzConcs(ecModel, ''expGrowth'', target, ''bioRxn'', ''R5'', ''modelAdapter'', adapter)');
+    verifyLessThan(testCase, perEnzyme.ub(usageP1), perEnzyme.ub(usageP2))
+end
+
+function testLoadDatabasesNeedsUniprotID_tc0729(testCase)
+    % Without data/uniprot.tsv and without a UniProt identifier in the
+    % adapter, loadDatabases raises an error that names the key; nothing is
+    % downloaded.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    scratchDir = tempname;
+    cleanupDir = onCleanup(@() rmdir(scratchDir, 's'));
+    mkdir(fullfile(scratchDir,'data'));
+    adapter.params.path = scratchDir;
+    adapter.params.uniprot.ID = '';
+    verifyError(testCase, @() loadDatabases('uniprot', adapter), 'loadDatabases:noUniprotID')
+end
+
+function [ecModel, adapter, project] = buildScratchProject()
+    % An ecModel of the test model with a temporary copy of the test
+    % project folder (the tracked test data is not modified).
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));
+    project = tempname;
+    copyfile(fullfile(adapter.params.path, 'data'), fullfile(project, 'data'));
+    adapter.params.path = project;
+    ecModel = makeEcModel(getGeckoTestModel(), false, adapter);
+    ecModel = getECfromGEM(ecModel);
+end
+
+
+function kcatList = runDLKcatWithFakeDocker(testCase, ecModel, adapter, ecRxns)
+    % Runs kcatsFromDLKcat with 'via', 'docker' in a temporary project, with
+    % a docker script on the PATH in place of Docker: it reports a version
+    % and turns the DLKcat input into an output with a header and a kcat of
+    % 2.5 on every row. Every metabolite gets a SMILES, so that every
+    % enzyme-substrate pair is in the input. On macOS, kcatsFromDLKcat puts
+    % /usr/local/bin first on the PATH, where a real docker can come before
+    % the script, so the helper runs on Linux only.
+    assumeTrue(testCase, isunix && ~ismac, 'The docker script needs Linux.')
+    binDir = tempname;
+    mkdir(binDir);
+    script = fullfile(binDir, 'docker');
+    fid = fopen(script, 'w');
+    fprintf(fid, '%s\n', ...
+        '#!/bin/bash', ...
+        'if [ "$1" = "--version" ]; then echo "Docker version 0 (test)"; exit 0; fi', ...
+        'while [ $# -gt 0 ]; do', ...
+        '  if [ "$1" = "-v" ]; then dir="${2%:/data}"; fi', ...
+        '  shift', ...
+        'done', ...
+        'printf ''rxns\tgenes\tsubstrates\tsmiles\tsequence\tkcat\n'' > "$dir/tempDLKcatOutput.tsv"', ...
+        'awk ''BEGIN{FS=OFS="\t"} {$6="2.5"; print}'' "$dir/tempDLKcat.tsv" >> "$dir/tempDLKcatOutput.tsv"');
+    fclose(fid);
+    system(['chmod +x "' script '"']);
+    oldPath = getenv('PATH');
+    cleanupPath = onCleanup(@() setenv('PATH', oldPath));
+    setenv('PATH', [binDir pathsep oldPath]);
+    project = tempname;
+    mkdir(fullfile(project, 'data'));
+    cleanupDirs = onCleanup(@() cellfun(@(d) rmdir(d, 's'), {project, binDir}));
+    adapter.params.path = project;
+    ecModel.metSmiles = repmat({'C'}, numel(ecModel.mets), 1);
+    [~, kcatList] = evalc(['kcatsFromDLKcat(ecModel, ''via'', ''docker'', ''ecRxns'', ecRxns, ' ...
+        '''save'', false, ''modelAdapter'', adapter)']);
+    verifyTrue(testCase, all(kcatList.kcats == 2.5))
+end
+
+
+function testDeprecatedFunctionsSayTheyWillBeRemoved_tc0730(testCase)
+    % applyCustomKcats, runDLKcat and writeDLKcatInput warn that they will
+    % be removed; runDLKcat and writeDLKcatInput then raise an error.
+    geckoPath = findGECKOroot;
+    adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));
+    ecModel = makeEcModel(getGeckoTestModel(), false, adapter);
+    lastwarn('', '');
+    applyCustomKcats(ecModel, [], adapter);
+    [msg, warnId] = lastwarn();
+    verifyEqual(testCase, warnId, 'GECKO:deprecatedFunction')
+    verifySubstring(testCase, msg, 'will be removed in a future release')
+    for f = {@runDLKcat, @writeDLKcatInput}
+        lastwarn('', '');
+        verifyError(testCase, @() f{1}(ecModel), 'GECKO:deprecatedFunction')
+        [msg, warnId] = lastwarn();
+        verifyEqual(testCase, warnId, 'GECKO:deprecatedFunction')
+        verifySubstring(testCase, msg, 'will be removed in a future release')
+    end
+end
+
+
+function testRemovedGECKO3FunctionsNameTheirReplacement_tc0731(testCase)
+    % The stubs of removed GECKO 3 functions raise an error that names the
+    % GECKO 4 replacement.
+    cases = {@abc_max, 'cmaesKcatTuning'; @getrSample, 'cmaesKcatTuning'; ...
+        @updateprior, 'cmaesKcatTuning'; @getcarbonnum, 'fillCarbonNum'; ...
+        @findMaxValue, 'kcatsFromBrenda'};
+    for k = 1:size(cases, 1)
+        try
+            cases{k, 1}();
+            err = [];
+        catch err
+        end
+        verifyNotEmpty(testCase, err)
+        verifyEqual(testCase, err.identifier, 'GECKO:removedFunction')
+        verifySubstring(testCase, err.message, cases{k, 2})
     end
 end

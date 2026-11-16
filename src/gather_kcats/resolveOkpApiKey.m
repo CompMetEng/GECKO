@@ -1,12 +1,13 @@
 function key = resolveOkpApiKey(argKey, basePath)
 % resolveOkpApiKey  Resolve the OpenKineticsPredictor API key.
 %
-% Internal helper shared by submitOpenKineticsPredictor and
-% fetchOpenKineticsPredictor; not intended to be called directly.
+% Used by kcatsFromOKP and updateKcatSources; not intended to be called
+% directly.
 %
 % Checked in order: the argKey input, the OKP_API_KEY environment variable,
-% then a plain-text file data/okpApiKey.txt under basePath (this name is
-% git-ignored by GECKO). The key is a secret and must never be read from the
+% then a plain-text file data/okpApiKey.txt under basePath (the GECKO
+% repository and the .gitignore that createGECKOproject writes ignore this
+% file). The key is a secret and must never be read from the
 % model adapter, which is shared/committed.
 %
 % Parameters
@@ -25,7 +26,7 @@ function key = resolveOkpApiKey(argKey, basePath)
 %
 % See also
 % --------
-% submitOpenKineticsPredictor, fetchOpenKineticsPredictor
+% kcatsFromOKP, updateKcatSources
 
 if ~isempty(argKey)
     key = strtrim(char(argKey));
@@ -41,7 +42,7 @@ if exist(keyFile,'file')
     key = strtrim(fileread(keyFile));
     return
 end
-error(['No OpenKineticsPredictor API key found. Provide it as the apiKey ' ...
-       'argument, set the OKP_API_KEY environment variable, or place it in ' ...
-       '%s. Generate a key at https://predictor.openkinetics.org/.'], keyFile);
+error(['No OpenKineticsPredictor API key found. Set the OKP_API_KEY environment ' ...
+       'variable, or place the key in %s. Generate a key at ' ...
+       'https://predictor.openkinetics.org/.'], keyFile);
 end

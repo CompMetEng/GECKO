@@ -5,31 +5,31 @@ change_model/applyKcatConstraints.m	tc0011, tc0215, tc0235, tc0238, tc0250
 change_model/findMetSmiles.m	tc0012, tc0407, tc0408	
 change_model/applyKcatConstraints.m	tc0011, tc0215, tc0235, tc0238, tc0250, tc0512	
 change_model/findMetSmiles.m	tc0012	
-change_model/getComplexData.m	tc0003, tc0004 - File download not covered by test cases but is tested manually and works.	
+change_model/getComplexData.m	tc0003, tc0004, tc0705 - File download not covered by test cases but is tested manually and works.	
 change_model/makeEcModel.m	tc0001, tc0002, tc0210, tc0212, tc0233, tc0234	
-change_model/setProtPoolSize.m	tc0005	
+change_model/setProtPoolSize.m	tc0005, tc0720	
 change_model/getKcatAcrossIsoenzymes.m	tc0011, tc0252	
 change_model/getSubsetEcModel.m	tc0258, tc0259	
-change_model/applyCustomKcats.m	tc0227, tc0228, tc0229, tc0230	
+deprecated/applyCustomKcats.m	tc0227, tc0228, tc0229, tc0230, tc0725 (deprecation warning)	
 enzyme_usage/getEnzymeUsage.m	tc0286, tc0507, tc0508	
 enzyme_usage/reportEnzymeUsage.m	tc0286, tc0508, tc0509	
 gather_kcats/fuzzyKcatMatching.m	tc0010, tc0223, tc0224, tc0225, tc0226, tc0231, tc0239	
 gather_kcats/getStandardKcat.m	tc0256, tc0257, tc0309, tc0310	
-gather_kcats/mergeDlkcatAndFuzzyKcats.m	tc0011; tc0241	
-gather_kcats/readDLKcatOutput.m	tcm0001, tcm0002, tc0303, tc0304 - The test doesn't really check the function, only that some output is read	
-gather_kcats/runDLKcat.m	tcm0001, tcm0002 - The test doesn't really check the function, only that we get something
+deprecated/mergeDLKcatAndFuzzyKcats.m	tc0011; tc0241; tc0703 (deprecation warning)	
+deprecated/readDLKcatOutput.m	tc0724 (forwards to kcatsFromDLKcat)	
+deprecated/runDLKcat.m	tc0724 (deprecation error)
 gather_kcats/assignKcatValues.m	tc0011 - we did not test all possible parameterizations here; also tc0104, tc0311
-gather_kcats/writeDLKcatInput.m	partly by tc0011, tc0305
+deprecated/writeDLKcatInput.m	tc0724 (deprecation error)
 gather_kcats/getEcRxnKeys.m	tc0070, tc0076	
 gather_kcats/saveKcatSource.m	tc0071, tc0073, tc0076, tc0078	
 gather_kcats/loadKcatSource.m	tc0071, tc0072, tc0073, tc0076, tc0077, tc0078, tc0302	
 gather_kcats/kcatsFromBrenda.m	tc0074, tc0078, tc0226	
-gather_kcats/kcatsFromDLKcat.m	tc0074, tc0078 - reads an existing DLKcat output; running DLKcat needs Docker	
-gather_kcats/kcatsFromOKP.m	tc0075 - reads a stored result; submitting needs the OKP service	
-gather_kcats/collectKcats.m	tc0079, tc0080, tc0081, tc0083, tc0087, tc0088, tc0089, tc0090, tc0098, tc0300	
+gather_kcats/kcatsFromDLKcat.m	tc0015, tc0727 (Docker replaced by a script), tc0035, tc0037, tc0074, tc0078, tc0303, tc0304, tc0701 - the default 'via' reads data/DLKcat.tsv or goes to OKP (tc0701 stops at the missing API key)	
+gather_kcats/kcatsFromOKP.m	tc0023 (input of a job), tc0030 (fetch with a replaced webread), tc0069 (CatRange), tc0075 - reads a stored result; the submit request itself needs the OKP service	
+gather_kcats/collectKcats.m	tc0079, tc0080, tc0081, tc0083, tc0087, tc0088, tc0089, tc0090, tc0098, tc0300, tc0714, tc0725	
 gather_kcats/assignKcats.m	tc0079, tc0083	
-gather_kcats/updateKcatSources.m	tc0082, tc0087	
-gather_kcats/kcatAssignmentConfig.m	tc0079, tc0081, tc0083, tc0087, tc0088, tc0089, tc0090, tc0306	
+gather_kcats/updateKcatSources.m	tc0082, tc0087, tc0702 (dlkcat without data/DLKcat.tsv needs an OKP key)	
+gather_kcats/kcatAssignmentConfig.m	tc0079, tc0081, tc0083, tc0087, tc0088, tc0089, tc0090, tc0306, tc0721, tc0723	
 gather_kcats/loadBrendaMeasurements.m	tc0085	
 gather_kcats/ecTreeEstimate.m	tc0084, tc0307	
 gather_kcats/kcatsFromECTree.m	tc0086, tc0087, tc0308	
@@ -39,21 +39,21 @@ gather_kcats/ecTreeEstimate.m	tc0084
 gather_kcats/kcatsFromECTree.m	tc0086, tc0087	
 gather_kcats/kcatsFromHomologs.m	tc0095, tc0096	
 gather_kcats/extractEnzymeSubstratePairs.m	tc0096, tc0015	
-gather_kcats/convertCustomKcats.m	tc0091, tc0092, tc0094	
+gather_kcats/convertCustomKcats.m	tc0091, tc0092, tc0094, tc0725	
 change_model/upgradeEcModel.m	tc0093, tc0094, tc0099	
 io/loadFluxData.m	tc0506	
 io/loadProtData.m	tc0101, tc0102, tc0260, tc0298, tc0299, tc0313	
 change_model/addNewRxnsToEC.m	tc0211, tc0232, tc0237, tc0500	
 change_model/mapRxnsToConv.m	tc0213	
 flux_analysis/ecFVA.m	tc0214	
-flux_analysis/ecFSEOF.m	tc0100, tc0236	
+flux_analysis/ecFSEOF.m	tc0100, tc0236, tc0706	
 limit_proteins/calculateFfactor.m	tc0502	
-limit_proteins/constrainEnzConcs.m	tc0503, tc0296, tc0297	
+limit_proteins/constrainEnzConcs.m	tc0503, tc0296, tc0297, tc0716	
 limit_proteins/constrainFluxData.m	tc0505	
 limit_proteins/fillEnzConcs.m	tc0504	
-limit_proteins/relaxProteomicsGreedy.m	tc0511	
+limit_proteins/relaxProteomicsGreedy.m	tc0511, tc0707, tc0708, tc0726	
+limit_proteins/relaxEnzConcs.m	tc0715, tc0728 (perComplex)	
 utilities/upgradeGECKOproject.m	tc0094, tc0099	
-gather_kcats/readOpenKineticsPredictorOutput.m	tc0030, tc0069	
 gather_kcats/reviewKcatAssignment.m	Has only been tested by running it manually, not tested by test cases
 gather_kcats/ecStatsFromBrenda.m	Not verified against real BRENDA data in this environment -- see its own TODO comment
 gather_kcats/mergeKcats.m	tc0240, tc0301	
@@ -67,30 +67,30 @@ get_enzyme_data/getECfromGEM.m	tc0006
 get_enzyme_data/getECstring.m	Called from findECInDB - tested when that function is tested; also tc0246	
 download_databases/loadBRENDAdata.m	Called from fuzzyKcatMatching - tested when that function is tested; also tc0105, tc0220, tc0221, tc0222
 download_databases/fetchBrendaAsset.m	tc0085	
-download_databases/loadDatabases.m	Called from getECfromDatabase - tested when that function is tested.
+download_databases/loadDatabases.m	Called from getECfromDatabase - tested when that function is tested., tc0729
 kcat_tuning/evotune/bestParsimonious.m	tc0600
 kcat_tuning/evotune/*	Has only been tested by running it manually, not tested by test cases
 kcat_tuning/fillCarbonNum.m	tc0055 (deprecated-alias check only), tc0601, tc0602
-kcat_tuning/evotune/*	resolveTunableContext by tc0312; the rest has only been tested by running it manually, not tested by test cases
+kcat_tuning/evotune/*	resolveTunableContext by tc0312, tc0719; the evotune:noData check of cmaesKcatTuning and screenKcatLeverage by tc0709; the rest has only been tested by running it manually, not tested by test cases
 kcat_tuning/fillCarbonNum.m	tc0055 (deprecated-alias check only, not a real usage test)
 kcat_tuning/findTopLimitations.m	Not explicitly tested - The code has existed for a long time
 kcat_tuning/sensitivityTuning.m	tcm0001, tc0251, tc0253, tc0254
-kcat_tuning/sigmaFitter.m	tc0020, tc0255
+kcat_tuning/sigmaFitter.m	tc0020, tc0255, tc0710
 kcat_tuning/topUsedEnzymes.m	Not explicitly tested - The code has existed for a long time	Not sure this works anymore - written for the old model structure?
-kcat_tuning/truncateValues.m	tc0510	
 limit_proteins/constrainProtConcs.m	tc0013	
 limit_proteins/findLimitingUBs.m	Not explicitly tested - The code has existed for a long time	Probably not relevant anymore, remove?
 limit_proteins/fitGAM.m		
 limit_proteins/flexibilizeProteins.m	Not explicitly tested - The code has existed for a long time	Probably not relevant anymore, remove?
 limit_proteins/readProteomics.m	tc0013	
 limit_proteins/flexibilizeProtConcs.m	tc0013	
-limit_proteins/getConcControlCoeffs.m	tc0013	
-limit_proteins/flexibilizeEnzConcs.m	tc0013, tc0273, tc0274, tc0275, tc0276 (perComplex option), tc0296, tc0297, tc0317 (measured zero)	
+limit_proteins/getConcControlCoeffs.m	tc0013, tc0712, tc0718	
+limit_proteins/flexibilizeEnzConcs.m	tc0013, tc0273, tc0274, tc0275, tc0276 (perComplex option), tc0296, tc0297, tc0317 (measured zero), tc0713, tc0717	
 limit_proteins/getComplexFamilies.m	tc0262, tc0263, tc0264, tc0265, tc0266	
 limit_proteins/levelComplexConcs.m	tc0267, tc0268, tc0269, tc0270, tc0271, tc0272, tc0315, tc0316	
 limit_proteins/getIsozymeCoverage.m	tc0287, tc0288, tc0289, tc0290, tc0291, tc0314	
 limit_proteins/zeroUnmeasuredIsozymes.m	tc0292, tc0293, tc0294, tc0295	
-limit_proteins/updateProtPool.m		
+deprecated/updateProtPool.m	tc0703 (deprecation warning; errors on a GECKO 3.2+ ecModel)	
+deprecated/adapterTemplate.m	tc0703 (via createGECKOproject with adapterFormat 'class')	
 model_adapter/ModelAdapter.m	Base class for adapters, not explicitly tested.	
 model_adapter/ModelAdapterManager.m	tc0008, tc0067	
 model_adapter/readAdapterToml.m	tc0061, tc0062	
@@ -98,15 +98,15 @@ model_adapter/writeAdapterToml.m	tc0063
 model_adapter/loadAdapterParams.m	tc0064, tc0065	
 model_adapter/convertAdapterToToml.m	tc0066	
 model_adapter/TomlAdapter.m	tc0066, tc0067	
-model_adapter/adapterParameters.tsv	tc0064, tc0065	
+model_adapter/adapterParameters.tsv	tc0064, tc0065, tc0722	
 model_adapter/adapterTemplate.toml	tc0068	
+utilities/createGECKOproject.m	tc0068, tc0703 (deprecated 'class' format), tc0704 (.gitignore)	
 utilities/*	Not explicitly tested - The code has existed for a long time. There are a lot of functions in here, unclear which of them are still useful and functional.	
-io/loadConventionalGEM.m	tc0009
+io/loadConventionalGEM.m	tc0009, tc0711
 io/loadEcModel.m	tc0009, tc0099
 io/saveEcModel.m	tc0009, tc0099, tc0603
 io/loadEcModel.m	tc0009, tc0099, tc0700
 io/saveEcModel.m	tc0009, tc0099, tc0700
-tutorials/tutorial_Human-GEM/HumanGEMAdapter.m	tcm0002 - does not test all aspects of the adapter, but some.	
 tutorials/full_ecModel/model_adapter.toml	tcm0001 - does not test all aspects of the adapter, but some.	
 tutorials/tutorial_yeast-GEM/code/changeMedia_batch.m	Not explicitly tested - The code has existed for a long time	
 tutorials/tutorial_yeast-GEM/code/getModelParameters_obsolete.m	Deprecated	

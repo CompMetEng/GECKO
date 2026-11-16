@@ -7,8 +7,9 @@ function usageData = getEnzymeUsage(ecModel,fluxes,varargin)
 % 1. absolute usage: the specific enzyme usage in mg/gDCW, which can be
 %    given for enzymes with- and without concentration information;
 % 2. capacity usage: the ratio of available enzyme that is used, calculated
-%    by (absUsage/UB) (note that capacity usage is 0 if an enzyme
-%    concentration was not constrained in the model);
+%    by (absUsage/UB). An enzyme without a measured concentration has the
+%    default upper bound of 1000, so its capacity usage is absUsage/1000.
+%    An upper bound of 0 gives NaN when absUsage is 0 and Inf otherwise;
 % 3. UB: the upper bound of each enzyme exchange reaction, which may not be
 %    the same as the enzyme concentration, if it has been flexibilized;
 % 4. protID: the protein identifiers for each enzyme, in the same order as
@@ -17,7 +18,7 @@ function usageData = getEnzymeUsage(ecModel,fluxes,varargin)
 % Parameters
 % ----------
 % ecModel : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 % fluxes : double
 %     vector of fluxes, for instance sol.x.
 %

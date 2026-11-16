@@ -9,10 +9,12 @@ function model = loadConventionalGEM(varargin)
 % Name-Value Arguments
 % --------------------
 % filename : char
-%     name of the model file, without extension, located in the models/
-%     subfolder of param.path as specified in the modelAdapter; it is
-%     loaded as SBML (.xml) (default: the value specified as param.convGEM
-%     in the modelAdapter, which may instead point to a YAML file).
+%     name of the model file, located in the models/ subfolder of
+%     param.path as specified in the modelAdapter. A name ending in .xml is
+%     loaded as SBML and a name ending in .yml as YAML; any other name
+%     gets .xml appended (default: the value specified as param.convGEM in
+%     the modelAdapter, which must end in .xml or .yml, or the error
+%     loadConventionalGEM:extension is raised).
 % modelAdapter : ModelAdapter
 %     a loaded model adapter, from where the model folder is read (default:
 %     the current default model adapter).
@@ -48,11 +50,21 @@ params = modelAdapter.getParameters();
 if isempty(filename)
     filename = params.convGEM;
 else
-    filename = fullfile(params.path,'models',[filename, '.xml'])
+    filename = char(filename);
+    % A name like yeast-GEM-9.1.1 has dots, so only .xml and .yml count as extension
+    if ~endsWith(filename, {'.xml', '.yml'})
+        filename = [filename, '.xml'];
+    end
+    filename = fullfile(params.path,'models',filename);
 end
 
-if endsWith(filename,'.xml')
-    model = importModel(filename);
-elseif endsWith(filename,'.yml')
-    model = readYAMLmodel(filename);
+[~, ~, ext] = fileparts(filename);
+switch ext
+    case '.xml'
+        model = importModel(filename);
+    case '.yml'
+        model = readYAMLmodel(filename);
+    otherwise
+        error('loadConventionalGEM:extension', ...
+            'The model file %s is neither SBML (.xml) nor YAML (.yml).', filename)
 end

@@ -10,9 +10,11 @@ function complexInfo = getComplexData(varargin)
 % taxonomicID : double
 %     taxonomic identifier for which complex data should be downloaded. Only
 %     taxonomic identifiers allowed are those included on Complex Portal:
-%     https://www.ebi.ac.uk/complexportal/complex/organisms. If empty, no
-%     complex data is downloaded; if 0 (zero), complex data from all
-%     organisms in Complex Portal is downloaded.
+%     https://www.ebi.ac.uk/complexportal/complex/organisms. If empty, the
+%     taxonomicID of the model adapter is used; if that is also empty, no
+%     complex data is downloaded, the warning getComplexData:noTaxonomicID
+%     is raised and complexInfo is empty. If 0 (zero), complex data from
+%     all organisms in Complex Portal is downloaded.
 % modelAdapter : ModelAdapter
 %     a loaded model adapter (default: the current default model adapter).
 %
@@ -62,8 +64,11 @@ if isempty(taxonomicID)
 end
 
 params = modelAdapter.params;
+rowHeadings = {'complexID','name','species','geneName','protID','stochiometry','defined'};
 if isempty(taxonomicID) % Can be empty when gathered from model adapter
-    printOrange('WARNING: No taxonomicID specified.');
+    warning('getComplexData:noTaxonomicID', ...
+        'No taxonomicID specified; no complex data is downloaded.')
+    complexInfo = cell2struct(cell(0, numel(rowHeadings)), rowHeadings, 2);
     return
 elseif taxonomicID == 0
     taxonomicID = [];
@@ -168,8 +173,6 @@ if ~isempty(complexComplex)
         complexData{complexComplex(i),6} = allStoch;
     end
 end
-
-rowHeadings = {'complexID','name','species','geneName','protID','stochiometry','defined'};
 
 complexInfo = cell2struct(complexData, rowHeadings, 2);
 

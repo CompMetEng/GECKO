@@ -71,6 +71,7 @@ function testBrendaEcTreePreset_tc0087(testCase)
     verifyEqual(testCase, report.status{3}, 'missing')
     fuzzy = kcatsFromBrenda(model, 'aggregation', 'median', 'modelAdapter', adapter);
     kcatsFromECTree(model, 'modelAdapter', adapter);
+    convertCustomKcats(model, 'modelAdapter', adapter);
     [decisions, rep] = collectKcats(model, 'modelAdapter', adapter, 'writeReport', false);
     verifyEqual(testCase, rep.preset, 'brenda_ec_tree')
     origin1 = fuzzy.rxns(fuzzy.origin == 1 & fuzzy.wildcardLvl == 0);

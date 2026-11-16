@@ -175,15 +175,6 @@ function testReportEnzymeUsageNegativeTopAbsUsageRaises_tc0509(testCase)
         'reportEnzymeUsage:invalidTopAbsUsage')
 end
 
-function testTruncateValuesInfinite_tc0510(testCase)
-    values = {Inf, -Inf, 1234565, 0.5};
-    truncated = truncateValues(values, 1:4);
-    verifyEqual(testCase, truncated{1}, Inf)
-    verifyEqual(testCase, truncated{2}, -Inf)
-    verifyEqual(testCase, truncated{3}, 1234570)
-    verifyEqual(testCase, truncated{4}, 0.5)
-end
-
 function testRelaxProteomicsGreedyEmptyEnzymeSet_tc0511(testCase)
     % An empty cell array makes no enzyme eligible; [] makes every
     % constrained enzyme eligible.

@@ -8,7 +8,7 @@ function ecModel = setKcatForReactions(ecModel,rxnIds,kcat)
 % Parameters
 % ----------
 % ecModel : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 % rxnIds : char or cell
 %     reaction identifier matching ecModel.ec.rxns. If the _EXP_ suffix is
 %     not included, and there are multiple expanded (isozymic) reactions,

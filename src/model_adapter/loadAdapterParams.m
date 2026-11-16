@@ -57,7 +57,7 @@ for k = 1:numel(map.tomlKey)
     end
     [found, value] = getDotted(data, key);
     if ~found
-        if isempty(map.default{k})
+        if ~map.hasDefault(k)
             continue
         end
         value = map.default{k};
@@ -100,8 +100,10 @@ fclose(fid);
 map.tomlKey = cols{1};
 map.matlabField = cols{2};
 map.default = cell(size(cols{3}));
+% A key without a default is left out of params; a default of "" is kept.
+map.hasDefault = ~cellfun(@isempty, cols{3});
 for k = 1:numel(cols{3})
-    if ~isempty(cols{3}{k})
+    if map.hasDefault(k)
         map.default{k} = parseDefault(cols{3}{k});
     end
 end

@@ -37,7 +37,7 @@ function [decisions, report, ecModel] = collectKcats(model, varargin)
 %   (kcatCombineParams.tsv). model.ec.source reads 'combined (sd=<log10
 %   sd>, n=<sources>)'; sd is the uncertainty for a new measurement.
 % In both, okp stands for the OKP methods of [kcat_sources.okp] methods
-% (default: all methods with combination parameters).
+% (default: KinForm-H).
 %
 % The presets:
 % - brenda_ec_tree (the default): custom kcats, the BRENDA median of
@@ -60,27 +60,31 @@ function [decisions, report, ecModel] = collectKcats(model, varargin)
 %   tutorial.
 % Against measured kcats hidden from the search, the EC tree was closer
 % than the BRENDA median at origins 2 and 4 and with EC wildcards and as
-% close at origins 1 and 3; the EC tree combined with the OKP methods was
-% slightly closer than the EC tree, and the OKP methods combined as close.
+% close at origins 1 and 3; the EC tree combined with eight OKP methods
+% (CataPro, DLKcat, EITLEM, KinForm-H, KinForm-L, OmniESI, OmniESI-O2DENet
+% and UniKP) was slightly closer than the EC tree, and these eight methods
+% combined as close. The default okp source group is KinForm-H alone.
 % In ecModels, values combined with predictions set high-turnover enzymes
 % such as ATP synthase too low, which is why the default uses predictions
 % only where there is no value from measurements. The BRENDA aggregation is
 % [kcat_sources.brenda] aggregation (see updateKcatSources).
 %
 % After the stages:
-% - custom kcats of data/customKcats.tsv are applied (applyCustomKcats),
-%   when a stage lists custom but there is no data/kcats/custom.tsv;
 % - with isozymes, reactions without a kcat take one from their isozymes
 %   (getKcatAcrossIsozymes);
 % - with standard, the remaining reactions get the standard kcat
 %   (getStandardKcat).
 %
 % A source file a stage names that does not exist is reported and left out.
+% When a stage lists custom, data/kcats/custom.tsv does not exist and the
+% GECKO 3 file data/customKcats.tsv does, the error
+% collectKcats:legacyCustomKcats is raised: convertCustomKcats writes
+% data/customKcats.tsv as data/kcats/custom.tsv.
 %
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 %
 % Name-Value Arguments
 % --------------------
@@ -88,13 +92,14 @@ function [decisions, report, ecModel] = collectKcats(model, varargin)
 %     a loaded model adapter (default: the current default model adapter).
 % writeReport : logical
 %     write the decisions to output/<model id>_kcatDecisions.tsv (default
-%     true).
+%     true). The file has the columns of decisions in snake_case (ec_rxn,
+%     spread_log10, sd_log10), as geckopy writes it.
 %
 % Returns
 % -------
 % decisions : table
 %     one row per model.ec reaction: ecRxn, stage (the stage number, or
-%     custom, isozymes, standard, or empty when no kcat was found), source
+%     isozymes, standard, or empty when no kcat was found), source
 %     (as in model.ec.source), kcat, candidates (the number of values the
 %     deciding source had for the reaction, or of sources combined),
 %     spreadLog10 (their range, in log10 units) and sdLog10 (the
@@ -144,7 +149,6 @@ report.preset = config.preset;
 report.missing = {};
 report.sources = struct();
 loaded = struct();
-legacyCustom = false;
 
     function list = loadSource(name)
         % The kcat list of a source file, or [] when it does not exist.
@@ -154,7 +158,12 @@ legacyCustom = false;
             [list, rep] = loadKcatSource(ecModel, file);
             report.sources.(name) = rep;
         elseif strcmp(name, 'custom') && isfile(fullfile(params.path, 'data', 'customKcats.tsv'))
-            legacyCustom = true;
+            error('collectKcats:legacyCustomKcats', ['%s is a GECKO 3 custom kcats file, which ' ...
+                'collectKcats does not read. convertCustomKcats(ecModel) writes it as %s.'], ...
+                fullfile(params.path, 'data', 'customKcats.tsv'), file)
+        elseif strcmp(name, 'custom')
+            report.missing{end+1} = name;
+            printOrange(sprintf('No custom kcats file %s; it is left out.\n', file));
         else
             report.missing{end+1} = name;
             printOrange(sprintf(['No kcat source file %s; it is left out. ' ...
@@ -246,14 +255,6 @@ for s = 1:numel(config.stages)
     end
 end
 
-if legacyCustom
-    before = ecModel.ec.kcat;
-    ecModel = applyCustomKcats(ecModel, 'modelAdapter', modelAdapter);
-    changed = ecModel.ec.kcat ~= before;
-    stage(changed) = {'custom'};
-    candidates(changed) = 1;
-    spread(changed) = 0;
-end
 if config.isozymes && ~ecModel.ec.geckoLight
     before = ecModel.ec.kcat == 0;
     ecModel = getKcatAcrossIsozymes(ecModel);
@@ -283,7 +284,11 @@ if p.writeReport
     if isfield(model, 'id') && ~isempty(model.id)
         id = char(model.id);
     end
-    writetable(decisions, fullfile(outDir, [id '_kcatDecisions.tsv']), 'FileType', 'text', ...
+    % The file has the snake_case column names that geckopy writes
+    fileTable = decisions;
+    fileTable.Properties.VariableNames = {'ec_rxn','stage','source','kcat','candidates', ...
+        'spread_log10','sd_log10'};
+    writetable(fileTable, fullfile(outDir, [id '_kcatDecisions.tsv']), 'FileType', 'text', ...
         'Delimiter', '\t');
 end
 nOpen = sum(strcmp(stage, ''));

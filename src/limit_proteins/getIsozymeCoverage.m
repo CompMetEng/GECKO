@@ -14,7 +14,7 @@ function [coverage, zeroable] = getIsozymeCoverage(model)
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in full GECKO 3 format (with ecModel.ec structure), not
+%     a full ecModel (with ecModel.ec structure), not
 %     GECKO light, with concentrations in model.ec.concs (see fillEnzConcs).
 %
 % Returns
