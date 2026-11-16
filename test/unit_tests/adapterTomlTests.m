@@ -230,6 +230,79 @@ function testCreateGECKOprojectToml_tc0068(testCase)
     verifyEqual(testCase, adapter.params.spontaneous.name_contains, 'spontaneous')
 end
 
+function testUnknownKeys_tc0732(testCase)
+    % An unknown key is an error in every table, naming the file and the key.
+    base = {'conv_gem = "x.xml"', 'org_name = "x"'};
+    cases = { ...
+        {'sigmaa = 1'}, 'sigmaa'; ...
+        {'[okp]', 'method = "EITLEM"'}, 'okp.method'; ...
+        {'[evotune.source_groups.a]', 'sources = ["a"]', 'sigma0_log = 0.1', 'match_okp = true'}, ...
+            'evotune.source_groups.a.match_okp'; ...
+        {'[evotune.sigma0_log_source]', 'a = 0.1'}, 'evotune.sigma0_log_source'; ...
+        {'[[kcat_assignment.stage]]', 'sources = ["custom"]', 'limit = 2'}, 'kcat_assignment.stage.limit'; ...
+        {'[kcat_sources.brenda]', 'aggregate = "max"'}, 'kcat_sources.brenda.aggregate'; ...
+        {'[kcat_sources.ec_tree]', 'min_identity = 40'}, 'kcat_sources.ec_tree.min_identity'; ...
+        {'[kcat_sources.okp_kinform_h]', 'method = "KinForm-H"'}, 'kcat_sources.okp_kinform_h.method'; ...
+        {'[kcat_sources.okp]', 'method = "KinForm-H"'}, 'kcat_sources.okp.method'; ...
+        {'[kcat_sources.foo]'}, 'kcat_sources.foo'; ...
+        {'[kcat_sources.okp_nosuchmethod]'}, 'kcat_sources.okp_nosuchmethod'; ...
+        {'[kcat_sources.dlkcat]', 'k = 1'}, 'kcat_sources.dlkcat.k'};
+    for k = 1:size(cases, 1)
+        folder = tempname; mkdir(folder);
+        file = fullfile(folder, 'model_adapter.toml');
+        writeTemp([base, cases{k,1}], file);
+        try
+            loadAdapterParams(file);
+            err = [];
+        catch err
+        end
+        verifyNotEmpty(testCase, err, cases{k,2})
+        if ~isempty(err)
+            verifyEqual(testCase, err.message, ...
+                sprintf('%s: unknown key %s in model_adapter.toml', file, cases{k,2}))
+        end
+    end
+    % The keys that updateKcatSources reads are known, and an empty table of
+    % a known source loads.
+    folder = tempname; mkdir(folder);
+    writeTemp([base, {'[kcat_sources.dlkcat]', '[kcat_sources.okp_unikp]', '[kcat_sources.custom]', ...
+        '[kcat_sources.brenda]', 'aggregation = "max"', 'force_wildcard_level = 1', ...
+        '[kcat_sources.homologs]', 'k = 3', 'min_identity = 40', 'coverage = 0.5', ...
+        '[kcat_sources.okp]', 'methods = ["UniKP"]'}], fullfile(folder, 'model_adapter.toml'));
+    params = loadAdapterParams(folder);
+    verifyEqual(testCase, params.kcat_sources.brenda.aggregation, 'max')
+end
+
+function testSourceGroupValidation_tc0733(testCase)
+    % Each fault of an evotune source group has its own message.
+    base = {'conv_gem = "x.xml"', 'org_name = "x"'};
+    cases = { ...
+        {'[evotune.source_groups]', 'a = 0.1'}, 'evotune.source_groups.a must be a table with sources and sigma0_log'; ...
+        {'[evotune.source_groups.a]', 'sources = ["a"]'}, 'evotune.source_groups.a needs both sources and sigma0_log'; ...
+        {'[evotune.source_groups.a]', 'sigma0_log = 0.1'}, 'evotune.source_groups.a needs both sources and sigma0_log'; ...
+        {'[evotune.source_groups.a]', 'sources = "a"', 'sigma0_log = 0.1'}, 'evotune.source_groups.a.sources must be a non-empty list of strings'; ...
+        {'[evotune.source_groups.a]', 'sources = [1, 2]', 'sigma0_log = 0.1'}, 'evotune.source_groups.a.sources must be a non-empty list of strings'; ...
+        {'[evotune.source_groups.a]', 'sources = []', 'sigma0_log = 0.1'}, 'evotune.source_groups.a.sources must be a non-empty list of strings'; ...
+        {'[evotune.source_groups.a]', 'sources = ["a"]', 'sigma0_log = -0.1'}, 'evotune.source_groups.a.sigma0_log must be a positive number'; ...
+        {'[evotune.source_groups.a]', 'sources = ["a"]', 'sigma0_log = 0'}, 'evotune.source_groups.a.sigma0_log must be a positive number'; ...
+        {'[evotune.source_groups.a]', 'sources = ["a"]', 'sigma0_log = "wide"'}, 'evotune.source_groups.a.sigma0_log must be a positive number'; ...
+        {'[evotune.source_groups.a]', 'sources = ["a"]', 'sigma0_log = [0.1, 0.2]'}, 'evotune.source_groups.a.sigma0_log must be a positive number'};
+    for k = 1:size(cases, 1)
+        folder = tempname; mkdir(folder);
+        file = fullfile(folder, 'model_adapter.toml');
+        writeTemp([base, cases{k,1}], file);
+        try
+            loadAdapterParams(file);
+            err = [];
+        catch err
+        end
+        verifyNotEmpty(testCase, err, cases{k,2})
+        if ~isempty(err)
+            verifyEqual(testCase, err.message, [file ': ' cases{k,2}])
+        end
+    end
+end
+
 function testResolveTunableContextPatterns_tc0734(testCase)
     % Exact entries first, then prefix patterns with the longest prefix
     % first, and the first group among equal prefixes.
@@ -406,6 +479,50 @@ function testOkpMethodsAtLoad_tc0744(testCase)
             verifyEqual(testCase, err.message, cases{k,2})
         end
     end
+end
+
+function testKcatSourcesTableAndAggregation_tc0745(testCase)
+    base = {'conv_gem = "x.xml"', 'org_name = "x"'};
+    cases = { ...
+        {'[kcat_sources]', 'brenda = "max"'}, 'kcat_sources.brenda must be a table'; ...
+        {'[kcat_sources.brenda]', 'aggregation = "mean"'}, 'kcat_sources.brenda.aggregation must be max or median'; ...
+        {'[kcat_sources.brenda]', 'aggregation = 1'}, 'kcat_sources.brenda.aggregation must be max or median'; ...
+        {'[matlab.params]', 'kcatAggregation = "max"'}, 'matlab.params.kcatAggregation is not allowed; set it in [kcat_sources.brenda] aggregation'; ...
+        {'[matlab.params.evotune]', 'maxGenerations = 3'}, 'matlab.params.evotune is not allowed; set it in [evotune]'};
+    for k = 1:size(cases, 1)
+        folder = tempname; mkdir(folder);
+        file = fullfile(folder, 'model_adapter.toml');
+        writeTemp([base, cases{k,1}], file);
+        try
+            loadAdapterParams(file);
+            err = [];
+        catch err
+        end
+        verifyNotEmpty(testCase, err, cases{k,2})
+        if ~isempty(err)
+            verifyEqual(testCase, err.message, [file ': ' cases{k,2}])
+        end
+    end
+    % A function argument gives its own text.
+    adapter = ModelAdapterManager.getAdapter(fullfile(findGECKOroot,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    try
+        resolveKcatAggregation('mean', adapter);
+        err = [];
+    catch err
+    end
+    verifyEqual(testCase, err.message, 'aggregation must be max or median')
+    try
+        fuzzyKcatMatching(struct(), 'kcatAggregation', 'mean');
+        err = [];
+    catch err
+    end
+    verifyEqual(testCase, err.message, 'aggregation must be max or median')
+    try
+        loadBRENDAdata('kcatAggregation', 'mean');
+        err = [];
+    catch err
+    end
+    verifyEqual(testCase, err.message, 'aggregation must be max or median')
 end
 
 function testGrExpNotSet_tc0739(testCase)

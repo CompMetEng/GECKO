@@ -6,6 +6,9 @@ function params = loadAdapterParams(tomlFile)
 % they can be used as ModelAdapter.params. Keys are translated with
 % adapterParameters.tsv (for instance p_tot becomes Ptot); keys that are
 % not given get the default listed there, which is geckopy's default.
+% A key that is not known is an error, also inside [evotune.source_groups],
+% [[kcat_assignment.stage]] and [kcat_sources.<name>]; the keys of a kcat
+% source are those that updateKcatSources reads.
 %
 % Parameters
 % ----------
@@ -50,6 +53,7 @@ map = adapterParameterMap();
 % Unknown keys are errors, as in geckopy, so that a typo is not ignored.
 known = map.tomlKey;
 checkKnownKeys(data, '', known, tomlFile);
+checkNested(data, tomlFile);
 
 params = struct();
 params.path = projectPath;
@@ -89,6 +93,7 @@ end
 params = sourceGroups(params, data);
 
 if isfield(data, 'matlab') && isfield(data.matlab, 'params')
+    checkMatlabParams(data.matlab.params, tomlFile);
     params = mergeStruct(params, data.matlab.params);
 end
 end
@@ -142,8 +147,133 @@ for k = 1:numel(fields)
         end
         continue
     end
-    error('GECKO:loadAdapterParams', ['Unknown key "%s" in %s. Parameters that only ' ...
-        'GECKO uses go under [matlab.params].'], key, tomlFile);
+    unknownKey(key, tomlFile);
+end
+end
+
+function checkMatlabParams(extra, tomlFile)
+% [matlab.params] is for parameters that only GECKO uses; the settings that
+% have a key of their own are not set there.
+fields = fieldnames(extra);
+for k = 1:numel(fields)
+    if strcmp(fields{k}, 'kcatAggregation')
+        where = '[kcat_sources.brenda] aggregation';
+    elseif strcmp(fields{k}, 'evotune')
+        where = '[evotune]';
+    else
+        continue
+    end
+    error('GECKO:loadAdapterParams', '%s: matlab.params.%s is not allowed; set it in %s', ...
+        tomlFile, fields{k}, where);
+end
+end
+
+function unknownKey(key, tomlFile)
+error('GECKO:loadAdapterParams', '%s: unknown key %s in model_adapter.toml', tomlFile, key);
+end
+
+function checkNested(data, tomlFile)
+% Keys inside the tables that adapterParameters.tsv lists as one key.
+if isfield(data, 'evotune') && isfield(data.evotune, 'source_groups')
+    groups = data.evotune.source_groups;
+    names = fieldnames(groups);
+    for k = 1:numel(names)
+        g = groups.(names{k});
+        prefix = ['evotune.source_groups.' names{k}];
+        if ~isstruct(g)
+            error('GECKO:loadAdapterParams', ...
+                '%s: %s must be a table with sources and sigma0_log', tomlFile, prefix);
+        end
+        checkKeys(g, {'sources', 'sigma0_log'}, prefix, tomlFile);
+        if ~isfield(g, 'sources') || ~isfield(g, 'sigma0_log')
+            error('GECKO:loadAdapterParams', ...
+                '%s: %s needs both sources and sigma0_log', tomlFile, prefix);
+        end
+        if ~(iscell(g.sources) && ~isempty(g.sources) && all(cellfun(@ischar, g.sources)))
+            error('GECKO:loadAdapterParams', ...
+                '%s: %s.sources must be a non-empty list of strings', tomlFile, prefix);
+        end
+        w = g.sigma0_log;
+        if ~(isnumeric(w) && isscalar(w) && isfinite(w) && w > 0)
+            error('GECKO:loadAdapterParams', ...
+                '%s: %s.sigma0_log must be a positive number', tomlFile, prefix);
+        end
+    end
+end
+if isfield(data, 'kcat_assignment') && isfield(data.kcat_assignment, 'stage')
+    stages = data.kcat_assignment.stage;
+    for k = 1:numel(stages)
+        checkKeys(stages(k), {'action', 'sources', 'criteria', 'top_origin_limit', ...
+            'bottom_origin_limit', 'wildcard_limit'}, 'kcat_assignment.stage', tomlFile);
+    end
+end
+if isfield(data, 'kcat_sources') && isstruct(data.kcat_sources)
+    % The sources that GECKO knows and the keys that updateKcatSources
+    % reads for each; dlkcat, custom and the okp_<method> files take none.
+    allowed = struct('brenda', {{'aggregation', 'force_wildcard_level'}}, ...
+        'ec_tree', {{'k'}}, 'homologs', {{'k', 'min_identity', 'coverage'}}, ...
+        'okp', {{'methods'}}, 'dlkcat', {{}}, 'custom', {{}});
+    names = fieldnames(data.kcat_sources);
+    for k = 1:numel(names)
+        if isfield(allowed, names{k})
+            keys = allowed.(names{k});
+        elseif any(strcmp(names{k}, okpFileNames()))
+            keys = {};
+        else
+            unknownKey(['kcat_sources.' names{k}], tomlFile);
+        end
+        source = data.kcat_sources.(names{k});
+        if ~isstruct(source)
+            error('GECKO:loadAdapterParams', '%s: kcat_sources.%s must be a table', tomlFile, names{k});
+        end
+        checkKeys(source, keys, ['kcat_sources.' names{k}], tomlFile);
+        if strcmp(names{k}, 'brenda') && isfield(source, 'aggregation') && ...
+                ~(ischar(source.aggregation) && any(strcmp(source.aggregation, {'max', 'median'})))
+            error('GECKO:loadAdapterParams', ...
+                '%s: kcat_sources.brenda.aggregation must be max or median', tomlFile);
+        end
+        if strcmp(names{k}, 'okp') && isfield(source, 'methods')
+            checkOkpMethods(source.methods, tomlFile);
+        end
+    end
+end
+end
+
+function checkOkpMethods(methods, tomlFile)
+% [kcat_sources.okp] methods: a list of the OKP methods that kcatsFromOKP accepts.
+if ~(iscell(methods) && all(cellfun(@ischar, methods)))
+    error('GECKO:loadAdapterParams', '%s: kcat_sources.okp.methods must be a list of strings', tomlFile);
+end
+known = okpMethodNames();
+unknown = unique(methods(~ismember(methods, known)), 'stable');
+if ~isempty(unknown)
+    error('kcatAssignment:config', 'Unknown OKP methods in [kcat_sources.okp] methods: %s; methods: %s.', ...
+        strjoin(unknown, ', '), strjoin(known, ', '))
+end
+end
+
+function known = okpMethodNames()
+% The methods that predict from one enzyme and one substrate (CatPred and
+% TurNup read whole reactions).
+known = {'CataPro','CatRange','DLKcat','EITLEM','KinForm-H','KinForm-L', ...
+    'OmniESI','OmniESI-O2DENet','UniKP'};
+end
+
+function files = okpFileNames()
+% The files of the OKP methods that kcatsFromOKP accepts: okp_ and the
+% lower-case method name, with runs of characters other than letters and
+% digits replaced by _.
+known = okpMethodNames();
+files = cellfun(@(m) ['okp_' lower(regexprep(regexprep(m, '[^A-Za-z0-9]+', '_'), '^_+|_+$', ''))], ...
+    known, 'UniformOutput', false);
+end
+
+function checkKeys(s, allowed, prefix, tomlFile)
+fields = fieldnames(s);
+for k = 1:numel(fields)
+    if ~any(strcmp(fields{k}, allowed))
+        unknownKey([prefix '.' fields{k}], tomlFile);
+    end
 end
 end
 
