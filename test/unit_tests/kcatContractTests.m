@@ -196,7 +196,7 @@ function testResolveTunableContextMatchesSourceBeforeDetail_tc0312(testCase)
     [model, ~] = kcatProject();
     model.ec.kcat(1:4) = 10;
     model.ec.source(1:4) = {'brenda (wc=0, origin=1)'; 'combined (sd=0.10, n=2)'; 'DLKcat'; 'other (x)'};
-    params = struct('kcatSources', {{'brenda', 'combined', 'dlkcat'}}, 'sigma0logSource', [0.2; 0.3; 0.4], ...
+    params = struct('kcatSources', {{'brenda', 'combined', 'dlkcat'}}, 'kcatGroups', {{'brenda', 'combined', 'dlkcat'}}, 'sigma0logSource', [0.2; 0.3; 0.4], ...
         'sigma0logDefault', 0.5, 'tieIsozymes', false);
     mask = false(numel(model.ec.rxns), 1);
     mask(1:4) = true;

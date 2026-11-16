@@ -230,6 +230,71 @@ function testCreateGECKOprojectToml_tc0068(testCase)
     verifyEqual(testCase, adapter.params.spontaneous.name_contains, 'spontaneous')
 end
 
+function testResolveTunableContextPatterns_tc0734(testCase)
+    % Exact entries first, then prefix patterns with the longest prefix
+    % first, and the first group among equal prefixes.
+    model.ec.rxns = {'R1'; 'R2'; 'R3'; 'R4'; 'R5'};
+    model.ec.kcat = ones(5, 1);
+    model.ec.source = {'okp_kinform_h'; 'okp_eitlem_kinetics'; 'OKP_other'; 'brenda'; 'okp_unknown (n=2)'};
+    params.kcatSources = {'okp_*', 'okp_k*', 'okp_*', 'okp_eitlem_kinetics', 'brenda'};
+    params.kcatGroups = {'okp', 'kinform', 'okp', 'eitlem', 'brenda'};
+    params.sigma0logSource = [0.1; 0.2; 0.1; 0.4; 0.5];
+    params.sigma0logDefault = 1;
+    params.tieIsozymes = false;
+    [~, ~, ~, groups, sigma0log] = resolveTunableContext(model, params, []);
+    verifyEqual(testCase, groups, {'kinform'; 'eitlem'; 'okp'; 'brenda'; 'okp'})
+    verifyEqual(testCase, sigma0log, [0.2; 0.4; 0.1; 0.5; 0.1])
+end
+
+function testResolveTunableContextDefaultGroups_tc0741(testCase)
+    % The default groups label kcats by group name, end to end from a TOML
+    % without [evotune.source_groups]; the label standard is in no group.
+    folder = tempname; mkdir(folder);
+    writeTemp({'conv_gem = "x.xml"', 'org_name = "x"'}, fullfile(folder, 'model_adapter.toml'));
+    params = loadAdapterParams(folder);
+    model.ec.rxns = {'R1'; 'R2'; 'R3'; 'R4'; 'R5'};
+    model.ec.kcat = ones(5, 1);
+    model.ec.source = {'combined (sd=0.10, n=2)'; 'ec_tree'; 'brenda (wc=0, origin=1)'; 'custom'; 'standard'};
+    params.evotune.tieIsozymes = false;
+    [~, ~, ~, groups, sigma0log] = resolveTunableContext(model, params.evotune, []);
+    verifyEqual(testCase, groups, {'combined'; 'ec_tree'; 'brenda'; 'custom'; 'unlabelled'})
+    verifyEqual(testCase, sigma0log, [0.4; 0.3; 0.2; 0.1; 0.5])
+end
+
+function testResolveTunableContextUnlabelledOrder_tc0742(testCase)
+    % The origins in the warning: most common first, then alphabetical.
+    model.ec.rxns = {'R1'; 'R2'; 'R3'; 'R4'; 'R5'};
+    model.ec.kcat = ones(5, 1);
+    model.ec.source = {'brenda'; 'zeta'; 'beta'; 'alpha'; 'beta'};
+    params.kcatSources = {'brenda'};
+    params.kcatGroups = {'brenda'};
+    params.sigma0logSource = 0.2;
+    params.sigma0logDefault = 0.5;
+    params.tieIsozymes = false;
+    lastwarn('');
+    verifyWarning(testCase, @() resolveTunableContext(model, params, []), 'resolveTunableContext:unlabelled')
+    verifyEqual(testCase, lastwarn, ['4 of 5 tunable kcats match no evotune source group and get ' ...
+        'sigma0_log_default (0.5); origins: beta, alpha, zeta'])
+end
+
+function testResolveTunableContextUnlabelled_tc0735(testCase)
+    % A warning when more than 20 % of the tunable kcats are in no group.
+    model.ec.rxns = {'R1'; 'R2'; 'R3'; 'R4'; 'R5'};
+    model.ec.kcat = ones(5, 1);
+    model.ec.source = {'brenda'; 'standard'; 'standard'; 'dlkcat'; 'brenda'};
+    params.kcatSources = {'brenda'};
+    params.kcatGroups = {'brenda'};
+    params.sigma0logSource = 0.2;
+    params.sigma0logDefault = 0.5;
+    params.tieIsozymes = false;
+    lastwarn('');
+    verifyWarning(testCase, @() resolveTunableContext(model, params, []), 'resolveTunableContext:unlabelled')
+    verifyEqual(testCase, lastwarn, ['3 of 5 tunable kcats match no evotune source group and get ' ...
+        'sigma0_log_default (0.5); origins: standard, dlkcat'])
+    model.ec.source(2:4) = {'brenda'};
+    verifyWarningFree(testCase, @() resolveTunableContext(model, params, []))
+end
+
 function testKcatsFromOKPDefaultMethod_tc0737(testCase)
     % Without a method, kcatsFromOKP uses the first of [kcat_sources.okp] methods.
     adapter = ModelAdapterManager.getAdapter(fullfile(findGECKOroot,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));

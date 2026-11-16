@@ -2938,11 +2938,12 @@ function testResolveTunableContextFirstGroupWins_tc0719(testCase)
     model.ec.kcat = [1; 2];
     model.ec.source = {'brenda (wc=0, origin=1)'; 'custom'};
     params.kcatSources = {'brenda', 'custom', 'brenda'};
+    params.kcatGroups = {'first', 'custom', 'second'};
     params.sigma0logSource = [0.2; 0.1; 0.4];
     params.sigma0logDefault = 1;
     params.tieIsozymes = false;
     [~, ~, ~, groups, sigma0log] = resolveTunableContext(model, params, []);
-    verifyEqual(testCase, groups, {'brenda'; 'custom'})
+    verifyEqual(testCase, groups, {'first'; 'custom'})
     verifyEqual(testCase, sigma0log, [0.2; 0.1])
 end
 

@@ -91,21 +91,25 @@ rmse_threshold = 0.2
 # Maximum number of CMA-ES generations.
 max_generations = 150
 
-# Kcat sources, from least to most trusted, each with its prior width
-# (lower is more trusted).
-[evotune.source_groups.dlkcat]
-sources = ["dlkcat"]
-
-[evotune.source_groups.brenda]
-sources = ["brenda"]
-
-[evotune.source_groups.custom]
-sources = ["custom"]
-
-[evotune.sigma0_log_source]
-dlkcat = 0.4
-brenda = 0.2
-custom = 0.1
+# Trust tiers: group name -> the ec.source labels it covers and its
+# sigma0_log (the standard deviation of the natural log of the kcat; lower is
+# more trusted). A label ending in * is a prefix pattern ("okp_*" covers every
+# OKP method). Groups given in the TOML replace the defaults.
+# [evotune.source_groups.custom]
+# sources = ["custom"]
+# sigma0_log = 0.1
+#
+# [evotune.source_groups.brenda]
+# sources = ["brenda"]
+# sigma0_log = 0.2
+#
+# [evotune.source_groups.ec_tree]
+# sources = ["ec_tree"]
+# sigma0_log = 0.3
+#
+# [evotune.source_groups.combined]
+# sources = ["combined"]
+# sigma0_log = 0.4
 
 # How kcats are assigned from the kcat source files in data/kcats (see
 # collectKcats and assignKcats): a preset, or [[kcat_assignment.stage]]

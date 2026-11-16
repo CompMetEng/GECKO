@@ -19,8 +19,11 @@ function params = loadAdapterParams(tomlFile)
 %     - path: the project folder (the folder of the TOML file);
 %     - convGEM and spontaneous.file: absolute paths;
 %     - evotune.kcatSources and evotune.sigma0logSource: built from the
-%       evotune.source_groups and evotune.sigma0_log_source tables, one
-%       entry per ec.source value;
+%       evotune.source_groups tables, one entry per element of sources
+%       (a prefix pattern keeps its trailing *), in group order, with the
+%       sigma0_log of its group, and evotune.kcatGroups the group name of
+%       each entry. Without [evotune.source_groups] the
+%       groups are custom 0.1, brenda 0.2, ec_tree 0.3 and combined 0.4;
 %     - fields under [matlab.params] are copied as they are, for
 %       parameters that only GECKO uses.
 %
@@ -45,14 +48,14 @@ data = readAdapterToml(tomlFile);
 map = adapterParameterMap();
 
 % Unknown keys are errors, as in geckopy, so that a typo is not ignored.
-known = [map.tomlKey; {'evotune.source_groups'; 'evotune.sigma0_log_source'}];
+known = map.tomlKey;
 checkKnownKeys(data, '', known, tomlFile);
 
 params = struct();
 params.path = projectPath;
 for k = 1:numel(map.tomlKey)
     key = map.tomlKey{k};
-    if any(strcmp(key, {'evotune.source_groups', 'evotune.sigma0_log_source'}))
+    if strcmp(key, 'evotune.source_groups')
         continue
     end
     [found, value] = getDotted(data, key);
@@ -83,7 +86,7 @@ if isfield(params, 'spontaneous') && isfield(params.spontaneous, 'file')
     params.spontaneous.file = projectFile(projectPath, params.spontaneous.file);
 end
 
-params = sourceGroups(params, data, tomlFile);
+params = sourceGroups(params, data);
 
 if isfield(data, 'matlab') && isfield(data.matlab, 'params')
     params = mergeStruct(params, data.matlab.params);
@@ -139,57 +142,37 @@ for k = 1:numel(fields)
         end
         continue
     end
-    if any(startsWith(key, {'evotune.source_groups.', 'evotune.sigma0_log_source.'}))
-        continue
-    end
     error('GECKO:loadAdapterParams', ['Unknown key "%s" in %s. Parameters that only ' ...
         'GECKO uses go under [matlab.params].'], key, tomlFile);
 end
 end
 
-function params = sourceGroups(params, data, tomlFile)
-% evotune.source_groups and evotune.sigma0_log_source become the
-% kcatSources and sigma0logSource lists that evotune reads: one entry per
-% ec.source value, with its group's prior width.
+function params = sourceGroups(params, data)
+% evotune.source_groups becomes the kcatSources and sigma0logSource lists
+% that evotune reads: one entry per element of sources, in group order,
+% with the sigma0_log of its group.
 groups = struct();
-widths = struct();
 if isfield(data, 'evotune') && isfield(data.evotune, 'source_groups')
     groups = data.evotune.source_groups;
-    if isfield(data.evotune, 'sigma0_log_source')
-        widths = data.evotune.sigma0_log_source;
-    end
 else
-    % geckopy's defaults (EvotuneParams.source_groups, sigma0_log_source).
-    groups.dlkcat.sources = {'dlkcat'};
-    groups.brenda.sources = {'brenda'};
-    groups.custom.sources = {'custom'};
-    widths.dlkcat = 0.4;
-    widths.brenda = 0.2;
-    widths.custom = 0.1;
+    defaults = {'custom', 0.1; 'brenda', 0.2; 'ec_tree', 0.3; 'combined', 0.4};
+    for k = 1:size(defaults, 1)
+        groups.(defaults{k,1}).sources = defaults(k,1);
+        groups.(defaults{k,1}).sigma0_log = defaults{k,2};
+    end
 end
 names = fieldnames(groups);
-if ~isempty(setxor(names, fieldnames(widths)))
-    error('GECKO:loadAdapterParams', ['%s: evotune.sigma0_log_source must have ' ...
-        'the same group names as evotune.source_groups'], tomlFile);
-end
 kcatSources = {};
+kcatGroups = {};
 sigma0logSource = [];
 for k = 1:numel(names)
-    group = groups.(names{k});
-    sources = {};
-    if isfield(group, 'sources')
-        sources = group.sources;
-        if ischar(sources)
-            sources = {sources};
-        end
-    end
-    if isfield(group, 'match_okp') && group.match_okp && isfield(params, 'okp')
-        sources{end+1} = params.okp.method; %#ok<AGROW>
-    end
+    sources = groups.(names{k}).sources(:)';
     kcatSources = [kcatSources, sources]; %#ok<AGROW>
-    sigma0logSource = [sigma0logSource; repmat(widths.(names{k}), numel(sources), 1)]; %#ok<AGROW>
+    kcatGroups = [kcatGroups, repmat(names(k), 1, numel(sources))]; %#ok<AGROW>
+    sigma0logSource = [sigma0logSource; repmat(groups.(names{k}).sigma0_log, numel(sources), 1)]; %#ok<AGROW>
 end
 params.evotune.kcatSources = kcatSources;
+params.evotune.kcatGroups = kcatGroups;
 params.evotune.sigma0logSource = sigma0logSource;
 end
 
