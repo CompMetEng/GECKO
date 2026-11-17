@@ -186,11 +186,8 @@ for i=1:length(conflicts{1})
 end
 STR = [STR, '\nIf a wrongly annotated case was found then call the '];
 STR = [STR, 'getECfromDatabase.m function again with the option action'];
-STR = [STR, '= ignore\n\n'];
-STR = [STR, 'The protein with the lowest index in the database was used for each of them.\n\n'];
-STR = [STR, 'If the conflicting proteins are desired to be kept as isozymes'];
-STR = [STR, ' then call the getECfromDatabase.m function'];
-STR = [STR, ' again with the option action = add\n'];
+STR = [STR, ' = ignore\n\n'];
+STR = [STR, 'The protein with the lowest index in the database was used for each of them.\n'];
 warning('getECfromDatabase:conflicts', '%s', sprintf(STR))
 end
 
