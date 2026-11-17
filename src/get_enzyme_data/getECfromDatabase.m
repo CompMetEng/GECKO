@@ -109,16 +109,13 @@ conflicts = cell(1,4);
 
 rxnEnzMat = logical(rxnEnzMat);
 if isempty(ecRxns)
-    selected = true(n,1);
+    selectedIdx = (1:n).';
 else
-    selected = logical(ecRxns(:));
+    selectedIdx = find(logical(ecRxns(:)));
 end
-PB = progressReport(n, 'Assigning EC numbers from database');
-for i = 1:n
+PB = progressReport(numel(selectedIdx), 'Assigning EC numbers from database');
+for i = selectedIdx.'
     PB.count;
-    if ~selected(i)
-        continue
-    end
     gns = genes(rxnEnzMat(i,:).');
     if ~isempty(gns)
         %Find match in Uniprot:
@@ -151,16 +148,6 @@ for i = 1:n
             conflicts{3} = [conflicts{3};multGenes{2}];
             %DB name
             conflicts{4} = [conflicts{4};{multGenes{3}}];
-
-            %{ I don't understand the purpose of this, let's skip it for now
-            %if strcmpi(action,'add')
-            %    if strcmpi(DBase,'swissprot')
-            %        [uni,EC,MW,Genes] = addMultipleMatches(uni,EC,MW,Genes,multGenes,swissprot);
-            %    elseif strcmpi(DBase,'KEGG')
-            %        [uni,EC,MW,Genes] = addMultipleMatches(uni,EC,MW,Genes,multGenes,kegg);
-            %    end
-            %end
-            %}
         end
     end
 end
@@ -176,8 +163,6 @@ else
     if ~isfield(model.ec,'eccodes')
         model.ec.eccodes(1:numel(model.ec.rxns),1) = {''};
     end
-    %Probably faster to subset with ecRxns in the beginning of the script,
-    %but this was at the moment simpler to implement.
     model.ec.eccodes(ecRxns) = eccodes(ecRxns);
 end
 

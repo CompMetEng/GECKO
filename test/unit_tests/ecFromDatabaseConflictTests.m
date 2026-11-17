@@ -41,6 +41,23 @@ function testGetECfromDatabaseEmptySelectionChangesNothing_tc0406(testCase)
     verifyEqual(testCase, all.ec.eccodes{1}, '1.1.1.1')
 end
 
+function testGetECfromDatabaseSelectionMatchesFullRun_tc0733(testCase)
+    % Selecting entries gives the same eccodes for them as a run over all
+    % entries; an all-false selection of full length changes nothing.
+    [ecModel, adapter] = conflictModel(testCase);
+    warning('off', 'getECfromDatabase:conflicts')
+    cleanup = onCleanup(@() warning('on', 'getECfromDatabase:conflicts')); %#ok<NASGU>
+    full = getECfromDatabase(ecModel, [], 'ignore', adapter);
+    n = numel(ecModel.ec.rxns);
+    selected = false(n,1);
+    selected(1:2:n) = true;
+    part = getECfromDatabase(ecModel, selected, 'ignore', adapter);
+    verifyEqual(testCase, part.ec.eccodes(selected), full.ec.eccodes(selected))
+    verifyEqual(testCase, part.ec.eccodes(~selected), repmat({''}, nnz(~selected), 1))
+    none = getECfromDatabase(ecModel, false(n,1), 'ignore', adapter);
+    verifyEqual(testCase, none.ec.eccodes, repmat({''}, n, 1))
+end
+
 function testGetECfromDatabaseRejectsUnsupportedAction_tc0409(testCase)
     [ecModel, adapter] = conflictModel(testCase);
     verifyError(testCase, @() getECfromDatabase(ecModel, [], 'add', adapter), 'getECfromDatabase:unsupportedAction')
