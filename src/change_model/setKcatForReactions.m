@@ -33,7 +33,7 @@ function ecModel = setKcatForReactions(ecModel,rxnIds,kcat)
 %
 % See also
 % --------
-% applyKcatConstraints, getKcatAcrossIsozymes
+% applyKcatConstraints, fillKcatsFromIsozymes
 rxnIds = convertCharArray(rxnIds);
 
 hasExp       = ~cellfun(@isempty,regexp(rxnIds,'_EXP_\d+$'));

@@ -8,7 +8,7 @@ end
 function testAssignKcatsReproducesChain_tc0079(testCase)
     % The gecko_classic preset gives the same model as the steps it
     % replaces: fuzzyKcatMatching, the DLKcat output, mergeKcats,
-    % assignKcatValues, applyCustomKcats, getKcatAcrossIsozymes,
+    % assignKcatValues, applyCustomKcats, fillKcatsFromIsozymes,
     % getStandardKcat and applyKcatConstraints.
     [base, adapter, project] = buildProject();
     adapter.params.kcat_assignment = struct('preset', 'gecko_classic');
@@ -20,7 +20,7 @@ function testAssignKcatsReproducesChain_tc0079(testCase)
     state = warning('off', 'GECKO:deprecatedFunction');
     A = applyCustomKcats(A, 'modelAdapter', adapter);
     warning(state);
-    A = getKcatAcrossIsozymes(A);
+    A = fillKcatsFromIsozymes(A);
     A = getStandardKcat(A, 'modelAdapter', adapter);
     A = applyKcatConstraints(A);
 
@@ -118,7 +118,7 @@ function testGeckoMedianPreset_tc0083(testCase)
     state = warning('off', 'GECKO:deprecatedFunction');
     A = applyCustomKcats(A, 'modelAdapter', adapter);
     warning(state);
-    A = getKcatAcrossIsozymes(A);
+    A = fillKcatsFromIsozymes(A);
     A = getStandardKcat(A, 'modelAdapter', adapter);
     A = applyKcatConstraints(A);
     convertCustomKcats(base, 'modelAdapter', adapter);

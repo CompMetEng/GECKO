@@ -71,7 +71,7 @@ function [decisions, report, ecModel] = collectKcats(model, varargin)
 %
 % After the stages:
 % - with isozymes, reactions without a kcat take one from their isozymes
-%   (getKcatAcrossIsozymes);
+%   (fillKcatsFromIsozymes);
 % - with standard, the remaining reactions get the standard kcat
 %   (getStandardKcat).
 %
@@ -257,7 +257,7 @@ end
 
 if config.isozymes && ~ecModel.ec.geckoLight
     before = ecModel.ec.kcat == 0;
-    ecModel = getKcatAcrossIsozymes(ecModel);
+    ecModel = fillKcatsFromIsozymes(ecModel);
     stage(before & ecModel.ec.kcat > 0) = {'isozymes'};
 end
 if config.standard
