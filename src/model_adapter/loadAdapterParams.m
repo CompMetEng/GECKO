@@ -212,7 +212,7 @@ if isfield(data, 'kcat_sources') && isstruct(data.kcat_sources)
     % reads for each; dlkcat, custom and the okp_<method> files take none.
     allowed = struct('brenda', {{'aggregation', 'force_wildcard_level'}}, ...
         'ec_tree', {{'k'}}, 'homologs', {{'k', 'min_identity', 'coverage'}}, ...
-        'okp', {{'methods'}}, 'dlkcat', {{}}, 'custom', {{}});
+        'okp', {{'method'}}, 'dlkcat', {{}}, 'custom', {{}});
     names = fieldnames(data.kcat_sources);
     for k = 1:numel(names)
         if isfield(allowed, names{k})
@@ -232,35 +232,39 @@ if isfield(data, 'kcat_sources') && isstruct(data.kcat_sources)
             error('GECKO:loadAdapterParams', ...
                 '%s: kcat_sources.brenda.aggregation must be max or median', tomlFile);
         end
-        if strcmp(names{k}, 'okp') && isfield(source, 'methods')
-            checkOkpMethods(source.methods, tomlFile);
+        if strcmp(names{k}, 'okp') && isfield(source, 'method')
+            checkOkpMethod(source.method, tomlFile);
         end
     end
 end
 end
 
-function checkOkpMethods(methods, tomlFile)
-% [kcat_sources.okp] methods: a list of the OKP methods that kcatsFromOKP accepts.
-if ~(iscell(methods) && all(cellfun(@ischar, methods)))
-    error('GECKO:loadAdapterParams', '%s: kcat_sources.okp.methods must be a list of strings', tomlFile);
+function checkOkpMethod(method, tomlFile)
+% [kcat_sources.okp] method: an OKP method that kcatsFromOKP accepts.
+if ischar(method)
+    names = {method};
+elseif iscell(method) && ~isempty(method) && all(cellfun(@ischar, method))
+    names = method(:)';
+else
+    error('GECKO:loadAdapterParams', '%s: kcat_sources.okp.method must be a string', tomlFile);
 end
 known = okpMethodNames();
-unknown = unique(methods(~ismember(methods, known)), 'stable');
+unknown = unique(names(~ismember(names, known)), 'stable');
 if ~isempty(unknown)
-    error('kcatAssignment:config', 'Unknown OKP methods in [kcat_sources.okp] methods: %s; methods: %s.', ...
+    error('kcatAssignment:config', 'Unknown OKP method %s in [kcat_sources.okp] method; supported: %s', ...
         strjoin(unknown, ', '), strjoin(known, ', '))
 end
 end
 
 function known = okpMethodNames()
-% The methods that predict from one enzyme and one substrate (CatPred and
-% TurNup read whole reactions).
+% The OKP methods that predict from one enzyme and one substrate (CatPred
+% and TurNup read whole reactions).
 known = {'CataPro','CatRange','DLKcat','EITLEM','KinForm-H','KinForm-L', ...
     'OmniESI','OmniESI-O2DENet','UniKP'};
 end
 
 function files = okpFileNames()
-% The files of the OKP methods that kcatsFromOKP accepts: okp_ and the
+% The file of each OKP method that kcatsFromOKP accepts: okp_ and the
 % lower-case method name, with runs of characters other than letters and
 % digits replaced by _.
 known = okpMethodNames();

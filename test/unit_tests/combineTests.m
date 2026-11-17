@@ -6,11 +6,23 @@ function tests = combineTests
 end
 
 function testOkpPresetCombines_tc0088(testCase)
-    % CataPro 100 /s (similarity 30: bin <40, bias 0.2, variance 2) and
-    % UniKP 10 /s (similarity 50: bin 40-60, bias -0.3, variance 1):
-    % (1.8 * 0.5 + 1.3 * 1) / 1.5; sd sqrt(1/1.5 + 0.25) with the okp scale
-    % 1. geckopy's test_okp_presets has the same numbers.
+    % CataPro 100 /s (similarity 30: bin <40, bias 0.2, variance 2): the
+    % corrected value is 1.8; sd sqrt(1/0.5 + 0.25) with the okp scale 1.
+    % geckopy's test_okp_presets has the same numbers.
     [model, adapter, rxns] = buildProject('okp');
+    report = updateKcatSources(model, 'dryRun', true, 'modelAdapter', adapter);
+    verifyEqual(testCase, report.source', {'custom', 'okp_catapro'})
+    saveKcatSource(model, okpList(rxns(1:3), 100, 30, 'CataPro'), 'okp_catapro', 'modelAdapter', adapter);
+    decisions = collectKcats(model, 'modelAdapter', adapter, 'writeReport', false);
+    i = find(strcmp(decisions.ecRxn, rxns{1}));
+    verifyEqual(testCase, decisions.kcat(i), 10 ^ 1.8, 'RelTol', 1e-12)
+    verifyEqual(testCase, decisions.stage{i}, '2')
+    verifyEqual(testCase, decisions.sdLog10(i), sqrt(1/0.5 + 0.25), 'AbsTol', 1e-12)
+end
+
+function testOkpMethodValueForms_tc0088(testCase)
+    [model, adapter, rxns] = buildProject('okp');
+    adapter.params.kcat_sources.okp.method = {'CataPro', 'UniKP'};
     report = updateKcatSources(model, 'dryRun', true, 'modelAdapter', adapter);
     verifyEqual(testCase, report.source', {'custom', 'okp_catapro', 'okp_unikp'})
     saveKcatSource(model, okpList(rxns(1:3), 100, 30, 'CataPro'), 'okp_catapro', 'modelAdapter', adapter);
@@ -18,12 +30,9 @@ function testOkpPresetCombines_tc0088(testCase)
     decisions = collectKcats(model, 'modelAdapter', adapter, 'writeReport', false);
     i = find(strcmp(decisions.ecRxn, rxns{1}));
     verifyEqual(testCase, decisions.kcat(i), 10 ^ ((1.8 * 0.5 + 1.3) / 1.5), 'RelTol', 1e-12)
-    verifyEqual(testCase, decisions.source{i}, sprintf('combined (sd=%.2f, n=2)', sqrt(1/1.5 + 0.25)))
-    verifyEqual(testCase, decisions.stage{i}, '2')
     verifyEqual(testCase, decisions.candidates(i), 2)
-    verifyEqual(testCase, decisions.sdLog10(i), sqrt(1/1.5 + 0.25), 'AbsTol', 1e-12)
-    j = find(strcmp(decisions.ecRxn, rxns{2}));
-    verifyEqual(testCase, decisions.kcat(j), 10 ^ 1.8, 'RelTol', 1e-12)
+    shown = evalc('showAdapterParams(adapter)');
+    verifySubstring(testCase, shown, 'kcat_sources.okp.method = CataPro, UniKP')
 end
 
 function testEcTreeOkpPreset_tc0089(testCase)
@@ -60,11 +69,11 @@ end
 function testCombineErrors_tc0090(testCase)
     % An OKP method without combination parameters, and an unknown method.
     [model, adapter, rxns] = buildProject('okp');
-    adapter.params.kcat_sources.okp.methods = {'EITLEM'};
+    adapter.params.kcat_sources.okp.method = 'EITLEM';
     saveKcatSource(model, okpList(rxns(1), 100, 30, 'EITLEM'), 'okp_eitlem', 'modelAdapter', adapter);
     verifyError(testCase, @() collectKcats(model, 'modelAdapter', adapter, 'writeReport', false), ...
         'collectKcats:combine')
-    adapter.params.kcat_sources.okp.methods = {'CataPro', 'NoSuchMethod'};
+    adapter.params.kcat_sources.okp.method = 'NoSuchMethod';
     verifyError(testCase, @() kcatAssignmentConfig(adapter.params), 'kcatAssignment:config')
 end
 
@@ -83,7 +92,7 @@ function [model, adapter, rxns] = buildProject(preset)
     delete(fullfile(project, 'data', 'customKcats.tsv'));
     adapter.params.path = project;
     adapter.params.kcat_assignment = struct('preset', preset);
-    adapter.params.kcat_sources = struct('okp', struct('methods', {{'CataPro', 'UniKP'}}));
+    adapter.params.kcat_sources = struct('okp', struct('method', 'CataPro'));
     % TestGEMAdapter's BRENDA folder is the project's data folder.
     fid = fopen(fullfile(project, 'data', 'kcatCombineParams.tsv'), 'w');
     fprintf(fid, ['# Combination parameters for tests\n# measurement_sd: 0.5\n# min_variance: 0.01\n' ...

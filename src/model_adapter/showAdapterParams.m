@@ -124,8 +124,8 @@ for k = 1:numel(cols{1})
             end
         case 'kcat_sources'
             sources = config.sources;
-            if ~(isfield(sources, 'okp') && isfield(sources.okp, 'methods'))
-                sources.okp.methods = config.okpMethods;
+            if ~(isfield(sources, 'okp') && isfield(sources.okp, 'method'))
+                sources.okp.method = config.okpMethod;
             end
             % brenda, ec_tree, homologs and okp first, other sources and the
             % keys of each source alphabetically
@@ -140,7 +140,7 @@ for k = 1:numel(cols{1})
                     o = fromPreset;
                     if given
                         o = 'file';
-                    elseif strcmp(names{j}, 'okp') && strcmp(keys{i}, 'methods')
+                    elseif strcmp(names{j}, 'okp') && strcmp(keys{i}, 'method')
                         o = 'default';
                     end
                     add(sprintf('%s.%s.%s', tomlKey, names{j}, keys{i}), ...

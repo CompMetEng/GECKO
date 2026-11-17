@@ -25,11 +25,11 @@ function report = updateKcatSources(model, varargin)
 %     aggregation = "median"
 %
 %     [kcat_sources.okp]
-%     methods = ["CataPro", "KinForm-H"]
+%     method = "KinForm-H"
 %
 % The keys that a [kcat_sources.<name>] table can set are aggregation and
 % force_wildcard_level for brenda, k for ec_tree, k, min_identity and
-% coverage for homologs, and methods for okp; the okp_<method> files
+% coverage for homologs, and method for okp; the okp_<method> files
 % have none (their method is the one whose file name they carry).
 %
 % Parameters

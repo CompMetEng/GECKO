@@ -2972,14 +2972,15 @@ end
 
 function testOkpSourceGroupDefault_tc0723(testCase)
     % The okp source group of the presets is KinForm-H, unless the project
-    % sets [kcat_sources.okp] methods.
+    % sets [kcat_sources.okp] method.
     config = kcatAssignmentConfig(struct('kcat_assignment', struct('preset', 'okp')));
-    verifyEqual(testCase, config.okpMethods, {'KinForm-H'})
+    verifyEqual(testCase, config.okpMethod, {'KinForm-H'})
     verifyTrue(testCase, any(strcmp(config.stages(end).files, 'okp_kinform_h')))
     params.kcat_assignment = struct('preset', 'okp');
-    params.kcat_sources.okp = struct('methods', {{'CataPro', 'UniKP'}});
+    params.kcat_sources.okp = struct('method', 'UniKP');
     config = kcatAssignmentConfig(params);
-    verifyEqual(testCase, config.okpMethods, {'CataPro', 'UniKP'})
+    verifyEqual(testCase, config.okpMethod, {'UniKP'})
+    verifyTrue(testCase, any(strcmp(config.stages(end).files, 'okp_unikp')))
 end
 
 function testDeprecatedDLKcatFunctions_tc0724(testCase)

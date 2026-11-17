@@ -60,9 +60,9 @@ file = "data/spontaneousReactions.tsv"
 [kcat_assignment]
 preset = "brenda_ec_tree"
 
-# The OpenKineticsPredictor methods of the okp stage of the preset.
+# The OpenKineticsPredictor method of the okp stage of the preset.
 [kcat_sources.okp]
-methods = ["KinForm-H"]
+method = "KinForm-H"
 
 [matlab.params]
 # Glucose uptake, average across NCI60 cell lines [mmol/gDW/h].

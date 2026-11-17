@@ -99,7 +99,7 @@ model = loadConventionalGEM();
 %    class when the EC number has few measurements (ec_tree.tsv);
 % 4. for the remaining reactions, the predictions of the
 %    OpenKineticsPredictor (OKP) method KinForm-H ([kcat_sources.okp]
-%    methods), in okp_kinform_h.tsv.
+%    method), in okp_kinform_h.tsv.
 % kcatAssignmentConfig shows the stages of a preset, and the guide page
 % "Choose the kcat sources" compares the presets.
 
@@ -113,7 +113,7 @@ model = loadConventionalGEM();
 %   ecModel = getECfromDatabase(ecModel,'ecRxns',noEC);
 ecModel = getECfromDatabase(ecModel);
 
-% The OKP methods read the SMILES of the substrates. findMetSmiles reads
+% The OKP method reads the SMILES of the substrates. findMetSmiles reads
 % them from data/smilesDB.tsv and queries PubChem for the metabolite names
 % that are not in that file. noSmiles lists the metabolites without a
 % SMILES.
