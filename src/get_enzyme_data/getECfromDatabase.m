@@ -32,6 +32,10 @@ function model = getECfromDatabase(model, varargin)
 %     Any other action raises getECfromDatabase:unsupportedAction.
 % modelAdapter : ModelAdapter
 %     a loaded model adapter (default: the current default model adapter).
+% splitGeneCells : logical
+%     passed to loadDatabases: whether a gene cell of uniprot.tsv with
+%     several whitespace-separated gene names is expanded into one database
+%     row per gene name, so each name matches (default false).
 %
 % Returns
 % -------
@@ -41,7 +45,7 @@ function model = getECfromDatabase(model, varargin)
 % Examples
 % --------
 %     % optional arguments may be given positionally or as name-value pairs:
-%     model = getECfromDatabase(model, ecRxns, action, modelAdapter);
+%     model = getECfromDatabase(model, ecRxns, action, modelAdapter, splitGeneCells);
 %     model = getECfromDatabase(model, 'action', 'ignore');
 %
 % See also
@@ -51,10 +55,12 @@ function model = getECfromDatabase(model, varargin)
 p = parseGECKOargs(varargin, { ...
     'ecRxns',       []; ...
     'action',       'display'; ...
-    'modelAdapter', []});
+    'modelAdapter', []; ...
+    'splitGeneCells', false});
 ecRxns       = p.ecRxns;
 action       = p.action;
 modelAdapter = p.modelAdapter;
+splitGeneCells = p.splitGeneCells;
 
 if ~(ischar(action) && any(strcmpi(action,{'display','ignore'})))
     error('getECfromDatabase:unsupportedAction', ...
@@ -76,7 +82,7 @@ end
 rxnEnzMat = model.ec.rxnEnzMat;
 genes = modelAdapter.getUniprotCompatibleGenes(model.ec.genes);
 
-data    = loadDatabases('both', modelAdapter);
+data    = loadDatabases('both', modelAdapter, splitGeneCells);
 uniprot = data.uniprot;
 kegg    = data.kegg;
 
