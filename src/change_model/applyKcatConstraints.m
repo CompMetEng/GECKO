@@ -39,7 +39,7 @@ function model = applyKcatConstraints(model,varargin)
 %
 % See also
 % --------
-% makeEcModel, getKcatAcrossIsozymes, setKcatForReactions
+% makeEcModel, fillKcatsFromIsozymes, setKcatForReactions
 
 p = parseGECKOargs(varargin, { ...
     'updateRxns', []});

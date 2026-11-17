@@ -315,7 +315,8 @@ function testfuzzyKcatMatchingMedian_tc0060(testCase)
     ecModel = makeEcModel(model, false, adapter);
     ecModel = getECfromGEM(ecModel);
 
-    kcatListMax = fuzzyKcatMatching(ecModel, [], adapter);
+    kcatListMax = fuzzyKcatMatching(ecModel, 'ecRxns', [], ...
+        'modelAdapter', adapter, 'kcatAggregation', 'max');
     verifyEqual(testCase, kcatListMax.kcats, [1;1;10;10;100;1])
 
     kcatListMedian = fuzzyKcatMatching(ecModel, 'ecRxns', [], ...
@@ -328,10 +329,10 @@ function testfuzzyKcatMatchingMedian_tc0060(testCase)
     verifyEqual(testCase, kcatListMedian.wildcardLvl, kcatListMax.wildcardLvl)
     verifyEqual(testCase, kcatListMedian.origin, kcatListMax.origin)
 
-    % 'max' is the default, and an unknown value is refused.
-    kcatListExplicitMax = fuzzyKcatMatching(ecModel, 'ecRxns', [], ...
-        'modelAdapter', adapter, 'kcatAggregation', 'max');
-    verifyEqual(testCase, kcatListExplicitMax.kcats, kcatListMax.kcats)
+    % Without an argument the aggregate of the default preset (median) is
+    % used, and an unknown value is refused.
+    kcatListDefault = fuzzyKcatMatching(ecModel, [], adapter);
+    verifyEqual(testCase, kcatListDefault.kcats, kcatListMedian.kcats)
     verifyError(testCase, @() fuzzyKcatMatching(ecModel, 'ecRxns', [], ...
         'modelAdapter', adapter, 'kcatAggregation', 'mean'), ...
         'fuzzyKcatMatching:invalidKcatAggregation')
@@ -353,6 +354,7 @@ function testfuzzyKcatMatching_tc0010(testCase)
     % resort.
     geckoPath = findGECKOroot;
     adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    adapter.params.kcat_sources.brenda.aggregation = 'max'; % the default preset's median is not what this test reads
     model = getGeckoTestModel();
     %First all rxns, full model
     ecModel = makeEcModel(model, false, adapter);
@@ -412,6 +414,7 @@ end
 function testKcats_tc0011(testCase)
     geckoPath = findGECKOroot;
     adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    adapter.params.kcat_sources.brenda.aggregation = 'max'; % the default preset's median is not what this test reads
     model = getGeckoTestModel();
     %add an extra R3 reaction to be able to check that wildcards go in if there is no kcat in the dlkcat list
     rxnsToAdd = struct();
@@ -494,9 +497,9 @@ function testKcats_tc0011(testCase)
     verifyEqual(testCase,full(ecModel.S(ismember(ecModel.mets, {'prot_P1';'prot_P2';'prot_P3';'prot_P4';'prot_P5'}),strcmp(ecModel.rxns, 'S1'))), [0;0;0;0;0],"AbsTol",10^-10)
     verifyEqual(testCase,full(ecModel.S(ismember(ecModel.mets, {'prot_P1';'prot_P2';'prot_P3';'prot_P4';'prot_P5'}),strcmp(ecModel.rxns, 'S2'))), [0;0;0;0;0],"AbsTol",10^-10)
 
-    %Check getKcatAcrossIsozymes
+    %Check fillKcatsFromIsozymes
     ecModel.ec.kcat(2)=0;
-    ecModel=getKcatAcrossIsozymes(ecModel);
+    ecModel=fillKcatsFromIsozymes(ecModel);
     verifyEqual(testCase,ecModel.ec.kcat, [1;1;10;10;1008;1009;1010;100;1011])
 
     %Check applyCustomKcats
@@ -1912,6 +1915,7 @@ function testLoadBRENDAdataParsesNewTsvFormat_tc0043(testCase)
     % is the value used.
     geckoPath = findGECKOroot;
     adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
+    adapter.params.kcat_sources.brenda.aggregation = 'max'; % the default preset's median is not what this test reads
 
     scratchDir = fullfile(tempname);
     cleanupDir = onCleanup(@() rmdir(scratchDir, 's'));
@@ -2938,11 +2942,12 @@ function testResolveTunableContextFirstGroupWins_tc0719(testCase)
     model.ec.kcat = [1; 2];
     model.ec.source = {'brenda (wc=0, origin=1)'; 'custom'};
     params.kcatSources = {'brenda', 'custom', 'brenda'};
+    params.kcatGroups = {'first', 'custom', 'second'};
     params.sigma0logSource = [0.2; 0.1; 0.4];
     params.sigma0logDefault = 1;
     params.tieIsozymes = false;
     [~, ~, ~, groups, sigma0log] = resolveTunableContext(model, params, []);
-    verifyEqual(testCase, groups, {'brenda'; 'custom'})
+    verifyEqual(testCase, groups, {'first'; 'custom'})
     verifyEqual(testCase, sigma0log, [0.2; 0.1])
 end
 
@@ -2963,16 +2968,6 @@ function testKcatSourcesTableMergesWithPreset_tc0721(testCase)
     verifyEqual(testCase, config.sources.ec_tree.k, 5)
     verifyEqual(testCase, config.sources.ec_tree.min_n, 3)
     verifyEqual(testCase, config.sources.brenda.aggregation, 'max')
-end
-
-function testOkpMethodDefault_tc0722(testCase)
-    % Without an [okp] table, the OpenKineticsPredictor method is KinForm-H.
-    folder = tempname; mkdir(folder);
-    cleanupDir = onCleanup(@() rmdir(folder, 's'));
-    writelines(["conv_gem = ""models/x.xml"""; "org_name = ""testus testus"""], ...
-        fullfile(folder, 'model_adapter.toml'));
-    params = loadAdapterParams(folder);
-    verifyEqual(testCase, params.okp.method, 'KinForm-H')
 end
 
 function testOkpSourceGroupDefault_tc0723(testCase)

@@ -45,7 +45,7 @@ function [coverage, zeroable] = getIsozymeCoverage(model)
 %
 % See also
 % --------
-% zeroUnmeasuredIsozymes, getKcatAcrossIsozymes, fillEnzConcs
+% zeroUnmeasuredIsozymes, fillKcatsFromIsozymes, fillEnzConcs
 
 if isfield(model, 'ec') && isfield(model.ec, 'geckoLight') && model.ec.geckoLight
     error('getIsozymeCoverage:geckoLight', ...

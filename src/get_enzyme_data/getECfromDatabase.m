@@ -32,6 +32,10 @@ function model = getECfromDatabase(model, varargin)
 %     Any other action raises getECfromDatabase:unsupportedAction.
 % modelAdapter : ModelAdapter
 %     a loaded model adapter (default: the current default model adapter).
+% splitGeneCells : logical
+%     passed to loadDatabases: whether a gene cell of uniprot.tsv with
+%     several whitespace-separated gene names is expanded into one database
+%     row per gene name, so each name matches (default false).
 %
 % Returns
 % -------
@@ -41,7 +45,7 @@ function model = getECfromDatabase(model, varargin)
 % Examples
 % --------
 %     % optional arguments may be given positionally or as name-value pairs:
-%     model = getECfromDatabase(model, ecRxns, action, modelAdapter);
+%     model = getECfromDatabase(model, ecRxns, action, modelAdapter, splitGeneCells);
 %     model = getECfromDatabase(model, 'action', 'ignore');
 %
 % See also
@@ -51,10 +55,12 @@ function model = getECfromDatabase(model, varargin)
 p = parseGECKOargs(varargin, { ...
     'ecRxns',       []; ...
     'action',       'display'; ...
-    'modelAdapter', []});
+    'modelAdapter', []; ...
+    'splitGeneCells', false});
 ecRxns       = p.ecRxns;
 action       = p.action;
 modelAdapter = p.modelAdapter;
+splitGeneCells = p.splitGeneCells;
 
 if ~(ischar(action) && any(strcmpi(action,{'display','ignore'})))
     error('getECfromDatabase:unsupportedAction', ...
@@ -76,7 +82,7 @@ end
 rxnEnzMat = model.ec.rxnEnzMat;
 genes = modelAdapter.getUniprotCompatibleGenes(model.ec.genes);
 
-data    = loadDatabases('both', modelAdapter);
+data    = loadDatabases('both', modelAdapter, splitGeneCells);
 uniprot = data.uniprot;
 kegg    = data.kegg;
 
@@ -109,16 +115,13 @@ conflicts = cell(1,4);
 
 rxnEnzMat = logical(rxnEnzMat);
 if isempty(ecRxns)
-    selected = true(n,1);
+    selectedIdx = (1:n).';
 else
-    selected = logical(ecRxns(:));
+    selectedIdx = find(logical(ecRxns(:)));
 end
-PB = progressReport(n, 'Assigning EC numbers from database');
-for i = 1:n
+PB = progressReport(numel(selectedIdx), 'Assigning EC numbers from database');
+for i = selectedIdx.'
     PB.count;
-    if ~selected(i)
-        continue
-    end
     gns = genes(rxnEnzMat(i,:).');
     if ~isempty(gns)
         %Find match in Uniprot:
@@ -151,16 +154,6 @@ for i = 1:n
             conflicts{3} = [conflicts{3};multGenes{2}];
             %DB name
             conflicts{4} = [conflicts{4};{multGenes{3}}];
-
-            %{ I don't understand the purpose of this, let's skip it for now
-            %if strcmpi(action,'add')
-            %    if strcmpi(DBase,'swissprot')
-            %        [uni,EC,MW,Genes] = addMultipleMatches(uni,EC,MW,Genes,multGenes,swissprot);
-            %    elseif strcmpi(DBase,'KEGG')
-            %        [uni,EC,MW,Genes] = addMultipleMatches(uni,EC,MW,Genes,multGenes,kegg);
-            %    end
-            %end
-            %}
         end
     end
 end
@@ -176,8 +169,6 @@ else
     if ~isfield(model.ec,'eccodes')
         model.ec.eccodes(1:numel(model.ec.rxns),1) = {''};
     end
-    %Probably faster to subset with ecRxns in the beginning of the script,
-    %but this was at the moment simpler to implement.
     model.ec.eccodes(ecRxns) = eccodes(ecRxns);
 end
 
@@ -195,11 +186,8 @@ for i=1:length(conflicts{1})
 end
 STR = [STR, '\nIf a wrongly annotated case was found then call the '];
 STR = [STR, 'getECfromDatabase.m function again with the option action'];
-STR = [STR, '= ignore\n\n'];
-STR = [STR, 'The protein with the lowest index in the database was used for each of them.\n\n'];
-STR = [STR, 'If the conflicting proteins are desired to be kept as isozymes'];
-STR = [STR, ' then call the getECfromDatabase.m function'];
-STR = [STR, ' again with the option action = add\n'];
+STR = [STR, ' = ignore\n\n'];
+STR = [STR, 'The protein with the lowest index in the database was used for each of them.\n'];
 warning('getECfromDatabase:conflicts', '%s', sprintf(STR))
 end
 

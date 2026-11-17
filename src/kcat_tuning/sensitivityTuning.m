@@ -19,7 +19,7 @@ function [model, tunedKcats] = sensitivityTuning(model, varargin)
 % --------------------
 % desiredGrowthRate : double
 %     kcats will be relaxed until this growth rate is reached (default: the
-%     experimental growth rate params.gR_exp from the model adapter).
+%     experimental growth rate gr_exp from the model adapter).
 % modelAdapter : ModelAdapter
 %     a loaded model adapter (default: the current default model adapter).
 % foldChange : double
@@ -82,6 +82,9 @@ if isempty(modelAdapter)
 end
 params = modelAdapter.params;
 if isempty(desiredGrowthRate)
+    if ~isfield(params, 'gR_exp') || isempty(params.gR_exp)
+        error('GECKO:grExpNotSet', 'gr_exp is not set in model_adapter.toml')
+    end
     desiredGrowthRate = params.gR_exp;
 end
 

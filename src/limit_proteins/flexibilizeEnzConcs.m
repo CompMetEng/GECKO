@@ -133,7 +133,10 @@ if isempty(foldChange)
 end
 
 if isempty(expGrowth)
-    expGrowth = modelAdapter.getParameters().gR_exp;
+    if ~isfield(params, 'gR_exp') || isempty(params.gR_exp)
+        error('GECKO:grExpNotSet', 'gr_exp is not set in model_adapter.toml')
+    end
+    expGrowth = params.gR_exp;
 end
 
 % If a zero value is defined, not iteration limit will be set

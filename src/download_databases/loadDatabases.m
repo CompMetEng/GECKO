@@ -13,6 +13,14 @@ function databases = loadDatabases(varargin)
 % modelAdapter : ModelAdapter
 %     a loaded model adapter (default: the current default model adapter;
 %     send in [] for default).
+% splitGeneCells : logical
+%     whether to expand each uniprot.tsv entry whose gene cell holds several
+%     whitespace-separated gene names into one row per gene name (default
+%     false). The other columns of the entry (ID, EC number, MW, sequence)
+%     are repeated on every row, so uniprot.ID then holds an ID once per
+%     gene name. An empty gene cell stays one row. With false the gene cell
+%     is kept as one string, and only a model gene that equals the whole
+%     cell matches the entry.
 %
 % Returns
 % -------
@@ -23,8 +31,8 @@ function databases = loadDatabases(varargin)
 % Examples
 % --------
 %     % optional arguments may be given positionally or as name-value pairs:
-%     databases = loadDatabases('both', adapter);
-%     databases = loadDatabases('selectDatabase', 'both');
+%     databases = loadDatabases('both', adapter, true);
+%     databases = loadDatabases('selectDatabase', 'both', 'splitGeneCells', true);
 %
 % See also
 % --------
@@ -32,9 +40,11 @@ function databases = loadDatabases(varargin)
 
 p = parseGECKOargs(varargin, { ...
     'selectDatabase', 'both'; ...
-    'modelAdapter',   []});
+    'modelAdapter',   []; ...
+    'splitGeneCells', false});
 selectDatabase = p.selectDatabase;
 modelAdapter   = p.modelAdapter;
+splitGeneCells = p.splitGeneCells;
 
 if isempty(modelAdapter)
     modelAdapter = ModelAdapterManager.getDefault();
@@ -80,12 +90,16 @@ if any(strcmp(selectDatabase,{'uniprot','both'}))
         databases.uniprot = [];
     end
     if ~isempty(databases.uniprot)
+        % Duplicates are counted per file row, before any gene cell is split
         [uniqueIDs,uniqueIdx] = unique(databases.uniprot.ID,'stable');
         if numel(uniqueIDs) < numel(databases.uniprot.ID)
             duplID = setdiff(1:numel(databases.uniprot.ID),uniqueIdx);
             error('%s', ravenList(['Duplicate entries are found for the following proteins. '...
                     'Manually curate the ''uniprot.tsv'' file, or adjust the uniprot parameters '...
                     'in the model adapter:'],databases.uniprot.ID(duplID)));
+        end
+        if splitGeneCells
+            databases.uniprot = splitUniprotGeneCells(databases.uniprot);
         end
     end
 end
@@ -115,4 +129,23 @@ if any(strcmp(selectDatabase,{'kegg','both'}))
         databases.kegg = [];
     end
 end
+end
+
+function uniprot = splitUniprotGeneCells(uniprot)
+% Expand each entry with several whitespace-separated gene names into one row
+% per gene name. A cell that is empty or only whitespace stays one row as it is.
+geneNames = cell(size(uniprot.genes));
+for i = 1:numel(uniprot.genes)
+    if isempty(strtrim(uniprot.genes{i}))
+        geneNames{i} = uniprot.genes(i);
+    else
+        geneNames{i} = regexp(strtrim(uniprot.genes{i}), '\s+', 'split').';
+    end
+end
+rowIdx = repelem((1:numel(geneNames)).', cellfun(@numel, geneNames));
+uniprot.ID      = uniprot.ID(rowIdx);
+uniprot.genes   = vertcat(geneNames{:});
+uniprot.eccodes = uniprot.eccodes(rowIdx);
+uniprot.MW      = uniprot.MW(rowIdx);
+uniprot.seq     = uniprot.seq(rowIdx);
 end

@@ -243,11 +243,11 @@ end
 % against these data and searches with CMA-ES, an evolutionary optimiser.
 % screenKcatLeverage first ranks the kcats by their effect on the fit, and
 % the search varies the top kcats of the screen. The trust in each kcat
-% source ([evotune.source_groups] and [evotune.sigma0_log_source] of
-% model_adapter.toml) limits how far each kcat moves, and
-% prior_penalty_weight penalises large changes. The settings depend on the
-% model, on the certainty of its kcats and on the data, and the search runs
-% many FBA problems, so it is shown here and not run:
+% source ([evotune.source_groups] of model_adapter.toml) limits how far
+% each kcat moves, and prior_penalty_weight penalises large changes. The
+% settings depend on the model, on the certainty of its kcats and on the
+% data, and the search runs many FBA problems, so it is shown here and not
+% run:
 %   screen = screenKcatLeverage(ecModel, 'nProc', 8);
 %   [ecModel, result] = cmaesKcatTuning(ecModel, 'screen', screen, 'nProc', 8, 'seed', 0);
 % The standard and the advanced tuning are alternatives: cmaesKcatTuning

@@ -24,8 +24,13 @@ function report = updateKcatSources(model, varargin)
 %     [kcat_sources.brenda]
 %     aggregation = "median"
 %
-%     [kcat_sources.okp_catapro]
-%     method = "CataPro"
+%     [kcat_sources.okp]
+%     methods = ["CataPro", "KinForm-H"]
+%
+% The keys that a [kcat_sources.<name>] table can set are aggregation and
+% force_wildcard_level for brenda, k for ec_tree, k, min_identity and
+% coverage for homologs, and methods for okp; the okp_<method> files
+% have none (their method is the one whose file name they carry).
 %
 % Parameters
 % ----------
@@ -160,7 +165,7 @@ try
             st = 'pending'; nt = 'OKP job for DLKcat still running; call again later';
         end
     else % okp_<method>
-        method = okpMethod(name, wanted);
+        method = okpMethod(name);
         resolveOkpApiKey('', modelAdapter.params.path); % errors without a key
         [~, done] = kcatsFromOKP(model, 'method', method, 'saveAs', name, 'modelAdapter', modelAdapter);
         if ~done
@@ -172,20 +177,18 @@ catch err
 end
 end
 
-function method = okpMethod(name, wanted)
-% The OKP method of okp_<method>: from [kcat_sources.okp_<method>] method,
-% or the known method whose name gives this file name.
-if isfield(wanted, 'method')
-    method = char(wanted.method);
-    return
-end
-known = {'CataPro','CatPred','CatRange','DLKcat','EITLEM','KinForm-H','KinForm-L', ...
-    'OmniESI','OmniESI-O2DENet','TurNup','UniKP'};
-tags = cellfun(@(m) ['okp_' lower(regexprep(m, '[^A-Za-z0-9]+', '_'))], known, 'UniformOutput', false);
+function method = okpMethod(name)
+% The OKP method of okp_<method>: the known method whose file name is name,
+% that is okp_ and the lower-case method name, with runs of characters
+% other than letters and digits replaced by _.
+known = {'CataPro','CatRange','DLKcat','EITLEM','KinForm-H','KinForm-L', ...
+    'OmniESI','OmniESI-O2DENet','UniKP'};
+tags = cellfun(@(m) ['okp_' lower(regexprep(regexprep(m, '[^A-Za-z0-9]+', '_'), '^_+|_+$', ''))], ...
+    known, 'UniformOutput', false);
 hit = strcmp(tags, name);
 if ~any(hit)
-    error('updateKcatSources:okpMethod', ['Set the OKP method of %s in model_adapter.toml: ' ...
-        '[kcat_sources.%s] method = "..."'], name, name)
+    error('updateKcatSources:okpMethod', ['%s is not the file of a known OKP method; ' ...
+        'the files are %s.'], name, strjoin(tags, ', '))
 end
 method = known{hit};
 end

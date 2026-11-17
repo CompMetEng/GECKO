@@ -101,12 +101,12 @@ function testGetKcatAcrossIsozymesUsesPositiveSiblingsOnly_tc0252(testCase)
     ecModel.ec.kcat(strcmp(ecModel.ec.rxns, 'R2_EXP_2')) = -3;
     % R2_REV: a zero next to a NaN sibling is not filled
     ecModel.ec.kcat(strcmp(ecModel.ec.rxns, 'R2_REV_EXP_2')) = NaN;
-    out = getKcatAcrossIsozymes(ecModel);
+    out = fillKcatsFromIsozymes(ecModel);
     verifyEqual(testCase, out.ec.kcat(strcmp(out.ec.rxns, 'R2_EXP_1')), 0)
     verifyEqual(testCase, out.ec.kcat(strcmp(out.ec.rxns, 'R2_REV_EXP_1')), 0)
     % a positive sibling fills the zero (control: the same before and after)
     ecModel.ec.kcat(strcmp(ecModel.ec.rxns, 'R2_EXP_2')) = 6;
-    out = getKcatAcrossIsozymes(ecModel);
+    out = fillKcatsFromIsozymes(ecModel);
     j = strcmp(out.ec.rxns, 'R2_EXP_1');
     verifyEqual(testCase, out.ec.kcat(j), 6)
     verifyEqual(testCase, out.ec.source{j}, 'isozymes')
@@ -116,11 +116,27 @@ function testGetKcatAcrossIsozymesUsesPositiveSiblingsOnly_tc0252(testCase)
     ecModel.ec.rxns{strcmp(ecModel.ec.rxns, 'R3')} = 'R2_EXP_3';
     ecModel.ec.kcat(strcmp(ecModel.ec.rxns, 'R2_EXP_2')) = NaN;
     ecModel.ec.kcat(strcmp(ecModel.ec.rxns, 'R2_EXP_3')) = 6;
-    out = getKcatAcrossIsozymes(ecModel);
+    out = fillKcatsFromIsozymes(ecModel);
     j = strcmp(out.ec.rxns, 'R2_EXP_1');
     verifyEqual(testCase, out.ec.kcat(j), 6)
     verifyEqual(testCase, out.ec.source{j}, 'isozymes')
     verifyTrue(testCase, isnan(out.ec.kcat(strcmp(out.ec.rxns, 'R2_EXP_2'))))
+end
+
+function testGetKcatAcrossIsozymesStubWarnsAndForwards_tc0732(testCase)
+    % The old name is a stub in src/deprecated: it warns with the id
+    % 'GECKO:deprecatedName' and returns what fillKcatsFromIsozymes returns.
+    adapter = getAdapter();
+    ecModel = makeEcModel(getGeckoTestModel(), false, adapter);
+    ecModel.ec.kcat(:) = 0;
+    ecModel.ec.kcat(strcmp(ecModel.ec.rxns, 'R2_EXP_2')) = 6;
+    lastwarn('','');
+    out = getKcatAcrossIsozymes(ecModel);
+    [msg,warnId] = lastwarn();
+    verifyEqual(testCase, warnId, 'GECKO:deprecatedName')
+    verifySubstring(testCase, msg, 'fillKcatsFromIsozymes')
+    verifyEqual(testCase, out, fillKcatsFromIsozymes(ecModel))
+    verifyEqual(testCase, out.ec.kcat(strcmp(out.ec.rxns, 'R2_EXP_1')), 6)
 end
 
 function testSigmaFitterReturnsStartOfGrowthPlateau_tc0255(testCase)

@@ -8,7 +8,8 @@ function [ecModel,result] = cmaesKcatTuning(ecModel,varargin)
 % rate.
 %
 % Configuration comes entirely from modelAdapter.params.evotune: trust
-% tiers (kcatSources/sigma0logSource/sigma0logDefault), maxGrowthWeight,
+% tiers (kcatSources/sigma0logSource, from [evotune.source_groups], and
+% sigma0logDefault), maxGrowthWeight,
 % priorPenaltyWeight and tieIsozymes control the search, and
 % maxGenerations/rmseThreshold are its stopping conditions.
 %

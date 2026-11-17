@@ -46,6 +46,7 @@ end
 function adapter = getTestAdapter()
     geckoPath = findGECKOroot;
     adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));
+    adapter.params.kcat_sources.brenda.aggregation = 'max';
 end
 
 function writeTable(file, header, row)

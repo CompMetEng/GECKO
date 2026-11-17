@@ -35,6 +35,10 @@ function kcatList = fuzzyKcatMatching(model, varargin)
 % forceWClvl : double
 %     number of extra levels, from the right, replaced by a wildcard (on top
 %     of any wildcard already in the code; default 0).
+% kcatAggregation : char
+%     which BRENDA aggregate to read, 'max' or 'median' (default:
+%     [kcat_sources.brenda] aggregation as resolved from the preset or the
+%     stages (median for the default preset, max when no stage sets it)).
 %
 % Returns
 % -------
@@ -102,7 +106,7 @@ p = parseGECKOargs(varargin, { ...
     'kcatAggregation', [], @(x) assert(isempty(x) || any(strcmpi(x, ...
                                 {'max','median'})), ...
                                 'fuzzyKcatMatching:invalidKcatAggregation', ...
-                                'kcatAggregation must be ''max'' or ''median''.')});
+                                'aggregation must be max or median')});
 ecRxns          = p.ecRxns;
 modelAdapter    = p.modelAdapter;
 forceWClvl      = p.forceWClvl;

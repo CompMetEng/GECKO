@@ -32,9 +32,11 @@ function [kcatList, done] = kcatsFromOKP(model, varargin)
 % Name-Value Arguments
 % --------------------
 % method : char
-%     OKP method, e.g. 'CataPro', 'CatPred', 'CatRange', 'DLKcat',
-%     'EITLEM', 'KinForm-H', 'KinForm-L', 'OmniESI', 'TurNup', 'UniKP'
-%     (default: params.okp.method of the model adapter, or 'KinForm-H').
+%     OKP method that predicts from one enzyme and one substrate: 'CataPro',
+%     'CatRange', 'DLKcat', 'EITLEM', 'KinForm-H', 'KinForm-L', 'OmniESI',
+%     'OmniESI-O2DENet' or 'UniKP' (default: the first entry of
+%     [kcat_sources.okp] methods of the model adapter, KinForm-H when it
+%     lists none).
 % wait : logical
 %     wait until the job is done (default false).
 % resubmit : logical
@@ -97,17 +99,16 @@ end
 params = modelAdapter.params;
 method = char(p.method);
 if isempty(method)
-    if isfield(params, 'okp') && isfield(params.okp, 'method') && ~isempty(params.okp.method)
-        method = char(params.okp.method);
-    else
-        method = 'KinForm-H';
-    end
+    config = kcatAssignmentConfig(params);
+    method = config.okpMethods{1};
 end
 if any(strcmp(method, {'CatPred', 'TurNup'}))
     error('kcatsFromOKP:method', ['%s reads whole reactions (its substrate set, and products ' ...
         'for TurNup); kcatsFromOKP submits enzyme-substrate pairs only.'], method)
 end
-tag = lower(regexprep(method, '[^A-Za-z0-9]+', '_'));
+% The file name of a method: lower case, runs of characters other than
+% letters and digits replaced by _ (the same rule as okp_<method> sources).
+tag = lower(regexprep(regexprep(method, '[^A-Za-z0-9]+', '_'), '^_+|_+$', ''));
 dataDir = fullfile(params.path, 'data');
 jobFile = fullfile(dataDir, ['OKP_job_' tag '.txt']);
 outFile = fullfile(dataDir, ['OKP_output_' tag '.csv']);
@@ -272,8 +273,7 @@ elseif ~islogical(ecRxns) || numel(ecRxns) ~= numel(model.ec.rxns)
     error('ecRxns should be a logical vector with length equal to model.ec.rxns')
 end
 % Request options: defaults, then params.okp, then the method of this job.
-okp = struct('method','KinForm-H', ...
-             'handleLongSequences','truncate', ...
+okp = struct('handleLongSequences','truncate', ...
              'includeSimilarityColumns',true,'canonicalizeSubstrates',true);
 if isfield(params,'okp')
     fn = fieldnames(params.okp);

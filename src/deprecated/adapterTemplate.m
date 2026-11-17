@@ -48,13 +48,6 @@ classdef KEY_CLASSNAME < ModelAdapter
 			% Provide your organism scientific name
 			obj.params.org_name = 'genus species';
 
-            % Which BRENDA aggregate fuzzyKcatMatching reads for each
-            % (EC, substrate, organism) triple: 'max' (the highest
-            % turnover reported) or 'median' (the middle one). Can also
-            % be given per call as
-            % fuzzyKcatMatching(model,'kcatAggregation','median').
-            obj.params.kcatAggregation = 'max';
-            
             % Taxonomic identifier for Complex Portal
             obj.params.complex.taxonomicID = [];
 
@@ -96,31 +89,6 @@ classdef KEY_CLASSNAME < ModelAdapter
             % this does not interfere with them catalyzing reactions in
             % different compartments). Typically, cytoplasm is chosen.
             obj.params.enzyme_comp = 'cytoplasm';
-
-            %% Hyperparameters for evotune (CMA-ES) kcat fitting
-            % Default initial uncertainty (standard deviation in log-space) for kcat values
-            obj.params.evotune.sigma0logDefault    = 0.5;
-            % Data sources for kcat values, ordered from least to most trusted
-            obj.params.evotune.kcatSources         = {'dlkcat','brenda','custom'};
-            % Initial uncertainty for each source (lower = more trusted data)
-            obj.params.evotune.sigma0logSource     = [0.4; 0.2; 0.1];
-
-            % Weight on the max-growth RMSE against the flux RMSE:
-            % (rmseFlux + w*rmseMaxGrowth) / (w+1). At 1 both count equally.
-            obj.params.evotune.maxGrowthWeight     = 1.0;
-            % Weight on a prior term in the search objective,
-            % rmse + w*mean((log(k/k0)/sigma0log)^2). Keeps large corrections
-            % reproducible across seeds; 0 scores on RMSE alone.
-            obj.params.evotune.priorPenaltyWeight  = 0.03;
-            % Give isozyme copies of one reaction (sharing a prior value and
-            % a source) a single shared kcat, so the search cannot invent a
-            % distinction the kcat assignment never made.
-            obj.params.evotune.tieIsozymes         = true;
-
-            % Stop optimization when RMSE falls below this threshold
-            obj.params.evotune.rmseThreshold       = 0.2;
-            % Maximum number of CMA-ES generations before termination
-            obj.params.evotune.maxGenerations      = 150;
         end
 
         % function ecModel = makeModelAnaerobic(ecModel)
