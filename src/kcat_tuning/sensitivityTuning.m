@@ -29,6 +29,10 @@ function [model, tunedKcats] = sensitivityTuning(model, varargin)
 %     'Q99271'} (default []).
 % verbose : logical
 %     whether progress should be reported (default true).
+% evidence : logical
+%     add tunedKcats.evidence, the kcats that every source file of the
+%     project gives for the tuned reactions next to the tuned kcat (see
+%     kcatEvidence; default false).
 %
 % Returns
 % -------
@@ -49,6 +53,8 @@ function [model, tunedKcats] = sensitivityTuning(model, varargin)
 % - newKcat : kcat values in the output model, after tuning.
 % - source : source label of each kcat, taken from the input model before
 %   tuning.
+% - evidence : only with the option evidence; the summary table of
+%   kcatEvidence for the tuned reactions.
 %
 % model.ec.source of a tuned kcat keeps its origin and detail and gains the
 % tuning status, e.g. 'brenda (wc=0, origin=1) | tuned=sensitivity
@@ -67,7 +73,8 @@ p = parseGECKOargs(varargin, { ...
     'modelAdapter',      []; ...
     'foldChange',        10; ...
     'protToIgnore',      {}; ...
-    'verbose',           true});
+    'verbose',           true; ...
+    'evidence',          false});
 desiredGrowthRate = p.desiredGrowthRate;
 modelAdapter      = p.modelAdapter;
 foldChange        = p.foldChange;
@@ -210,6 +217,9 @@ tunedKcats.newKcat  = m.ec.kcat(rxnIdx);
 tunedKcats.source   = model.ec.source(rxnIdx);
 
 model = m;
+if p.evidence
+    [~, tunedKcats.evidence] = kcatEvidence(model, 'tunedKcats', tunedKcats, 'modelAdapter', modelAdapter);
+end
 end
 
 function m = markTuned(m,rows)
