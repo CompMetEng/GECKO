@@ -89,7 +89,7 @@ function testOkpJobTagAndNames_tc0752(testCase)
     try
         kcatsFromOKP(model, 'method', 'KinForm-H', 'jobTag', 'query', 'useStored', true, 'modelAdapter', adapter);
     catch err
-        verifyTrue(testCase, contains(err.message, 'OKP_output_kinform_h_query.csv'))
+        verifyTrue(testCase, contains(err.message, 'OKP_job_kinform_h_query.txt'))
     end
 end
 

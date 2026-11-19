@@ -143,7 +143,7 @@ if p.save
 end
 
 if p.useStored
-    if ~isfield(job, 'jobId')
+    if ~isfield(job, 'jobId') && isempty(jobTag)
         adoptSharedResult(model, modelAdapter, dataDir, method, jobFile, outFile);
         job = readJobFile(jobFile);
     end
