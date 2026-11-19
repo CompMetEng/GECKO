@@ -90,7 +90,7 @@ end
 
 function testEmptySelectionSelectsNothing_tc0755(testCase)
     [model, adapter] = buildProject();
-    for args = {{'rxns', {}}, {'rxns', []}, {'enzymes', {}}, {'tunedKcats', struct('rxns', {{}})}}
+    for args = {{'rxns', {}}, {'rxns', []}, {'enzymes', {}}, {'tunedKcats', []}, {'tunedKcats', struct('rxns', {{}})}}
         [~, summary, rows] = kcatEvidence(model, args{1}{:}, 'sources', {}, 'modelAdapter', adapter);
         verifyEmpty(testCase, rows)
         verifyEqual(testCase, height(summary), 0)
@@ -106,8 +106,11 @@ end
 function testConventionalNameSelectsTheIsozymes_tc0756(testCase)
     [model, adapter] = buildProject(true);
     base = getEcRxnKeys(model);
-    name = base{find(~cellfun(@isempty, regexp(model.ec.rxns, '^\d+_')), 1)};
+    [names, ~, g] = unique(base);
+    [~, most] = max(accumarray(g, 1));
+    name = names{most};
     expected = find(strcmp(base, name));
+    verifyGreaterThan(testCase, numel(expected), 1)
     [~, ~, rows] = kcatEvidence(model, 'rxns', name, 'sources', {}, 'modelAdapter', adapter);
     verifyEqual(testCase, rows(:), expected(:))
     [~, ~, rows] = kcatEvidence(model, 'tunedKcats', struct('rxns', {{name}}), 'sources', {}, 'modelAdapter', adapter);
@@ -143,6 +146,10 @@ function testOkpJobTagAndNames_tc0752(testCase)
     verifyError(testCase, @() kcatsFromOKP(model, 'method', 'KinForm-H', 'jobTag', '!!', 'useStored', true, ...
         'modelAdapter', adapter), 'kcatsFromOKP:jobTag')
     verifyError(testCase, @() kcatsFromOKP(model, 'method', 'KinForm-H', 'ecRxns', 10^6, ...
+        'modelAdapter', adapter), 'kcatsFromOKP:ecRxns')
+    verifyError(testCase, @() kcatsFromOKP(model, 'method', 'KinForm-H', 'ecRxns', {}, ...
+        'modelAdapter', adapter), 'kcatsFromOKP:ecRxns')
+    verifyError(testCase, @() kcatsFromOKP(model, 'method', 'KinForm-H', 'ecRxns', true(2, 1), ...
         'modelAdapter', adapter), 'kcatsFromOKP:ecRxns')
 end
 

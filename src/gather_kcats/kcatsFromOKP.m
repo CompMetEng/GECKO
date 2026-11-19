@@ -126,7 +126,8 @@ end
 if ~isempty(jobTag)
     tag = [tag '__' jobTag];
 end
-p.ecRxns = ecRxnsToLogical(model, p.ecRxns);
+ecRxnsGiven = ismember('ecRxns', cellfun(@char, varargin(1:2:end), 'UniformOutput', false));
+p.ecRxns = ecRxnsToLogical(model, p.ecRxns, ecRxnsGiven);
 dataDir = fullfile(params.path, 'data');
 jobFile = fullfile(dataDir, ['OKP_job_' tag '.txt']);
 outFile = fullfile(dataDir, ['OKP_output_' tag '.csv']);
@@ -142,7 +143,7 @@ if ~isempty(p.ecRxns) && ~submitting
 end
 if p.save
     file = fullfile(modelAdapter.params.path, 'data', 'kcats', [char(name) '.tsv']);
-    if submitting
+    if submitting && isempty(jobTag)
         warnSubset(p.ecRxns, numel(model.ec.rxns), file);
     end
 end
@@ -249,9 +250,18 @@ end
 fclose(fid);
 end
 
-function ecRxns = ecRxnsToLogical(model, ecRxns)
+function ecRxns = ecRxnsToLogical(model, ecRxns, given)
 % ecRxns as a logical vector over model.ec.rxns, from a logical vector, indices or names.
-if isempty(ecRxns) || islogical(ecRxns)
+if isempty(ecRxns)
+    if given
+        error('kcatsFromOKP:ecRxns', 'ecRxns selects no reaction; leave it out to predict for all reactions.')
+    end
+    return
+end
+if islogical(ecRxns)
+    if numel(ecRxns) ~= numel(model.ec.rxns)
+        error('kcatsFromOKP:ecRxns', 'A logical ecRxns needs %d entries, one per row of model.ec.rxns.', numel(model.ec.rxns))
+    end
     return
 end
 selected = false(numel(model.ec.rxns), 1);

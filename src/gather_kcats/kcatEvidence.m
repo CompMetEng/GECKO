@@ -10,7 +10,10 @@ function [evidence, summary, rows] = kcatEvidence(model, varargin)
 % no relaxed enzymes) selects none.
 %
 % The EC-tree estimate can be computed for the selected reactions (compute).
-% The source files are only read, never changed.
+% The source files are only read, never changed. A row of a source file
+% without a valid kcat (missing, 0 or not a number) is left out by
+% loadKcatSource, which reports it; the source then has no value for the
+% reaction.
 %
 % Name-Value Arguments
 % --------------------
@@ -33,8 +36,9 @@ function [evidence, summary, rows] = kcatEvidence(model, varargin)
 % compute : cell
 %     sources to compute for the selected reactions. 'ec_tree' is the one
 %     that is supported (default none). The computed estimate replaces a
-%     source file of the same name, so it follows measurements and the k
-%     of the model adapter (default 5) and is not outdated.
+%     source file of the same name, so it follows measurements and
+%     [kcat_sources.ec_tree] k of the model adapter (default 5) and is not
+%     outdated.
 % measurements : struct
 %     BRENDA measurement table for the EC-tree estimate (default:
 %     loadBrendaMeasurements).
@@ -106,6 +110,7 @@ nRows = numel(rows);
 
 kcatDir = fullfile(modelAdapter.params.path, 'data', 'kcats');
 sources = p.sources;
+explicit = ~(isnumeric(sources) && isempty(sources));
 if isnumeric(sources) && isempty(sources)
     files = dir(fullfile(kcatDir, '*.tsv'));
     sources = sort(cellfun(@(f) f(1:end-4), {files.name}, 'UniformOutput', false));
@@ -117,8 +122,18 @@ end
 
 ecRxn = cell(0, 1); source = cell(0, 1); kcat = zeros(0, 1);
 substrate = cell(0, 1); detail = cell(0, 1);
+isFile = true(size(sources));
 for s = 1:numel(sources)
-    kcatList = loadKcatSource(model, sources{s}, 'modelAdapter', modelAdapter);
+    try
+        kcatList = loadKcatSource(model, sources{s}, 'modelAdapter', modelAdapter);
+    catch err
+        if explicit
+            rethrow(err)
+        end
+        printOrange(sprintf('%s is not read: %s\n', sources{s}, err.message));  % a file of the default list that is no source file
+        isFile(s) = false;
+        continue
+    end
     [keep, ~] = ismember(kcatList.rxns, model.ec.rxns(rows));
     n = nnz(keep);
     ecRxn = [ecRxn; kcatList.rxns(keep)]; %#ok<AGROW>
@@ -127,8 +142,17 @@ for s = 1:numel(sources)
     substrate = [substrate; fieldOrEmpty(kcatList, 'substrates', keep)]; %#ok<AGROW>
     detail = [detail; fieldOrEmpty(kcatList, 'detail', keep)]; %#ok<AGROW>
 end
+sources = sources(isFile);
+if ismember('ec_tree', compute)
+    sources = [sources(:); {'ec_tree'}];
+end
 if ismember('ec_tree', compute) && nRows > 0
-    tree = kcatsFromECTree(model, 'ecRxns', rows, 'save', false, 'measurements', p.measurements, ...
+    config = kcatAssignmentConfig(modelAdapter.params);
+    k = 5;
+    if isfield(config.sources, 'ec_tree') && isfield(config.sources.ec_tree, 'k')
+        k = double(config.sources.ec_tree.k);
+    end
+    tree = kcatsFromECTree(model, 'k', k, 'ecRxns', rows, 'save', false, 'measurements', p.measurements, ...
         'modelAdapter', modelAdapter);
     n = numel(tree.rxns);
     ecRxn = [ecRxn; tree.rxns(:)];
@@ -136,7 +160,6 @@ if ismember('ec_tree', compute) && nRows > 0
     kcat = [kcat; tree.kcats(:)];
     substrate = [substrate; repmat({''}, n, 1)];
     detail = [detail; tree.detail(:)];
-    sources = [sources(:); {'ec_tree'}];
 end
 
 info = parseKcatSource(model.ec.source(rows));
@@ -169,11 +192,9 @@ summary = table(reshape(model.ec.rxns(rows), [], 1), enzymes, eccodes, current, 
 for s = 1:numel(sources)
     values = nan(nRows, 1);
     isSource = strcmp(source, sources{s});
-    for i = 1:nRows
-        hit = isSource & strcmp(ecRxn, model.ec.rxns{rows(i)});
-        if any(hit)
-            values(i) = median(kcat(hit));
-        end
+    [~, at] = ismember(ecRxn(isSource), summary.ecRxn);
+    if any(isSource)
+        values = accumarray(at, kcat(isSource), [nRows 1], @median, NaN);
     end
     summary.(matlab.lang.makeValidName(['src_' sources{s}])) = values;
 end
@@ -208,7 +229,12 @@ if given(1) && ~isempty(rxns)
         sel = sel | namedRows(model, baseRxns, cellstr(rxns), 'rxns');
     end
 end
-if given(3) && ~isempty(tunedKcats.rxns)
+if given(3) && ~isempty(tunedKcats)
+    if ~isstruct(tunedKcats) || ~isfield(tunedKcats, 'rxns')
+        error('kcatEvidence:tunedKcats', 'tunedKcats is the structure that sensitivityTuning returns, with the field rxns.')
+    end
+end
+if given(3) && ~isempty(tunedKcats) && ~isempty(tunedKcats.rxns)
     sel = sel | namedRows(model, baseRxns, tunedKcats.rxns, 'tunedKcats.rxns');
 end
 if given(2) && ~isempty(enzymes)
