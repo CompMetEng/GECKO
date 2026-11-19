@@ -5,6 +5,12 @@ function databases = loadDatabases(varargin)
 % databases that are required to extract protein information. The uniprot.ID
 % and kegg.ID are taken from the ModelAdapter.
 %
+% A gene cell of uniprot.tsv that holds several gene names, separated by
+% semicolons and/or whitespace (such as 'YPR080W; YBR118W'), is expanded into
+% one row per gene name. The other columns of the entry (ID, EC number, MW,
+% sequence) are repeated on every row, so uniprot.ID then holds an ID once per
+% gene name. An empty gene cell stays one row with an empty gene.
+%
 % Name-Value Arguments
 % --------------------
 % selectDatabase : char
@@ -13,15 +19,6 @@ function databases = loadDatabases(varargin)
 % modelAdapter : ModelAdapter
 %     a loaded model adapter (default: the current default model adapter;
 %     send in [] for default).
-% splitGeneCells : logical
-%     whether to expand each uniprot.tsv entry whose gene cell holds several
-%     whitespace-separated gene names into one row per gene name (default
-%     false). The other columns of the entry (ID, EC number, MW, sequence)
-%     are repeated on every row, so uniprot.ID then holds an ID once per
-%     gene name. An empty gene cell stays one row. With false the gene cell
-%     is kept as one string, and only a model gene that equals the whole
-%     cell matches the entry.
-%
 % Returns
 % -------
 % databases : struct
@@ -31,8 +28,8 @@ function databases = loadDatabases(varargin)
 % Examples
 % --------
 %     % optional arguments may be given positionally or as name-value pairs:
-%     databases = loadDatabases('both', adapter, true);
-%     databases = loadDatabases('selectDatabase', 'both', 'splitGeneCells', true);
+%     databases = loadDatabases('both', adapter);
+%     databases = loadDatabases('selectDatabase', 'both');
 %
 % See also
 % --------
@@ -40,11 +37,9 @@ function databases = loadDatabases(varargin)
 
 p = parseGECKOargs(varargin, { ...
     'selectDatabase', 'both'; ...
-    'modelAdapter',   []; ...
-    'splitGeneCells', false});
+    'modelAdapter',   []});
 selectDatabase = p.selectDatabase;
 modelAdapter   = p.modelAdapter;
-splitGeneCells = p.splitGeneCells;
 
 if isempty(modelAdapter)
     modelAdapter = ModelAdapterManager.getDefault();
@@ -98,9 +93,7 @@ if any(strcmp(selectDatabase,{'uniprot','both'}))
                     'Manually curate the ''uniprot.tsv'' file, or adjust the uniprot parameters '...
                     'in the model adapter:'],databases.uniprot.ID(duplID)));
         end
-        if splitGeneCells
-            databases.uniprot = splitUniprotGeneCells(databases.uniprot);
-        end
+        databases.uniprot = splitUniprotGeneCells(databases.uniprot);
     end
 end
 
@@ -132,14 +125,17 @@ end
 end
 
 function uniprot = splitUniprotGeneCells(uniprot)
-% Expand each entry with several whitespace-separated gene names into one row
-% per gene name. A cell that is empty or only whitespace stays one row as it is.
+% Expand each entry into one row per gene name, splitting its gene cell on
+% semicolons and whitespace and dropping empty pieces. A cell without any gene
+% name stays one row with an empty gene.
 geneNames = cell(size(uniprot.genes));
 for i = 1:numel(uniprot.genes)
-    if isempty(strtrim(uniprot.genes{i}))
-        geneNames{i} = uniprot.genes(i);
+    names = regexp(uniprot.genes{i}, '[;\s]+', 'split');
+    names = names(~cellfun(@isempty, names));
+    if isempty(names)
+        geneNames{i} = {''};
     else
-        geneNames{i} = regexp(strtrim(uniprot.genes{i}), '\s+', 'split').';
+        geneNames{i} = names(:);
     end
 end
 rowIdx = repelem((1:numel(geneNames)).', cellfun(@numel, geneNames));

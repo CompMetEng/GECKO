@@ -12,10 +12,9 @@ function [kcatList, done] = kcatsFromOKP(model, varargin)
 % - with a job, it fetches the result. When the job is done the file is
 %   written; otherwise it reports the job's status and writes nothing.
 %
-% Each method keeps its own job in data/OKP_job_<method>.txt and its own
-% result in data/OKP_output_<method>.csv, so jobs of several methods can
-% run at the same time. The job file records which job the stored result
-% came from; useStored only uses a result of the current job.
+% The job of a method is kept in data/OKP_job_<method>.txt and its result
+% in data/OKP_output_<method>.csv. The job file records which job the stored
+% result came from; useStored only uses a result of the current job.
 %
 % An API key is needed. Keys are free: open
 % https://predictor.openkinetics.org/api-docs, click "Generate" in the "API
@@ -34,9 +33,8 @@ function [kcatList, done] = kcatsFromOKP(model, varargin)
 % method : char
 %     OKP method that predicts from one enzyme and one substrate: 'CataPro',
 %     'CatRange', 'DLKcat', 'EITLEM', 'KinForm-H', 'KinForm-L', 'OmniESI',
-%     'OmniESI-O2DENet' or 'UniKP' (default: the first entry of
-%     [kcat_sources.okp] methods of the model adapter, KinForm-H when it
-%     lists none).
+%     'OmniESI-O2DENet' or 'UniKP' (default: [kcat_sources.okp] method of
+%     the model adapter, KinForm-H when it sets none).
 % wait : logical
 %     wait until the job is done (default false).
 % resubmit : logical
@@ -100,7 +98,7 @@ params = modelAdapter.params;
 method = char(p.method);
 if isempty(method)
     config = kcatAssignmentConfig(params);
-    method = config.okpMethods{1};
+    method = config.okpMethod{1};
 end
 if any(strcmp(method, {'CatPred', 'TurNup'}))
     error('kcatsFromOKP:method', ['%s reads whole reactions (its substrate set, and products ' ...

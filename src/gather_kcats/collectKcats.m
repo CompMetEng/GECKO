@@ -22,11 +22,11 @@ function [decisions, report, ecModel] = collectKcats(model, varargin)
 %     top_origin_limit = 1
 %
 %     [kcat_sources.okp]
-%     methods = ["CataPro", "UniKP"]   # the okp source group
+%     method = "UniKP"   # the OKP method of the okp source group
 %
 % A stage sets the kcat of the reactions that are still open:
 % - select: the first listed source with a value (see mergeKcats). Sources
-%   are the names of source files (custom, ec_tree, dlkcat, okp_catapro,
+%   are the names of source files (custom, ec_tree, dlkcat, okp_unikp,
 %   ...) and the BRENDA quality tiers database_exact, database_top and
 %   database_bottom, which read brenda.tsv.
 % - combine: all listed sources with a value, each corrected for its bias
@@ -36,21 +36,21 @@ function [decisions, report, ecModel] = collectKcats(model, varargin)
 %   sequences). The parameters come with the BRENDA files
 %   (kcatCombineParams.tsv). model.ec.source reads 'combined (sd=<log10
 %   sd>, n=<sources>)'; sd is the uncertainty for a new measurement.
-% In both, okp stands for the OKP methods of [kcat_sources.okp] methods
-% (default: KinForm-H).
+% In both, okp stands for the file of the OKP method of [kcat_sources.okp]
+% method (default: KinForm-H).
 %
 % The presets:
 % - brenda_ec_tree (the default): custom kcats, the BRENDA median of
 %   measurements of the organism on the reaction's substrate (origin 1,
 %   without EC wildcards), the EC tree (kcatsFromECTree); then the OKP
-%   methods combined for the reactions left (without an EC number).
+%   predictions for the reactions left (without an EC number).
 % - ec_tree_homologs: custom kcats, the organism's own BRENDA value; then
 %   the EC tree and homologs (kcatsFromHomologs) combined; then the OKP
-%   methods combined.
+%   predictions.
 % - ec_tree_okp: custom kcats, the organism's own BRENDA value; then the EC
-%   tree, homologs and the OKP methods combined; then the OKP methods
-%   combined.
-% - okp: custom kcats; then the OKP methods combined.
+%   tree, homologs and the OKP predictions combined; then the OKP
+%   predictions.
+% - okp: custom kcats; then the OKP predictions.
 % - gecko_median: custom kcats, the BRENDA median of matches without EC
 %   wildcards from the organism or other organisms, with or without the
 %   substrate (origin 1 to 4), DLKcat, then the other BRENDA matches (EC
@@ -60,10 +60,8 @@ function [decisions, report, ecModel] = collectKcats(model, varargin)
 %   tutorial.
 % Against measured kcats hidden from the search, the EC tree was closer
 % than the BRENDA median at origins 2 and 4 and with EC wildcards and as
-% close at origins 1 and 3; the EC tree combined with eight OKP methods
-% (CataPro, DLKcat, EITLEM, KinForm-H, KinForm-L, OmniESI, OmniESI-O2DENet
-% and UniKP) was slightly closer than the EC tree, and these eight methods
-% combined as close. The default okp source group is KinForm-H alone.
+% close at origins 1 and 3; the EC tree combined with OKP predictions was
+% slightly closer than the EC tree. The default OKP method is KinForm-H.
 % In ecModels, values combined with predictions set high-turnover enzymes
 % such as ATP synthase too low, which is why the default uses predictions
 % only where there is no value from measurements. The BRENDA aggregation is

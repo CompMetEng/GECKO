@@ -243,7 +243,7 @@ function testUnknownKeys_tc0732(testCase)
         {'[kcat_sources.brenda]', 'aggregate = "max"'}, 'kcat_sources.brenda.aggregate'; ...
         {'[kcat_sources.ec_tree]', 'min_identity = 40'}, 'kcat_sources.ec_tree.min_identity'; ...
         {'[kcat_sources.okp_kinform_h]', 'method = "KinForm-H"'}, 'kcat_sources.okp_kinform_h.method'; ...
-        {'[kcat_sources.okp]', 'method = "KinForm-H"'}, 'kcat_sources.okp.method'; ...
+        {'[kcat_sources.okp]', 'methods = "KinForm-H"'}, 'kcat_sources.okp.methods'; ...
         {'[kcat_sources.foo]'}, 'kcat_sources.foo'; ...
         {'[kcat_sources.okp_nosuchmethod]'}, 'kcat_sources.okp_nosuchmethod'; ...
         {'[kcat_sources.dlkcat]', 'k = 1'}, 'kcat_sources.dlkcat.k'};
@@ -268,7 +268,7 @@ function testUnknownKeys_tc0732(testCase)
     writeTemp([base, {'[kcat_sources.dlkcat]', '[kcat_sources.okp_unikp]', '[kcat_sources.custom]', ...
         '[kcat_sources.brenda]', 'aggregation = "max"', 'force_wildcard_level = 1', ...
         '[kcat_sources.homologs]', 'k = 3', 'min_identity = 40', 'coverage = 0.5', ...
-        '[kcat_sources.okp]', 'methods = ["UniKP"]'}], fullfile(folder, 'model_adapter.toml'));
+        '[kcat_sources.okp]', 'method = "UniKP"'}], fullfile(folder, 'model_adapter.toml'));
     params = loadAdapterParams(folder);
     verifyEqual(testCase, params.kcat_sources.brenda.aggregation, 'max')
 end
@@ -403,7 +403,7 @@ function testBrendaDirectCallsUsePresetAggregation_tc0743(testCase)
 end
 
 function testKcatsFromOKPDefaultMethod_tc0737(testCase)
-    % Without a method, kcatsFromOKP uses the first of [kcat_sources.okp] methods.
+    % Without a method, kcatsFromOKP uses [kcat_sources.okp] method.
     adapter = ModelAdapterManager.getAdapter(fullfile(findGECKOroot,'test','unit_tests','ecTestGEM', 'TestGEMAdapter.m'));
     scratchDir = tempname;
     mkdir(fullfile(scratchDir, 'data'));
@@ -417,7 +417,7 @@ function testKcatsFromOKPDefaultMethod_tc0737(testCase)
     end
     verifyEqual(testCase, err.identifier, 'kcatsFromOKP:noStored')
     verifySubstring(testCase, err.message, 'KinForm-H')
-    adapter.params.kcat_sources.okp.methods = {'UniKP', 'CataPro'};
+    adapter.params.kcat_sources.okp.method = 'UniKP';
     try
         kcatsFromOKP(ecModel, 'useStored', true, 'save', false, 'modelAdapter', adapter);
         err = [];
@@ -427,20 +427,20 @@ function testKcatsFromOKPDefaultMethod_tc0737(testCase)
     verifySubstring(testCase, err.message, 'UniKP')
 end
 
-function testOkpMethodsAndFiles_tc0738(testCase)
-    % CatPred and TurNup are not accepted in [kcat_sources.okp] methods, and
+function testOkpMethodAndFiles_tc0738(testCase)
+    % CatPred and TurNup are not accepted as [kcat_sources.okp] method, and
     % an okp_<x> file that is no known method's file fails naming the file.
     verifyError(testCase, @() kcatAssignmentConfig(struct('kcat_sources', ...
-        struct('okp', struct('methods', {{'CatPred'}})))), 'kcatAssignment:config')
+        struct('okp', struct('method', 'CatPred')))), 'kcatAssignment:config')
     known = 'CataPro, CatRange, DLKcat, EITLEM, KinForm-H, KinForm-L, OmniESI, OmniESI-O2DENet, UniKP';
     try
-        kcatAssignmentConfig(struct('kcat_sources', struct('okp', struct('methods', {{'Zed', 'UniKP', 'Zed', 'Abc'}}))));
+        kcatAssignmentConfig(struct('kcat_sources', struct('okp', struct('method', 'Zed'))));
         err = [];
     catch err
     end
-    verifyEqual(testCase, err.message, ['Unknown OKP methods in [kcat_sources.okp] methods: Zed, Abc; methods: ' known '.'])
+    verifyEqual(testCase, err.message, ['Unknown OKP method Zed in [kcat_sources.okp] method; supported: ' known])
     verifyError(testCase, @() kcatAssignmentConfig(struct('kcat_sources', ...
-        struct('okp', struct('methods', {{'TurNup'}})))), 'kcatAssignment:config')
+        struct('okp', struct('method', 'TurNup')))), 'kcatAssignment:config')
     folder = tempname; mkdir(folder);
     cleanupDir = onCleanup(@() rmdir(folder, 's'));
     writeTemp({'conv_gem = "x.xml"', 'org_name = "x"', '[[kcat_assignment.stage]]', ...
@@ -454,15 +454,14 @@ function testOkpMethodsAndFiles_tc0738(testCase)
         'okp_omniesi_o2denet, okp_unikp.'])
 end
 
-function testOkpMethodsAtLoad_tc0744(testCase)
-    % The methods are checked when the file is read.
+function testOkpMethodAtLoad_tc0744(testCase)
+    % The method is checked when the file is read.
     base = {'conv_gem = "x.xml"', 'org_name = "x"', '[kcat_sources.okp]'};
     known = 'CataPro, CatRange, DLKcat, EITLEM, KinForm-H, KinForm-L, OmniESI, OmniESI-O2DENet, UniKP';
     cases = { ...
-        {'methods = "KinForm-H"'}, 'kcat_sources.okp.methods must be a list of strings'; ...
-        {'methods = [1, 2]'}, 'kcat_sources.okp.methods must be a list of strings'; ...
-        {'methods = ["Zed", "UniKP", "Zed", "CatPred"]'}, ...
-            ['Unknown OKP methods in [kcat_sources.okp] methods: Zed, CatPred; methods: ' known '.']};
+        {'method = 1'}, 'kcat_sources.okp.method must be a string'; ...
+        {'method = [1, 2]'}, 'kcat_sources.okp.method must be a string'; ...
+        {'method = "CatPred"'}, ['Unknown OKP method CatPred in [kcat_sources.okp] method; supported: ' known]};
     for k = 1:size(cases, 1)
         folder = tempname; mkdir(folder);
         file = fullfile(folder, 'model_adapter.toml');
@@ -566,7 +565,7 @@ function testShowAdapterParamsOrder_tc0747(testCase)
     sourceLines = lines(startsWith(lines, 'kcat_sources.'));
     verifyEqual(testCase, cellfun(@(l) l(1:find(l == ' ', 1)-1), sourceLines, 'UniformOutput', false), ...
         {'kcat_sources.brenda.aggregation'; 'kcat_sources.ec_tree.k'; 'kcat_sources.homologs.coverage'; ...
-         'kcat_sources.homologs.k'; 'kcat_sources.homologs.min_identity'; 'kcat_sources.okp.methods'})
+         'kcat_sources.homologs.k'; 'kcat_sources.homologs.min_identity'; 'kcat_sources.okp.method'})
 end
 
 function testGrExpNotSet_tc0739(testCase)
@@ -608,7 +607,7 @@ function testShowAdapterParams_tc0740(testCase)
     cleanupDir = onCleanup(@() rmdir(folder, 's'));
     writeTemp({'conv_gem = "x.xml"', 'org_name = "x"', 'p_tot = 0.4', ...
         '[kcat_assignment]', 'preset = "gecko_classic"', ...
-        '[kcat_sources.okp]', 'methods = ["UniKP", "CataPro"]'}, fullfile(folder, 'model_adapter.toml'));
+        '[kcat_sources.okp]', 'method = "UniKP"'}, fullfile(folder, 'model_adapter.toml'));
     lines = splitlines(strtrim(evalc('showAdapterParams(ModelAdapterManager.getAdapter(folder))')));
     verifyTrue(testCase, ismember('p_tot = 0.4  [file]', lines))
     verifyTrue(testCase, ismember('sigma = 0.5  [default]', lines))
@@ -620,7 +619,7 @@ function testShowAdapterParams_tc0740(testCase)
     verifyTrue(testCase, ismember(['kcat_assignment.stage[1] = select: custom, database_top, dlkcat, database_bottom; ' ...
         'top_origin_limit=6  [preset gecko_classic]'], lines))
     verifyTrue(testCase, ismember('kcat_sources.brenda.aggregation = max  [preset gecko_classic]', lines))
-    verifyTrue(testCase, ismember('kcat_sources.okp.methods = UniKP, CataPro  [file]', lines))
+    verifyTrue(testCase, ismember('kcat_sources.okp.method = UniKP  [file]', lines))
     verifyTrue(testCase, ismember('evotune.source_groups.custom = custom; sigma0_log 0.1  [default]', lines))
     verifyTrue(testCase, ismember('evotune.source_groups.combined = combined; sigma0_log 0.4  [default]', lines))
     % Integer-valued numbers print whole, other numbers with %g.

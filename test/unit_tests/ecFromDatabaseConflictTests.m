@@ -64,39 +64,40 @@ function testGetECfromDatabaseRejectsUnsupportedAction_tc0409(testCase)
     verifyError(testCase, @() getECfromDatabase(ecModel, [], 'other', adapter), 'getECfromDatabase:unsupportedAction')
 end
 
-function testLoadDatabasesSplitGeneCells_tc0734(testCase)
-    % A gene cell with several names is one row by default and one row per
-    % name with splitGeneCells; an empty cell stays one row, and a repeated
-    % ID across file rows is still a duplicate.
+function testLoadDatabasesSplitsGeneCells_tc0748(testCase)
+    % A gene cell with several names is one row per name, whatever separates
+    % them; an empty cell stays one row, and a repeated ID across file rows is
+    % still a duplicate.
     [~, adapter] = conflictModel(testCase);
     file = fullfile(adapter.params.path, 'data', 'uniprot.tsv');
+    before = loadDatabases('uniprot', adapter);
     fid = fopen(file, 'a');
     fprintf(fid, 'P7\tG7  G8\tx\t70000\tMKAL\nP8\t\ty\t80000\tMNTD\n');
+    fprintf(fid, 'P9\tG9; G10;G11\tz\t90000\tMSYN\nP10\t ; \tw\t10000\tMAAA\n');
     fclose(fid);
-    off = loadDatabases('uniprot', adapter);
-    on  = loadDatabases('uniprot', adapter, true);
-    verifyEqual(testCase, loadDatabases('uniprot', adapter, false), off)
-    verifyEqual(testCase, off.uniprot.genes(strcmp(off.uniprot.ID, 'P7')), {'G7  G8'})
-    i = strcmp(on.uniprot.ID, 'P7');
-    verifyEqual(testCase, on.uniprot.genes(i), {'G7';'G8'})
-    verifyEqual(testCase, on.uniprot.eccodes(i), {'x';'x'})
-    verifyEqual(testCase, on.uniprot.MW(i), [70000;70000])
-    verifyEqual(testCase, on.uniprot.seq(i), {'MKAL';'MKAL'})
-    verifyEqual(testCase, on.uniprot.genes(strcmp(on.uniprot.ID, 'P8')), {''})
-    verifyEqual(testCase, numel(on.uniprot.ID), numel(off.uniprot.ID) + 1)
+    db = loadDatabases('uniprot', adapter);
+    i = strcmp(db.uniprot.ID, 'P7');
+    verifyEqual(testCase, db.uniprot.genes(i), {'G7';'G8'})
+    verifyEqual(testCase, db.uniprot.eccodes(i), {'x';'x'})
+    verifyEqual(testCase, db.uniprot.MW(i), [70000;70000])
+    verifyEqual(testCase, db.uniprot.seq(i), {'MKAL';'MKAL'})
+    verifyEqual(testCase, db.uniprot.genes(strcmp(db.uniprot.ID, 'P9')), {'G9';'G10';'G11'})
+    verifyEqual(testCase, db.uniprot.genes(strcmp(db.uniprot.ID, 'P8')), {''})
+    verifyEqual(testCase, db.uniprot.genes(strcmp(db.uniprot.ID, 'P10')), {''})
+    verifyEqual(testCase, numel(db.uniprot.ID), numel(before.uniprot.ID) + 2 + 3 + 1 + 1)
     fid = fopen(file, 'a');
-    fprintf(fid, 'P7\tG9\tz\t90000\tMSYN\n');
+    fprintf(fid, 'P7\tG12\tz\t90000\tMSYN\n');
     fclose(fid);
-    verifyError(testCase, @() loadDatabases('uniprot', adapter, true), ?MException)
+    verifyError(testCase, @() loadDatabases('uniprot', adapter), ?MException)
 end
 
-function testGetECfromDatabaseSplitGeneCells_tc0735(testCase)
-    % With the default, a model gene that is one of several names in a gene
-    % cell finds no UniProt entry; with splitGeneCells it does.
+function testGetECfromDatabaseMatchesSecondGeneName_tc0749(testCase)
+    % A model gene that is the second name in a gene cell finds its UniProt
+    % entry; before, only a gene equal to the whole cell matched.
     [ecModel, adapter] = conflictModel(testCase);
     file = fullfile(adapter.params.path, 'data', 'uniprot.tsv');
     txt = fileread(file);
-    txt = strrep(txt, sprintf('P5\tG5\t\t'), sprintf('P5\tXX G5\t3.3.3.3\t'));
+    txt = strrep(txt, sprintf('P5\tG5\t\t'), sprintf('P5\tXX; G5\t3.3.3.3\t'));
     verifyNotEqual(testCase, txt, fileread(file))
     fid = fopen(file, 'w');
     fwrite(fid, txt);
@@ -105,10 +106,8 @@ function testGetECfromDatabaseSplitGeneCells_tc0735(testCase)
     cleanup = onCleanup(@() warning('on', 'getECfromDatabase:conflicts')); %#ok<NASGU>
     r = find(strcmp(ecModel.ec.rxns, 'R5'));
     verifyNumElements(testCase, r, 1)
-    off = getECfromDatabase(ecModel, [], 'ignore', adapter);
-    on  = getECfromDatabase(ecModel, [], 'ignore', adapter, true);
-    verifyNotEqual(testCase, off.ec.eccodes{r}, '3.3.3.3') % the KEGG entry of G5 is found instead
-    verifyEqual(testCase, on.ec.eccodes{r}, '3.3.3.3')
+    model = getECfromDatabase(ecModel, [], 'ignore', adapter);
+    verifyEqual(testCase, model.ec.eccodes{r}, '3.3.3.3')
 end
 
 function [ecModel, adapter] = conflictModel(testCase)

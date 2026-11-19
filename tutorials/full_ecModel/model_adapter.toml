@@ -92,9 +92,9 @@ sigma0_log = 0.1
 [kcat_assignment]
 preset = "brenda_ec_tree"
 
-# The OpenKineticsPredictor methods of the okp stage of the preset.
+# The OpenKineticsPredictor method of the okp stage of the preset.
 [kcat_sources.okp]
-methods = ["KinForm-H"]
+method = "KinForm-H"
 
 # Read by GECKO only. During kcat tuning, anaerobic conditions are set by
 # anaerobicModel_GECKO in the code folder, which GECKO adds to the path.

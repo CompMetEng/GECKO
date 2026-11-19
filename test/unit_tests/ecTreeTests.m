@@ -61,7 +61,7 @@ end
 
 function testBrendaEcTreePreset_tc0087(testCase)
     % The default preset: custom.tsv, then BRENDA at origin 1, then the EC
-    % tree; then the OKP methods combined.
+    % tree; then the OKP predictions.
     [model, adapter, project] = buildProject();
     verifyFalse(testCase, isfield(adapter.params, 'kcat_assignment'))
     writeMeasurements(fullfile(project, 'data', 'measurements.tsv'), measurementsFor(model));
