@@ -21,6 +21,8 @@ function testEvidenceListsEverySource_tc0748(testCase)
     verifyEqual(testCase, summary.src_srcB(1), 8)
     verifyEqual(testCase, summary.Properties.VariableNames, {'ecRxn','kcat','tuned','fold','prior', ...
         'origin','enzymes','eccodes','src_srcA','src_srcB'})
+    [~, summaryOrdered] = kcatEvidence(model, 'rxns', sel, 'sources', {'srcB', 'srcA'}, 'modelAdapter', adapter);
+    verifyEqual(testCase, summaryOrdered.Properties.VariableNames(end-1:end), {'src_srcA','src_srcB'})
     verifyEqual(testCase, evidence.Properties.VariableNames, {'ecRxn','kcat','source','substrate','detail','assigned'})
     verifyTrue(testCase, all(isnan(summary.src_srcB(2:3))))
     verifyEqual(testCase, height(evidence), 4)

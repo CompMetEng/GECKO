@@ -59,7 +59,8 @@ function [evidence, summary, rows] = kcatEvidence(model, varargin)
 %     (current), tuned (logical), fold (kcat divided by prior; NaN without a
 %     positive prior), prior (the kcat before the first tuning, NaN when
 %     untuned), origin (the origin in model.ec.source), enzymes, eccodes and
-%     one variable src_<source> per source, with the median of the kcats of that
+%     one variable src_<source> per source, in alphabetical order of the
+%     source names, with the median of the kcats of that
 %     source for the reaction (NaN without one). A conventional reaction name
 %     in rxns or tunedKcats selects every isozyme row of the reaction, as
 %     tunedKcats names the reactions of a light ecModel by their conventional
@@ -189,7 +190,8 @@ eccodes = cellfun(@joinCodes, eccodes(:), 'UniformOutput', false);
 summary = table(reshape(model.ec.rxns(rows), [], 1), current, tuned, fold, prior, ...
     reshape({info.origin}, [], 1), enzymes, eccodes, ...
     'VariableNames', {'ecRxn', 'kcat', 'tuned', 'fold', 'prior', 'origin', 'enzymes', 'eccodes'});
-for s = 1:numel(sources)
+[~, bySource] = sort(lower(sources));
+for s = reshape(bySource, 1, [])
     values = nan(nRows, 1);
     isSource = strcmp(source, sources{s});
     [~, at] = ismember(ecRxn(isSource), summary.ecRxn);
