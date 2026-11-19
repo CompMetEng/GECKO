@@ -19,6 +19,8 @@ function testEvidenceListsEverySource_tc0748(testCase)
     verifyEqual(testCase, summary.ecRxn, sel(:))
     verifyEqual(testCase, summary.src_srcA, [1; 2; 4])
     verifyEqual(testCase, summary.src_srcB(1), 8)
+    verifyEmpty(testCase, setdiff(summary.Properties.VariableNames, {'ecRxn','enzymes','eccodes','kcat', ...
+        'origin','tuned','prior','fold','src_srcA','src_srcB'}))
     verifyTrue(testCase, all(isnan(summary.src_srcB(2:3))))
     verifyEqual(testCase, height(evidence), 4)
     verifyEqual(testCase, summary.kcat, model.ec.kcat(rows(:)))
@@ -48,6 +50,19 @@ function testEvidenceOfTunedKcat_tc0749(testCase)
     verifyEqual(testCase, [summary.kcat, summary.prior, summary.fold], [5, 0.5, 10], 'AbsTol', 1e-12)
     verifyEqual(testCase, summary.origin, {'custom'})
     verifyTrue(testCase, evidence.assigned)
+    % The prior in ec.source has six significant digits: a source kcat that
+    % equals the assigned one up to that rounding is still the assigned one.
+    model.ec.kcat(i) = 123.456789;
+    model.ec.source{i} = 'custom | tuned=sensitivity (prior=12.3457)';
+    saveKcatSource(model, struct('rxns', {model.ec.rxns(i)}, 'kcats', 12.3456789), 'srcA', 'modelAdapter', adapter);
+    evidence = kcatEvidence(model, 'rxns', model.ec.rxns(i), 'sources', {'srcA'}, 'modelAdapter', adapter);
+    verifyTrue(testCase, evidence.assigned)
+    % A tuning status without a prior is tuned, and has no fold.
+    model.ec.source{i} = 'custom | tuned=cmaes';
+    [~, summary] = kcatEvidence(model, 'rxns', i, 'sources', {}, 'modelAdapter', adapter);
+    verifyTrue(testCase, summary.tuned && isnan(summary.prior) && isnan(summary.fold))
+    model.ec.kcat(i) = 5;
+    model.ec.source{i} = 'custom | tuned=sensitivity (prior=0.5)';
     file = [tempname '.tsv'];
     kcatEvidence(model, 'tunedKcats', tunedKcats, 'sources', {'srcA'}, 'saveAs', file, 'modelAdapter', adapter);
     saved = readtable(file, 'FileType', 'text', 'Delimiter', '\t');
@@ -66,6 +81,37 @@ function testEvidenceByEnzymeAndEcTree_tc0750(testCase)
     verifyEqual(testCase, sum(~isnan(summary.src_ec_tree)), sum(withEc))
     verifyEqual(testCase, unique(evidence.source), {'ec_tree'})
     verifyError(testCase, @() kcatEvidence(model, 'enzymes', {'X00000'}, 'modelAdapter', adapter), 'kcatEvidence:enzymes')
+    % A computed EC-tree estimate replaces a file of that name.
+    e = find(~cellfun(@isempty, model.ec.eccodes), 1);
+    saveKcatSource(model, struct('rxns', {model.ec.rxns(e)}, 'kcats', 1e9), 'ec_tree', 'modelAdapter', adapter);
+    [~, summary] = kcatEvidence(model, 'rxns', e, 'compute', {'ec_tree'}, 'measurements', m, 'modelAdapter', adapter);
+    verifyEqual(testCase, summary.src_ec_tree, 10 .^ ecTreeEstimate(model.ec.eccodes(e), m, 5), 'RelTol', 1e-9)
+end
+
+function testEmptySelectionSelectsNothing_tc0755(testCase)
+    [model, adapter] = buildProject();
+    for args = {{'rxns', {}}, {'rxns', []}, {'enzymes', {}}, {'tunedKcats', struct('rxns', {{}})}}
+        [~, summary, rows] = kcatEvidence(model, args{1}{:}, 'sources', {}, 'modelAdapter', adapter);
+        verifyEmpty(testCase, rows)
+        verifyEqual(testCase, height(summary), 0)
+    end
+    [~, ~, rows] = kcatEvidence(model, 'sources', {}, 'modelAdapter', adapter);
+    verifyEqual(testCase, numel(rows), numel(model.ec.rxns))
+    verifyError(testCase, @() kcatEvidence(model, 'rxns', 10^6, 'modelAdapter', adapter), 'kcatEvidence:rxns')
+    verifyError(testCase, @() kcatEvidence(model, 'rxns', true(2, 1), 'modelAdapter', adapter), 'kcatEvidence:rxns')
+    verifyError(testCase, @() kcatsForReactions(model, {}, 'modelAdapter', adapter), 'kcatsForReactions:none')
+    verifyError(testCase, @() kcatsForReactions(model, 1, 'measurement', 1, 'modelAdapter', adapter), 'kcatsForReactions:arguments')
+end
+
+function testConventionalNameSelectsTheIsozymes_tc0756(testCase)
+    [model, adapter] = buildProject(true);
+    base = getEcRxnKeys(model);
+    name = base{find(~cellfun(@isempty, regexp(model.ec.rxns, '^\d+_')), 1)};
+    expected = find(strcmp(base, name));
+    [~, ~, rows] = kcatEvidence(model, 'rxns', name, 'sources', {}, 'modelAdapter', adapter);
+    verifyEqual(testCase, rows(:), expected(:))
+    [~, ~, rows] = kcatEvidence(model, 'tunedKcats', struct('rxns', {{name}}), 'sources', {}, 'modelAdapter', adapter);
+    verifyEqual(testCase, rows(:), expected(:))
 end
 
 function testKcatsForReactionsWithoutOkp_tc0751(testCase)
@@ -76,6 +122,9 @@ function testKcatsForReactionsWithoutOkp_tc0751(testCase)
     verifyFalse(testCase, isnan(summary.src_ec_tree))
     verifyError(testCase, @() kcatsForReactions(model, i, 'okp', 'NoSuchMethod', 'modelAdapter', adapter), ...
         'kcatsForReactions:okp')
+    % An empty okp asks for no OKP method: no job is submitted and no file is written.
+    [~, summary] = kcatsForReactions(model, i, 'okp', [], 'measurements', measurementsFor(model), 'modelAdapter', adapter);
+    verifyEqual(testCase, height(summary), 1)
 end
 
 function testOkpJobTagAndNames_tc0752(testCase)
@@ -89,8 +138,12 @@ function testOkpJobTagAndNames_tc0752(testCase)
     try
         kcatsFromOKP(model, 'method', 'KinForm-H', 'jobTag', 'query', 'useStored', true, 'modelAdapter', adapter);
     catch err
-        verifyTrue(testCase, contains(err.message, 'OKP_job_kinform_h_query.txt'))
+        verifyTrue(testCase, contains(err.message, 'OKP_job_kinform_h__query.txt'))
     end
+    verifyError(testCase, @() kcatsFromOKP(model, 'method', 'KinForm-H', 'jobTag', '!!', 'useStored', true, ...
+        'modelAdapter', adapter), 'kcatsFromOKP:jobTag')
+    verifyError(testCase, @() kcatsFromOKP(model, 'method', 'KinForm-H', 'ecRxns', 10^6, ...
+        'modelAdapter', adapter), 'kcatsFromOKP:ecRxns')
 end
 
 function writeSharedJob(project)
@@ -110,13 +163,16 @@ function m = measurementsFor(model)
     m = struct('ec', {repelem(ecs, 2)}, 'log10kcat', v, 'kcat', 10 .^ v, 'release', 'BRENDA release test');
 end
 
-function [base, adapter, project] = buildProject()
+function [base, adapter, project] = buildProject(light)
+    if nargin < 1
+        light = false;
+    end
     geckoPath = findGECKOroot;
     adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));
     project = tempname;
     copyfile(fullfile(adapter.params.path, 'data'), fullfile(project, 'data'));
     adapter.params.path = project;
     model = getGeckoTestModel();
-    base = makeEcModel(model, false, adapter);
+    base = makeEcModel(model, light, adapter);
     base = getECfromGEM(base);
 end

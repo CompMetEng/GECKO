@@ -218,7 +218,11 @@ tunedKcats.source   = model.ec.source(rxnIdx);
 
 model = m;
 if p.evidence
-    [~, tunedKcats.evidence] = kcatEvidence(model, 'tunedKcats', tunedKcats, 'modelAdapter', modelAdapter);
+    try
+        [~, tunedKcats.evidence] = kcatEvidence(model, 'tunedKcats', tunedKcats, 'modelAdapter', modelAdapter);
+    catch err
+        printOrange(sprintf('The evidence of the tuned kcats could not be read: %s\n', err.message));
+    end
 end
 end
 

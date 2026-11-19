@@ -50,9 +50,11 @@ function [kcatList, done] = kcatsFromOKP(model, varargin)
 % jobTag : char
 %     keeps the job, its input and its result apart from the job of the
 %     method without a tag: they are read and written as
-%     data/OKP_job_<method>_<jobTag>.txt, data/OKP_<jobTag>.csv and
-%     data/OKP_output_<method>_<jobTag>.csv, and the source file is
-%     okp_<method>_<jobTag>.tsv unless saveAs is given (default: none).
+%     data/OKP_job_<method>__<jobTag>.txt, data/OKP_query_<jobTag>.csv and
+%     data/OKP_output_<method>__<jobTag>.csv, and the source file is
+%     okp_<method>__<jobTag>.tsv unless saveAs is given. The tag is written
+%     in lower case, with each run of other characters than letters and
+%     digits as _, and has at least one letter or digit (default: none).
 %     A job for a few reactions with a tag leaves the job and the result
 %     of all reactions as they are.
 % save : logical
@@ -118,8 +120,11 @@ end
 % letters and digits replaced by _ (the same rule as okp_<method> sources).
 tag = lower(regexprep(regexprep(method, '[^A-Za-z0-9]+', '_'), '^_+|_+$', ''));
 jobTag = lower(regexprep(regexprep(char(p.jobTag), '[^A-Za-z0-9]+', '_'), '^_+|_+$', ''));
+if ~isempty(char(p.jobTag)) && isempty(jobTag)
+    error('kcatsFromOKP:jobTag', 'jobTag ''%s'' has no letters or digits.', char(p.jobTag))
+end
 if ~isempty(jobTag)
-    tag = [tag '_' jobTag];
+    tag = [tag '__' jobTag];
 end
 p.ecRxns = ecRxnsToLogical(model, p.ecRxns);
 dataDir = fullfile(params.path, 'data');
@@ -251,6 +256,9 @@ if isempty(ecRxns) || islogical(ecRxns)
 end
 selected = false(numel(model.ec.rxns), 1);
 if isnumeric(ecRxns)
+    if any(ecRxns < 1 | ecRxns > numel(selected) | ecRxns ~= round(ecRxns))
+        error('kcatsFromOKP:ecRxns', 'ecRxns has an index outside model.ec.rxns (%d rows).', numel(selected))
+    end
     selected(ecRxns) = true;
 else
     names = cellstr(ecRxns);
@@ -315,7 +323,7 @@ okp.method = method;
 
 filename = fullfile(params.path,'data','OKP.csv');
 if ~isempty(jobTag)
-    filename = fullfile(params.path,'data',['OKP_' jobTag '.csv']);
+    filename = fullfile(params.path,'data',['OKP_query_' jobTag '.csv']);
 end
 writeOpenKineticsPredictorInput(model, 'ecRxns', ecRxns, 'modelAdapter', modelAdapter, ...
     'onlyWithSmiles', true, 'overwrite', true, 'file', filename);

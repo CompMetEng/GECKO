@@ -6,10 +6,11 @@ function [evidence, summary, rows] = kcatEvidence(model, varargin)
 % model has now and, for a tuned kcat, the kcat before tuning. The
 % reactions are selected with rxns, enzymes and tunedKcats; a reaction that
 % any of them selects is included. Without a selection, all model.ec
-% reactions are included.
+% reactions are included; a selection that is given and empty (for example
+% no relaxed enzymes) selects none.
 %
-% The EC-tree estimate can be computed for the selected reactions without a
-% source file (compute). The source files are only read, never changed.
+% The EC-tree estimate can be computed for the selected reactions (compute).
+% The source files are only read, never changed.
 %
 % Name-Value Arguments
 % --------------------
@@ -27,11 +28,13 @@ function [evidence, summary, rows] = kcatEvidence(model, varargin)
 %     it returned.
 % sources : cell
 %     names of the source files, without .tsv (default: all files in
-%     data/kcats; {} for none).
+%     data/kcats, including the okp_<method>__query.tsv files that
+%     kcatsForReactions wrote; {} for none).
 % compute : cell
-%     sources to compute for the selected reactions when the project has no
-%     file of that name. 'ec_tree' is the one that is supported (default
-%     none).
+%     sources to compute for the selected reactions. 'ec_tree' is the one
+%     that is supported (default none). The computed estimate replaces a
+%     source file of the same name, so it follows measurements and the k
+%     of the model adapter (default 5) and is not outdated.
 % measurements : struct
 %     BRENDA measurement table for the EC-tree estimate (default:
 %     loadBrendaMeasurements).
@@ -51,8 +54,12 @@ function [evidence, summary, rows] = kcatEvidence(model, varargin)
 %     one row per selected reaction, with the variables ecRxn, enzymes,
 %     eccodes, kcat (current), origin (the origin in model.ec.source), tuned
 %     (logical), prior (the kcat before the first tuning, NaN when untuned),
-%     fold (kcat divided by prior) and one variable per source, with the
-%     median of the kcats of that source for the reaction (NaN without one).
+%     fold (kcat divided by prior; NaN without a positive prior) and one
+%     variable src_<source> per source, with the median of the kcats of that
+%     source for the reaction (NaN without one). A conventional reaction name
+%     in rxns or tunedKcats selects every isozyme row of the reaction, as
+%     tunedKcats names the reactions of a light ecModel by their conventional
+%     name.
 % rows : double
 %     the selected indices of model.ec.rxns.
 %
@@ -84,13 +91,17 @@ if isempty(modelAdapter)
         error('Either send in a modelAdapter or set the default model adapter in the ModelAdapterManager.')
     end
 end
-compute = cellstr(p.compute);
+compute = {};
+if ~isempty(p.compute)
+    compute = cellstr(p.compute);
+end
 unknown = setdiff(compute, {'ec_tree'});
 if ~isempty(unknown)
     error('kcatEvidence:compute', 'Cannot compute %s; supported: ec_tree.', strjoin(unknown, ', '))
 end
 
-rows = selectRows(model, p.rxns, p.enzymes, p.tunedKcats);
+given = cellfun(@char, varargin(1:2:end), 'UniformOutput', false);
+rows = selectRows(model, p.rxns, p.enzymes, p.tunedKcats, ismember({'rxns','enzymes','tunedKcats'}, given));
 nRows = numel(rows);
 
 kcatDir = fullfile(modelAdapter.params.path, 'data', 'kcats');
@@ -99,7 +110,10 @@ if isnumeric(sources) && isempty(sources)
     files = dir(fullfile(kcatDir, '*.tsv'));
     sources = sort(cellfun(@(f) f(1:end-4), {files.name}, 'UniformOutput', false));
 end
-sources = cellstr(sources);
+sources = unique(cellstr(sources), 'stable');
+if ismember('ec_tree', compute)
+    sources = sources(~strcmp(sources, 'ec_tree'));
+end
 
 ecRxn = cell(0, 1); source = cell(0, 1); kcat = zeros(0, 1);
 substrate = cell(0, 1); detail = cell(0, 1);
@@ -113,7 +127,7 @@ for s = 1:numel(sources)
     substrate = [substrate; fieldOrEmpty(kcatList, 'substrates', keep)]; %#ok<AGROW>
     detail = [detail; fieldOrEmpty(kcatList, 'detail', keep)]; %#ok<AGROW>
 end
-if ismember('ec_tree', compute) && ~ismember('ec_tree', sources) && nRows > 0
+if ismember('ec_tree', compute) && nRows > 0
     tree = kcatsFromECTree(model, 'ecRxns', rows, 'save', false, 'measurements', p.measurements, ...
         'modelAdapter', modelAdapter);
     n = numel(tree.rxns);
@@ -127,19 +141,22 @@ end
 
 info = parseKcatSource(model.ec.source(rows));
 if nRows == 0
-    info = struct('origin', {}, 'prior', {});
+    info = struct('origin', {}, 'prior', {}, 'tuned', {});
 end
 current = model.ec.kcat(rows);
 current = current(:);
 prior = reshape([info.prior], [], 1);
-tuned = ~isnan(prior);
+tuned = ~isnan(prior) | reshape(~cellfun(@isempty, {info.tuned}), [], 1);
 reference = current;
-reference(tuned) = prior(tuned);
+reference(~isnan(prior)) = prior(~isnan(prior));
 
 [~, at] = ismember(ecRxn, model.ec.rxns(rows));
-assigned = at > 0 & abs(log(kcat ./ reference(max(at, 1)))) < 1e-6;
+assigned = at > 0 & abs(log(kcat ./ reference(max(at, 1)))) < 1e-5;
 evidence = table(ecRxn, source, kcat, substrate, detail, assigned);
 
+fold = nan(nRows, 1);
+positive = prior > 0;
+fold(positive) = current(positive) ./ prior(positive);
 enzymes = cell(nRows, 1);
 for i = 1:nRows
     enzymes{i} = strjoin(model.ec.enzymes(model.ec.rxnEnzMat(rows(i), :) ~= 0)', ';');
@@ -147,7 +164,7 @@ end
 eccodes = model.ec.eccodes(rows);
 eccodes = cellfun(@joinCodes, eccodes(:), 'UniformOutput', false);
 summary = table(reshape(model.ec.rxns(rows), [], 1), enzymes, eccodes, current, ...
-    reshape({info.origin}, [], 1), tuned, prior, current ./ prior, ...
+    reshape({info.origin}, [], 1), tuned, prior, fold, ...
     'VariableNames', {'ecRxn', 'enzymes', 'eccodes', 'kcat', 'origin', 'tuned', 'prior', 'fold'});
 for s = 1:numel(sources)
     values = nan(nRows, 1);
@@ -166,28 +183,35 @@ if ~isempty(p.saveAs)
 end
 end
 
-function rows = selectRows(model, rxns, enzymes, tunedKcats)
-% Indices of the model.ec rows that rxns, enzymes or tunedKcats select.
+function rows = selectRows(model, rxns, enzymes, tunedKcats, given)
+% Indices of the model.ec rows that rxns, enzymes or tunedKcats select; an
+% argument that is given and empty selects none.
 nEc = numel(model.ec.rxns);
-if isempty(rxns) && isempty(enzymes) && isempty(tunedKcats)
+if ~any(given)
     rows = (1:nEc)';
     return
 end
 sel = false(nEc, 1);
 baseRxns = getEcRxnKeys(model);
-if ~isempty(rxns)
+if given(1) && ~isempty(rxns)
     if islogical(rxns)
+        if numel(rxns) ~= nEc
+            error('kcatEvidence:rxns', 'A logical rxns needs %d entries, one per row of model.ec.rxns.', nEc)
+        end
         sel(rxns) = true;
     elseif isnumeric(rxns)
+        if any(rxns < 1 | rxns > nEc | rxns ~= round(rxns))
+            error('kcatEvidence:rxns', 'rxns has an index outside model.ec.rxns (%d rows).', nEc)
+        end
         sel(rxns) = true;
     else
         sel = sel | namedRows(model, baseRxns, cellstr(rxns), 'rxns');
     end
 end
-if ~isempty(tunedKcats)
+if given(3) && ~isempty(tunedKcats.rxns)
     sel = sel | namedRows(model, baseRxns, tunedKcats.rxns, 'tunedKcats.rxns');
 end
-if ~isempty(enzymes)
+if given(2) && ~isempty(enzymes)
     enzymes = cellstr(enzymes);
     missing = setdiff(enzymes, model.ec.enzymes);
     if ~isempty(missing)

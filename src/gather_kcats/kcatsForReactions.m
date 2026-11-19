@@ -10,10 +10,11 @@ function [evidence, summary] = kcatsForReactions(model, rxns, varargin)
 % The OKP jobs have their own tag (see the jobTag option of kcatsFromOKP):
 % they submit the enzyme-substrate pairs of the selected reactions only, and
 % leave the job and the result that kcatsFromOKP keeps for all reactions as
-% they are. The predictions are written to data/kcats/okp_<method>_query.tsv
+% they are. The predictions are written to data/kcats/okp_<method>__query.tsv
 % and read back as a source of kcatEvidence. The function waits for each OKP
 % job to finish and submits a new job on every call. An OKP method that fails is
-% reported and the other methods continue. Each OKP method submits a job and
+% reported and the other methods continue; the methods without predictions are
+% listed at the end. Each OKP method submits a job and
 % counts against the daily prediction quota of the API key.
 %
 % Parameters
@@ -29,11 +30,16 @@ function [evidence, summary] = kcatsForReactions(model, rxns, varargin)
 % Name-Value Arguments
 % --------------------
 % okp : logical, char or cell
-%     OKP methods to predict with: false for none (default), true for the
+%     OKP methods to predict with: false or empty for none (default), true for the
 %     method of the model adapter, 'all' for every method that kcatsFromOKP
 %     accepts, or a method name or cell array of method names.
 % sources, compute, measurements, modelAdapter
-%     as in kcatEvidence; compute is {'ec_tree'} by default.
+%     as in kcatEvidence; compute is {'ec_tree'} by default, so the EC-tree
+%     estimate is computed from the BRENDA measurements, also when the project
+%     has an ec_tree.tsv. With sources, the files of the OKP methods that were
+%     asked for are added to it. The default sources include the okp_<method>__query.tsv
+%     files of earlier queries, which show the predictions of an earlier query for the same
+%     reactions.
 %
 % Returns
 % -------
@@ -50,6 +56,7 @@ function [evidence, summary] = kcatsForReactions(model, rxns, varargin)
 % --------
 % kcatEvidence, kcatsFromOKP, kcatsFromECTree
 
+checkOptions(varargin, {'okp','sources','compute','measurements','modelAdapter'}, 'kcatsForReactions');
 p = parseGECKOargs(varargin, { ...
     'okp',          false; ...
     'sources',      []; ...
@@ -71,26 +78,29 @@ end
 methods = okpMethods(p.okp, modelAdapter.params);
 selected = false(numel(model.ec.rxns), 1);
 selected(rows) = true;
-queried = cell(0, 1);
+queried = cell(1, 0);
+failed = cell(1, 0);
 for i = 1:numel(methods)
     try
         [~, done] = kcatsFromOKP(model, 'method', methods{i}, 'ecRxns', selected, ...
             'jobTag', 'query', 'resubmit', true, 'wait', true, 'modelAdapter', modelAdapter);
-        if done
-            queried{end+1, 1} = ['okp_' okpTag(methods{i}) '_query']; %#ok<AGROW>
-        end
     catch err
         printOrange(sprintf('OKP %s failed: %s\n', methods{i}, err.message));
+        done = false;
     end
+    if done
+        queried{end+1} = ['okp_' okpTag(methods{i}) '__query']; %#ok<AGROW>
+    else
+        failed{end+1} = methods{i}; %#ok<AGROW>
+    end
+end
+if ~isempty(failed)
+    printOrange(sprintf('No OKP predictions from: %s.\n', strjoin(failed, ', ')));
 end
 
 sources = p.sources;
-if isnumeric(sources) && isempty(sources)
-    files = dir(fullfile(modelAdapter.params.path, 'data', 'kcats', '*.tsv'));
-    sources = sort(cellfun(@(f) f(1:end-4), {files.name}, 'UniformOutput', false));
-    % Predictions of an earlier query that were not asked for now are left out.
-    old = startsWith(sources, 'okp_') & endsWith(sources, '_query') & ~ismember(sources, queried');
-    sources = sources(~old);
+if ~(isnumeric(sources) && isempty(sources))
+    sources = [cellstr(sources(:))', queried];
 end
 [evidence, summary] = kcatEvidence(model, 'rxns', rows, 'sources', sources, 'compute', p.compute, ...
     'measurements', p.measurements, 'modelAdapter', modelAdapter);
@@ -100,8 +110,8 @@ function methods = okpMethods(okp, params)
 % The OKP methods that okp asks for.
 known = {'CataPro','CatRange','DLKcat','EITLEM','KinForm-H','KinForm-L', ...
     'OmniESI','OmniESI-O2DENet','UniKP'};
-if islogical(okp) || isnumeric(okp)
-    if ~okp
+if isempty(okp) || islogical(okp) || isnumeric(okp)
+    if isempty(okp) || ~okp
         methods = {};
     else
         config = kcatAssignmentConfig(params);
@@ -122,4 +132,19 @@ end
 
 function tag = okpTag(method)
 tag = lower(regexprep(regexprep(method, '[^A-Za-z0-9]+', '_'), '^_+|_+$', ''));
+end
+
+function checkOptions(args, names, functionName)
+% Options are name-value pairs with known names, so a misspelled option is
+% an error instead of being taken as a positional argument.
+id = [functionName ':arguments'];
+given = args(1:2:end);
+if mod(numel(args), 2) ~= 0 || ~all(cellfun(@(x) ischar(x) || (isstring(x) && isscalar(x)), given))
+    error(id, 'Options of %s are name-value pairs. Options: %s.', functionName, strjoin(names, ', '))
+end
+unknown = setdiff(cellfun(@char, given, 'UniformOutput', false), names);
+if ~isempty(unknown)
+    error(id, 'Unknown option of %s: %s. Options: %s.', functionName, strjoin(unknown, ', '), ...
+        strjoin(names, ', '))
+end
 end
