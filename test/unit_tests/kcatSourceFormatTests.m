@@ -206,6 +206,21 @@ function testResolveTunableContextGroupsATunedSourceByItsOrigin_tc0712(testCase)
     verifyEqual(testCase, sigma0log, [0.2; 0.3; 0.4; 0.5])
 end
 
+function testSensitivityTuningReturnsEvidence_tc0753(testCase)
+    % With evidence, tunedKcats.evidence has one row per tuned reaction, with the
+    % kcat after tuning, the kcat before tuning and their ratio.
+    [ecModel, tuneAdapter] = tuningModel();
+    ecModel.ec.source(:) = {'brenda (wc=0, origin=1)'};
+    cleanup = shadowSolveLP([1 1 50]); %#ok<NASGU>
+    [tuned, tunedKcats] = sensitivityTuning(ecModel, 'desiredGrowthRate', 50, ...
+        'modelAdapter', tuneAdapter, 'protToIgnore', {'P4'}, 'verbose', false, 'evidence', true);
+    verifyEqual(testCase, tunedKcats.evidence.ecRxn(:), unique(tunedKcats.rxns(:)))
+    [~, i] = ismember(tunedKcats.evidence.ecRxn, tuned.ec.rxns);
+    verifyEqual(testCase, tunedKcats.evidence.kcat, tuned.ec.kcat(i))
+    verifyEqual(testCase, tunedKcats.evidence.prior, ecModel.ec.kcat(i))
+    verifyTrue(testCase, all(tunedKcats.evidence.fold > 1))
+end
+
 function testSensitivityTuningExtendsTheStatusOnce_tc0713(testCase)
     % Every kcat the tuning changes gets the origin it had, the method
     % sensitivity and the kcat before the first tuning as prior. A second
