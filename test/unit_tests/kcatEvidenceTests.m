@@ -19,8 +19,9 @@ function testEvidenceListsEverySource_tc0748(testCase)
     verifyEqual(testCase, summary.ecRxn, sel(:))
     verifyEqual(testCase, summary.src_srcA, [1; 2; 4])
     verifyEqual(testCase, summary.src_srcB(1), 8)
-    verifyEmpty(testCase, setdiff(summary.Properties.VariableNames, {'ecRxn','enzymes','eccodes','kcat', ...
-        'origin','tuned','prior','fold','src_srcA','src_srcB'}))
+    verifyEqual(testCase, summary.Properties.VariableNames, {'ecRxn','kcat','tuned','fold','prior', ...
+        'origin','enzymes','eccodes','src_srcA','src_srcB'})
+    verifyEqual(testCase, evidence.Properties.VariableNames, {'ecRxn','kcat','source','substrate','detail','assigned'})
     verifyTrue(testCase, all(isnan(summary.src_srcB(2:3))))
     verifyEqual(testCase, height(evidence), 4)
     verifyEqual(testCase, summary.kcat, model.ec.kcat(rows(:)))

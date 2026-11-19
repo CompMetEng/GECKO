@@ -51,15 +51,15 @@ function [evidence, summary, rows] = kcatEvidence(model, varargin)
 % -------
 % evidence : table
 %     one row per kcat of a source, with the variables ecRxn (model.ec.rxns),
-%     source, kcat, substrate, detail and assigned (true when the kcat is the
+%     kcat, source, substrate, detail and assigned (true when the kcat is the
 %     one that was assigned to the reaction: the kcat before tuning for a
 %     tuned reaction, and the current kcat otherwise).
 % summary : table
-%     one row per selected reaction, with the variables ecRxn, enzymes,
-%     eccodes, kcat (current), origin (the origin in model.ec.source), tuned
-%     (logical), prior (the kcat before the first tuning, NaN when untuned),
-%     fold (kcat divided by prior; NaN without a positive prior) and one
-%     variable src_<source> per source, with the median of the kcats of that
+%     one row per selected reaction, with the variables ecRxn, kcat
+%     (current), tuned (logical), fold (kcat divided by prior; NaN without a
+%     positive prior), prior (the kcat before the first tuning, NaN when
+%     untuned), origin (the origin in model.ec.source), enzymes, eccodes and
+%     one variable src_<source> per source, with the median of the kcats of that
 %     source for the reaction (NaN without one). A conventional reaction name
 %     in rxns or tunedKcats selects every isozyme row of the reaction, as
 %     tunedKcats names the reactions of a light ecModel by their conventional
@@ -175,7 +175,7 @@ reference(~isnan(prior)) = prior(~isnan(prior));
 
 [~, at] = ismember(ecRxn, model.ec.rxns(rows));
 assigned = at > 0 & abs(log(kcat ./ reference(max(at, 1)))) < 1e-5;
-evidence = table(ecRxn, source, kcat, substrate, detail, assigned);
+evidence = table(ecRxn, kcat, source, substrate, detail, assigned);
 
 fold = nan(nRows, 1);
 positive = prior > 0;
@@ -186,9 +186,9 @@ for i = 1:nRows
 end
 eccodes = model.ec.eccodes(rows);
 eccodes = cellfun(@joinCodes, eccodes(:), 'UniformOutput', false);
-summary = table(reshape(model.ec.rxns(rows), [], 1), enzymes, eccodes, current, ...
-    reshape({info.origin}, [], 1), tuned, prior, fold, ...
-    'VariableNames', {'ecRxn', 'enzymes', 'eccodes', 'kcat', 'origin', 'tuned', 'prior', 'fold'});
+summary = table(reshape(model.ec.rxns(rows), [], 1), current, tuned, fold, prior, ...
+    reshape({info.origin}, [], 1), enzymes, eccodes, ...
+    'VariableNames', {'ecRxn', 'kcat', 'tuned', 'fold', 'prior', 'origin', 'enzymes', 'eccodes'});
 for s = 1:numel(sources)
     values = nan(nRows, 1);
     isSource = strcmp(source, sources{s});
