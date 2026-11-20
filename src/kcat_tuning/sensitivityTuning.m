@@ -11,9 +11,13 @@ function [model, tunedKcats] = sensitivityTuning(model, varargin)
 % fluxTolerance of its value. Each iteration checks the condition; when it is
 % infeasible, the protein pool is lifted as a limit, the protein drawn from it
 % is minimized and the kcat of the enzyme that draws most is raised. A
-% condition that is still infeasible without the pool limit is not something a
-% kcat can fix (a measurement that conflicts with the model, or a limit set
-% elsewhere), and the tuning stops with status 'unfixable'.
+% condition that is infeasible without any enzyme limit, which is the model
+% without enzyme constraints, is not something a kcat can fix (a measurement
+% that conflicts with the model): the tuning stops before any change with
+% status 'infeasibleInGem', and the condition is better left out of the tuning
+% (give it weight 0 in the flux data, see infeasibleConditions). A condition
+% that is feasible without enzyme limits but not with the pool lifted is
+% stopped by a limit of single enzymes, status 'unfixable'.
 %
 % This is the standard kcat tuning: it needs one maximum growth rate.
 % cmaesKcatTuning is the advanced tuning, which fits kcats to maximum
@@ -75,8 +79,8 @@ function [model, tunedKcats] = sensitivityTuning(model, varargin)
 % - newKcat : kcat values in the output model, after tuning.
 % - source : source label of each kcat, taken from the input model before
 %   tuning.
-% - status : why the tuning stopped: 'reached', 'unfixable', 'stalled',
-%   'infeasible', 'noCandidate' or 'maxIterations'.
+% - status : why the tuning stopped: 'reached', 'infeasibleInGem', 'unfixable',
+%   'stalled', 'infeasible', 'noCandidate' or 'maxIterations'.
 %
 % model.ec.source of a tuned kcat keeps its origin and detail and gains the
 % tuning status, e.g. 'brenda (wc=0, origin=1) | tuned=sensitivity
@@ -329,6 +333,25 @@ else
     idxToIgnore = unique(cat(1, idxToIgnore{:}));
     idxToIgnore = cellfun(@(x) find(strcmpi(m.rxns, x)), origRxns(idxToIgnore));
 end
+if ~light
+    usageRxns = startsWith(m.rxns, 'usage_prot_');
+else
+    usageRxns = false(numel(m.rxns),1);
+end
+mc = m;
+mc.lb(rxnIdx) = lb;
+mc.ub(rxnIdx) = ub;
+mc.lb(bioIdx) = targetGrowth;
+mc.ub(poolEx) = 1000;
+mc.lb(usageRxns) = 0;
+mc.ub(usageRxns) = 1000;
+mc.c = double(bioIdx);
+res = solveLP(mc,0);
+if isempty(res.f)
+    printOrange('WARNING: The condition is infeasible without any enzyme limit, which is the model without enzyme constraints, so no kcat can meet it; check the measured fluxes against the model.\n');
+    status = 'infeasibleInGem';
+    return;
+end
 lastPool = NaN;
 for iteration = 1:maxIterations
     mc = m;
@@ -346,7 +369,7 @@ for iteration = 1:maxIterations
     mc.c = -double(poolEx);
     res = solveLP(mc,0);
     if isempty(res.f)
-        printOrange('WARNING: The condition is infeasible even without the protein pool limit, so no kcat can fix it; check the measured fluxes against the model.\n');
+        printOrange('WARNING: The condition is feasible without enzyme limits but infeasible with the protein pool lifted, so a limit of single enzymes stops it.\n');
         status = 'unfixable';
         return;
     end

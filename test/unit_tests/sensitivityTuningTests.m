@@ -39,14 +39,14 @@ function testConditionByNameAndGrowthOverride(testCase)
     verifyEqual(testCase, tunedKcats.rxns, {'R5'})
 end
 
-function testConditionNoKcatCanMeetIsUnfixable(testCase)
+function testConditionInfeasibleInTheGemIsMarkedAndLeftAlone(testCase)
     %growth 120 needs 120 of e1, and the measured uptake is 50
     [ecModel, adapter] = buildTuningModel(testCase);
     fluxData = buildFluxData(120, -50);
     output = evalc(['[tunedModel, tunedKcats] = sensitivityTuning(ecModel, ' ...
         '''modelAdapter'', adapter, ''fluxData'', fluxData, ''verbose'', false);']);
-    verifySubstring(testCase, output, 'infeasible even without the protein pool limit')
-    verifyEqual(testCase, tunedKcats.status, 'unfixable')
+    verifySubstring(testCase, output, 'infeasible without any enzyme limit')
+    verifyEqual(testCase, tunedKcats.status, 'infeasibleInGem')
     verifyEmpty(testCase, tunedKcats.rxns)
     verifyEqual(testCase, tunedModel.ec.kcat, ecModel.ec.kcat)
 end
@@ -57,10 +57,36 @@ function testPerFluxToleranceWidensTheBand(testCase)
     fluxData = buildFluxData(120, -80);
     [~, tight] = sensitivityTuning(ecModel, 'modelAdapter', adapter, ...
         'fluxData', fluxData, 'verbose', false);
-    verifyEqual(testCase, tight.status, 'unfixable')
+    verifyEqual(testCase, tight.status, 'infeasibleInGem')
     [~, loose] = sensitivityTuning(ecModel, 'modelAdapter', adapter, ...
         'fluxData', fluxData, 'fluxTolerances', {'S1', 0.5}, 'verbose', false);
     verifyEqual(testCase, loose.status, 'reached')
+end
+
+function testInfeasibleConditionsListsTheNames(testCase)
+    [ecModel, adapter] = buildTuningModel(testCase);
+    fluxData = buildFluxData(120, -120);
+    fluxData.conds = {'ok'};
+    fluxData.grRate = 120;
+    fluxData.exchFluxes = [-120];
+    both = fluxData;
+    both.conds = {'ok'; 'tooLow'};
+    both.Ptot = [NaN; NaN];
+    both.grRate = [120; 120];
+    both.exchFluxes = [-120; -50];
+    names = infeasibleConditions(ecModel, both, 'modelAdapter', adapter);
+    verifyEqual(testCase, names, {'tooLow'})
+end
+
+function testSingleEnzymeLimitIsUnfixable(testCase)
+    %growth 120 is feasible without enzyme limits, but the usage of P5 is
+    %capped far below what it needs, so lifting the pool does not help
+    [ecModel, adapter] = buildTuningModel(testCase);
+    ecModel.ub(strcmp(ecModel.rxns, 'usage_prot_P5')) = 1;
+    fluxData = buildFluxData(120, -120);
+    evalc(['[~, tunedKcats] = sensitivityTuning(ecModel, ''modelAdapter'', adapter, ' ...
+        '''fluxData'', fluxData, ''verbose'', false);']);
+    verifyEqual(testCase, tunedKcats.status, 'unfixable')
 end
 
 function testUnknownConditionAndExchangeRaise(testCase)
