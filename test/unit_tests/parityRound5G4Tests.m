@@ -43,6 +43,19 @@ function testLoadEvotuneDataWithoutFilesIsEmpty_tc0602(testCase)
     verifyEmpty(testCase, experimentData.zeroFlux)
 end
 
+function testLoadEvotuneDataRejectsTheLegacyWeightColumn_tc0604(testCase)
+    adapter = ModelAdapterManager.getAdapter(fullfile(findGECKOroot,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));
+    project = tempname;
+    mkdir(fullfile(project, 'data'));
+    testCase.addTeardown(@() rmdir(project, 's'));
+    adapter.params.path = project;
+    tab = char(9);
+    writeLines(fullfile(project, 'data', 'fluxData.tsv'), ...
+        {['Condition' tab 'Ptot' tab 'grRate' tab 'glucose (EX_glc)' tab 'evotuneRMSEweight'], ...
+        ['c1' tab '0.5' tab '0.4' tab '-10' tab '1']});
+    verifyError(testCase, @() loadEvotuneData('modelAdapter', adapter), 'loadEvotuneData:legacyWeightColumn')
+end
+
 function testSaveEcModelWritesDefaultDescriptionOnlyWhenNone_tc0603(testCase)
     adapter = ModelAdapterManager.getAdapter(fullfile(findGECKOroot,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));
     project = tempname;

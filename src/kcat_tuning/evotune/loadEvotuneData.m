@@ -12,6 +12,8 @@ function experimentData = loadEvotuneData(varargin)
 % zeroFlux.tsv that carry no flux. See loadExperimentData for the layout of
 % the files. Each file is optional: a missing file yields [] (fluxData,
 % maxGrowth) or an empty cell array (zeroFlux) rather than an error.
+% A file with the old column evotuneRMSEweight raises
+% loadEvotuneData:legacyWeightColumn: the column is called weight.
 %
 % Name-Value Arguments
 % --------------------
@@ -50,5 +52,21 @@ if isempty(modelAdapter)
     end
 end
 
-experimentData = loadExperimentData(fullfile(modelAdapter.params.path,'data'));
+dataDir = fullfile(modelAdapter.params.path,'data');
+% The weight of a condition is the column weight. A file with the column
+% evotuneRMSEweight would be read without weights, and every condition would
+% count alike without a message.
+for fileName = {'fluxData.tsv','maxGrowth.tsv'}
+    filePath = fullfile(dataDir,fileName{1});
+    if isfile(filePath)
+        fid = fopen(filePath,'r');
+        header = strsplit(fgetl(fid),'\t');
+        fclose(fid);
+        if ismember('evotuneRMSEweight',header)
+            error('loadEvotuneData:legacyWeightColumn', ...
+                '%s has the column evotuneRMSEweight; the weight of a condition is the column weight.',filePath)
+        end
+    end
+end
+experimentData = loadExperimentData(dataDir);
 end

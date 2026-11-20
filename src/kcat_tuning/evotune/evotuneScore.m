@@ -113,7 +113,7 @@ if ~isempty(experimentData.maxGrowth)
         'changeProteinBiomass', changeProteinBiomass);
 end
 [rmse, detail] = experimentDistance(experimentData, fluxSims, maxGrowthSims, ...
-    carbonWeights, bioRxnId, 'maxGrowthWeight', maxGrowthWeight);
+    carbonWeights, 'maxGrowthWeight', maxGrowthWeight);
 
 rmseDetail = [];
 if isfield(detail,'fluxData')

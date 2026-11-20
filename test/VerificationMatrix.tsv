@@ -69,7 +69,7 @@ download_databases/fetchBrendaAsset.m	tc0085
 download_databases/loadDatabases.m	Called from getECfromDatabase - tested when that function is tested., tc0729
 kcat_tuning/evotune/bestParsimonious.m	tc0600
 kcat_tuning/evotune/*	Has only been tested by running it manually, not tested by test cases
-kcat_tuning/evotune/loadEvotuneData.m	tc0601, tc0602
+kcat_tuning/evotune/loadEvotuneData.m	tc0601, tc0602, tc0604
 kcat_tuning/evotune/*	resolveTunableContext by tc0312, tc0719; the evotune:noData check of cmaesKcatTuning and screenKcatLeverage by tc0709; the rest has only been tested by running it manually, not tested by test cases
 kcat_tuning/evotune/evotuneScore.m	not tested by a test case; the conditions, the distance and the carbon weights it calls are tested in RAVEN (tExperiments)
 kcat_tuning/findTopLimitations.m	Not explicitly tested - The code has existed for a long time
