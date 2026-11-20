@@ -236,8 +236,8 @@ for i = 1:numel(tunedKcats.rxns)
 end
 
 % Advanced kcat tuning. cmaesKcatTuning fits kcats to measured maximum
-% growth rates (data/evotuneMaxGrowth.tsv) and exchange fluxes
-% (data/evotuneFluxData.tsv, with data/evotuneZeroExch.tsv), measured on
+% growth rates (data/maxGrowth.tsv) and exchange fluxes
+% (data/fluxData.tsv, with data/zeroFlux.tsv), measured on
 % several carbon sources and in aerobic and anaerobic conditions. It scores
 % each set of kcats by the carbon-weighted root-mean-square error (RMSE)
 % against these data and searches with CMA-ES, an evolutionary optimiser.
@@ -287,7 +287,7 @@ ecModel = constrainEnzConcs(ecModel);
 % All usage reactions draw from the protein pool, also those with a
 % measured bound. The protein pool of the condition uses the Ptot of the
 % condition from data/fluxData.tsv and the f of the proteomics data.
-fluxData = loadFluxData();
+fluxData = loadFluxData(fullfile(params.path,'data','fluxData.tsv'));
 f = calculateFfactor(ecModel,'protData',protData);
 ecModel = setProtPoolSize(ecModel,'Ptot',fluxData.Ptot(1),'f',f,'sigma',sigma);
 

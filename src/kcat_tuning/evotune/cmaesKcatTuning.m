@@ -29,9 +29,9 @@ function [ecModel,result] = cmaesKcatTuning(ecModel,varargin)
 % --------------------
 % modelAdapter : ModelAdapter
 %     a loaded model adapter (default: the current default model adapter).
-% evoData : struct
+% experimentData : struct
 %     as returned by loadEvotuneData (default: loaded from modelAdapter).
-%     Without fluxData and maxGrate, the error evotune:noData is raised.
+%     Without fluxData and maxGrowth, the error evotune:noData is raised.
 % tunableMask, screen, targetImpactShare
 %     control which kcats are searched over, in order of precedence. Pass
 %     tunableMask to fix the set yourself. Otherwise, a mask is built by
@@ -79,7 +79,7 @@ function [ecModel,result] = cmaesKcatTuning(ecModel,varargin)
 % screenKcatLeverage, selectTunableMask, tunePriorPenaltyWeight
 p = parseRAVENargs(varargin, { ...
     'modelAdapter', []; ...
-    'evoData', []; ...
+    'experimentData', []; ...
     'tunableMask', []; ...
     'screen', []; ...
     'targetImpactShare', 0.9; ...
@@ -88,7 +88,7 @@ p = parseRAVENargs(varargin, { ...
     'seed', []; ...
     'verbose', true});
 modelAdapter      = p.modelAdapter;
-evoData           = p.evoData;
+experimentData           = p.experimentData;
 tunableMask       = p.tunableMask;
 screen            = p.screen;
 targetImpactShare = p.targetImpactShare;
@@ -103,19 +103,19 @@ if isempty(modelAdapter)
         error('Either send in a modelAdapter or set the default ecModel adapter in the ModelAdapterManager.')
     end
 end
-if isempty(evoData)
-    evoData = loadEvotuneData('modelAdapter', modelAdapter);
+if isempty(experimentData)
+    experimentData = loadEvotuneData('modelAdapter', modelAdapter);
 end
-if isempty(evoData.fluxData) && isempty(evoData.maxGrate)
-    error('evotune:noData', ['evoData has neither fluxData nor maxGrate (from ' ...
-        'data/evotuneFluxData.tsv and data/evotuneMaxGrowth.tsv); there is nothing to tune against.'])
+if isempty(experimentData.fluxData) && isempty(experimentData.maxGrowth)
+    error('evotune:noData', ['experimentData has neither fluxData nor maxGrowth (from ' ...
+        'data/fluxData.tsv and data/maxGrowth.tsv); there is nothing to tune against.'])
 end
 params = modelAdapter.params.evotune;
 
 if isempty(tunableMask)
     if isempty(screen)
         screen = screenKcatLeverage(ecModel, 'modelAdapter',modelAdapter, ...
-            'evoData',evoData, 'nProc',nProc);
+            'experimentData',experimentData, 'nProc',nProc);
     end
     tunableMask = selectTunableMask(ecModel, screen, 'targetImpactShare',targetImpactShare);
 end
@@ -143,10 +143,10 @@ popsize = max(4, round(popsize));
 
 expand = @(Xlog) exp(Xlog(assign,:));
 
-% Baseline: score the untouched prior, and keep the excarbon-augmented
-% model to use in the rest of the run (see evotuneScore's 4th
-% output -- avoids rescanning metabolite formulas on every candidate).
-[obj0,rmse0,~,baseModel] = scoreCandidate(ecModel,tunableIdx,ecRxnIdsTunable,evoData,modelAdapter,params,kcat0,kcat0,sigma0log);
+% Baseline: score the untouched prior, and keep the carbon weights to use in
+% the rest of the run (see evotuneScore's 4th output -- avoids rescanning
+% metabolite formulas on every candidate).
+[obj0,rmse0,~,carbonWeights] = scoreCandidate(ecModel,tunableIdx,ecRxnIdsTunable,experimentData,modelAdapter,params,kcat0,kcat0,sigma0log,[]);
 bestObj = obj0; bestRmse = rmse0; bestVec = kcat0;
 
 rmseTrace = []; objectiveTrace = [];
@@ -169,15 +169,15 @@ while generation < params.maxGenerations
     objVals = zeros(popsize,1); rmseVals = zeros(popsize,1);
     if nProc == 1
         for k = 1:popsize
-            [objVals(k),rmseVals(k),~,baseModel] = scoreCandidate( ...
-                baseModel,tunableIdx,ecRxnIdsTunable,evoData,modelAdapter,params, ...
-                kcatMatrix(:,k),kcat0,sigma0log);
+            [objVals(k),rmseVals(k)] = scoreCandidate( ...
+                ecModel,tunableIdx,ecRxnIdsTunable,experimentData,modelAdapter,params, ...
+                kcatMatrix(:,k),kcat0,sigma0log,carbonWeights);
         end
     else
         parfor k = 1:popsize
             [objVals(k),rmseVals(k)] = scoreCandidate( ...
-                ecModel,tunableIdx,ecRxnIdsTunable,evoData,modelAdapter,params, ...
-                kcatMatrix(:,k),kcat0,sigma0log);
+                ecModel,tunableIdx,ecRxnIdsTunable,experimentData,modelAdapter,params, ...
+                kcatMatrix(:,k),kcat0,sigma0log,carbonWeights);
         end
     end
     generation = generation + 1;
@@ -234,13 +234,14 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Scoring core, shared with screenKcatLeverage/tunePriorPenaltyWeight.
 
-function [obj,rmse,rmseDetail,ecModel] = scoreCandidate(ecModel,tunableIdx,ecRxnIdsTunable,evoData,modelAdapter,params,kcatVec,kcat0,sigma0log)
+function [obj,rmse,rmseDetail,carbonWeights] = scoreCandidate(ecModel,tunableIdx,ecRxnIdsTunable,experimentData,modelAdapter,params,kcatVec,kcat0,sigma0log,carbonWeights)
 ecModel.ec.kcat(tunableIdx) = kcatVec;
 ecModel = applyKcatConstraints(ecModel,'updateRxns',ecRxnIdsTunable);
-[obj,rmse,rmseDetail,ecModel] = evotuneScore(ecModel,evoData, ...
+[obj,rmse,rmseDetail,carbonWeights] = evotuneScore(ecModel,experimentData, ...
     'modelAdapter',modelAdapter, 'maxGrowthWeight',params.maxGrowthWeight, ...
     'priorPenaltyWeight',params.priorPenaltyWeight, ...
-    'kcatVec',kcatVec, 'kcat0',kcat0, 'sigma0log',sigma0log);
+    'kcatVec',kcatVec, 'kcat0',kcat0, 'sigma0log',sigma0log, ...
+    'carbonWeights',carbonWeights);
 end
 
 function [lo,hi] = kcatBoundsLocal(kcat0)

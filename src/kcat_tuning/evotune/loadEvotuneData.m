@@ -1,10 +1,11 @@
-function evoData = loadEvotuneData(varargin)
+function experimentData = loadEvotuneData(varargin)
 % loadEvotuneData  Load experimental data for evotune (CMA-ES) kcat tuning.
 %
 % Reads the three experimental data files used by cmaesKcatTuning from the
-% data subfolder of the model directory defined by the model adapter. Each
-% file is optional: a missing file yields [] (fluxData/maxGrate) or an
-% empty cell array (zeroFlux) rather than an error.
+% data subfolder of the model directory defined by the model adapter, with
+% RAVEN's loadExperimentData. Each file is optional: a missing file yields []
+% (fluxData, maxGrowth) or an empty cell array (zeroFlux) rather than an
+% error.
 %
 % Name-Value Arguments
 % --------------------
@@ -13,24 +14,24 @@ function evoData = loadEvotuneData(varargin)
 %
 % Returns
 % -------
-% evoData : struct
+% experimentData : struct
 %     structure with the loaded experimental data.
 %
 % Notes
 % -----
-% The evoData structure has the following fields:
+% The experimentData structure has the following fields:
 %
-% - fluxData : flux data loaded from evotuneFluxData.tsv, with the biomass
-%   reaction id stored in fluxData.biomass. [] if that file isn't present.
-% - maxGrate : maximum growth-rate data loaded from evotuneMaxGrowth.tsv,
-%   with the biomass reaction id stored in maxGrate.biomass. [] if that
-%   file isn't present.
+% - fluxData : flux data loaded from fluxData.tsv. Every condition in the
+%   file is used by the tuning; a weight of 0 in the column weight leaves a
+%   condition out. [] if the file isn't present.
+% - maxGrowth : maximum growth-rate data loaded from maxGrowth.tsv. [] if
+%   the file isn't present.
 % - zeroFlux : reaction IDs assumed to carry zero flux, loaded from
-%   evotuneZeroExch.tsv. Empty cell array if that file isn't present.
+%   zeroFlux.tsv. Empty cell array if the file isn't present.
 %
 % See also
 % --------
-% cmaesKcatTuning, evotuneScore
+% cmaesKcatTuning, evotuneScore, loadExperimentData
 p = parseRAVENargs(varargin, { ...
     'modelAdapter', []});
 modelAdapter = p.modelAdapter;
@@ -42,32 +43,5 @@ if isempty(modelAdapter)
     end
 end
 
-basePath = modelAdapter.params.path;
-
-evoData.fluxData = [];
-fluxFile = fullfile(basePath,'data','evotuneFluxData.tsv');
-if isfile(fluxFile)
-    evoData.fluxData = loadFluxData(fluxFile, modelAdapter);
-end
-if ~isempty(evoData.fluxData)
-    evoData.fluxData.biomass = modelAdapter.params.bioRxn;
-end
-
-evoData.maxGrate = [];
-maxGrateFile = fullfile(basePath,'data','evotuneMaxGrowth.tsv');
-if isfile(maxGrateFile)
-    evoData.maxGrate = loadFluxData(maxGrateFile, modelAdapter);
-end
-if ~isempty(evoData.maxGrate)
-    evoData.maxGrate.biomass = modelAdapter.params.bioRxn;
-end
-
-% All three files are optional: a missing file gives [] (fluxData, maxGrate)
-% or {} (zeroFlux).
-zeroExchFile = fullfile(basePath,'data','evotuneZeroExch.tsv');
-if isfile(zeroExchFile)
-    evoData.zeroFlux = table2cell(readtable(zeroExchFile, 'Delimiter', '\t', 'FileType','delimitedtext'));
-else
-    evoData.zeroFlux = {};
-end
+experimentData = loadExperimentData(fullfile(modelAdapter.params.path,'data'));
 end

@@ -41,7 +41,6 @@ gather_kcats/kcatsFromHomologs.m	tc0095, tc0096
 gather_kcats/extractEnzymeSubstratePairs.m	tc0096, tc0015	
 gather_kcats/convertCustomKcats.m	tc0091, tc0092, tc0094, tc0725	
 change_model/upgradeEcModel.m	tc0093, tc0094, tc0099	
-io/loadFluxData.m	tc0506	
 io/loadProtData.m	tc0101, tc0102, tc0260, tc0298, tc0299, tc0313	
 change_model/addNewRxnsToEC.m	tc0211, tc0232, tc0237, tc0500	
 change_model/mapRxnsToConv.m	tc0213	
@@ -70,9 +69,9 @@ download_databases/fetchBrendaAsset.m	tc0085
 download_databases/loadDatabases.m	Called from getECfromDatabase - tested when that function is tested., tc0729
 kcat_tuning/evotune/bestParsimonious.m	tc0600
 kcat_tuning/evotune/*	Has only been tested by running it manually, not tested by test cases
-kcat_tuning/fillCarbonNum.m	tc0055 (deprecated-alias check only), tc0601, tc0602
+kcat_tuning/evotune/loadEvotuneData.m	tc0601, tc0602
 kcat_tuning/evotune/*	resolveTunableContext by tc0312, tc0719; the evotune:noData check of cmaesKcatTuning and screenKcatLeverage by tc0709; the rest has only been tested by running it manually, not tested by test cases
-kcat_tuning/fillCarbonNum.m	tc0055 (deprecated-alias check only, not a real usage test)
+kcat_tuning/evotune/evotuneScore.m	not tested by a test case; the conditions, the distance and the carbon weights it calls are tested in RAVEN (tExperiments)
 kcat_tuning/findTopLimitations.m	Not explicitly tested - The code has existed for a long time
 kcat_tuning/sensitivityTuning.m	tcm0001, tc0251, tc0253, tc0254
 kcat_tuning/sigmaFitter.m	tc0020, tc0255, tc0710
