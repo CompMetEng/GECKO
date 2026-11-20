@@ -121,7 +121,7 @@ function [decisions, report, ecModel] = collectKcats(model, varargin)
 % assignKcats, updateKcatSources, loadKcatSource, mergeKcats, assignKcatValues
 
 checkOptions(varargin, {'modelAdapter','writeReport'}, 'collectKcats');
-p = parseGECKOargs(varargin, {'modelAdapter', []; 'writeReport', true});
+p = parseRAVENargs(varargin, {'modelAdapter', []; 'writeReport', true});
 modelAdapter = p.modelAdapter;
 if isempty(modelAdapter)
     modelAdapter = ModelAdapterManager.getDefault();

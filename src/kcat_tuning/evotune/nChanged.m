@@ -22,7 +22,7 @@ function n = nChanged(kcat,kcat0,varargin)
 % See also
 % --------
 % tunePriorPenaltyWeight, parsimonyFrontier
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'relTol', 0.02});
 relTol = p.relTol;
 n = sum(abs(log(kcat(:) ./ kcat0(:))) > log1p(relTol));

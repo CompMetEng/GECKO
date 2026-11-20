@@ -38,7 +38,7 @@ function [minFlux, maxFlux] = ecFVA(ecModel, model, varargin)
 % --------
 % mapRxnsToConv, plotEcFVA
 
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'runParallel', true});
 runParallel = p.runParallel;
 

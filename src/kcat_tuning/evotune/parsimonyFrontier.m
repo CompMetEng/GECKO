@@ -40,7 +40,7 @@ function points = parsimonyFrontier(scoreFcn,kcat,kcat0,sigma0log,varargin)
 % See also
 % --------
 % bestParsimonious, nChanged
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'thresholds', [0 1 2 3 4 6 8 10 15]});
 thresholds = p.thresholds;
 

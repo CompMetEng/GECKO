@@ -337,11 +337,10 @@ function testfuzzyKcatMatchingMedian_tc0060(testCase)
         'modelAdapter', adapter, 'kcatAggregation', 'mean'), ...
         'fuzzyKcatMatching:invalidKcatAggregation')
 
-    % Mixing positional and name-value arguments puts a name where a
-    % value belongs; that has to fail rather than quietly wildcard every
-    % EC number, which is what an unvalidated forceWClvl would do.
-    verifyError(testCase, @() fuzzyKcatMatching(ecModel, [], adapter, ...
-        'kcatAggregation', 'median'), 'fuzzyKcatMatching:invalidForceWClvl')
+    % Leading positional arguments may be followed by name-value pairs.
+    kcatListMixed = fuzzyKcatMatching(ecModel, [], adapter, ...
+        'kcatAggregation', 'median');
+    verifyEqual(testCase, kcatListMixed.kcats, kcatListMedian.kcats)
 end
 
 function testfuzzyKcatMatching_tc0010(testCase)

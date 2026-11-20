@@ -71,7 +71,7 @@ function [kcatList, report] = loadKcatSource(model, name, varargin)
 % saveKcatSource, kcatsFromBrenda, getEcRxnKeys
 
 checkOptions(varargin, {'modelAdapter'}, 'loadKcatSource');
-p = parseGECKOargs(varargin, {'modelAdapter', []});
+p = parseRAVENargs(varargin, {'modelAdapter', []});
 
 if isfile(name)
     filename = name;

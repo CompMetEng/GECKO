@@ -43,7 +43,7 @@ function [file, report] = convertCustomKcats(model, varargin)
 % collectKcats, applyCustomKcats, getEcRxnKeys, upgradeGECKOproject
 
 checkOptions(varargin, {'modelAdapter','customKcats','outFile'}, 'convertCustomKcats');
-p = parseGECKOargs(varargin, {'modelAdapter', []; 'customKcats', []; 'outFile', []});
+p = parseRAVENargs(varargin, {'modelAdapter', []; 'customKcats', []; 'outFile', []});
 modelAdapter = p.modelAdapter;
 if isempty(modelAdapter)
     modelAdapter = ModelAdapterManager.getDefault();

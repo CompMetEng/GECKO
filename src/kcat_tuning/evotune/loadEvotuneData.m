@@ -31,7 +31,7 @@ function evoData = loadEvotuneData(varargin)
 % See also
 % --------
 % cmaesKcatTuning, evotuneScore
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'modelAdapter', []});
 modelAdapter = p.modelAdapter;
 

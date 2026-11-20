@@ -53,7 +53,7 @@ function report = upgradeGECKOproject(projectPath, varargin)
 % convertAdapterToToml, convertCustomKcats, upgradeEcModel, createGECKOproject
 
 checkOptions(varargin, {'dryRun','ecModel'}, 'upgradeGECKOproject');
-p = parseGECKOargs(varargin, {'dryRun', true; 'ecModel', []});
+p = parseRAVENargs(varargin, {'dryRun', true; 'ecModel', []});
 projectPath = char(projectPath);
 if ~isfolder(projectPath)
     error('upgradeGECKOproject:path', 'No folder %s.', projectPath)

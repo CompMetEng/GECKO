@@ -30,7 +30,7 @@ function mask = selectTunableMask(ecModel,screen,varargin)
 % See also
 % --------
 % screenKcatLeverage, cmaesKcatTuning
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'targetImpactShare', 0.9});
 targetImpactShare = p.targetImpactShare;
 
