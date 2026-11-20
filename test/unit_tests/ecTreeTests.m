@@ -56,7 +56,10 @@ function testKcatsFromECTreeWritesFile_tc0086(testCase)
     verifyEqual(testCase, meta.parameters, '{"k":5}')
     verifyEqual(testCase, meta.data, 'BRENDA release test')
     verifyEqual(testCase, unique(records.source), {'ec_tree'})
-    verifyTrue(testCase, all(~cellfun(@isempty, regexp(records.detail, '^n=\d+; depth=[234]$', 'once'))))
+    verifyTrue(testCase, all(~cellfun(@isempty, regexp(records.detail, '^n=\d+; depth=[234](; direction=reverse)?$', 'once'))))
+    isReverse = endsWith(records.detail, 'direction=reverse');
+    verifyEqual(testCase, isReverse, endsWith(records.rxn, '_REV'))
+    verifyTrue(testCase, any(isReverse))
 end
 
 function testBrendaEcTreePreset_tc0087(testCase)
