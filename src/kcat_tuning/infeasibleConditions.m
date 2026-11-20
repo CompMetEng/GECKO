@@ -4,8 +4,10 @@ function names = infeasibleConditions(model, fluxData, varargin)
 % Checks every condition of fluxData in the model with the protein pool and
 % the usage of every enzyme unlimited, which is the model without enzyme
 % constraints: growth at the measured rate (or desiredGrowthRate) with every
-% measured exchange flux within its band. This is the check that
-% sensitivityTuning makes first for a condition. No kcat can fix such a
+% measured exchange flux within its band, after the anaerobic switch and the
+% protein content of the condition (the makeModelAnaerobic and
+% changeProteinBiomass functions of the model adapter). This is the check
+% that sensitivityTuning makes first for a condition. No kcat can fix such a
 % condition. Give these conditions weight 0 in the flux data, so that no
 % tuning is asked to fit them. The model is not changed.
 %
@@ -70,7 +72,7 @@ for cond = 1:numel(fluxData.conds)
     if ~isempty(p.desiredGrowthRate)
         target = p.desiredGrowthRate;
     end
-    mc = model;
+    mc = setupCondition(model, fluxData, cond, modelAdapter);
     mc.lb(rxnIdx) = lb;
     mc.ub(rxnIdx) = ub;
     mc.lb(bioIdx) = target;
@@ -119,5 +121,18 @@ for i = 1:numel(fluxData.exchRxnIDs)
     rxnIdx(end+1,1) = idx; %#ok<AGROW>
     lb(end+1,1) = lo; %#ok<AGROW>
     ub(end+1,1) = hi; %#ok<AGROW>
+end
+end
+
+function m = setupCondition(m, fluxData, condIdx, modelAdapter)
+% Apply the anaerobic switch and the protein content of a condition, through
+% the functions of the model adapter.
+o2 = find(strcmp(fluxData.exchMets, 'oxygen'));
+if ~isempty(o2) && fluxData.exchFluxes(condIdx,o2(1)) == 0
+    m = modelAdapter.makeModelAnaerobic(m);
+end
+ptot = fluxData.Ptot(condIdx);
+if ~(isnan(ptot) || ptot == 0)
+    m = modelAdapter.changeProteinBiomass(m, ptot);
 end
 end

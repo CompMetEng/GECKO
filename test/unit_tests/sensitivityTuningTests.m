@@ -78,6 +78,32 @@ function testInfeasibleConditionsListsTheNames(testCase)
     verifyEqual(testCase, names, {'tooLow'})
 end
 
+function testDiagnoseNamesTheMeasurementThatHasToMove(testCase)
+    %growth 120 needs 120 of e1, and the measured uptake is 50: growth is the
+    %cheaper value to move, relative to its size
+    [ecModel, adapter] = buildTuningModel(testCase);
+    conflicts = diagnoseCondition(ecModel, buildFluxData(120, -50), 'modelAdapter', adapter);
+    verifyEqual(testCase, conflicts.reaction{1}, 'R5')
+    verifyGreaterThan(testCase, conflicts.stretch(1), 0)
+    verifyEqual(testCase, conflicts.measured(1), 120)
+    verifyEqual(testCase, height(conflicts), 2)
+end
+
+function testInfeasibleConditionCarriesTheConflicts(testCase)
+    [ecModel, adapter] = buildTuningModel(testCase);
+    evalc(['[~, tunedKcats] = sensitivityTuning(ecModel, ''modelAdapter'', adapter, ' ...
+        '''fluxData'', buildFluxData(120, -50), ''verbose'', false);']);
+    verifyEqual(testCase, tunedKcats.status, 'infeasibleInGem')
+    verifyEqual(testCase, tunedKcats.conflicts.reaction{1}, 'R5')
+end
+
+function testReachedConditionHasNoConflicts(testCase)
+    [ecModel, adapter] = buildTuningModel(testCase);
+    evalc(['[~, tunedKcats] = sensitivityTuning(ecModel, ''modelAdapter'', adapter, ' ...
+        '''fluxData'', buildFluxData(120, -120), ''verbose'', false);']);
+    verifyEmpty(testCase, tunedKcats.conflicts)
+end
+
 function testSingleEnzymeLimitIsUnfixable(testCase)
     %growth 120 is feasible without enzyme limits, but the usage of P5 is
     %capped far below what it needs, so lifting the pool does not help

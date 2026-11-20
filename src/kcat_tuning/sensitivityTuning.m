@@ -79,6 +79,9 @@ function [model, tunedKcats] = sensitivityTuning(model, varargin)
 % - newKcat : kcat values in the output model, after tuning.
 % - source : source label of each kcat, taken from the input model before
 %   tuning.
+% - conflicts : with status 'infeasibleInGem', the table of diagnoseCondition,
+%   the measured values that have to move for the condition to become
+%   feasible (empty otherwise).
 % - status : why the tuning stopped: 'reached', 'infeasibleInGem', 'unfixable',
 %   'stalled', 'infeasible', 'noCandidate' or 'maxIterations'.
 %
@@ -147,10 +150,11 @@ end
 lastGrowth = NaN;
 growthStallTol = 1e-9;
 status = 'maxIterations';
+conflicts = [];
 if ~isempty(fluxData)
-    [m, kcatList, status] = tuneToCondition(m, fluxData, condIdx, desiredGrowthRate, ...
+    [m, kcatList, status, conflicts] = tuneToCondition(m, fluxData, condIdx, desiredGrowthRate, ...
         p.fluxTolerance, p.fluxAbsTolerance, p.fluxTolerances, foldChange, protToIgnore, ...
-        params, verbose);
+        modelAdapter, verbose);
 elseif ~m.ec.geckoLight
     %for the full model, we first find the draw reaction with the most flux
     drawRxns = startsWith(m.rxns, 'usage_prot_');
@@ -268,6 +272,7 @@ tunedKcats.oldKcat  = model.ec.kcat(rxnIdx);
 tunedKcats.newKcat  = m.ec.kcat(rxnIdx);
 tunedKcats.source   = model.ec.source(rxnIdx);
 tunedKcats.status   = status;
+tunedKcats.conflicts = conflicts;
 
 model = m;
 end
@@ -310,10 +315,12 @@ else
 end
 end
 
-function [m, kcatList, status] = tuneToCondition(m, fluxData, condIdx, targetGrowth, tol, absTol, perFlux, foldChange, protToIgnore, params, verbose)
+function [m, kcatList, status, conflicts] = tuneToCondition(m, fluxData, condIdx, targetGrowth, tol, absTol, perFlux, foldChange, protToIgnore, modelAdapter, verbose)
 % Raise kcats until the model meets growth and the measured fluxes of a condition.
 kcatList = [];
 status = 'maxIterations';
+conflicts = [];
+params = modelAdapter.params;
 maxIterations = 1000;
 bioIdx  = strcmp(m.rxns, params.bioRxn);
 poolEx  = strcmp(m.rxns, 'prot_pool_exchange');
@@ -338,7 +345,7 @@ if ~light
 else
     usageRxns = false(numel(m.rxns),1);
 end
-mc = m;
+mc = setupCondition(m, fluxData, condIdx, modelAdapter);
 mc.lb(rxnIdx) = lb;
 mc.ub(rxnIdx) = ub;
 mc.lb(bioIdx) = targetGrowth;
@@ -350,11 +357,14 @@ res = solveLP(mc,0);
 if isempty(res.f)
     printOrange('WARNING: The condition is infeasible without any enzyme limit, which is the model without enzyme constraints, so no kcat can meet it; check the measured fluxes against the model.\n');
     status = 'infeasibleInGem';
+    conflicts = diagnoseCondition(m, fluxData, 'condition', condIdx, ...
+        'desiredGrowthRate', targetGrowth, 'modelAdapter', modelAdapter, ...
+        'fluxTolerance', tol, 'fluxAbsTolerance', absTol, 'fluxTolerances', perFlux);
     return;
 end
 lastPool = NaN;
 for iteration = 1:maxIterations
-    mc = m;
+    mc = setupCondition(m, fluxData, condIdx, modelAdapter);
     mc.lb(rxnIdx) = lb;
     mc.ub(rxnIdx) = ub;
     mc.lb(bioIdx) = targetGrowth;
@@ -453,5 +463,18 @@ for i = 1:numel(fluxData.exchRxnIDs)
     rxnIdx(end+1,1) = idx; %#ok<AGROW>
     lb(end+1,1) = lo; %#ok<AGROW>
     ub(end+1,1) = hi; %#ok<AGROW>
+end
+end
+
+function m = setupCondition(m, fluxData, condIdx, modelAdapter)
+% Apply the anaerobic switch and the protein content of a condition, through
+% the functions of the model adapter.
+o2 = find(strcmp(fluxData.exchMets, 'oxygen'));
+if ~isempty(o2) && fluxData.exchFluxes(condIdx,o2(1)) == 0
+    m = modelAdapter.makeModelAnaerobic(m);
+end
+ptot = fluxData.Ptot(condIdx);
+if ~(isnan(ptot) || ptot == 0)
+    m = modelAdapter.changeProteinBiomass(m, ptot);
 end
 end
