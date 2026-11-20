@@ -1,11 +1,17 @@
 function experimentData = loadEvotuneData(varargin)
-% loadEvotuneData  Load experimental data for evotune (CMA-ES) kcat tuning.
+% loadEvotuneData  Load the measured conditions of the model adapter's data folder.
 %
-% Reads the three experimental data files used by cmaesKcatTuning from the
-% data subfolder of the model directory defined by the model adapter, with
-% RAVEN's loadExperimentData. Each file is optional: a missing file yields []
-% (fluxData, maxGrowth) or an empty cell array (zeroFlux) rather than an
-% error.
+% Reads the three data files that cmaesKcatTuning scores a model against
+% from the data subfolder of the model directory defined by the model
+% adapter, with RAVEN's loadExperimentData. The files list conditions in
+% which growth rates and exchange fluxes were measured: the flux conditions
+% of fluxData.tsv (the uptake of the carbon source is limited to the
+% measured rate, and growth and the measured fluxes are compared) and the
+% maximum-growth conditions of maxGrowth.tsv (the uptake is unlimited, and
+% only the maximal growth rate is compared), and the reactions of
+% zeroFlux.tsv that carry no flux. See loadExperimentData for the layout of
+% the files. Each file is optional: a missing file yields [] (fluxData,
+% maxGrowth) or an empty cell array (zeroFlux) rather than an error.
 %
 % Name-Value Arguments
 % --------------------
@@ -21,11 +27,12 @@ function experimentData = loadEvotuneData(varargin)
 % -----
 % The experimentData structure has the following fields:
 %
-% - fluxData : flux data loaded from fluxData.tsv. Every condition in the
+% - fluxData : the flux conditions of fluxData.tsv. Every condition in the
 %   file is used by the tuning; a weight of 0 in the column weight leaves a
-%   condition out. [] if the file isn't present.
-% - maxGrowth : maximum growth-rate data loaded from maxGrowth.tsv. [] if
-%   the file isn't present.
+%   condition out of the simulation and the distance. [] if the file isn't
+%   present.
+% - maxGrowth : the maximum-growth conditions of maxGrowth.tsv. [] if the
+%   file isn't present.
 % - zeroFlux : reaction IDs assumed to carry zero flux, loaded from
 %   zeroFlux.tsv. Empty cell array if the file isn't present.
 %

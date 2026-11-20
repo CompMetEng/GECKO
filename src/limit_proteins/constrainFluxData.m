@@ -1,10 +1,16 @@
 function model = constrainFluxData(model, varargin)
-% constrainFluxData  Constrain ecModel fluxes to provided flux data.
+% constrainFluxData  Constrain an ecModel to one measured flux condition.
 %
-% Constrains fluxes to the data that is provided in the fluxData structure,
-% which itself is read by loadFluxData from data/fluxData.tsv. The bounds are
-% set by RAVEN's applyFluxDataConstraints; this function takes the biomass
-% reaction and the preferred carbon source from the model adapter.
+% Use it to reproduce one measured condition before an analysis, for
+% example a flux variability analysis or a proteomics integration. The
+% biomass reaction is bounded by the measured growth rate and each exchange
+% reaction of the data by its measured flux in the chosen condition. The
+% data are the flux conditions of data/fluxData.tsv, read by RAVEN's
+% loadFluxData. The preferred carbon source of the adapter is blocked first,
+% so that the data alone decide which carbon source is used. The bounds are
+% set by RAVEN's applyFluxDataConstraints, where the bounds of each setting
+% of looseStrictFlux are listed; this function takes the biomass reaction
+% and the carbon source from the model adapter.
 %
 % Parameters
 % ----------

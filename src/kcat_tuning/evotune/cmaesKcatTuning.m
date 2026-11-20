@@ -1,9 +1,13 @@
 function [ecModel,result] = cmaesKcatTuning(ecModel,varargin)
 % cmaesKcatTuning  Tune kcats against experimental data with CMA-ES.
 %
-% This is the advanced kcat tuning: it fits kcats to maximum growth rates
-% and exchange fluxes, measured in one or more conditions (see
-% loadEvotuneData).
+% This is the advanced kcat tuning: it fits kcats to growth rates and
+% exchange fluxes measured in one or more conditions, by minimising the
+% distance between the model and the measurements. The distance is the
+% carbon-weighted RMSE (Cmmol/gDW/h) of the flux conditions of
+% data/fluxData.tsv and the maximum-growth conditions of
+% data/maxGrowth.tsv, as defined by RAVEN's experimentDistance. See
+% loadEvotuneData for the files.
 % sensitivityTuning is the standard tuning, which needs one maximum growth
 % rate.
 %
@@ -30,8 +34,11 @@ function [ecModel,result] = cmaesKcatTuning(ecModel,varargin)
 % modelAdapter : ModelAdapter
 %     a loaded model adapter (default: the current default model adapter).
 % experimentData : struct
-%     as returned by loadEvotuneData (default: loaded from modelAdapter).
-%     Without fluxData and maxGrowth, the error evotune:noData is raised.
+%     the measured conditions, as returned by loadEvotuneData (default:
+%     loaded from the data folder of modelAdapter). The fields fluxData
+%     (flux conditions), maxGrowth (maximum-growth conditions) and zeroFlux
+%     are described in loadExperimentData. Without fluxData and maxGrowth,
+%     the error evotune:noData is raised.
 % tunableMask, screen, targetImpactShare
 %     control which kcats are searched over, in order of precedence. Pass
 %     tunableMask to fix the set yourself. Otherwise, a mask is built by
@@ -62,8 +69,8 @@ function [ecModel,result] = cmaesKcatTuning(ecModel,varargin)
 % result : struct
 %     rxns/oldKcat/newKcat/groups cover the selected tunable set, tied
 %     groups included (their members share one value in newKcat).
-%     rmseTrace/objectiveTrace record the best-so-far plain RMSE and
-%     optimised objective per generation. nGenerations is how many
+%     rmseTrace/objectiveTrace record the best-so-far distance (without
+%     the prior penalty) and optimised objective per generation. nGenerations is how many
 %     generations actually ran. converged is true if
 %     rmseTrace(end) <= params.rmseThreshold.
 %

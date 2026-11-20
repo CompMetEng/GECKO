@@ -3,12 +3,13 @@ function [objective,rmse,rmseDetail,carbonWeights] = evotuneScore(ecModel,experi
 %
 % Internal helper used by cmaesKcatTuning, screenKcatLeverage and
 % tunePriorPenaltyWeight to score one ecModel (with a given set of kcats
-% already applied via applyKcatConstraints) against the experimental
-% growth and flux data. The conditions are simulated with RAVEN's
-% simulateConditions and scored with experimentDistance; this function
-% supplies the model-specific parts: the biomass reaction, the anaerobic
-% and protein-content functions of the model adapter, and the penalty on
-% the kcats.
+% already applied via applyKcatConstraints) against the measured growth
+% rates and exchange fluxes. The flux conditions and the maximum-growth
+% conditions are simulated with RAVEN's simulateConditions and combined into
+% one distance with experimentDistance (see there for the definitions);
+% this function supplies the model-specific parts: the biomass reaction,
+% the anaerobic and protein-content functions of the model adapter, and the
+% penalty on the kcats.
 %
 % Parameters
 % ----------
@@ -24,11 +25,13 @@ function [objective,rmse,rmseDetail,carbonWeights] = evotuneScore(ecModel,experi
 % modelAdapter : ModelAdapter
 %     a loaded model adapter (default: the current default model adapter).
 % maxGrowthWeight : double
-%     relative weight of the max-growth dataset against the flux dataset:
-%     (rmseFlux + w*rmseMaxGrowth) / (w+1) (default 1.0).
+%     weight of the maximum-growth conditions against the flux conditions in
+%     the distance: (rmseFlux + w*rmseMaxGrowth) / (w+1) (default 1.0, which
+%     averages the two; 2 counts the maximum-growth conditions twice as
+%     much).
 % priorPenaltyWeight : double
 %     weight on a prior term added to the objective (default 0, i.e. the
-%     objective equals the plain RMSE). See kcatVec/kcat0/sigma0log below.
+%     objective equals the distance). See kcatVec/kcat0/sigma0log below.
 % kcatVec, kcat0, sigma0log : double
 %     only used when priorPenaltyWeight > 0: the tunable kcat subset's
 %     current values, prior values, and per-kcat prior log-space std dev,
@@ -44,10 +47,13 @@ function [objective,rmse,rmseDetail,carbonWeights] = evotuneScore(ecModel,experi
 %     rmse, plus the prior penalty term when priorPenaltyWeight > 0. This
 %     is what a search should minimise.
 % rmse : double
-%     the plain (unpenalised) average RMSE, always comparable across runs
-%     regardless of priorPenaltyWeight.
+%     the distance between the model and the measurements (carbon-weighted
+%     RMSE in Cmmol/gDW/h, without the prior penalty), always comparable
+%     across runs regardless of priorPenaltyWeight.
 % rmseDetail : cell
-%     per-condition RMSE values, labelled by data type and condition index.
+%     per-condition RMSE values, labelled fluxData_<i> for the i-th flux
+%     condition and maxGrowth_<i> for the i-th maximum-growth condition. A
+%     condition with weight 0 is left out of the simulation and has NaN.
 % carbonWeights : containers.Map
 %     the carbon weights that were used. The weights depend on the
 %     metabolite formulas and not on the kcats, so callers scoring many

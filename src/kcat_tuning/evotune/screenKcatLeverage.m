@@ -5,7 +5,8 @@ function screen = screenKcatLeverage(ecModel,varargin)
 % worth curating or tuning, and can be read on its own well before any
 % tuning run. Each tie-group (isozyme copies sharing a prior and a source
 % move together when params.tieIsozymes) is perturbed up and down by
-% fold, and its leverage is the largest resulting change in RMSE. Groups
+% fold, and its leverage is the largest resulting change in the distance
+% between model and measurements (see cmaesKcatTuning). Groups
 % are ranked by that leverage weighted by sigma0log: a trusted source
 % needs proportionally more measured effect to rank alongside an
 % untrusted one.
@@ -24,8 +25,11 @@ function screen = screenKcatLeverage(ecModel,varargin)
 % modelAdapter : ModelAdapter
 %     a loaded model adapter (default: the current default model adapter).
 % experimentData : struct
-%     as returned by loadEvotuneData (default: loaded from modelAdapter).
-%     Without fluxData and maxGrowth, the error evotune:noData is raised.
+%     the measured conditions, as returned by loadEvotuneData (default:
+%     loaded from the data folder of modelAdapter). The fields fluxData
+%     (flux conditions), maxGrowth (maximum-growth conditions) and zeroFlux
+%     are described in loadExperimentData. Without fluxData and maxGrowth,
+%     the error evotune:noData is raised.
 % tunableMask : logical
 %     restrict which kcats are screened (default: every ec.kcat > 0).
 % fold : double
