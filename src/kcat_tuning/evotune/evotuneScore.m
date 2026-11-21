@@ -10,6 +10,9 @@ function [objective,rmse,rmseDetail,carbonWeights] = evotuneScore(ecModel,experi
 % this function supplies the model-specific parts: the biomass reaction,
 % the anaerobic and protein-content functions of the model adapter, and the
 % penalty on the kcats.
+% The conditions are simulated with the growth reaction of the adapter as
+% objective, whatever objective ecModel has; the objective of the ecModel that
+% is returned to the caller is not changed.
 %
 % Parameters
 % ----------
@@ -85,6 +88,9 @@ if isempty(modelAdapter)
     end
 end
 bioRxnId = modelAdapter.params.bioRxn;
+% The conditions are simulated by maximising growth: use the growth reaction of
+% the adapter as objective, whatever objective the model has.
+ecModel = setParam(ecModel, 'obj', bioRxnId, 1);
 
 if isempty(carbonWeights)
     rxnIds = experimentData.zeroFlux(:);
