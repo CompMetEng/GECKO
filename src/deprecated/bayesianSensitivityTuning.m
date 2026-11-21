@@ -3,8 +3,8 @@ function varargout = bayesianSensitivityTuning(varargin) %#ok<STOUT>
 %
 % GECKO 4 tunes kcats against experimental data with cmaesKcatTuning (the
 % advanced kcat tuning), which reads the same kinds of data from
-% data/evotuneMaxGrowth.tsv, data/evotuneFluxData.tsv and
-% data/evotuneZeroExch.tsv (see loadEvotuneData). sensitivityTuning is the
+% data/maxGrowth.tsv, data/fluxData.tsv and
+% data/zeroFlux.tsv (see loadEvotuneData). sensitivityTuning is the
 % standard kcat tuning. This function raises an error that names them.
 %
 % See also

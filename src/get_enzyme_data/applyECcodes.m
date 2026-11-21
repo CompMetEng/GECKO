@@ -29,7 +29,7 @@ function ecModel = applyECcodes(ecModel, varargin)
 %     ecModel = applyECcodes(ecModel, true);
 %     ecModel = applyECcodes(ecModel, 'overwrite', true);
 
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'overwrite', false});
 overwrite = p.overwrite;
 

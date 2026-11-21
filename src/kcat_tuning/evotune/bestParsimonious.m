@@ -25,7 +25,7 @@ function point = bestParsimonious(points,varargin)
 % See also
 % --------
 % parsimonyFrontier
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'tolerance', 0.02});
 tolerance = p.tolerance;
 

@@ -74,7 +74,7 @@ function usageData = getEnzymeUsage(ecModel,fluxes,varargin)
 % --------
 % reportEnzymeUsage
 
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'zero', true});
 zero = p.zero;
 if ecModel.ec.geckoLight

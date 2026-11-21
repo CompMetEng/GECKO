@@ -56,7 +56,7 @@ function bottlenecks = getEnzymeBottlenecks(model, varargin)
 %     bottlenecks = getEnzymeBottlenecks(ecModel);
 %     bottlenecks = getEnzymeBottlenecks(ecModel, 'top', 5, 'foldChange', 3);
 
-p = parseGECKOargs(varargin, {'top', []; 'foldChange', []});
+p = parseRAVENargs(varargin, {'top', []; 'foldChange', []});
 top = p.top;
 foldChange = p.foldChange;
 if isempty(top)

@@ -39,7 +39,7 @@ function pairs = extractEnzymeSubstratePairs(model, varargin)
 % kcatsFromDLKcat, kcatsFromHomologs
 
 [geckoPath, ~] = findGECKOroot();
-p = parseGECKOargs(varargin, {'ecRxns', []; 'modelAdapter', []});
+p = parseRAVENargs(varargin, {'ecRxns', []; 'modelAdapter', []});
 ecRxnsSel = p.ecRxns;
 if isempty(ecRxnsSel)
     ecRxnsSel = true(numel(model.ec.rxns),1);

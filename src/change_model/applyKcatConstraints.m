@@ -41,7 +41,7 @@ function model = applyKcatConstraints(model,varargin)
 % --------
 % makeEcModel, fillKcatsFromIsozymes, setKcatForReactions
 
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'updateRxns', []});
 updateRxns = p.updateRxns;
 

@@ -14,9 +14,9 @@ function points = parsimonyFrontier(scoreFcn,kcat,kcat0,sigma0log,varargin)
 % ----------
 % scoreFcn : function_handle
 %     scores one kcat vector; called once per threshold. Build it against
-%     a specific ecModel/evoData, e.g.
+%     a specific ecModel/experimentData, e.g.
 %         scoreFcn = @(vec) evotuneScoreVector(ecModel,tunableIdx, ...
-%             ecRxnIdsTunable,evoData,modelAdapter,params,vec);
+%             ecRxnIdsTunable,experimentData,modelAdapter,params,vec);
 %     where evotuneScoreVector applies vec to ecModel.ec.kcat(tunableIdx),
 %     calls applyKcatConstraints, and returns evotuneScore's plain rmse.
 % kcat, kcat0, sigma0log : double
@@ -40,7 +40,7 @@ function points = parsimonyFrontier(scoreFcn,kcat,kcat0,sigma0log,varargin)
 % See also
 % --------
 % bestParsimonious, nChanged
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'thresholds', [0 1 2 3 4 6 8 10 15]});
 thresholds = p.thresholds;
 
