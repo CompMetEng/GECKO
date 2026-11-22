@@ -7,7 +7,10 @@ function kcatList = kcatsFromECTree(model, varargin)
 % for n measurements (see ecTreeEstimate). A reaction with several EC
 % numbers uses the one with most measurements. Reactions without an EC
 % number, or whose EC classes have no measurements, get no value. The
-% result is written to data/kcats/ec_tree.tsv in the project folder (see
+% estimate depends on the EC number only: BRENDA measurements have no
+% direction, so a reaction and its reverse direction (_REV) get the same
+% value, and the detail of a reverse direction ends with 'direction=reverse'.
+% The result is written to data/kcats/ec_tree.tsv in the project folder (see
 % saveKcatSource).
 %
 % Parameters
@@ -41,7 +44,8 @@ function kcatList = kcatsFromECTree(model, varargin)
 % kcatList : struct
 %     the kcat values, with fields source, rxns, eccodes, kcats and detail
 %     (the number of measurements of the EC, n, and the deepest EC level
-%     with measurements, depth).
+%     with measurements, depth; 'direction=reverse' is added for a reverse
+%     direction, whose value is the one of the forward direction).
 %
 % Examples
 % --------
@@ -96,6 +100,8 @@ kcatList.rxns    = model.ec.rxns(idx);
 kcatList.eccodes = ecUsed(found);
 kcatList.kcats   = 10 .^ values(found);
 kcatList.detail  = cellstr("n=" + string(n(found)) + "; depth=" + string(depth(found)));
+isReverse = ~cellfun(@isempty, regexp(kcatList.rxns, '_REV(_EXP_\d+)?$', 'once'));
+kcatList.detail(isReverse) = strcat(kcatList.detail(isReverse), '; direction=reverse');
 
 if p.save
     parameters = struct('k', p.k);

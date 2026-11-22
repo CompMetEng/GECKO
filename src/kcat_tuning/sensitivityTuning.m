@@ -4,7 +4,9 @@ function [model, tunedKcats] = sensitivityTuning(model, varargin)
 % Iteratively increases the kcat of whichever enzyme currently limits growth
 % the most, until the model reaches the desired growth rate, updating the
 % tuned values in model.ec.kcat. The loop also stops, with a warning, when an
-% iteration raises growth by less than 1e-9.
+% iteration raises growth by less than 1e-9. When two enzymes, or two
+% reactions of an enzyme, tie (fluxes equal within a relative 1e-9), the one
+% that is first in model.rxns is selected.
 %
 % This is the standard kcat tuning: it needs one maximum growth rate.
 % cmaesKcatTuning is the advanced tuning, which fits kcats to maximum
@@ -29,6 +31,10 @@ function [model, tunedKcats] = sensitivityTuning(model, varargin)
 %     'Q99271'} (default []).
 % verbose : logical
 %     whether progress should be reported (default true).
+% evidence : logical
+%     add tunedKcats.evidence, the kcats that every source file of the
+%     project gives for the tuned reactions next to the tuned kcat (see
+%     kcatEvidence; default false).
 %
 % Returns
 % -------
@@ -49,6 +55,8 @@ function [model, tunedKcats] = sensitivityTuning(model, varargin)
 % - newKcat : kcat values in the output model, after tuning.
 % - source : source label of each kcat, taken from the input model before
 %   tuning.
+% - evidence : only with the option evidence; the summary table of
+%   kcatEvidence for the tuned reactions.
 %
 % model.ec.source of a tuned kcat keeps its origin and detail and gains the
 % tuning status, e.g. 'brenda (wc=0, origin=1) | tuned=sensitivity
@@ -67,7 +75,8 @@ p = parseGECKOargs(varargin, { ...
     'modelAdapter',      []; ...
     'foldChange',        10; ...
     'protToIgnore',      {}; ...
-    'verbose',           true});
+    'verbose',           true; ...
+    'evidence',          false});
 desiredGrowthRate = p.desiredGrowthRate;
 modelAdapter      = p.modelAdapter;
 foldChange        = p.foldChange;
@@ -100,6 +109,7 @@ end
 % previous iteration (the first iteration has nothing to compare with).
 lastGrowth = NaN;
 growthStallTol = 1e-9;
+tieTol = 1e-9;
 if ~m.ec.geckoLight
     %for the full model, we first find the draw reaction with the most flux
     drawRxns = startsWith(m.rxns, 'usage_prot_');
@@ -133,12 +143,15 @@ if ~m.ec.geckoLight
             printOrange('WARNING: No protein usage reaction carries flux, tuning cannot continue.\n');
             break;
         end
-        [~,sel]              = max(drawFluxes); % since bounds 0 to 1000
+        % Equal fluxes (within tieTol) are a tie, which goes to the first reaction of the model.
+        best                 = max(drawFluxes); % since bounds 0 to 1000
+        sel                  = find(drawFluxes >= best - tieTol * max(1, abs(best)), 1);
         %Now get the metabolite
         metSel               = m.S(:,sel) > 0; % positive coeff (forward usage)
         %now find the reaction with the largest consumption of this protein
         protFluxes           = m.S(metSel,:).' .* res.x; %negative
-        [~,rxnSel]           = min(protFluxes);
+        best                 = min(protFluxes);
+        rxnSel               = find(protFluxes <= best + tieTol * max(1, abs(best)), 1);
         kcatList             = [kcatList, rxnSel];
         rxn                  = m.rxns(rxnSel);
         targetSubRxn         = strcmp(m.ec.rxns, rxn);
@@ -182,7 +195,9 @@ else
             printOrange('WARNING: No reaction draws on the protein pool, tuning cannot continue.\n');
             break;
         end
-        [~,sel]         = min(res.x .* protPoolStoich); %max consumption
+        usage           = res.x .* protPoolStoich;
+        best            = min(usage); %max consumption
+        sel             = find(usage <= best + tieTol * max(1, abs(best)), 1);
         kcatList        = [kcatList, sel];
         rxn             = m.rxns(sel.');
         targetSubRxns   = strcmp(origRxns, rxn);
@@ -210,6 +225,13 @@ tunedKcats.newKcat  = m.ec.kcat(rxnIdx);
 tunedKcats.source   = model.ec.source(rxnIdx);
 
 model = m;
+if p.evidence
+    try
+        [~, tunedKcats.evidence] = kcatEvidence(model, 'tunedKcats', tunedKcats, 'modelAdapter', modelAdapter);
+    catch err
+        printOrange(sprintf('The evidence of the tuned kcats could not be read: %s\n', err.message));
+    end
+end
 end
 
 function m = markTuned(m,rows)
