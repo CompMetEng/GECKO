@@ -206,6 +206,21 @@ function testResolveTunableContextGroupsATunedSourceByItsOrigin_tc0712(testCase)
     verifyEqual(testCase, sigma0log, [0.2; 0.3; 0.4; 0.5])
 end
 
+function testSensitivityTuningReturnsEvidence_tc0753(testCase)
+    % With evidence, tunedKcats.evidence has one row per tuned reaction, with the
+    % kcat after tuning, the kcat before tuning and their ratio.
+    [ecModel, tuneAdapter] = tuningModel();
+    ecModel.ec.source(:) = {'brenda (wc=0, origin=1)'};
+    cleanup = shadowSolveLP([1 1 50]); %#ok<NASGU>
+    [tuned, tunedKcats] = sensitivityTuning(ecModel, 'desiredGrowthRate', 50, ...
+        'modelAdapter', tuneAdapter, 'protToIgnore', {'P4'}, 'verbose', false, 'evidence', true);
+    verifyEqual(testCase, sort(tunedKcats.evidence.ecRxn(:)), sort(unique(tunedKcats.rxns(:))))
+    [~, i] = ismember(tunedKcats.evidence.ecRxn, tuned.ec.rxns);
+    verifyEqual(testCase, tunedKcats.evidence.kcat, tuned.ec.kcat(i))
+    verifyEqual(testCase, tunedKcats.evidence.prior, ecModel.ec.kcat(i))
+    verifyTrue(testCase, all(tunedKcats.evidence.fold > 1))
+end
+
 function testSensitivityTuningExtendsTheStatusOnce_tc0713(testCase)
     % Every kcat the tuning changes gets the origin it had, the method
     % sensitivity and the kcat before the first tuning as prior. A second
@@ -269,6 +284,24 @@ ecModel = makeEcModel(getGeckoTestModel(), false, adapter);
 ecModel = getECfromGEM(ecModel);
 end
 
+function testSensitivityTuningBreaksATieByModelOrder_tc0757(testCase)
+% Two reactions of one enzyme consume equal amounts of it: the one that is
+% first in the model is tuned.
+[ecModel, tuneAdapter] = tuningModel();
+rows = (1:2)';
+column = find(ecModel.ec.rxnEnzMat(rows(1), :), 1);
+ecModel.ec.rxnEnzMat(rows(2), :) = 0;
+ecModel.ec.rxnEnzMat(rows(2), column) = 1;
+ecModel.ec.kcat(rows) = 10;
+ecModel = applyKcatConstraints(ecModel);
+[~, order] = sort(cellfun(@(r) find(strcmp(ecModel.rxns, r)), ecModel.ec.rxns(rows)));
+rows = rows(order);
+cleanup = shadowSolveLP([1 1 100], ['usage_prot_' ecModel.ec.enzymes{column}], ecModel.ec.rxns(rows)); %#ok<NASGU>
+[~, tunedKcats] = sensitivityTuning(ecModel, 'desiredGrowthRate', 50, ...
+    'modelAdapter', tuneAdapter, 'verbose', false);
+verifyEqual(testCase, tunedKcats.rxns, ecModel.ec.rxns(rows(1)))
+end
+
 function [ecModel, tuneAdapter] = tuningModel()
 % R3 limits growth, its enzyme P4 is ignored by the tests, so tuning raises R5.
 adapter = getAdapter();
@@ -291,10 +324,16 @@ tuneAdapter = adapter;
 tuneAdapter.params.bioRxn = 'R5';
 end
 
-function cleanup = shadowSolveLP(values)
+function cleanup = shadowSolveLP(values, usage, consumers)
 % Puts a solveLP on the path that calls RAVEN's and then reports the growth
-% of solve number n as values(min(n, end)). The path is restored when the
-% returned object is cleared.
+% of solve number n as values(min(n, end)). With usage and consumers, the
+% flux of the reaction usage is 2, the flux of each reaction in consumers is
+% 1 and all other fluxes are 0. The path is restored when the returned object
+% is cleared.
+if nargin > 1
+    setappdata(0, 'gecko_test_solvelp_usage', usage);
+    setappdata(0, 'gecko_test_solvelp_consumers', consumers);
+end
 setappdata(0, 'gecko_test_solvelp_real', @solveLP);
 setappdata(0, 'gecko_test_solvelp_count', 0);
 setappdata(0, 'gecko_test_solvelp_values', values);
@@ -309,6 +348,12 @@ fprintf(fid, '%s\n', ...
     'values = getappdata(0,''gecko_test_solvelp_values'');', ...
     '[res,hs] = real(varargin{:});', ...
     'res.f = values(min(n,numel(values)));', ...
+    'if isappdata(0,''gecko_test_solvelp_usage'')', ...
+    '    m = varargin{1};', ...
+    '    res.x = zeros(numel(m.rxns),1);', ...
+    '    res.x(strcmp(m.rxns,getappdata(0,''gecko_test_solvelp_usage''))) = 2;', ...
+    '    res.x(ismember(m.rxns,getappdata(0,''gecko_test_solvelp_consumers''))) = 1;', ...
+    'end', ...
     'end');
 fclose(fid);
 addpath(stubDir, '-begin');
@@ -318,7 +363,7 @@ end
 function removeShadow(stubDir)
 rmpath(stubDir);
 rmdir(stubDir, 's');
-for name = {'real', 'values'}
+for name = {'real', 'values', 'usage', 'consumers'}
     if isappdata(0, ['gecko_test_solvelp_' name{1}])
         rmappdata(0, ['gecko_test_solvelp_' name{1}]);
     end

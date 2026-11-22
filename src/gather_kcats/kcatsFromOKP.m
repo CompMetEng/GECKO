@@ -43,9 +43,20 @@ function [kcatList, done] = kcatsFromOKP(model, varargin)
 % useStored : logical
 %     read the stored result of this method's job, without contacting OKP
 %     (default false).
-% ecRxns : logical
-%     for which model.ec.rxns kcats are predicted (default: all). Only
-%     used when a job is submitted.
+% ecRxns : logical, double or cell
+%     for which model.ec.rxns kcats are predicted (default: all), as a
+%     logical vector, as indices, or as names of model.ec.rxns. Only used
+%     when a job is submitted.
+% jobTag : char
+%     keeps the job, its input and its result apart from the job of the
+%     method without a tag: they are read and written as
+%     data/OKP_job_<method>__<jobTag>.txt, data/OKP_query_<jobTag>.csv and
+%     data/OKP_output_<method>__<jobTag>.csv, and the source file is
+%     okp_<method>__<jobTag>.tsv unless saveAs is given. The tag is written
+%     in lower case, with each run of other characters than letters and
+%     digits as _, and has at least one letter or digit (default: none).
+%     A job for a few reactions with a tag leaves the job and the result
+%     of all reactions as they are.
 % save : logical
 %     write the source file (default true).
 % saveAs : char
@@ -77,13 +88,14 @@ function [kcatList, done] = kcatsFromOKP(model, varargin)
 % --------
 % kcatsFromBrenda, kcatsFromDLKcat, resolveOkpApiKey, saveKcatSource
 
-checkOptions(varargin, {'method','wait','resubmit','useStored','ecRxns','save','saveAs','modelAdapter'}, 'kcatsFromOKP');
+checkOptions(varargin, {'method','wait','resubmit','useStored','ecRxns','jobTag','save','saveAs','modelAdapter'}, 'kcatsFromOKP');
 p = parseRAVENargs(varargin, { ...
     'method',       []; ...
     'wait',         false; ...
     'resubmit',     false; ...
     'useStored',    false; ...
     'ecRxns',       []; ...
+    'jobTag',       ''; ...
     'save',         true; ...
     'saveAs',       []; ...
     'modelAdapter', []});
@@ -107,6 +119,15 @@ end
 % The file name of a method: lower case, runs of characters other than
 % letters and digits replaced by _ (the same rule as okp_<method> sources).
 tag = lower(regexprep(regexprep(method, '[^A-Za-z0-9]+', '_'), '^_+|_+$', ''));
+jobTag = lower(regexprep(regexprep(char(p.jobTag), '[^A-Za-z0-9]+', '_'), '^_+|_+$', ''));
+if ~isempty(char(p.jobTag)) && isempty(jobTag)
+    error('kcatsFromOKP:jobTag', 'jobTag ''%s'' has no letters or digits.', char(p.jobTag))
+end
+if ~isempty(jobTag)
+    tag = [tag '__' jobTag];
+end
+ecRxnsGiven = ismember('ecRxns', cellfun(@char, varargin(1:2:end), 'UniformOutput', false));
+p.ecRxns = ecRxnsToLogical(model, p.ecRxns, ecRxnsGiven);
 dataDir = fullfile(params.path, 'data');
 jobFile = fullfile(dataDir, ['OKP_job_' tag '.txt']);
 outFile = fullfile(dataDir, ['OKP_output_' tag '.csv']);
@@ -122,13 +143,13 @@ if ~isempty(p.ecRxns) && ~submitting
 end
 if p.save
     file = fullfile(modelAdapter.params.path, 'data', 'kcats', [char(name) '.tsv']);
-    if submitting
+    if submitting && isempty(jobTag)
         warnSubset(p.ecRxns, numel(model.ec.rxns), file);
     end
 end
 
 if p.useStored
-    if ~isfield(job, 'jobId')
+    if ~isfield(job, 'jobId') && isempty(jobTag)
         adoptSharedResult(model, modelAdapter, dataDir, method, jobFile, outFile);
         job = readJobFile(jobFile);
     end
@@ -143,7 +164,7 @@ else
         if isfile(outFile)
             delete(outFile);
         end
-        jobId = submitOpenKineticsPredictor(model, method, p.ecRxns, modelAdapter);
+        jobId = submitOpenKineticsPredictor(model, method, p.ecRxns, modelAdapter, jobTag);
         job = struct('jobId', jobId, 'method', method, 'submittedAt', ...
             char(datetime('now', 'TimeZone', 'UTC', 'Format', 'yyyy-MM-dd''T''HH:mm:ss''Z''')));
         if ~isempty(p.ecRxns)
@@ -229,6 +250,37 @@ end
 fclose(fid);
 end
 
+function ecRxns = ecRxnsToLogical(model, ecRxns, given)
+% ecRxns as a logical vector over model.ec.rxns, from a logical vector, indices or names.
+if isempty(ecRxns)
+    if given
+        error('kcatsFromOKP:ecRxns', 'ecRxns selects no reaction; leave it out to predict for all reactions.')
+    end
+    return
+end
+if islogical(ecRxns)
+    if numel(ecRxns) ~= numel(model.ec.rxns)
+        error('kcatsFromOKP:ecRxns', 'A logical ecRxns needs %d entries, one per row of model.ec.rxns.', numel(model.ec.rxns))
+    end
+    return
+end
+selected = false(numel(model.ec.rxns), 1);
+if isnumeric(ecRxns)
+    if any(ecRxns < 1 | ecRxns > numel(selected) | ecRxns ~= round(ecRxns))
+        error('kcatsFromOKP:ecRxns', 'ecRxns has an index outside model.ec.rxns (%d rows).', numel(selected))
+    end
+    selected(ecRxns) = true;
+else
+    names = cellstr(ecRxns);
+    missing = setdiff(names, model.ec.rxns);
+    if ~isempty(missing)
+        error('kcatsFromOKP:ecRxns', 'Not in model.ec.rxns: %s.', strjoin(missing, ', '))
+    end
+    selected(ismember(model.ec.rxns, names)) = true;
+end
+ecRxns = selected;
+end
+
 function n = countRxns(ecRxns)
 if islogical(ecRxns)
     n = sum(ecRxns);
@@ -260,7 +312,7 @@ if ~isempty(unknown)
 end
 end
 
-function jobId = submitOpenKineticsPredictor(model, method, ecRxns, modelAdapter)
+function jobId = submitOpenKineticsPredictor(model, method, ecRxns, modelAdapter, jobTag)
 % Writes the input of a job (data/OKP.csv) and submits it to the OKP REST API
 % (https://predictor.openkinetics.org/). The input is written before the API
 % key is resolved, so it can be checked without a key.
@@ -280,8 +332,11 @@ end
 okp.method = method;
 
 filename = fullfile(params.path,'data','OKP.csv');
+if ~isempty(jobTag)
+    filename = fullfile(params.path,'data',['OKP_query_' jobTag '.csv']);
+end
 writeOpenKineticsPredictorInput(model, 'ecRxns', ecRxns, 'modelAdapter', modelAdapter, ...
-    'onlyWithSmiles', true, 'overwrite', true);
+    'onlyWithSmiles', true, 'overwrite', true, 'file', filename);
 apiKey = resolveOkpApiKey('', params.path);
 
 %% Submit via the OKP REST API
@@ -397,7 +452,8 @@ p = parseRAVENargs(varargin, { ...
     'ecRxns',         []; ...
     'modelAdapter',   []; ...
     'onlyWithSmiles', []; ...
-    'overwrite',      []});
+    'overwrite',      []; ...
+    'file',           ''});
 ecRxns         = p.ecRxns;
 modelAdapter   = p.modelAdapter;
 onlyWithSmiles = p.onlyWithSmiles;
@@ -427,6 +483,9 @@ end
 
 %% Output files
 filename = fullfile(params.path,'data','OKP.csv');
+if ~isempty(p.file)
+    filename = p.file;
+end
 if ~overwrite && exist(filename,'file')
     error('%s already exists. Set overwrite=true to replace it.', filename)
 end

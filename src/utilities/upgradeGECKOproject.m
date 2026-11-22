@@ -121,6 +121,9 @@ if isfile(fullfile(projectPath, 'data', 'DLKcat.tsv')) && ~isfile(fullfile(proje
 end
 okpFiles = dir(fullfile(projectPath, 'data', 'OKP_output*.csv'));
 for k = 1:numel(okpFiles)
+    if contains(okpFiles(k).name, '__')
+        continue  % the result of a tagged query (kcatsFromOKP jobTag)
+    end
     method = okpMethod(projectPath, okpFiles(k).name);
     if ~isempty(method)
         name = ['okp_' lower(regexprep(regexprep(method, '[^A-Za-z0-9]+', '_'), '^_+|_+$', ''))];

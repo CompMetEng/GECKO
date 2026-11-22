@@ -2597,6 +2597,10 @@ function testKcatsFromDLKcatViaDefault_tc0701(testCase)
         'modelAdapter', adapter), 'kcatsFromDLKcat:noOutput')
     verifyError(testCase, @() kcatsFromDLKcat(ecModel, 'run', true, 'via', 'okp', ...
         'modelAdapter', adapter), 'kcatsFromDLKcat:arguments')
+    % An ecRxns that is given but selects nothing is an error; leaving it out
+    % predicts for all reactions.
+    verifyError(testCase, @() kcatsFromDLKcat(ecModel, 'via', 'okp', 'ecRxns', [], ...
+        'save', false, 'modelAdapter', adapter), 'kcatsFromOKP:ecRxns')
 end
 
 
