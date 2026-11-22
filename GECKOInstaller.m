@@ -11,6 +11,7 @@ classdef GECKOInstaller
             paths = GECKOInstaller.GetFilteredSubPaths(sourceDir, GECKOInstaller.FILE_FILTER);
 
             GECKOInstaller.checkRAVENversion('3.0.0'); % Minimum RAVEN version
+            GECKOInstaller.checkRAVENExperiments(); % loadExperimentData and related functions of RAVEN
 
             % Check unique function names
             if ~exist("checkFunctionUniqueness.m")
@@ -59,6 +60,21 @@ classdef GECKOInstaller
             okPaths = cellfun(@isempty, matches);
             pathsLeft = splitPaths(1,okPaths);
             newPaths = char(join(pathsLeft, pathSep));
+        end
+
+        function checkRAVENExperiments()
+            % GECKO scores and constrains models against measured conditions with
+            % the functions of the experiments folder of RAVEN (loadFluxData,
+            % loadExperimentData, simulateConditions, computeCarbonWeights,
+            % experimentDistance, applyFluxDataConstraints). The version check
+            % ignores the pre-release suffix of RAVEN, so it cannot tell a RAVEN
+            % that has these functions from one that has not.
+            if exist('loadExperimentData','file') ~= 2 || exist('applyFluxDataConstraints','file') ~= 2
+                error(['The installed RAVEN does not have the experiments functions ' ...
+                    '(loadExperimentData, applyFluxDataConstraints, ...), which GECKO requires. ' ...
+                    'Upgrade RAVEN by following the instructions available ' ...
+                    '<a href="https://raven-docs.readthedocs.io/en/latest/installation/raven.html#upgrade">here</a>.'])
+            end
         end
 
         function checkRAVENversion(minmVer)

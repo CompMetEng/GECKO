@@ -67,7 +67,7 @@ function [result, model] = relaxProteomicsGreedy(model, varargin)
 % --------
 % flexibilizeEnzConcs, getEnzymeBottlenecks
 
-p = parseGECKOargs(varargin, {'minimalGrowth', []; 'enzymeSet', []; ...
+p = parseRAVENargs(varargin, {'minimalGrowth', []; 'enzymeSet', []; ...
     'maxIterations', []; 'defaultUpperBound', []});
 minimalGrowth     = p.minimalGrowth;
 enzymeSet         = p.enzymeSet;

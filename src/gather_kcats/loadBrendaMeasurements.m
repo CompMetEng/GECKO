@@ -34,7 +34,7 @@ function measurements = loadBrendaMeasurements(varargin)
 % kcatsFromECTree, ecTreeEstimate, loadBRENDAdata
 
 checkOptions(varargin, {'modelAdapter','folder'}, 'loadBrendaMeasurements');
-p = parseGECKOargs(varargin, {'modelAdapter', []; 'folder', []});
+p = parseRAVENargs(varargin, {'modelAdapter', []; 'folder', []});
 folder = p.folder;
 if isempty(folder)
     modelAdapter = p.modelAdapter;

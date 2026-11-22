@@ -5,8 +5,8 @@ function varargout = getcarbonnum(varargin) %#ok<STOUT>
 %
 % See also
 % --------
-% fillCarbonNum
+% computeCarbonWeights
 
-error('GECKO:removedFunction', ['getcarbonnum was removed in GECKO 4. Use fillCarbonNum, which writes' ...
-    ' the carbon number of each exchange reaction to model.excarbon.']);
+error('GECKO:removedFunction', ['getcarbonnum was removed in GECKO 4. Use computeCarbonWeights (RAVEN),' ...
+    ' which returns the carbon weight of each reaction as a containers.Map.']);
 end

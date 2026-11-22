@@ -5,7 +5,8 @@ function screen = screenKcatLeverage(ecModel,varargin)
 % worth curating or tuning, and can be read on its own well before any
 % tuning run. Each tie-group (isozyme copies sharing a prior and a source
 % move together when params.tieIsozymes) is perturbed up and down by
-% fold, and its leverage is the largest resulting change in RMSE. Groups
+% fold, and its leverage is the largest resulting change in the distance
+% between model and measurements (see cmaesKcatTuning). Groups
 % are ranked by that leverage weighted by sigma0log: a trusted source
 % needs proportionally more measured effect to rank alongside an
 % untrusted one.
@@ -23,9 +24,12 @@ function screen = screenKcatLeverage(ecModel,varargin)
 % --------------------
 % modelAdapter : ModelAdapter
 %     a loaded model adapter (default: the current default model adapter).
-% evoData : struct
-%     as returned by loadEvotuneData (default: loaded from modelAdapter).
-%     Without fluxData and maxGrate, the error evotune:noData is raised.
+% experimentData : struct
+%     the measured conditions, as returned by loadEvotuneData (default:
+%     loaded from the data folder of modelAdapter). The fields fluxData
+%     (flux conditions), maxGrowth (maximum-growth conditions) and zeroFlux
+%     are described in loadExperimentData. Without fluxData and maxGrowth,
+%     the error evotune:noData is raised.
 % tunableMask : logical
 %     restrict which kcats are screened (default: every ec.kcat > 0).
 % fold : double
@@ -47,14 +51,14 @@ function screen = screenKcatLeverage(ecModel,varargin)
 % See also
 % --------
 % selectTunableMask, cmaesKcatTuning
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'modelAdapter', []; ...
-    'evoData', []; ...
+    'experimentData', []; ...
     'tunableMask', []; ...
     'fold', 2.0; ...
     'nProc', 1});
 modelAdapter = p.modelAdapter;
-evoData      = p.evoData;
+experimentData      = p.experimentData;
 tunableMask  = p.tunableMask;
 fold         = p.fold;
 nProc        = max(1, round(p.nProc));
@@ -65,12 +69,12 @@ if isempty(modelAdapter)
         error('Either send in a modelAdapter or set the default ecModel adapter in the ModelAdapterManager.')
     end
 end
-if isempty(evoData)
-    evoData = loadEvotuneData('modelAdapter', modelAdapter);
+if isempty(experimentData)
+    experimentData = loadEvotuneData('modelAdapter', modelAdapter);
 end
-if isempty(evoData.fluxData) && isempty(evoData.maxGrate)
-    error('evotune:noData', ['evoData has neither fluxData nor maxGrate (from ' ...
-        'data/evotuneFluxData.tsv and data/evotuneMaxGrowth.tsv); there is nothing to tune against.'])
+if isempty(experimentData.fluxData) && isempty(experimentData.maxGrowth)
+    error('evotune:noData', ['experimentData has neither fluxData nor maxGrowth (from ' ...
+        'data/fluxData.tsv and data/maxGrowth.tsv); there is nothing to tune against.'])
 end
 params = modelAdapter.params.evotune;
 
@@ -96,18 +100,18 @@ end
 nVec = numel(vectors);
 rmses = zeros(nVec,1);
 
+% The first probe vector also gives the carbon weights (evotuneScore's 4th
+% output), which are passed to every other call so the metabolite-formula
+% scan behind them runs once for the whole screen rather than once per
+% probe vector.
+[~,rmses(1),~,carbonWeights] = scoreVector(ecModel,tunableIdx,ecRxnIdsTunable,experimentData,modelAdapter,params,vectors{1},[]);
 if nProc == 1
-    % Serial path: pass the excarbon-augmented model from one call to
-    % the next, so the metabolite-formula scan behind it (evotuneScore's
-    % 4th output) runs once for the whole screen rather than once per
-    % probe vector.
-    baseModel = ecModel;
-    for v = 1:nVec
-        [~,rmses(v),~,baseModel] = scoreVector(baseModel,tunableIdx,ecRxnIdsTunable,evoData,modelAdapter,params,vectors{v});
+    for v = 2:nVec
+        [~,rmses(v)] = scoreVector(ecModel,tunableIdx,ecRxnIdsTunable,experimentData,modelAdapter,params,vectors{v},carbonWeights);
     end
 else
-    parfor v = 1:nVec
-        [~,rmses(v)] = scoreVector(ecModel,tunableIdx,ecRxnIdsTunable,evoData,modelAdapter,params,vectors{v});
+    parfor v = 2:nVec
+        [~,rmses(v)] = scoreVector(ecModel,tunableIdx,ecRxnIdsTunable,experimentData,modelAdapter,params,vectors{v},carbonWeights);
     end
 end
 
@@ -149,8 +153,9 @@ screen = table(rxnId,nIsozymes,sourceGroup,kcat0Col,leverage,sigma0logCol,rnk,cu
     'VariableNames',{'rxnId','nIsozymes','sourceGroup','kcat0','leverage','sigma0log','rank','cumLeverageShare','positions'});
 end
 
-function [obj,rmse,rmseDetail,ecModel] = scoreVector(ecModel,tunableIdx,ecRxnIdsTunable,evoData,modelAdapter,params,kcatVec)
+function [obj,rmse,rmseDetail,carbonWeights] = scoreVector(ecModel,tunableIdx,ecRxnIdsTunable,experimentData,modelAdapter,params,kcatVec,carbonWeights)
 ecModel.ec.kcat(tunableIdx) = kcatVec;
 ecModel = applyKcatConstraints(ecModel,'updateRxns',ecRxnIdsTunable);
-[obj,rmse,rmseDetail,ecModel] = evotuneScore(ecModel,evoData,'modelAdapter',modelAdapter,'maxGrowthWeight',params.maxGrowthWeight);
+[obj,rmse,rmseDetail,carbonWeights] = evotuneScore(ecModel,experimentData,'modelAdapter',modelAdapter,'maxGrowthWeight',params.maxGrowthWeight, ...
+    'carbonWeights',carbonWeights);
 end

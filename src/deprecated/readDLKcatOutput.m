@@ -21,7 +21,7 @@ function kcatList = readDLKcatOutput(model, varargin)
 
 warning('GECKO:deprecatedFunction', ['readDLKcatOutput is deprecated; use ' ...
     'kcatsFromDLKcat(model, ''via'', ''file''). It will be removed in a future release.'])
-p = parseGECKOargs(varargin, {'outFile', []; 'modelAdapter', []; 'strict', []});
+p = parseRAVENargs(varargin, {'outFile', []; 'modelAdapter', []; 'strict', []});
 if ~isempty(p.strict)
     warning('GECKO:deprecatedOption', ['The strict option of readDLKcatOutput is ignored: rows ' ...
         'with a substrate that is not in model.metNames are left out with a warning.'])

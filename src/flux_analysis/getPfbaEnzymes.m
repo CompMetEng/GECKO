@@ -51,7 +51,7 @@ function solution = getPfbaEnzymes(model, varargin)
 % --------
 % getEnzymeBottlenecks
 
-p = parseGECKOargs(varargin, {'rxnId', []; 'fractionOfOptimum', []});
+p = parseRAVENargs(varargin, {'rxnId', []; 'fractionOfOptimum', []});
 rxnId             = p.rxnId;
 fractionOfOptimum = p.fractionOfOptimum;
 if isempty(fractionOfOptimum)

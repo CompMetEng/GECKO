@@ -54,7 +54,7 @@ function model = fillEnzConcs(model, protData, varargin)
 % --------
 % constrainEnzConcs, loadProtData
 
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'dataCol', 1});
 dataCol = p.dataCol;
 if isempty(dataCol); dataCol = 1; end

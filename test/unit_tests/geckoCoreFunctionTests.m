@@ -337,11 +337,10 @@ function testfuzzyKcatMatchingMedian_tc0060(testCase)
         'modelAdapter', adapter, 'kcatAggregation', 'mean'), ...
         'fuzzyKcatMatching:invalidKcatAggregation')
 
-    % Mixing positional and name-value arguments puts a name where a
-    % value belongs; that has to fail rather than quietly wildcard every
-    % EC number, which is what an unvalidated forceWClvl would do.
-    verifyError(testCase, @() fuzzyKcatMatching(ecModel, [], adapter, ...
-        'kcatAggregation', 'median'), 'fuzzyKcatMatching:invalidForceWClvl')
+    % Leading positional arguments may be followed by name-value pairs.
+    kcatListMixed = fuzzyKcatMatching(ecModel, [], adapter, ...
+        'kcatAggregation', 'median');
+    verifyEqual(testCase, kcatListMixed.kcats, kcatListMedian.kcats)
 end
 
 function testfuzzyKcatMatching_tc0010(testCase)
@@ -2384,15 +2383,8 @@ function testDeprecatedAliasesWarnAndForward_tc0055(testCase)
     resultNew = applyECcodes(ecCopy);
     verifyEqual(testCase, resultOld.eccodes, resultNew.eccodes)
 
-    % addCarbonNum -> fillCarbonNum
-    carbonModel = getGeckoTestModel();
-    carbonModel.metFormulas = {'C6H12O6';'C2H6O';'C6H12O6';'C2H6O'};
-    lastwarn('','');
-    carbonOld = addCarbonNum(carbonModel);
-    [~,warnId] = lastwarn();
-    verifyEqual(testCase, warnId, 'GECKO:deprecatedName')
-    carbonNew = fillCarbonNum(carbonModel);
-    verifyEqual(testCase, carbonOld.excarbon, carbonNew.excarbon)
+    % addCarbonNum was removed; the error names computeCarbonWeights
+    verifyError(testCase, @() addCarbonNum(getGeckoTestModel()), 'GECKO:removedFunction')
 end
 
 function testGetStandardKcatSubsystemValueIsMedianNotMean_tc0056(testCase)
@@ -2769,11 +2761,11 @@ function testEvotuneWithoutDataErrors_tc0709(testCase)
     % against: screenKcatLeverage and cmaesKcatTuning raise evotune:noData.
     [ecModel, adapter, project] = buildScratchProject();
     cleanupDir = onCleanup(@() rmdir(project, 's'));
-    evoData = struct('fluxData', [], 'maxGrate', [], 'zeroFlux', {{}});
+    experimentData = struct('fluxData', [], 'maxGrowth', [], 'zeroFlux', {{}});
     verifyError(testCase, @() screenKcatLeverage(ecModel, 'modelAdapter', adapter, ...
-        'evoData', evoData), 'evotune:noData')
+        'experimentData', experimentData), 'evotune:noData')
     verifyError(testCase, @() cmaesKcatTuning(ecModel, 'modelAdapter', adapter, ...
-        'evoData', evoData), 'evotune:noData')
+        'experimentData', experimentData), 'evotune:noData')
     % The test project has no evotune files, so the loaded data is empty too
     verifyError(testCase, @() screenKcatLeverage(ecModel, 'modelAdapter', adapter), 'evotune:noData')
 end
@@ -3198,7 +3190,7 @@ function testRemovedGECKO3FunctionsNameTheirReplacement_tc0731(testCase)
     % The stubs of removed GECKO 3 functions raise an error that names the
     % GECKO 4 replacement.
     cases = {@abc_max, 'cmaesKcatTuning'; @getrSample, 'cmaesKcatTuning'; ...
-        @updateprior, 'cmaesKcatTuning'; @getcarbonnum, 'fillCarbonNum'; ...
+        @updateprior, 'cmaesKcatTuning'; @getcarbonnum, 'computeCarbonWeights'; ...
         @findMaxValue, 'kcatsFromBrenda'};
     for k = 1:size(cases, 1)
         try

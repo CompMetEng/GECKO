@@ -60,7 +60,7 @@ function report = updateKcatSources(model, varargin)
 % collectKcats, assignKcats, kcatsFromBrenda, kcatsFromDLKcat, kcatsFromOKP
 
 checkOptions(varargin, {'dryRun','modelAdapter'}, 'updateKcatSources');
-p = parseGECKOargs(varargin, {'dryRun', false; 'modelAdapter', []});
+p = parseRAVENargs(varargin, {'dryRun', false; 'modelAdapter', []});
 modelAdapter = p.modelAdapter;
 if isempty(modelAdapter)
     modelAdapter = ModelAdapterManager.getDefault();
