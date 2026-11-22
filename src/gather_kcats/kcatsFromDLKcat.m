@@ -99,8 +99,12 @@ if strcmp(via, 'file') && ~isempty(p.ecRxns)
         'it needs ''via'', ''okp'' or ''docker''.'])
 end
 if strcmp(via, 'okp')
-    [kcatList, done] = kcatsFromOKP(model, 'method', 'DLKcat', 'wait', p.wait, ...
-        'ecRxns', p.ecRxns, 'save', p.save, 'saveAs', p.saveAs, 'modelAdapter', modelAdapter);
+    okpArgs = {'method', 'DLKcat', 'wait', p.wait, 'save', p.save, 'saveAs', p.saveAs, ...
+        'modelAdapter', modelAdapter};
+    if ismember('ecRxns', cellfun(@char, varargin(1:2:end), 'UniformOutput', false))
+        okpArgs = [okpArgs, {'ecRxns', p.ecRxns}];
+    end
+    [kcatList, done] = kcatsFromOKP(model, okpArgs{:});
     return
 end
 done = true;
