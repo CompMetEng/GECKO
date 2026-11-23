@@ -9,7 +9,7 @@ function report = convertAdapterToToml(adapter, tomlFile)
 % [matlab.params], so that loadAdapterParams gives back the same params.
 %
 % Methods that the adapter class overrides cannot be written to TOML.
-% They are listed in the report, with how to carry them over:
+% They are listed in the report, with how to convert them:
 % - getSpontaneousReactions: set [spontaneous] name_contains or file;
 % - makeModelAnaerobic, changeProteinBiomass: set [matlab]
 %   make_model_anaerobic or change_protein_biomass to a function name;
@@ -29,6 +29,10 @@ function report = convertAdapterToToml(adapter, tomlFile)
 % report : struct
 %     - file: the file written;
 %     - unmapped: parameters written under [matlab.params];
+%     - notCarried: parameters that model_adapter.toml has no key for and
+%       that are not written: kcatAggregation (set aggregation in
+%       [kcat_sources.brenda]) and evotune.kcatSources and
+%       evotune.sigma0logSource (write [evotune.source_groups] tables);
 %     - methods: overridden methods that need carrying over by hand.
 %
 % Examples
@@ -41,7 +45,10 @@ function report = convertAdapterToToml(adapter, tomlFile)
 % TomlAdapter, loadAdapterParams, writeAdapterToml
 
 if ischar(adapter) || isstring(adapter)
+    state = warning('off', 'GECKO:deprecatedAdapterClass');
+    restoreWarning = onCleanup(@() warning(state));
     adapter = ModelAdapterManager.getAdapter(char(adapter));
+    clear restoreWarning
 end
 params = adapter.params;
 if isfield(params,'path') && isstruct(params.path)
@@ -63,7 +70,7 @@ data = struct();
 used = {};
 for k = 1:numel(map.tomlKey)
     field = map.matlabField{k};
-    if isempty(field) || any(strcmp(field, {'evotune.kcatSources','evotune.sigma0logSource'}))
+    if isempty(field) || strcmp(field, 'evotune.kcatSources')
         continue
     end
     [found, value] = getDotted(params, field);
@@ -81,21 +88,15 @@ for k = 1:numel(map.tomlKey)
 end
 used{end+1} = 'path';
 
-% Trust tiers: one group per ec.source value.
-if isfield(params,'evotune') && isfield(params.evotune,'kcatSources')
-    used = [used, {'evotune.kcatSources','evotune.sigma0logSource'}];
-    sources = params.evotune.kcatSources;
-    widths = params.evotune.sigma0logSource;
-    groups = struct();
-    sigma0 = struct();
-    for k = 1:numel(sources)
-        name = matlab.lang.makeValidName(sources{k});
-        groups.(name).sources = sources(k);
-        sigma0.(name) = widths(k);
+% Fields that model_adapter.toml has no key for: they are not written.
+notCarried = {'kcatAggregation', 'evotune.kcatSources', 'evotune.sigma0logSource'};
+report.notCarried = {};
+for k = 1:numel(notCarried)
+    if getDotted(params, notCarried{k})
+        report.notCarried{end+1} = notCarried{k};
     end
-    data.evotune.source_groups = groups;
-    data.evotune.sigma0_log_source = sigma0;
 end
+used = [used, notCarried, {'evotune.kcatGroups'}];
 
 % Everything else is kept for GECKO under [matlab.params].
 extra = unusedFields(params, '', used);
@@ -116,6 +117,9 @@ writeAdapterToml(data, tomlFile, header);
 fprintf('Wrote %s.\n', tomlFile);
 if ~isempty(report.unmapped)
     fprintf('Kept for GECKO only, under [matlab.params]: %s\n', strjoin(report.unmapped, ', '));
+end
+if ~isempty(report.notCarried)
+    printOrange(sprintf('Not carried over to model_adapter.toml: %s.\n', strjoin(report.notCarried, ', ')));
 end
 if ~isempty(report.methods)
     printOrange(sprintf(['%s overrides methods that a TOML file cannot hold: %s.\n' ...

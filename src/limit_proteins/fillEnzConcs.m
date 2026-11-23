@@ -9,9 +9,9 @@ function model = fillEnzConcs(model, protData, varargin)
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 % protData : struct
-%     structure with proteome data, from loadProtFluxData, with the fields:
+%     structure with proteome data, from loadProtData, with the fields:
 %
 %     - uniprotIDs : cell array with Uniprot IDs matching protData.abundances.
 %     - abundances : matrix of proteomics data.
@@ -35,6 +35,12 @@ function model = fillEnzConcs(model, protData, varargin)
 % A negative abundance of a protein that is an enzyme of the model is
 % contradictory data and raises the error fillEnzConcs:negativeAbundance.
 %
+% A NaN entry in model.ec.concs means that the protein was not measured, and
+% the usage of the enzyme draws from the protein pool. An entry of 0 means
+% that the protein was measured as absent, and constrainEnzConcs limits the
+% usage of the enzyme to 0. loadProtData returns a measured 0 only with the
+% option zerosAsMeasured.
+%
 % To also constrain the model with the content of model.ec.concs, you should
 % run constrainEnzConcs.
 %
@@ -46,9 +52,9 @@ function model = fillEnzConcs(model, protData, varargin)
 %
 % See also
 % --------
-% constrainEnzConcs, loadProtFluxData
+% constrainEnzConcs, loadProtData
 
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'dataCol', 1});
 dataCol = p.dataCol;
 if isempty(dataCol); dataCol = 1; end

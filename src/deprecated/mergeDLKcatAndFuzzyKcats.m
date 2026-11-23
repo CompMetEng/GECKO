@@ -3,7 +3,7 @@ function mergedKcatList = mergeDLKcatAndFuzzyKcats(kcatListDLKcat, kcatListFuzzy
 %
 % Deprecated thin wrapper around mergeKcats, kept for the common DLKcat +
 % fuzzy-BRENDA case. New code should call mergeKcats directly, which also
-% handles a single list that mixes several sources (e.g. an
+% accepts a single list that mixes several sources (e.g. an
 % OpenKineticsPredictor result with BRENDA/Sabio-RK/CataPro rows).
 %
 % Merges the results from DLKcat and fuzzy matching to the BRENDA database.
@@ -74,7 +74,7 @@ function mergedKcatList = mergeDLKcatAndFuzzyKcats(kcatListDLKcat, kcatListFuzzy
 % --------
 % mergeKcats, readDLKcatOutput, fuzzyKcatMatching, assignKcatValues
 
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'topOriginLimit',    4; ...
     'bottomOriginLimit', 6; ...
     'wildcardLimit',     3});
@@ -82,8 +82,8 @@ topOriginLimit    = p.topOriginLimit;
 bottomOriginLimit = p.bottomOriginLimit;
 wildcardLimit     = p.wildcardLimit;
 
-warning(['mergeDLKcatAndFuzzyKcats is deprecated; use mergeKcats instead. ' ...
-    'The old name will be removed in a future release.']);
+warning('GECKO:deprecatedName', ['mergeDLKcatAndFuzzyKcats is deprecated; use mergeKcats ' ...
+    'instead. The old name will be removed in a future release.']);
 
 % Fuzzy list first, then DLKcat, so surviving rows keep the legacy order
 % (fuzzy block followed by DLKcat block).

@@ -56,12 +56,15 @@ function testKcatsFromECTreeWritesFile_tc0086(testCase)
     verifyEqual(testCase, meta.parameters, '{"k":5}')
     verifyEqual(testCase, meta.data, 'BRENDA release test')
     verifyEqual(testCase, unique(records.source), {'ec_tree'})
-    verifyTrue(testCase, all(~cellfun(@isempty, regexp(records.detail, '^n=\d+; depth=[234]$', 'once'))))
+    verifyTrue(testCase, all(~cellfun(@isempty, regexp(records.detail, '^n=\d+; depth=[234](; direction=reverse)?$', 'once'))))
+    isReverse = endsWith(records.detail, 'direction=reverse');
+    verifyEqual(testCase, isReverse, endsWith(records.rxn, '_REV'))
+    verifyTrue(testCase, any(isReverse))
 end
 
 function testBrendaEcTreePreset_tc0087(testCase)
     % The default preset: custom.tsv, then BRENDA at origin 1, then the EC
-    % tree; then the OKP methods combined.
+    % tree; then the OKP predictions.
     [model, adapter, project] = buildProject();
     verifyFalse(testCase, isfield(adapter.params, 'kcat_assignment'))
     writeMeasurements(fullfile(project, 'data', 'measurements.tsv'), measurementsFor(model));
@@ -71,6 +74,7 @@ function testBrendaEcTreePreset_tc0087(testCase)
     verifyEqual(testCase, report.status{3}, 'missing')
     fuzzy = kcatsFromBrenda(model, 'aggregation', 'median', 'modelAdapter', adapter);
     kcatsFromECTree(model, 'modelAdapter', adapter);
+    convertCustomKcats(model, 'modelAdapter', adapter);
     [decisions, rep] = collectKcats(model, 'modelAdapter', adapter, 'writeReport', false);
     verifyEqual(testCase, rep.preset, 'brenda_ec_tree')
     origin1 = fuzzy.rxns(fuzzy.origin == 1 & fuzzy.wildcardLvl == 0);

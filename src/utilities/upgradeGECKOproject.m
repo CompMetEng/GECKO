@@ -1,7 +1,7 @@
 function report = upgradeGECKOproject(projectPath, varargin)
 % upgradeGECKOproject  Bring a GECKO 3 project to the GECKO 4 layout.
 %
-% Lists, and with 'dryRun', false carries out, the steps that bring a
+% Lists, and with 'dryRun', false performs, the steps that bring a
 % project made with GECKO 3 (or an earlier GECKO 4) to the current layout:
 %
 % 1. adapter: an adapter class without model_adapter.toml gets one
@@ -53,7 +53,7 @@ function report = upgradeGECKOproject(projectPath, varargin)
 % convertAdapterToToml, convertCustomKcats, upgradeEcModel, createGECKOproject
 
 checkOptions(varargin, {'dryRun','ecModel'}, 'upgradeGECKOproject');
-p = parseGECKOargs(varargin, {'dryRun', true; 'ecModel', []});
+p = parseRAVENargs(varargin, {'dryRun', true; 'ecModel', []});
 projectPath = char(projectPath);
 if ~isfolder(projectPath)
     error('upgradeGECKOproject:path', 'No folder %s.', projectPath)
@@ -121,6 +121,9 @@ if isfile(fullfile(projectPath, 'data', 'DLKcat.tsv')) && ~isfile(fullfile(proje
 end
 okpFiles = dir(fullfile(projectPath, 'data', 'OKP_output*.csv'));
 for k = 1:numel(okpFiles)
+    if contains(okpFiles(k).name, '__')
+        continue  % the result of a tagged query (kcatsFromOKP jobTag)
+    end
     method = okpMethod(projectPath, okpFiles(k).name);
     if ~isempty(method)
         name = ['okp_' lower(regexprep(regexprep(method, '[^A-Za-z0-9]+', '_'), '^_+|_+$', ''))];
@@ -202,15 +205,19 @@ end
 
 % 6. Scripts that call renamed or replaced functions
 renamed = { ...
-    'enzymeUsage', 'getEnzymeUsage'; 'pfbaEnzymes', 'getPfbaEnzymes'; ...
+    'enzymeUsage', 'getEnzymeUsage'; ...
     'selectKcatValue', 'assignKcatValues'; 'startGECKOproject', 'createGECKOproject'; ...
     'updateGECKOdoc', 'buildGECKOdoc'; 'copyECtoGEM', 'applyECcodes'; ...
-    'addCarbonNum', 'fillCarbonNum'; 'updateprior', 'updatePrior'; ...
+    'addCarbonNum', 'computeCarbonWeights (RAVEN)'; 'getcarbonnum', 'computeCarbonWeights (RAVEN)'; ...
+    'bayesianSensitivityTuning', 'cmaesKcatTuning'; 'abc_max', 'cmaesKcatTuning'; ...
+    'getrSample', 'cmaesKcatTuning'; 'updateprior', 'cmaesKcatTuning'; ...
+    'findMaxValue', 'kcatsFromBrenda (or kcatsFromECTree)'; ...
+    'truncateValues', 'round(x, 6, ''significant'')'; ...
     'mergeDLKcatAndFuzzyKcats', 'mergeKcats'; ...
     'fuzzyKcatMatching', 'kcatsFromBrenda (or kcatsFromECTree), then assignKcats'; ...
     'readDLKcatOutput', 'kcatsFromDLKcat, then assignKcats'; ...
-    'readOpenKineticsPredictorOutput', 'kcatsFromOKP, then assignKcats'; ...
-    'writeOpenKineticsPredictorInput', 'kcatsFromOKP'; ...
+    'writeDLKcatInput', 'kcatsFromDLKcat with ''via'', ''docker'''; ...
+    'runDLKcat', 'kcatsFromDLKcat with ''via'', ''docker'''; ...
     'applyCustomKcats', 'data/kcats/custom.tsv and assignKcats'};
 scripts = dir(fullfile(projectPath, '**', '*.m'));
 for k = 1:numel(scripts)
@@ -244,7 +251,10 @@ function adapter = projectAdapter(projectPath)
 if isfile(fullfile(projectPath, 'model_adapter.toml'))
     adapter = TomlAdapter(projectPath);
 else
+    state = warning('off', 'GECKO:deprecatedAdapterClass');
+    restoreWarning = onCleanup(@() warning(state));
     adapter = ModelAdapterManager.getAdapter(adapterClass(projectPath));
+    clear restoreWarning
     adapter.params.path = projectPath;
 end
 end

@@ -89,41 +89,13 @@ function testConstrainFluxDataInvalidArguments_tc0505(testCase)
     constrained = constrainFluxData(ecModel, 'fluxData', fluxData, 'modelAdapter', adapter);
     verifyEqual(testCase, constrained.ub(strcmp(constrained.rxns, 'S1')), 1)
     verifyError(testCase, @() constrainFluxData(ecModel, 'fluxData', fluxData, ...
-        'maxMinGrowth', 'median', 'modelAdapter', adapter), 'constrainFluxData:invalidMaxMinGrowth')
+        'maxMinGrowth', 'median', 'modelAdapter', adapter), 'applyFluxDataConstraints:invalidMaxMinGrowth')
     fluxData.exchRxnIDs = {'NOT_A_RXN'};
     verifyError(testCase, @() constrainFluxData(ecModel, 'fluxData', fluxData, ...
-        'modelAdapter', adapter), 'constrainFluxData:missingReaction')
+        'modelAdapter', adapter), 'applyFluxDataConstraints:missingReaction')
     fluxData.exchRxnIDs = {'S1'};
     verifyError(testCase, @() constrainFluxData(ecModel, 'fluxData', fluxData, ...
-        'condition', 'nope', 'modelAdapter', adapter), 'constrainFluxData:unknownCondition')
-end
-
-function testLoadFluxDataMalformedFiles_tc0506(testCase)
-    adapter = getAdapter();
-    folder = tempname;
-    mkdir(folder)
-    cleanup = onCleanup(@() rmdir(folder, 's'));
-    tab = char(9);
-
-    verifyError(testCase, @() loadFluxData(fullfile(folder, 'missing.tsv'), adapter), ...
-        'loadFluxData:fileNotFound')
-
-    fixedOnly = writeLines(fullfile(folder, 'fixed.tsv'), ...
-        {['cond' tab 'Ptot' tab 'grRate'], ['c1' tab '0.5' tab '0.4']});
-    verifyError(testCase, @() loadFluxData(fixedOnly, adapter), 'loadFluxData:noExchangeColumns')
-
-    ragged = writeLines(fullfile(folder, 'ragged.tsv'), ...
-        {['cond' tab 'Ptot' tab 'grRate' tab 'Glc (EX_a)' tab 'O2 (EX_b)'], ...
-        ['c1' tab '0.5' tab '0.4' tab '-1' tab '2'], ...
-        ['c2' tab '0.5' tab '0.4' tab '-1']});
-    verifyError(testCase, @() loadFluxData(ragged, adapter), 'loadFluxData:raggedRow')
-
-    nested = writeLines(fullfile(folder, 'nested.tsv'), ...
-        {['cond' tab 'Ptot' tab 'grRate' tab 'X (EX_a(e))' tab 'O2 (EX_b)'], ...
-        ['c1' tab '0.5' tab '0.4' tab '-1' tab '2']});
-    fluxData = loadFluxData(nested, adapter);
-    verifyEqual(testCase, fluxData.exchMets, {'X', 'O2'})
-    verifyEqual(testCase, fluxData.exchRxnIDs, {'EX_a(e)', 'EX_b'})
+        'condition', 'nope', 'modelAdapter', adapter), 'applyFluxDataConstraints:unknownCondition')
 end
 
 function testGetEnzymeUsageLeavesOutMissingUsageReaction_tc0507(testCase)
@@ -175,15 +147,6 @@ function testReportEnzymeUsageNegativeTopAbsUsageRaises_tc0509(testCase)
         'reportEnzymeUsage:invalidTopAbsUsage')
 end
 
-function testTruncateValuesInfinite_tc0510(testCase)
-    values = {Inf, -Inf, 1234565, 0.5};
-    truncated = truncateValues(values, 1:4);
-    verifyEqual(testCase, truncated{1}, Inf)
-    verifyEqual(testCase, truncated{2}, -Inf)
-    verifyEqual(testCase, truncated{3}, 1234570)
-    verifyEqual(testCase, truncated{4}, 0.5)
-end
-
 function testRelaxProteomicsGreedyEmptyEnzymeSet_tc0511(testCase)
     % An empty cell array makes no enzyme eligible; [] makes every
     % constrained enzyme eligible.
@@ -233,10 +196,4 @@ end
 function adapter = getAdapter()
 geckoPath = findGECKOroot;
 adapter = ModelAdapterManager.getAdapter(fullfile(geckoPath,'test','unit_tests','ecTestGEM','TestGEMAdapter.m'));
-end
-
-function file = writeLines(file, lines)
-fid = fopen(file, 'w');
-fprintf(fid, '%s\n', lines{:});
-fclose(fid);
 end

@@ -22,11 +22,11 @@ function [decisions, report, ecModel] = collectKcats(model, varargin)
 %     top_origin_limit = 1
 %
 %     [kcat_sources.okp]
-%     methods = ["CataPro", "UniKP"]   # the okp source group
+%     method = "UniKP"   # the OKP method of the okp source group
 %
-% A stage decides the reactions that are still open:
+% A stage sets the kcat of the reactions that are still open:
 % - select: the first listed source with a value (see mergeKcats). Sources
-%   are the names of source files (custom, ec_tree, dlkcat, okp_catapro,
+%   are the names of source files (custom, ec_tree, dlkcat, okp_unikp,
 %   ...) and the BRENDA quality tiers database_exact, database_top and
 %   database_bottom, which read brenda.tsv.
 % - combine: all listed sources with a value, each corrected for its bias
@@ -36,21 +36,21 @@ function [decisions, report, ecModel] = collectKcats(model, varargin)
 %   sequences). The parameters come with the BRENDA files
 %   (kcatCombineParams.tsv). model.ec.source reads 'combined (sd=<log10
 %   sd>, n=<sources>)'; sd is the uncertainty for a new measurement.
-% In both, okp stands for the OKP methods of [kcat_sources.okp] methods
-% (default: all methods with combination parameters).
+% In both, okp stands for the file of the OKP method of [kcat_sources.okp]
+% method (default: KinForm-H).
 %
 % The presets:
 % - brenda_ec_tree (the default): custom kcats, the BRENDA median of
 %   measurements of the organism on the reaction's substrate (origin 1,
 %   without EC wildcards), the EC tree (kcatsFromECTree); then the OKP
-%   methods combined for the reactions left (without an EC number).
+%   predictions for the reactions left (without an EC number).
 % - ec_tree_homologs: custom kcats, the organism's own BRENDA value; then
 %   the EC tree and homologs (kcatsFromHomologs) combined; then the OKP
-%   methods combined.
+%   predictions.
 % - ec_tree_okp: custom kcats, the organism's own BRENDA value; then the EC
-%   tree, homologs and the OKP methods combined; then the OKP methods
-%   combined.
-% - okp: custom kcats; then the OKP methods combined.
+%   tree, homologs and the OKP predictions combined; then the OKP
+%   predictions.
+% - okp: custom kcats; then the OKP predictions.
 % - gecko_median: custom kcats, the BRENDA median of matches without EC
 %   wildcards from the organism or other organisms, with or without the
 %   substrate (origin 1 to 4), DLKcat, then the other BRENDA matches (EC
@@ -60,27 +60,29 @@ function [decisions, report, ecModel] = collectKcats(model, varargin)
 %   tutorial.
 % Against measured kcats hidden from the search, the EC tree was closer
 % than the BRENDA median at origins 2 and 4 and with EC wildcards and as
-% close at origins 1 and 3; the EC tree combined with the OKP methods was
-% slightly closer than the EC tree, and the OKP methods combined as close.
+% close at origins 1 and 3; the EC tree combined with OKP predictions was
+% slightly closer than the EC tree. The default OKP method is KinForm-H.
 % In ecModels, values combined with predictions set high-turnover enzymes
 % such as ATP synthase too low, which is why the default uses predictions
 % only where there is no value from measurements. The BRENDA aggregation is
 % [kcat_sources.brenda] aggregation (see updateKcatSources).
 %
 % After the stages:
-% - custom kcats of data/customKcats.tsv are applied (applyCustomKcats),
-%   when a stage lists custom but there is no data/kcats/custom.tsv;
 % - with isozymes, reactions without a kcat take one from their isozymes
-%   (getKcatAcrossIsozymes);
+%   (fillKcatsFromIsozymes);
 % - with standard, the remaining reactions get the standard kcat
 %   (getStandardKcat).
 %
 % A source file a stage names that does not exist is reported and left out.
+% When a stage lists custom, data/kcats/custom.tsv does not exist and the
+% GECKO 3 file data/customKcats.tsv does, the error
+% collectKcats:legacyCustomKcats is raised: convertCustomKcats writes
+% data/customKcats.tsv as data/kcats/custom.tsv.
 %
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 %
 % Name-Value Arguments
 % --------------------
@@ -88,13 +90,14 @@ function [decisions, report, ecModel] = collectKcats(model, varargin)
 %     a loaded model adapter (default: the current default model adapter).
 % writeReport : logical
 %     write the decisions to output/<model id>_kcatDecisions.tsv (default
-%     true).
+%     true). The file has the columns of decisions in snake_case (ec_rxn,
+%     spread_log10, sd_log10), as geckopy writes it.
 %
 % Returns
 % -------
 % decisions : table
 %     one row per model.ec reaction: ecRxn, stage (the stage number, or
-%     custom, isozymes, standard, or empty when no kcat was found), source
+%     isozymes, standard, or empty when no kcat was found), source
 %     (as in model.ec.source), kcat, candidates (the number of values the
 %     deciding source had for the reaction, or of sources combined),
 %     spreadLog10 (their range, in log10 units) and sdLog10 (the
@@ -118,7 +121,7 @@ function [decisions, report, ecModel] = collectKcats(model, varargin)
 % assignKcats, updateKcatSources, loadKcatSource, mergeKcats, assignKcatValues
 
 checkOptions(varargin, {'modelAdapter','writeReport'}, 'collectKcats');
-p = parseGECKOargs(varargin, {'modelAdapter', []; 'writeReport', true});
+p = parseRAVENargs(varargin, {'modelAdapter', []; 'writeReport', true});
 modelAdapter = p.modelAdapter;
 if isempty(modelAdapter)
     modelAdapter = ModelAdapterManager.getDefault();
@@ -144,7 +147,6 @@ report.preset = config.preset;
 report.missing = {};
 report.sources = struct();
 loaded = struct();
-legacyCustom = false;
 
     function list = loadSource(name)
         % The kcat list of a source file, or [] when it does not exist.
@@ -154,7 +156,12 @@ legacyCustom = false;
             [list, rep] = loadKcatSource(ecModel, file);
             report.sources.(name) = rep;
         elseif strcmp(name, 'custom') && isfile(fullfile(params.path, 'data', 'customKcats.tsv'))
-            legacyCustom = true;
+            error('collectKcats:legacyCustomKcats', ['%s is a GECKO 3 custom kcats file, which ' ...
+                'collectKcats does not read. convertCustomKcats(ecModel) writes it as %s.'], ...
+                fullfile(params.path, 'data', 'customKcats.tsv'), file)
+        elseif strcmp(name, 'custom')
+            report.missing{end+1} = name;
+            printOrange(sprintf('No custom kcats file %s; it is left out.\n', file));
         else
             report.missing{end+1} = name;
             printOrange(sprintf(['No kcat source file %s; it is left out. ' ...
@@ -190,7 +197,10 @@ for s = 1:numel(config.stages)
         end
         [~, idx] = ismember(c.rxns, ecModel.ec.rxns);
         ecModel.ec.kcat(idx) = c.kcats;
-        ecModel.ec.source(idx) = cellstr(compose('combined (sd=%.2f, n=%d)', c.sd, c.n));
+        for k = 1:numel(idx)
+            ecModel.ec.source{idx(k)} = formatKcatSource('combined', ...
+                struct('sd', sprintf('%.2f', c.sd(k)), 'n', c.n(k)));
+        end
         stage(idx) = {sprintf('%d', s)};
         candidates(idx) = c.n;
         spread(idx) = c.spread;
@@ -243,17 +253,9 @@ for s = 1:numel(config.stages)
     end
 end
 
-if legacyCustom
-    before = ecModel.ec.kcat;
-    ecModel = applyCustomKcats(ecModel, 'modelAdapter', modelAdapter);
-    changed = ecModel.ec.kcat ~= before;
-    stage(changed) = {'custom'};
-    candidates(changed) = 1;
-    spread(changed) = 0;
-end
 if config.isozymes && ~ecModel.ec.geckoLight
     before = ecModel.ec.kcat == 0;
-    ecModel = getKcatAcrossIsozymes(ecModel);
+    ecModel = fillKcatsFromIsozymes(ecModel);
     stage(before & ecModel.ec.kcat > 0) = {'isozymes'};
 end
 if config.standard
@@ -263,7 +265,9 @@ if config.standard
     candidates(end+1:n) = 0;
     spread(end+1:n) = NaN;
     sd(end+1:n) = NaN;
-    stage(strcmp(ecModel.ec.source, 'standard') & ecModel.ec.kcat > 0) = {'standard'};
+    sourceInfo = parseKcatSource(ecModel.ec.source);
+    isStandard = strcmp({sourceInfo.origin}', 'standard') & cellfun(@isempty, {sourceInfo.tuned}');
+    stage(isStandard & ecModel.ec.kcat > 0) = {'standard'};
 end
 
 decisions = table(ecModel.ec.rxns(:), stage(:), ecModel.ec.source(:), ecModel.ec.kcat(:), ...
@@ -278,7 +282,11 @@ if p.writeReport
     if isfield(model, 'id') && ~isempty(model.id)
         id = char(model.id);
     end
-    writetable(decisions, fullfile(outDir, [id '_kcatDecisions.tsv']), 'FileType', 'text', ...
+    % The file has the snake_case column names that geckopy writes
+    fileTable = decisions;
+    fileTable.Properties.VariableNames = {'ec_rxn','stage','source','kcat','candidates', ...
+        'spread_log10','sd_log10'};
+    writetable(fileTable, fullfile(outDir, [id '_kcatDecisions.tsv']), 'FileType', 'text', ...
         'Delimiter', '\t');
 end
 nOpen = sum(strcmp(stage, ''));

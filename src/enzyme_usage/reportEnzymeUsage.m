@@ -7,15 +7,15 @@ function usageReport = reportEnzymeUsage(ecModel, usageData, varargin)
 % Parameters
 % ----------
 % ecModel : struct
-%     a GECKO3 ecModel.
+%     an ecModel (with ecModel.ec structure).
 % usageData : struct
 %     output from getEnzymeUsage.
 %
 % Name-Value Arguments
 % --------------------
 % highCapUsage : double
-%     minimum fraction of enzyme capacity usage to be listed as high usage
-%     (default 0.9, i.e. at least 90% capacity usage).
+%     fraction of enzyme capacity usage above which an enzyme is listed as
+%     high usage (default 0.9, i.e. more than 90% capacity usage).
 % topAbsUsage : double
 %     how many top enzymes by absolute usage to list (default 10). Use 0
 %     or Inf to list all enzymes instead. Enzymes whose reactions carry no
@@ -26,11 +26,19 @@ function usageReport = reportEnzymeUsage(ecModel, usageData, varargin)
 % -------
 % usageReport : struct
 %     highCapUsage : table
-%         enzymes at or above the highCapUsage threshold.
+%         enzymes above the highCapUsage threshold.
 %     topAbsUsage : table
 %         the topAbsUsage enzymes with the highest absolute usage.
 %     totalUsageFlux : double
 %         total protein pool used, i.e. the upper bound of prot_pool_exchange.
+%     demandRatio : double
+%         demandRatio of usageData: the protein used of the enzymes with a
+%         measured concentration divided by their measured concentrations.
+%         Above 1, the solution needs more of those enzymes than was
+%         measured. NaN when usageData has no demandRatio field.
+%     demandRatioActive : double
+%         demandRatioActive of usageData: the same ratio over the enzymes
+%         that carry flux in the solution.
 %
 % Examples
 % --------
@@ -42,7 +50,7 @@ function usageReport = reportEnzymeUsage(ecModel, usageData, varargin)
 % --------
 % getEnzymeUsage
 
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'highCapUsage', []; ...
     'topAbsUsage',  []});
 highCapUsage = p.highCapUsage;
@@ -197,4 +205,10 @@ for i=1:numel(topEnzyme)
 end
 usageReport.topAbsUsage     = struct2table(topUsage);
 usageReport.totalUsageFlux  = protPool;
+usageReport.demandRatio       = NaN;
+usageReport.demandRatioActive = NaN;
+if isfield(usageData, 'demandRatio')
+    usageReport.demandRatio       = usageData.demandRatio;
+    usageReport.demandRatioActive = usageData.demandRatioActive;
+end
 end

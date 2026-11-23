@@ -2,18 +2,21 @@ function mergedKcatList = mergeKcats(kcatLists, sourcePriority, varargin)
 % mergeKcats  Merge any number of kcatLists, keeping the highest-priority
 % source for each reaction.
 %
+% Low-level: collectKcats runs this function; call it directly only to
+% merge kcat lists by hand.
+%
 % Generalizes mergeDLKcatAndFuzzyKcats: instead of two fixed inputs (DLKcat
 % + fuzzy BRENDA) it accepts a cell array of kcatLists, each of which may
-% itself mix several sources (for example the output of
-% fetchOpenKineticsPredictor, carrying BRENDA, Sabio-RK and CataPro values
-% in its kcatSource field). A caller-supplied sourcePriority decides which
-% source wins for each reaction.
+% itself mix several sources (for example the output of kcatsFromOKP,
+% holding BRENDA, Sabio-RK and CataPro values
+% in its kcatSource field). A caller-supplied sourcePriority determines which
+% source is kept for each reaction.
 %
 % Parameters
 % ----------
 % kcatLists : cell
 %     cell array of kcatList structs (as produced by fuzzyKcatMatching,
-%     readDLKcatOutput, fetchOpenKineticsPredictor, ...).
+%     kcatsFromDLKcat, kcatsFromOKP, ...).
 % sourcePriority : cell
 %     cell array of tier tokens / source labels, best first. Three
 %     reserved tier tokens may be used instead of a literal source label:
@@ -90,9 +93,9 @@ function mergedKcatList = mergeKcats(kcatLists, sourcePriority, varargin)
 %
 % See also
 % --------
-% mergeDLKcatAndFuzzyKcats, readDLKcatOutput, fuzzyKcatMatching, assignKcatValues
+% assignKcats, kcatsFromDLKcat, fuzzyKcatMatching, assignKcatValues
 
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'topOriginLimit',    4; ...
     'bottomOriginLimit', 6; ...
     'wildcardLimit',     3; ...
@@ -120,7 +123,7 @@ end
 
 dbSources = cellfun(@normalizeSource, databaseSources, 'UniformOutput', false);
 
-% Rank map: normalised priority token -> rank (1 = best). First wins.
+% Rank map: normalised priority token -> rank (1 = best). The first is kept.
 rankMap = containers.Map('KeyType','char','ValueType','double');
 for r = 1:numel(sourcePriority)
     key = normalizeSource(sourcePriority{r});

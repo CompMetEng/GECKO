@@ -1,16 +1,18 @@
-function result = relaxProteomicsGreedy(model, varargin)
+function [result, model] = relaxProteomicsGreedy(model, varargin)
 % relaxProteomicsGreedy  Greedy shadow-price-ordered relaxation of proteomics
 % constraints.
 %
 % While growth is below minimalGrowth, finds the still-proteomics-constrained
 % enzyme (usage_prot_<id> upper bound below defaultUpperBound) with the
 % largest absolute shadow price on its prot_<id> mass-balance constraint,
-% fully relaxes it back to defaultUpperBound, re-solves, and repeats.
+% fully relaxes it back to defaultUpperBound, re-solves, and repeats. An
+% enzyme with a concentration of 0 in model.ec.concs is a candidate like any
+% other and is relaxed in the same way.
 %
 % Parameters
 % ----------
 % model : struct
-%     a full ecModel in GECKO 3 format, with some usage_prot_<id> reactions
+%     a full ecModel, with some usage_prot_<id> reactions
 %     constrained below defaultUpperBound (e.g. by constrainEnzConcs).
 %
 % Name-Value Arguments
@@ -23,8 +25,9 @@ function result = relaxProteomicsGreedy(model, varargin)
 %     no enzyme is eligible (converged is false unless the model already
 %     reaches minimalGrowth); [] means the default.
 % maxIterations : double
-%     safety cap; errors if exceeded while eligible enzymes still remained
-%     (default 100).
+%     safety cap on the number of relaxations; errors when this many
+%     relaxations were made, minimalGrowth is still not reached and
+%     eligible enzymes remain (default 100).
 % defaultUpperBound : double
 %     value to restore on a relaxed usage reaction, matching the shared-pool
 %     default makeEcModel itself sets (default 1000).
@@ -39,29 +42,32 @@ function result = relaxProteomicsGreedy(model, varargin)
 %       shadowPrice.
 %     - finalGrowth : objective value when the loop stopped.
 %     - converged : true iff finalGrowth >= minimalGrowth.
+% model : struct
+%     the ecModel with the usage_prot_<id> upper bounds of the relaxed
+%     enzymes set to defaultUpperBound.
 %
 % Examples
 % --------
-%     result = relaxProteomicsGreedy(ecModel, 'minimalGrowth', 0.1);
+%     [result, ecModel] = relaxProteomicsGreedy(ecModel, 'minimalGrowth', 0.1);
 %
 % Notes
 % -----
 % Different relaxation strategy from flexibilizeEnzConcs: this one is
 % shadow-price-ordered (one solve per step) and often converges in fewer
 % iterations when one or two enzymes dominate the infeasibility. The
-% trade-off is that it fully unconstrains each picked enzyme with no
+% trade-off is that it fully unconstrains each selected enzyme with no
 % tighten-back pass, so the result is looser (less proteomics-faithful).
 %
 % There are two distinct non-convergence outcomes: running out of
 % eligible candidates before reaching minimalGrowth returns normally with
-% converged=false; exhausting maxIterations while candidates still
-% remained raises an error instead.
+% converged=false; making maxIterations relaxations without reaching
+% minimalGrowth while candidates still remain raises an error instead.
 %
 % See also
 % --------
 % flexibilizeEnzConcs, getEnzymeBottlenecks
 
-p = parseGECKOargs(varargin, {'minimalGrowth', []; 'enzymeSet', []; ...
+p = parseRAVENargs(varargin, {'minimalGrowth', []; 'enzymeSet', []; ...
     'maxIterations', []; 'defaultUpperBound', []});
 minimalGrowth     = p.minimalGrowth;
 enzymeSet         = p.enzymeSet;
@@ -113,23 +119,8 @@ else
     growth = -inf;
 end
 
-for it = 0:(maxIterations - 1)
-    if growth >= minimalGrowth
-        result.relaxed = relaxed;
-        result.trace = trace;
-        result.finalGrowth = growth;
-        result.converged = true;
-        return
-    end
-    if isempty(candidates)
-        warning('relaxProteomicsGreedy: no more candidates to relax; stopping.')
-        result.relaxed = relaxed;
-        result.trace = trace;
-        result.finalGrowth = growth;
-        result.converged = false;
-        return
-    end
-
+it = 0;
+while growth < minimalGrowth && ~isempty(candidates) && it < maxIterations
     shadowPrices = abs(sol.sPrice(protMetIdx(candidates)));
     [~, bestPos] = max(shadowPrices);
     targetIdx = candidates(bestPos);
@@ -152,8 +143,19 @@ for it = 0:(maxIterations - 1)
 
     growth = newGrowth;
     sol = newSol;
+    it = it + 1;
 end
 
-error('relaxProteomicsGreedy: did not converge in %d iterations (final growth %.4g < target %.4g).', ...
-    maxIterations, growth, minimalGrowth)
+result.relaxed = relaxed;
+result.trace = trace;
+result.finalGrowth = growth;
+result.converged = growth >= minimalGrowth;
+if ~result.converged
+    if isempty(candidates)
+        warning('relaxProteomicsGreedy: no more candidates to relax; stopping.')
+    else
+        error('relaxProteomicsGreedy: did not converge in %d iterations (final growth %.4g < target %.4g).', ...
+            maxIterations, growth, minimalGrowth)
+    end
+end
 end

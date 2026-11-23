@@ -21,7 +21,7 @@ function kcatList = kcatsFromHomologs(model, varargin)
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure), with enzyme
+%     an ecModel (with ecModel.ec structure), with enzyme
 %     sequences (model.ec.sequence).
 %
 % Name-Value Arguments
@@ -57,7 +57,7 @@ function kcatList = kcatsFromHomologs(model, varargin)
 % kcatsFromECTree, extractEnzymeSubstratePairs, saveKcatSource, collectKcats
 
 checkOptions(varargin, {'k','minIdentity','coverage','threads','save','saveAs','modelAdapter'}, 'kcatsFromHomologs');
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'k',            10; ...
     'minIdentity',  0.4; ...
     'coverage',     0.8; ...

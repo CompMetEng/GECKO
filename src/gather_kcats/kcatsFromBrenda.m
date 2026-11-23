@@ -9,15 +9,15 @@ function kcatList = kcatsFromBrenda(model, varargin)
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure), with EC
+%     an ecModel (with ecModel.ec structure), with EC
 %     numbers (getECfromDatabase or getECfromGEM).
 %
 % Name-Value Arguments
 % --------------------
 % aggregation : char
 %     which BRENDA value per EC number, substrate and organism is used:
-%     'max' or 'median' (default: params.kcatAggregation of the model
-%     adapter, or 'max').
+%     'max' or 'median' (default: [kcat_sources.brenda] aggregation as resolved from the preset or the
+%     stages (median for the default preset, max when no stage sets it)).
 % forceWClvl : double
 %     number of extra levels, from the right, replaced by a wildcard in the
 %     EC numbers (on top of any wildcard already in the code; default 0).
@@ -48,7 +48,7 @@ function kcatList = kcatsFromBrenda(model, varargin)
 % fuzzyKcatMatching, kcatsFromDLKcat, kcatsFromOKP, saveKcatSource, loadKcatSource
 
 checkOptions(varargin, {'aggregation','forceWClvl','ecRxns','save','saveAs','modelAdapter'}, 'kcatsFromBrenda');
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'aggregation',  []; ...
     'forceWClvl',   0; ...
     'ecRxns',       []; ...

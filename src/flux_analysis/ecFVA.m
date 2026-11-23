@@ -10,7 +10,7 @@ function [minFlux, maxFlux] = ecFVA(ecModel, model, varargin)
 % Parameters
 % ----------
 % ecModel : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 % model : struct
 %     non-ecModel variant of the ecModel, to which the minFlux and maxFlux
 %     will be mapped.
@@ -38,7 +38,7 @@ function [minFlux, maxFlux] = ecFVA(ecModel, model, varargin)
 % --------
 % mapRxnsToConv, plotEcFVA
 
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'runParallel', true});
 runParallel = p.runParallel;
 

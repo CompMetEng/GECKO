@@ -5,18 +5,29 @@ function [tunableIdx,ecRxnIdsTunable,kcat0,groups,sigma0log,tieMap] = resolveTun
 % Shared by screenKcatLeverage and cmaesKcatTuning so a screen and the
 % tuning run it feeds are always looking at exactly the same parameters.
 %
-% A kcat belongs to the group whose params.kcatSources entry equals its
-% ec.source, or the part of ec.source before ' (' (case-insensitive), so
-% 'brenda (wc=0, origin=1)' is in the group of 'brenda' and
-% 'combined (sd=0.10, n=2)' in the group of 'combined', with that group's
-% sigma0logSource.
+% A kcat belongs to the group of the first params.kcatSources entry that
+% matches its source, and is labelled with the name of that group
+% (params.kcatGroups, one per entry). Without groups the error is raised:
+% No evotune source groups: set [evotune.source_groups] in model_adapter.toml. An entry matches the origin of the kcat's ec.source
+% or its whole ec.source (case-insensitive, see parseKcatSource), so
+% 'brenda (wc=0, origin=1)' is in the group of 'brenda',
+% 'combined (sd=0.10, n=2)' in the group of 'combined' and
+% 'brenda (wc=0, origin=1) | tuned=cmaes (prior=2)' in the group of 'brenda',
+% with that group's sigma0logSource. An entry that ends in * is a prefix
+% pattern on the origin ('okp_*' covers okp_eitlem_kinetics and
+% okp_kinform_h). Exact entries are tried first, over all entries in order;
+% then the patterns, the longest prefix first, and in the order of
+% params.kcatSources among equal prefixes. Kcats that match no entry get
+% sigma0logDefault; when more than 20 % of the tunable kcats match none,
+% a warning (resolveTunableContext:unlabelled) lists up to five origins,
+% the most common first and in alphabetical order among equal counts.
 %
 % Parameters
 % ----------
 % ecModel : struct
 %     ecModel with a populated ec.kcat.
 % params : struct
-%     modelAdapter.params.evotune (kcatSources, sigma0logSource,
+%     modelAdapter.params.evotune (kcatSources, kcatGroups, sigma0logSource,
 %     sigma0logDefault, tieIsozymes).
 % tunableMask : logical
 %     same length as ecModel.ec.rxns; [] to consider every kcat > 0.
@@ -54,16 +65,39 @@ end
 ecRxnIdsTunable = ecModel.ec.rxns(tunableIdx);
 kcat0           = ecModel.ec.kcat(tunableIdx);
 sources         = ecModel.ec.source(tunableIdx);
-% A source with a detail, such as 'combined (sd=0.10, n=2)', is also matched by
-% its name before ' ('.
-sourceNames     = strtrim(regexprep(sources, ' \(.*$', ''));
+sourceInfo      = parseKcatSource(sources);
+sourceNames     = {sourceInfo.origin}';
 
 groups    = repmat({'unlabelled'}, numel(tunableIdx), 1);
 sigma0log = params.sigma0logDefault * ones(numel(tunableIdx),1);
-for i = 1:numel(params.kcatSources)
-    idx = strcmpi(sources, params.kcatSources{i}) | strcmpi(sourceNames, params.kcatSources{i});
-    groups(idx)    = params.kcatSources(i);
+assigned  = false(numel(tunableIdx),1);
+entries   = params.kcatSources(:)';
+if ~isfield(params, 'kcatGroups') || isempty(params.kcatGroups)
+    error('GECKO:resolveTunableContext', ...
+        'No evotune source groups: set [evotune.source_groups] in model_adapter.toml')
+end
+entryGroup = params.kcatGroups(:)';
+isPattern = endsWith(entries, '*');
+patternLength = cellfun(@numel, entries);
+[~, order] = sort(patternLength(isPattern), 'descend'); % stable: ties keep the group order
+patternIdx = find(isPattern);
+for i = [find(~isPattern), patternIdx(order)]
+    if isPattern(i)
+        idx = ~assigned & startsWith(sourceNames, entries{i}(1:end-1), 'IgnoreCase', true);
+    else
+        idx = ~assigned & (strcmpi(sourceNames, entries{i}) | strcmpi(sources, entries{i}));
+    end
+    assigned(idx)  = true;
+    groups(idx)    = entryGroup(i);
     sigma0log(idx) = params.sigma0logSource(i);
+end
+if mean(~assigned) > 0.2
+    [names, ~, k] = unique(sourceNames(~assigned));
+    [~, byCount] = sort(accumarray(k, 1), 'descend');
+    names = names(byCount(1:min(5, end)));
+    warning('resolveTunableContext:unlabelled', ...
+        '%d of %d tunable kcats match no evotune source group and get sigma0_log_default (%g); origins: %s', ...
+        sum(~assigned), numel(assigned), params.sigma0logDefault, strjoin(names, ', '))
 end
 
 if isfield(params,'tieIsozymes') && params.tieIsozymes

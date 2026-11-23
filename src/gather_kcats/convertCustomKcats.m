@@ -4,11 +4,11 @@ function [file, report] = convertCustomKcats(model, varargin)
 % Writes the custom kcats of a GECKO 3 project as the curated kcat source
 % file data/kcats/custom.tsv, which collectKcats reads first. The kcats are
 % those applyCustomKcats gives the ecModel, including which of two entries
-% for the same reaction wins: one row per reaction, keyed by conventional
+% for the same reaction is kept: one row per reaction, keyed by conventional
 % reaction and enzyme set (see getEcRxnKeys), with the entry's notes in the
 % note column. The stoicho column is left out: complex stoichiometry comes
-% from applyComplexData. Unlike applyCustomKcats, custom.tsv also applies to
-% light ecModels. geckopy has the same (convert_custom_kcats).
+% from applyComplexData. custom.tsv also applies to light ecModels. geckopy
+% has the same (convert_custom_kcats).
 %
 % Parameters
 % ----------
@@ -43,7 +43,7 @@ function [file, report] = convertCustomKcats(model, varargin)
 % collectKcats, applyCustomKcats, getEcRxnKeys, upgradeGECKOproject
 
 checkOptions(varargin, {'modelAdapter','customKcats','outFile'}, 'convertCustomKcats');
-p = parseGECKOargs(varargin, {'modelAdapter', []; 'customKcats', []; 'outFile', []});
+p = parseRAVENargs(varargin, {'modelAdapter', []; 'customKcats', []; 'outFile', []});
 modelAdapter = p.modelAdapter;
 if isempty(modelAdapter)
     modelAdapter = ModelAdapterManager.getDefault();
@@ -52,8 +52,8 @@ if isempty(modelAdapter)
     end
 end
 if model.ec.geckoLight
-    error('convertCustomKcats:light', ['applyCustomKcats does not work on light ecModels; give ' ...
-        'the full ecModel. The custom.tsv written applies to light ecModels too.'])
+    error('convertCustomKcats:light', ['convertCustomKcats needs the full ecModel, as its ' ...
+        'rows are keyed by enzyme set. The custom.tsv written applies to light ecModels too.'])
 end
 inFile = p.customKcats;
 if isempty(inFile)
@@ -72,7 +72,11 @@ end
 
 base = model;
 base.ec.notes(:) = {''};
+% applyCustomKcats is deprecated for users; here it reads the file it was made for
+state = warning('off', 'GECKO:deprecatedFunction');
+restore = onCleanup(@() warning(state));
 [applied, rxnUpdated, notMatch] = applyCustomKcats(base, 'customKcats', inFile, 'modelAdapter', modelAdapter);
+clear restore
 idx = find(ismember(applied.ec.rxns, rxnUpdated));
 [baseRxns, enzymeSets] = getEcRxnKeys(applied);
 rows = strings(numel(idx), 9);

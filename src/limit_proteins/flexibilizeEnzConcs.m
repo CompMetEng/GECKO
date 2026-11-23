@@ -21,7 +21,7 @@ function [model, flexEnz] = flexibilizeEnzConcs(model, varargin)
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 %
 % Name-Value Arguments
 % --------------------
@@ -44,12 +44,12 @@ function [model, flexEnz] = flexibilizeEnzConcs(model, varargin)
 %     enzyme (default false). Enzymes and complexes are then ranked by the
 %     growth gained per foldChange of raising all their usage upper bounds
 %     together (a levelled complex binds on all subunits at once, so no
-%     single subunit shows a gain), every measured subunit of the picked
+%     single subunit shows a gain), every measured subunit of the selected
 %     complex is raised by the same factor, iterations are counted per
 %     complex, and one factor per complex is kept in the final pass, so that
-%     concentrations levelled by levelComplexConcs stay levelled. An upper
-%     bound is never lowered below its current value. The frequence of a
-%     complex is recorded on its first measured subunit.
+%     concentrations levelled by levelComplexConcs stay levelled. The
+%     frequence of a complex is recorded on its first subunit with a
+%     concentration above 0.
 %
 % Returns
 % -------
@@ -69,6 +69,23 @@ function [model, flexEnz] = flexibilizeEnzConcs(model, varargin)
 %     - frequence : numeric how often the enzyme has been step-wise
 %       flexibilized.
 %
+% Notes
+% -----
+% While flexibilizing, an upper bound is never lowered below its current
+% value. The total number of iterations is limited to (iterPerEnzyme + 1)
+% times the number of measured enzymes, with 1000 for iterPerEnzyme when it
+% is 0 (no limit per enzyme); at that limit flexibilizing stops with a
+% warning. When the input model has no optimal solution,
+% flexibilizeEnzConcs warns with the identifier
+% flexibilizeEnzConcs:infeasible and returns an empty flexEnz.
+%
+% The usage upper bound of an enzyme is raised by a factor of its
+% concentration, so an enzyme with a concentration of 0 in model.ec.concs
+% stays at 0 and is never flexibilized. If such enzymes exist, the warning
+% flexibilizeEnzConcs:measuredZero lists them: a growth rate that is not
+% reached can then be caused by these enzymes, and flexibilizeEnzConcs
+% reports no limiting enzyme for them.
+%
 % Examples
 % --------
 %     % optional arguments may be given positionally or as name-value pairs:
@@ -79,7 +96,7 @@ function [model, flexEnz] = flexibilizeEnzConcs(model, varargin)
 % --------
 % constrainEnzConcs, getConcControlCoeffs, levelComplexConcs, getComplexFamilies
 
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'expGrowth',     []; ...
     'foldChange',    []; ...
     'iterPerEnzyme', []; ...
@@ -116,7 +133,10 @@ if isempty(foldChange)
 end
 
 if isempty(expGrowth)
-    expGrowth = modelAdapter.getParameters().gR_exp;
+    if ~isfield(params, 'gR_exp') || isempty(params.gR_exp)
+        error('GECKO:grExpNotSet', 'gr_exp is not set in model_adapter.toml')
+    end
+    expGrowth = params.gR_exp;
 end
 
 % If a zero value is defined, not iteration limit will be set
@@ -143,6 +163,28 @@ predGrowth = sol.f;
 
 % Get those proteins with a concentration defined
 protConcs = find(~isnan(model.ec.concs));
+if sol.stat ~= 1 && ~isempty(protConcs)
+    warning('flexibilizeEnzConcs:infeasible', ['The input model has no optimal solution, so ' ...
+        'there is no growth to flexibilize towards and no enzyme is flexibilized. Check the ' ...
+        'enzyme concentration and exchange constraints.'])
+    flexEnz.uniprotIDs = cell(0, 1);
+    flexEnz.oldConcs   = zeros(0, 1);
+    flexEnz.flexConcs  = zeros(0, 1);
+    flexEnz.frequence  = zeros(0, 1);
+    flexEnz.ratioIncr  = zeros(0, 1);
+    return
+end
+measuredZero = model.ec.enzymes(model.ec.concs == 0);
+if ~isempty(measuredZero)
+    listed = strjoin(measuredZero(1:min(10, end))', ', ');
+    if numel(measuredZero) > 10
+        listed = sprintf('%s and %d more', listed, numel(measuredZero) - 10);
+    end
+    warning('flexibilizeEnzConcs:measuredZero', ...
+        ['The enzymes %s have a concentration of 0 in model.ec.concs. Their usage ' ...
+         'upper bound stays 0, because it is raised as a factor of the concentration.'], ...
+        listed)
+end
 
 % Get enzymes names with a concentration value
 proteins = model.ec.enzymes(protConcs);
@@ -156,9 +198,25 @@ if perComplex
     return
 end
 
+% Backstop on the iterations when the number per enzyme is not limited
+if isinf(iterPerEnzyme)
+    capPerEnzyme = 1000;
+else
+    capPerEnzyme = iterPerEnzyme;
+end
+maxTotalIter = numel(proteins) * capPerEnzyme + numel(proteins);
+iterCount    = 0;
+
 flexBreak=false;
 if any(protConcs)
     while predGrowth < expGrowth
+        iterCount = iterCount + 1;
+        if iterCount > maxTotalIter
+            printOrange(['WARNING: The global iteration limit has been reached without reaching expGrowth. ' ...
+                         'The target may be unreachable even with relaxed enzyme bounds.\n']);
+            flexBreak = true;
+            break
+        end
 
         % Get the control coefficients
         [~, controlCoeffs] = getConcControlCoeffs(model, proteins, foldChange, 0.75);
@@ -181,8 +239,8 @@ if any(protConcs)
                 % Get usage rxn for the highest coeff
                 protUsageIdx = strcmpi(model.rxns, strcat('usage_prot_', proteins(maxIdx)));
 
-                % replace the UB
-                model.ub(protUsageIdx) = model.ec.concs(protConcs(maxIdx)) * (1+increase);
+                % raise the UB, never below its current value
+                model.ub(protUsageIdx) = max(model.ub(protUsageIdx), model.ec.concs(protConcs(maxIdx)) * (1+increase));
 
                 % Get the new growth rate
                 sol = solveLP(model,0,[],hs);
@@ -230,7 +288,7 @@ if any(protConcs)
         end
     end
 else
-    error('Protein concentrations have not been defined. Please run readProteomics and constrainEnzConcs')
+    error('Protein concentrations have not been defined. Run loadProtData, fillEnzConcs and constrainEnzConcs first.')
 end
 
 protFlex         = proteins(frequence>0);
@@ -291,7 +349,7 @@ end
 function [model, flexEnz] = flexibilizePerComplex(model, proteins, protConcs, predGrowth, expGrowth, foldChange, iterPerEnzyme, params, verbose)
 % Flexibilize with every complex as one unit, see the perComplex option.
 if isempty(protConcs)
-    error('Protein concentrations have not been defined. Please run readProteomics and constrainEnzConcs')
+    error('Protein concentrations have not been defined. Run loadProtData, fillEnzConcs and constrainEnzConcs first.')
 end
 limit = 0.75;
 nProt = numel(proteins);
@@ -374,7 +432,11 @@ while predGrowth < expGrowth
 
     [~, unit] = max(scores);
     members = units{unit};
-    frequence(members(1)) = frequence(members(1)) + 1;
+    first = members(find(model.ec.concs(protConcs(members)) > 0, 1));
+    if isempty(first)
+        first = members(1);
+    end
+    frequence(first) = frequence(first) + 1;
     unitFrequence(unit)   = unitFrequence(unit) + 1;
     if unitFrequence(unit) > iterPerEnzyme
         if numel(members) > 1
@@ -404,6 +466,8 @@ while predGrowth < expGrowth
 end
 
 flexIdx  = find(frequence > 0 | touched);
+% An enzyme with a concentration of 0 keeps its bound and is not reported
+flexIdx(model.ec.concs(protConcs(flexIdx)) == 0) = [];
 protFlex = proteins(flexIdx);
 oldConcs = model.ec.concs(protConcs(flexIdx));
 freq     = frequence(flexIdx);

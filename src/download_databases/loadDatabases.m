@@ -5,6 +5,12 @@ function databases = loadDatabases(varargin)
 % databases that are required to extract protein information. The uniprot.ID
 % and kegg.ID are taken from the ModelAdapter.
 %
+% A gene cell of uniprot.tsv that holds several gene names, separated by
+% semicolons and/or whitespace (such as 'YPR080W; YBR118W'), is expanded into
+% one row per gene name. The other columns of the entry (ID, EC number, MW,
+% sequence) are repeated on every row, so uniprot.ID then holds an ID once per
+% gene name. An empty gene cell stays one row with an empty gene.
+%
 % Name-Value Arguments
 % --------------------
 % selectDatabase : char
@@ -13,7 +19,6 @@ function databases = loadDatabases(varargin)
 % modelAdapter : ModelAdapter
 %     a loaded model adapter (default: the current default model adapter;
 %     send in [] for default).
-%
 % Returns
 % -------
 % databases : struct
@@ -30,7 +35,7 @@ function databases = loadDatabases(varargin)
 % --------
 % getECfromDatabase, loadBRENDAdata, downloadKEGG, downloadUniProt
 
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'selectDatabase', 'both'; ...
     'modelAdapter',   []});
 selectDatabase = p.selectDatabase;
@@ -61,7 +66,9 @@ if any(strcmp(selectDatabase,{'uniprot','both'}))
     uniprotPath = fullfile(filePath,'uniprot.tsv');
     if ~exist(uniprotPath,'file')
         if isempty(uniprot.ID)
-            printOrange('WARNING: No uniprot.ID is specified, unable to download UniProt DB.\n');
+            error('loadDatabases:noUniprotID', ['%s does not exist and [uniprot] id in ' ...
+                'model_adapter.toml (uniprot.ID) is empty. Set the UniProt taxonomy or ' ...
+                'proteome identifier of the organism, or provide the file.'], uniprotPath)
         end
         downloadUniProt(uniprot.ID, uniprotPath, uniprot.geneIDfield, uniprot.type, params.uniprot.reviewed);
     end
@@ -78,6 +85,7 @@ if any(strcmp(selectDatabase,{'uniprot','both'}))
         databases.uniprot = [];
     end
     if ~isempty(databases.uniprot)
+        % Duplicates are counted per file row, before any gene cell is split
         [uniqueIDs,uniqueIdx] = unique(databases.uniprot.ID,'stable');
         if numel(uniqueIDs) < numel(databases.uniprot.ID)
             duplID = setdiff(1:numel(databases.uniprot.ID),uniqueIdx);
@@ -85,6 +93,7 @@ if any(strcmp(selectDatabase,{'uniprot','both'}))
                     'Manually curate the ''uniprot.tsv'' file, or adjust the uniprot parameters '...
                     'in the model adapter:'],databases.uniprot.ID(duplID)));
         end
+        databases.uniprot = splitUniprotGeneCells(databases.uniprot);
     end
 end
 
@@ -113,4 +122,26 @@ if any(strcmp(selectDatabase,{'kegg','both'}))
         databases.kegg = [];
     end
 end
+end
+
+function uniprot = splitUniprotGeneCells(uniprot)
+% Expand each entry into one row per gene name, splitting its gene cell on
+% semicolons and whitespace and dropping empty pieces. A cell without any gene
+% name stays one row with an empty gene.
+geneNames = cell(size(uniprot.genes));
+for i = 1:numel(uniprot.genes)
+    names = regexp(uniprot.genes{i}, '[;\s]+', 'split');
+    names = names(~cellfun(@isempty, names));
+    if isempty(names)
+        geneNames{i} = {''};
+    else
+        geneNames{i} = names(:);
+    end
+end
+rowIdx = repelem((1:numel(geneNames)).', cellfun(@numel, geneNames));
+uniprot.ID      = uniprot.ID(rowIdx);
+uniprot.genes   = vertcat(geneNames{:});
+uniprot.eccodes = uniprot.eccodes(rowIdx);
+uniprot.MW      = uniprot.MW(rowIdx);
+uniprot.seq     = uniprot.seq(rowIdx);
 end

@@ -1,5 +1,9 @@
 function [model, rxnUpdated, notMatch] = applyCustomKcats(model, varargin)
-% applyCustomKcats  Apply user-defined kcats to an ecModel.
+% applyCustomKcats  Deprecated: use convertCustomKcats and data/kcats/custom.tsv.
+%
+% Deprecated. convertCustomKcats writes data/customKcats.tsv as
+% data/kcats/custom.tsv, which collectKcats and assignKcats read. Will be
+% removed in a future release.
 %
 % Reads data/customKcats.tsv in the obj.params.path specified in the model
 % adapter. Alternatively, a customKcats structure can be provided, as
@@ -8,7 +12,7 @@ function [model, rxnUpdated, notMatch] = applyCustomKcats(model, varargin)
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 %
 % Name-Value Arguments
 % --------------------
@@ -81,7 +85,10 @@ function [model, rxnUpdated, notMatch] = applyCustomKcats(model, varargin)
 % --------
 % applyKcatConstraints, makeEcModel
 
-p = parseGECKOargs(varargin, { ...
+warning('GECKO:deprecatedFunction', ['applyCustomKcats is deprecated; use convertCustomKcats, ' ...
+    'which writes data/kcats/custom.tsv for collectKcats and assignKcats. applyCustomKcats ' ...
+    'will be removed in a future release.'])
+p = parseRAVENargs(varargin, { ...
     'customKcats',  []; ...
     'modelAdapter', []});
 customKcats  = p.customKcats;
@@ -139,7 +146,7 @@ for i = 1:numel(customKcats.proteins)
         model.ec.kcat(rxnIdxs) = customKcats.kcat(i);
 
         % Add note mentioning manual kcat change
-        model.ec.source(rxnIdxs) = {'custom'};
+        model.ec.source(rxnIdxs) = {formatKcatSource('custom')};
         if isfield(customKcats,'notes')
             matchedIdxs = find(rxnIdxs);
             for j = 1:numel(matchedIdxs)
@@ -202,7 +209,7 @@ for i = 1:numel(customKcats.proteins)
                     model.ec.kcat(rxnIdxs(j)) = customKcats.kcat(i);
 
                     % Add note mentioning manual kcat change
-                    model.ec.source{rxnIdxs(j),1} = 'custom';
+                    model.ec.source{rxnIdxs(j),1} = formatKcatSource('custom');
                     if isfield(customKcats,'notes')
                         model.ec.notes{rxnIdxs(j), 1} = appendNote(model.ec.notes{rxnIdxs(j), 1}, customKcats.notes{i});
                     end

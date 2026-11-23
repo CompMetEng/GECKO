@@ -192,7 +192,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function tf = subsumes(general,specific)
 %True if the code general is equal to or a wildcard parent of the code
-%specific; both carry the "EC" prefix and need four levels.
+%specific; both have the "EC" prefix and need four levels.
 general  = strsplit(extractAfter(general,2),'.');
 specific = strsplit(extractAfter(specific,2),'.');
 tf = false;

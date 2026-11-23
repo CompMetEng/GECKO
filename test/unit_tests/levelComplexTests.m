@@ -199,7 +199,7 @@ function rows = toyRows()
 end
 
 function model = ecOnly(concs, rows)
-    % A model that carries nothing but the ec data: rows is {rxn, struct(enzyme, copies)}
+    % A model that has no data except the ec data: rows is {rxn, struct(enzyme, copies)}
     enzymes = {'A';'B';'C';'D';'F';'S';'E';'G';'H'};
     mw = [100; 200; 50; 100; 100; 100; 100; 100; 100];
     mat = zeros(size(rows, 1), numel(enzymes));

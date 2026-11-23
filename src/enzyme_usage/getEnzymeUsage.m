@@ -7,8 +7,9 @@ function usageData = getEnzymeUsage(ecModel,fluxes,varargin)
 % 1. absolute usage: the specific enzyme usage in mg/gDCW, which can be
 %    given for enzymes with- and without concentration information;
 % 2. capacity usage: the ratio of available enzyme that is used, calculated
-%    by (absUsage/UB) (note that capacity usage is 0 if an enzyme
-%    concentration was not constrained in the model);
+%    by (absUsage/UB). An enzyme without a measured concentration has the
+%    default upper bound of 1000, so its capacity usage is absUsage/1000.
+%    An upper bound of 0 gives NaN when absUsage is 0 and Inf otherwise;
 % 3. UB: the upper bound of each enzyme exchange reaction, which may not be
 %    the same as the enzyme concentration, if it has been flexibilized;
 % 4. protID: the protein identifiers for each enzyme, in the same order as
@@ -17,7 +18,7 @@ function usageData = getEnzymeUsage(ecModel,fluxes,varargin)
 % Parameters
 % ----------
 % ecModel : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 % fluxes : double
 %     vector of fluxes, for instance sol.x.
 %
@@ -43,6 +44,25 @@ function usageData = getEnzymeUsage(ecModel,fluxes,varargin)
 %   usage_prot_<id> reaction in the model is left out, with the warning
 %   getEnzymeUsage:missingUsageReaction.
 % - fluxes : vector of fluxes, copy of input fluxes.
+% - measuredProtein : sum of the measured concentrations in model.ec.concs
+%   (mg/gDCW), over the enzymes with a non-NaN entry.
+% - demandedProtein : sum of absUsage over the same enzymes (mg/gDCW).
+% - demandRatio : demandedProtein / measuredProtein. NaN when no
+%   concentration is measured; Inf when the measured concentrations sum to 0
+%   and the demand is positive. A ratio above 1 means that the solution uses
+%   more of the measured enzymes than was measured, which happens when the
+%   upper bounds of the usage reactions are above the measurements (for
+%   instance after flexibilizeEnzConcs). A ratio at or below 1 does not
+%   exclude that one enzyme exceeds its measurement, since the sum is over
+%   all measured enzymes; capUsage gives the ratio per enzyme. Enzymes
+%   without a measured concentration draw from the protein pool and are not
+%   counted.
+% - measuredProteinActive, demandRatioActive : the same two values restricted
+%   to the enzymes with an absUsage above 1e-7 mg/gDCW. Measured enzymes
+%   that are inactive in the solution raise measuredProtein and can hide a
+%   conflict among the active ones.
+%   The five fields are computed over all enzymes with a usage reaction,
+%   whatever the value of zero.
 %
 % Examples
 % --------
@@ -54,13 +74,16 @@ function usageData = getEnzymeUsage(ecModel,fluxes,varargin)
 % --------
 % reportEnzymeUsage
 
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'zero', true});
 zero = p.zero;
 if ecModel.ec.geckoLight
     error('This function does not work on GECKO light models.')
 end
 usageData.protID      = ecModel.ec.enzymes;
+concs                 = nan(numel(ecModel.ec.enzymes),1);
+nConcs                = min(numel(ecModel.ec.concs),numel(concs));
+concs(1:nConcs)       = ecModel.ec.concs(1:nConcs);
 [~,rxnIdx] = ismember(strcat('usage_prot_',ecModel.ec.enzymes),ecModel.rxns);
 noUsageRxn = rxnIdx == 0;
 if any(noUsageRxn)
@@ -68,6 +91,7 @@ if any(noUsageRxn)
         'The model has no usage reaction for the enzymes %s; they are left out.', ...
         strjoin(usageData.protID(noUsageRxn), ', '))
     usageData.protID = usageData.protID(~noUsageRxn);
+    concs = concs(~noUsageRxn);
     rxnIdx = rxnIdx(~noUsageRxn);
 end
 
@@ -75,6 +99,14 @@ usageData.UB          = ecModel.ub(rxnIdx);
 usageData.absUsage    = abs(fluxes(rxnIdx));
 usageData.capUsage    = abs(usageData.absUsage./usageData.UB);
 usageData.fluxes      = fluxes;
+
+measured = ~isnan(concs);
+active   = usageData.absUsage > 1e-7;
+usageData.measuredProtein       = sum(concs(measured));
+usageData.measuredProteinActive = sum(concs(measured & active));
+usageData.demandedProtein       = sum(usageData.absUsage(measured));
+usageData.demandRatio           = usageData.demandedProtein / usageData.measuredProtein;
+usageData.demandRatioActive     = sum(usageData.absUsage(measured & active)) / usageData.measuredProteinActive;
 
 if ~zero
     nonzero               = usageData.absUsage>0;

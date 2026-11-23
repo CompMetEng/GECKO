@@ -4,7 +4,7 @@ function [rxns, kcat, idx, rxnNames, grRules] = getReactionsFromEnzyme(ecModel,p
 % Parameters
 % ----------
 % ecModel : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 % proteinId : char
 %     protein identifier, matching ecModel.ec.enzymes case-insensitively.
 %

@@ -21,12 +21,13 @@ function config = kcatAssignmentConfig(params)
 %     - isozymes, standard: logical;
 %     - stages: struct array with action ('select' or 'combine'), sources
 %       (cell, as given), files (the source files they read, with okp
-%       replaced by the files of its methods), criteria, topOriginLimit,
+%       replaced by the file of the OKP method), criteria, topOriginLimit,
 %       bottomOriginLimit and wildcardLimit;
-%     - okpMethods: the OKP methods of the okp source group ([kcat_sources.okp]
-%       methods; default all methods with combination parameters);
-%     - sources: per source name its options (from [kcat_sources] and the
-%       preset).
+%     - okpMethod: the OKP method of the okp source group ([kcat_sources.okp]
+%       method; default {'KinForm-H'});
+%     - sources: per source name its options: those of the preset, with
+%       the keys that a [kcat_sources.<name>] table sets taking their value
+%       from that table.
 %
 % Examples
 % --------
@@ -65,29 +66,44 @@ else
     config.preset = preset;
 end
 if isfield(params, 'kcat_sources') && isstruct(params.kcat_sources)
+    % A [kcat_sources.<name>] table overrides only the keys it sets
     names = fieldnames(params.kcat_sources);
     for k = 1:numel(names)
-        config.sources.(names{k}) = params.kcat_sources.(names{k});
+        given = params.kcat_sources.(names{k});
+        if ~isfield(config.sources, names{k}) || ~isstruct(given)
+            config.sources.(names{k}) = given;
+            continue
+        end
+        keys = fieldnames(given);
+        for j = 1:numel(keys)
+            config.sources.(names{k}).(keys{j}) = given.(keys{j});
+        end
     end
 end
-% The okp group: the OKP methods of [kcat_sources.okp] methods.
-known = {'CataPro','CatPred','CatRange','DLKcat','EITLEM','KinForm-H','KinForm-L', ...
-    'OmniESI','OmniESI-O2DENet','TurNup','UniKP'};
-% The default: methods that read enzyme-substrate pairs and have combination
-% parameters (CatRange predicts classes; CatPred and TurNup read whole
-% reactions, which kcatsFromOKP does not submit).
-config.okpMethods = known(~ismember(known, {'CatRange', 'CatPred', 'TurNup'}));
-if isfield(config.sources, 'okp') && isfield(config.sources.okp, 'methods') && ~isempty(config.sources.okp.methods)
-    config.okpMethods = cellstr(config.sources.okp.methods);
-    config.okpMethods = config.okpMethods(:)';
+% The okp group: the OKP method of [kcat_sources.okp] method.
+% The methods kcatsFromOKP accepts: those that predict from one enzyme and
+% one substrate (CatPred and TurNup read whole reactions).
+known = {'CataPro','CatRange','DLKcat','EITLEM','KinForm-H','KinForm-L', ...
+    'OmniESI','OmniESI-O2DENet','UniKP'};
+% The default: KinForm-H.
+config.okpMethod = {'KinForm-H'};
+if isfield(config.sources, 'okp') && isfield(config.sources.okp, 'method') && ~isempty(config.sources.okp.method)
+    given = config.sources.okp.method;
+    if ~(ischar(given) || (iscell(given) && all(cellfun(@ischar, given))))
+        error('kcatAssignment:config', 'kcat_sources.okp.method must be a string');
+    end
+    config.okpMethod = cellstr(given);
+    config.okpMethod = config.okpMethod(:)';
 end
-unknown = setdiff(config.okpMethods, known);
+unknown = unique(config.okpMethod(~ismember(config.okpMethod, known)), 'stable');
 if ~isempty(unknown)
-    error('kcatAssignment:config', 'Unknown OKP methods in [kcat_sources.okp] methods: %s; methods: %s.', ...
+    error('kcatAssignment:config', 'Unknown OKP method %s in [kcat_sources.okp] method; supported: %s', ...
         strjoin(unknown, ', '), strjoin(known, ', '))
 end
+% The file of the method: okp_ and the lower-case method name, with runs of
+% characters other than letters and digits replaced by _.
 okpFiles = cellfun(@(m) ['okp_' lower(regexprep(regexprep(m, '[^A-Za-z0-9]+', '_'), '^_+|_+$', ''))], ...
-    config.okpMethods, 'UniformOutput', false);
+    config.okpMethod, 'UniformOutput', false);
 for s = 1:numel(config.stages)
     files = {};
     for t = config.stages(s).sources

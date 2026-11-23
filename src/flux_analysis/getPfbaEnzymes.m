@@ -5,13 +5,13 @@ function solution = getPfbaEnzymes(model, varargin)
 % value of the current objective, finds the one that minimises total
 % enzyme usage: the smallest sum of usage_prot_* fluxes. This is the
 % enzyme-aware analogue of classical pFBA, which minimises total flux
-% instead --- for ecModels this usually picks the most parsimonious
+% instead --- for ecModels this usually selects the most parsimonious
 % *proteome*, not just the most parsimonious fluxes.
 %
 % Parameters
 % ----------
 % model : struct
-%     a full ecModel in GECKO 3 format (with ecModel.ec structure and
+%     a full ecModel (with ecModel.ec structure and
 %     usage_prot_<id> reactions). Not supported for gecko-light models.
 %
 % Name-Value Arguments
@@ -21,7 +21,7 @@ function solution = getPfbaEnzymes(model, varargin)
 %     (default: use model.c as given).
 % fractionOfOptimum : double
 %     fraction of the optimal objective value to fix before minimising
-%     enzyme usage (default 1.0). A value below 1.0 lets the objective fall
+%     enzyme usage (default 1.0). A value below 1.0 allows the objective to fall
 %     by (1 - fractionOfOptimum) times the magnitude of its optimum, so it
 %     also applies to a negative optimum (for example the exchange flux of
 %     a nutrient that is maximised).
@@ -31,7 +31,7 @@ function solution = getPfbaEnzymes(model, varargin)
 % solution : struct
 %     - x : flux distribution (indexed by model.rxns) at the
 %       enzyme-usage-minimising solution.
-%     - getEnzymeUsage : the minimised sum of usage_prot_* fluxes.
+%     - enzymeUsage : the minimised sum of usage_prot_* fluxes.
 %     - objectiveValue : the fixed objective's own value at this solution.
 %     - stat : solveLP exit flag.
 %
@@ -42,8 +42,8 @@ function solution = getPfbaEnzymes(model, varargin)
 %
 % Notes
 % -----
-% usage_prot_<id> reactions must be forward-only (lb=0), the standard
-% GECKO 3 layout; if any has a negative lower bound (reverse flux enabled),
+% usage_prot_<id> reactions must be forward-only (lb=0), as makeEcModel
+% makes them; if any has a negative lower bound (reverse flux enabled),
 % getPfbaEnzymes errors instead of building an objective that would fail to
 % minimise |flux| for that reaction.
 %
@@ -51,7 +51,7 @@ function solution = getPfbaEnzymes(model, varargin)
 % --------
 % getEnzymeBottlenecks
 
-p = parseGECKOargs(varargin, {'rxnId', []; 'fractionOfOptimum', []});
+p = parseRAVENargs(varargin, {'rxnId', []; 'fractionOfOptimum', []});
 rxnId             = p.rxnId;
 fractionOfOptimum = p.fractionOfOptimum;
 if isempty(fractionOfOptimum)

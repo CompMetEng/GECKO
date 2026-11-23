@@ -23,7 +23,7 @@ function families = getComplexFamilies(model, varargin)
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure), with
+%     an ecModel (with ecModel.ec structure), with
 %     ec.rxnEnzMat (copies per subunit).
 %
 % Name-Value Arguments
@@ -59,7 +59,7 @@ function families = getComplexFamilies(model, varargin)
 % --------
 % levelComplexConcs, flexibilizeEnzConcs
 
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'minOverlap', []; ...
     'minShared',  []});
 minOverlap = p.minOverlap;

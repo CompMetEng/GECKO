@@ -1,17 +1,20 @@
 function [model, rxnIdx] = assignKcatValues(model,kcatList,varargin)
 % assignKcatValues  Select one kcat value per reaction and write to model.ec.
 %
+% Low-level: collectKcats and assignKcats run this function; call it
+% directly only to change kcats by hand.
+%
 % From a kcatList with predicted or suggested kcat values, where each
 % reaction may have multiple entries, one kcat value is selected and written
 % to model.ec.kcat. Zero values are discarded from the start. By default,
 % the maximum value is chosen, but alternatives are available. The kcatList
-% structure is an output of e.g. readDLKcatOutput, readGotEnzymesOutput,
-% readManualKcatList.
+% structure is an output of e.g. kcatsFromBrenda, kcatsFromDLKcat or
+% kcatsFromOKP.
 %
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 % kcatList : struct
 %     structure array with separate entries for each kcat value, with the
 %     following fields:
@@ -36,8 +39,9 @@ function [model, rxnIdx] = assignKcatValues(model,kcatList,varargin)
 %     The source is written in lower case snake_case, with the wildcard
 %     level and origin of the entry in brackets when it has them
 %     (kcatList.wildcardLvl and kcatList.origin), for example
-%     'brenda (wc=0, origin=1)'. Functions that compare model.ec.source with
-%     a source name use the part before ' (' (see resolveTunableContext).
+%     'brenda (wc=0, origin=1)' (see formatKcatSource). Functions that compare
+%     model.ec.source with a source name use its origin (see parseKcatSource
+%     and resolveTunableContext).
 % overwrite : char
 %     whether existing kcat values should be overwritten. Options: 'true',
 %     'false', 'ifHigher'. The last option will overwrite only if the new
@@ -59,9 +63,9 @@ function [model, rxnIdx] = assignKcatValues(model,kcatList,varargin)
 %
 % See also
 % --------
-% readDLKcatOutput, mergeDLKcatAndFuzzyKcats, applyKcatConstraints
+% kcatsFromDLKcat, mergeKcats, assignKcats, applyKcatConstraints
 
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'criteria',  []; ...
     'overwrite', []});
 criteria  = p.criteria;
@@ -130,7 +134,7 @@ for i=1:numel(idxInModelUnique)
         otherwise
             error('Invalid criteria specified')
     end
-    selectedSource{i}    = formatKcatSource(kcatList.kcatSource{idxMatch(j)}, ...
+    selectedSource{i}    = matchSource(kcatList.kcatSource{idxMatch(j)}, ...
         wildcardLvl(idxMatch(j)), origin(idxMatch(j)));
 end
 
@@ -158,16 +162,16 @@ end
 rxnIdx = idxInModelUnique;
 end
 
-function text = formatKcatSource(source, wildcardLvl, origin)
-% The provenance text of model.ec.source: the source label in lower case
-% snake_case, followed by the wildcard level and origin of a fuzzy BRENDA
-% match in brackets, e.g. 'brenda (wc=0, origin=1)'.
-text = lower(strtrim(char(source)));
-text = regexprep(text, '[^0-9a-z]+', '_');
-text = regexprep(text, '^_+|_+$', '');
-if ~isnan(wildcardLvl) && ~isnan(origin)
-    text = sprintf('%s (wc=%d, origin=%d)', text, fix(wildcardLvl), fix(origin));
-elseif ~isnan(wildcardLvl)
-    text = sprintf('%s (wc=%d)', text, fix(wildcardLvl));
+function text = matchSource(source, wildcardLvl, origin)
+% The provenance text of model.ec.source: the source label followed by the
+% wildcard level and origin of a fuzzy BRENDA match, as formatKcatSource
+% writes them.
+detail = struct();
+if ~isnan(wildcardLvl)
+    detail.wc = fix(wildcardLvl) + 0;
+    if ~isnan(origin)
+        detail.origin = fix(origin) + 0;
+    end
 end
+text = formatKcatSource(char(source), detail);
 end

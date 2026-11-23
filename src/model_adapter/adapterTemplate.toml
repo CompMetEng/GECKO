@@ -16,9 +16,10 @@ sigma = 0.5
 p_tot = 0.5
 # Fraction of enzymes in the model [g enzyme/g protein].
 f = 0.5
-# Growth rate the model should reach when not limited by nutrient uptake,
-# for example the maximum growth rate [1/h].
-gr_exp = 0.41
+# Growth rate the model should reach when not limited by nutrient uptake
+# [1/h]. Required by the functions that tune kcats or fit sigma; there is no
+# default.
+# gr_exp =
 
 # Exchange reaction of glucose, or another preferred carbon source.
 c_source = "r_1714"
@@ -29,13 +30,10 @@ bio_rxn = "r_4041"
 # cytoplasm.
 enzyme_comp = "cytoplasm"
 
-# Which BRENDA aggregate fuzzyKcatMatching reads for each (EC, substrate,
-# organism): "max" (the highest turnover reported) or "median".
-kcat_aggregate_brenda = "max"
-
 [kegg]
-# KEGG organism code, from https://www.genome.jp/kegg/catalog/org_list.html
-id = "sce"
+# KEGG organism code, from https://www.genome.jp/kegg/catalog/org_list.html,
+# for example "sce" for Saccharomyces cerevisiae. Empty: KEGG is not used.
+id = ""
 # Field for the KEGG gene identifier; it should match the gene identifiers
 # of the model. "kegg" takes the KEGG entry identifier (for example
 # YER023W: https://www.genome.jp/dbget-bin/www_bget?sce:YER023W). Gene
@@ -46,9 +44,11 @@ gene_id = "kegg"
 
 [uniprot]
 # "proteome" (https://www.uniprot.org/proteomes/) or "taxonomy"
-# (https://www.uniprot.org/taxonomy), and the matching identifier.
+# (https://www.uniprot.org/taxonomy), and the matching identifier, for
+# example "559292" (taxonomy) or "UP000002311" (proteome) for
+# Saccharomyces cerevisiae. Required unless data/uniprot.tsv is provided.
 type = "taxonomy"
-id = "559292"
+id = ""
 # UniProt field that matches the gene identifiers of the model: one of the
 # "Returned Field" entries under "Names & Taxonomy" at
 # https://www.uniprot.org/help/return_fields
@@ -88,21 +88,25 @@ rmse_threshold = 0.2
 # Maximum number of CMA-ES generations.
 max_generations = 150
 
-# Kcat sources, from least to most trusted, each with its prior width
-# (lower is more trusted).
-[evotune.source_groups.dlkcat]
-sources = ["dlkcat"]
-
-[evotune.source_groups.brenda]
-sources = ["brenda"]
-
-[evotune.source_groups.custom]
-sources = ["custom"]
-
-[evotune.sigma0_log_source]
-dlkcat = 0.4
-brenda = 0.2
-custom = 0.1
+# Trust tiers: group name -> the ec.source labels it covers and its
+# sigma0_log (the standard deviation of the natural log of the kcat; lower is
+# more trusted). A label ending in * is a prefix pattern ("okp_*" covers every
+# OKP method). Groups given in the TOML replace the defaults.
+# [evotune.source_groups.custom]
+# sources = ["custom"]
+# sigma0_log = 0.1
+#
+# [evotune.source_groups.brenda]
+# sources = ["brenda"]
+# sigma0_log = 0.2
+#
+# [evotune.source_groups.ec_tree]
+# sources = ["ec_tree"]
+# sigma0_log = 0.3
+#
+# [evotune.source_groups.combined]
+# sources = ["combined"]
+# sigma0_log = 0.4
 
 # How kcats are assigned from the kcat source files in data/kcats (see
 # collectKcats and assignKcats): a preset, or [[kcat_assignment.stage]]
@@ -110,11 +114,14 @@ custom = 0.1
 # - brenda_ec_tree: custom kcats, the BRENDA median of measurements of the
 #   organism on the reaction's substrate, the EC tree (the EC's median kcat,
 #   leaning on its EC class when it has few measurements); then the
-#   OpenKineticsPredictor (OKP) methods combined for reactions without an
-#   EC number.
+#   OpenKineticsPredictor (OKP) predictions combined for reactions without
+#   an EC number.
+# - ec_tree_homologs: custom kcats, the organism's own BRENDA value, then the
+#   EC tree and the kcats of homologous enzymes combined, then the OKP
+#   predictions.
 # - ec_tree_okp: custom kcats, the organism's own BRENDA value, then the EC
-#   tree and the OKP methods combined.
-# - okp: custom kcats, then the OKP methods combined.
+#   tree, the kcats of homologous enzymes and the OKP predictions combined.
+# - okp: custom kcats, then the OKP predictions.
 # - gecko_median and gecko_classic: BRENDA's fuzzy matches and DLKcat, with
 #   the BRENDA median and maximum.
 [kcat_assignment]
@@ -122,11 +129,15 @@ preset = "brenda_ec_tree"
 isozymes = true
 standard = true
 
-# Settings per kcat source, used by updateKcatSources, for example the OKP
-# methods the presets combine (default: all methods with combination
-# parameters):
+# Settings per kcat source, used by updateKcatSources: aggregation
+# ("max" or "median") and force_wildcard_level for brenda, k for ec_tree,
+# k, min_identity and coverage for homologs, and method for okp, the OKP
+# method of the presets (default: KinForm-H). The BRENDA aggregation
+# of the preset is median, or max for gecko_classic.
+# [kcat_sources.brenda]
+# aggregation = "median"
 # [kcat_sources.okp]
-# methods = ["CataPro", "KinForm-H", "UniKP"]
+# method = "KinForm-H"
 
 # Read by GECKO only. Names of MATLAB functions, for instance in the code
 # folder, used during kcat tuning: one that constrains the ecModel to

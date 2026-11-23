@@ -9,13 +9,14 @@ function report = updateKcatSources(model, varargin)
 %   [kcat_sources.<name>] asks for (presets set these for brenda and
 %   ec_tree), or, for brenda and ec_tree, another BRENDA release than the
 %   BRENDA files in use;
-% - brenda and ec_tree are made again; dlkcat reads data/DLKcat.tsv if it exists and
-%   runs DLKcat (Docker) otherwise; okp_<method> submits or fetches a job,
-%   and reports it as pending while the job runs;
+% - brenda and ec_tree are made again; dlkcat reads data/DLKcat.tsv if it
+%   exists and otherwise predicts with the DLKcat method of
+%   OpenKineticsPredictor (see kcatsFromDLKcat); okp_<method> and dlkcat
+%   submit or fetch a job, and report it as pending while the job runs;
 % - custom.tsv and other files it cannot gather are left as they are.
 %
-% Requirements are checked first: Docker for a DLKcat run and an
-% OpenKineticsPredictor API key for OKP. Calling it again is safe: files
+% Requirements are checked first: an OpenKineticsPredictor API key for
+% OKP and for dlkcat without data/DLKcat.tsv. Calling it again is safe: files
 % that are current are not gathered again.
 %
 % Per-source settings are read from model_adapter.toml, for instance:
@@ -23,13 +24,18 @@ function report = updateKcatSources(model, varargin)
 %     [kcat_sources.brenda]
 %     aggregation = "median"
 %
-%     [kcat_sources.okp_catapro]
-%     method = "CataPro"
+%     [kcat_sources.okp]
+%     method = "KinForm-H"
+%
+% The keys that a [kcat_sources.<name>] table can set are aggregation and
+% force_wildcard_level for brenda, k for ec_tree, k, min_identity and
+% coverage for homologs, and method for okp; the okp_<method> files
+% have none (their method is the one whose file name they carry).
 %
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 %
 % Name-Value Arguments
 % --------------------
@@ -54,7 +60,7 @@ function report = updateKcatSources(model, varargin)
 % collectKcats, assignKcats, kcatsFromBrenda, kcatsFromDLKcat, kcatsFromOKP
 
 checkOptions(varargin, {'dryRun','modelAdapter'}, 'updateKcatSources');
-p = parseGECKOargs(varargin, {'dryRun', false; 'modelAdapter', []});
+p = parseRAVENargs(varargin, {'dryRun', false; 'modelAdapter', []});
 modelAdapter = p.modelAdapter;
 if isempty(modelAdapter)
     modelAdapter = ModelAdapterManager.getDefault();
@@ -151,17 +157,15 @@ try
         if isfield(wanted, 'coverage'), args = [args, {'coverage', double(wanted.coverage)}]; end
         kcatsFromHomologs(model, args{:}, 'modelAdapter', modelAdapter);
     elseif strcmp(name, 'dlkcat')
-        run = ~isfile(fullfile(modelAdapter.params.path, 'data', 'DLKcat.tsv'));
-        if run
-            [status, ~] = system('docker --version');
-            if status ~= 0
-                st = 'failed'; nt = 'DLKcat needs Docker to run';
-                return
-            end
+        if ~isfile(fullfile(modelAdapter.params.path, 'data', 'DLKcat.tsv'))
+            resolveOkpApiKey('', modelAdapter.params.path); % errors without a key
         end
-        kcatsFromDLKcat(model, 'run', run, 'modelAdapter', modelAdapter);
+        [~, done] = kcatsFromDLKcat(model, 'modelAdapter', modelAdapter);
+        if ~done
+            st = 'pending'; nt = 'OKP job for DLKcat still running; call again later';
+        end
     else % okp_<method>
-        method = okpMethod(name, wanted);
+        method = okpMethod(name);
         resolveOkpApiKey('', modelAdapter.params.path); % errors without a key
         [~, done] = kcatsFromOKP(model, 'method', method, 'saveAs', name, 'modelAdapter', modelAdapter);
         if ~done
@@ -173,20 +177,18 @@ catch err
 end
 end
 
-function method = okpMethod(name, wanted)
-% The OKP method of okp_<method>: from [kcat_sources.okp_<method>] method,
-% or the known method whose name gives this file name.
-if isfield(wanted, 'method')
-    method = char(wanted.method);
-    return
-end
-known = {'CataPro','CatPred','CatRange','DLKcat','EITLEM','KinForm-H','KinForm-L', ...
-    'OmniESI','OmniESI-O2DENet','TurNup','UniKP'};
-tags = cellfun(@(m) ['okp_' lower(regexprep(m, '[^A-Za-z0-9]+', '_'))], known, 'UniformOutput', false);
+function method = okpMethod(name)
+% The OKP method of okp_<method>: the known method whose file name is name,
+% that is okp_ and the lower-case method name, with runs of characters
+% other than letters and digits replaced by _.
+known = {'CataPro','CatRange','DLKcat','EITLEM','KinForm-H','KinForm-L', ...
+    'OmniESI','OmniESI-O2DENet','UniKP'};
+tags = cellfun(@(m) ['okp_' lower(regexprep(regexprep(m, '[^A-Za-z0-9]+', '_'), '^_+|_+$', ''))], ...
+    known, 'UniformOutput', false);
 hit = strcmp(tags, name);
 if ~any(hit)
-    error('updateKcatSources:okpMethod', ['Set the OKP method of %s in model_adapter.toml: ' ...
-        '[kcat_sources.%s] method = "..."'], name, name)
+    error('updateKcatSources:okpMethod', ['%s is not the file of a known OKP method; ' ...
+        'the files are %s.'], name, strjoin(tags, ', '))
 end
 method = known{hit};
 end

@@ -7,7 +7,7 @@ function ecModel = applyECcodes(ecModel, varargin)
 % Parameters
 % ----------
 % ecModel : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 %
 % Name-Value Arguments
 % --------------------
@@ -29,7 +29,7 @@ function ecModel = applyECcodes(ecModel, varargin)
 %     ecModel = applyECcodes(ecModel, true);
 %     ecModel = applyECcodes(ecModel, 'overwrite', true);
 
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'overwrite', false});
 overwrite = p.overwrite;
 

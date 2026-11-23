@@ -8,7 +8,7 @@ function ecModel = setKcatForReactions(ecModel,rxnIds,kcat)
 % Parameters
 % ----------
 % ecModel : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 % rxnIds : char or cell
 %     reaction identifier matching ecModel.ec.rxns. If the _EXP_ suffix is
 %     not included, and there are multiple expanded (isozymic) reactions,
@@ -25,7 +25,7 @@ function ecModel = setKcatForReactions(ecModel,rxnIds,kcat)
 %     ecModel where selected kcat values in ecModel.ec.kcat are changed, but
 %     not yet applied to the S-matrix (will require to run
 %     applyKcatConstraints). ecModel.ec.source for the changed reactions
-%     will read 'setKcatForReactions'.
+%     will read 'manual', without any tuning status.
 %
 % Examples
 % --------
@@ -33,7 +33,7 @@ function ecModel = setKcatForReactions(ecModel,rxnIds,kcat)
 %
 % See also
 % --------
-% applyKcatConstraints, getKcatAcrossIsozymes
+% applyKcatConstraints, fillKcatsFromIsozymes
 rxnIds = convertCharArray(rxnIds);
 
 hasExp       = ~cellfun(@isempty,regexp(rxnIds,'_EXP_\d+$'));
@@ -59,5 +59,5 @@ else
     end
 end
 ecModel.ec.kcat(rxnsToChange)   = kcat;
-ecModel.ec.source(rxnsToChange) = {'setKcatForReactions'};
+ecModel.ec.source(rxnsToChange) = {formatKcatSource('manual')};
 end

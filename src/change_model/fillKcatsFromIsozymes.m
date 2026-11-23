@@ -1,5 +1,8 @@
-function model = getKcatAcrossIsozymes(model)
-% getKcatAcrossIsozymes  Fill missing kcats from isozymes of the same reaction.
+function model = fillKcatsFromIsozymes(model)
+% fillKcatsFromIsozymes  Fill missing kcats from isozymes of the same reaction.
+%
+% Low-level: collectKcats and assignKcats run this function; call it
+% directly only to change kcats by hand.
 %
 % For reactions without kcat value (0 in model.ec.kcat), isozymes are found
 % (being based on the same reaction in the conventional GEM), that do have a
@@ -11,7 +14,7 @@ function model = getKcatAcrossIsozymes(model)
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in full GECKO 3 format (with ecModel.ec structure), not
+%     a full ecModel (with ecModel.ec structure), not
 %     GECKO light.
 %
 % Returns
@@ -21,7 +24,7 @@ function model = getKcatAcrossIsozymes(model)
 %
 % Examples
 % --------
-%     model = getKcatAcrossIsozymes(model);
+%     model = fillKcatsFromIsozymes(model);
 %
 % See also
 % --------
@@ -51,6 +54,6 @@ newKcatIdx  = newKcatIdx(newKcat);
 newKcat     = noKcatVal(newKcat);
 
 model.ec.kcat(newKcatIdx) = newKcat;
-model.ec.source(newKcatIdx) = {'isozymes'};
+model.ec.source(newKcatIdx) = {formatKcatSource('isozymes')};
 end
 

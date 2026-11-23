@@ -9,7 +9,7 @@ function model = applyKcatConstraints(model,varargin)
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 %
 % Name-Value Arguments
 % --------------------
@@ -39,9 +39,9 @@ function model = applyKcatConstraints(model,varargin)
 %
 % See also
 % --------
-% makeEcModel, getKcatAcrossIsozymes, setKcatForReactions
+% makeEcModel, fillKcatsFromIsozymes, setKcatForReactions
 
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'updateRxns', []});
 updateRxns = p.updateRxns;
 
@@ -163,7 +163,7 @@ else %GECKO light formulation, where prot_pool represents all usages
         % isozyme row without any enzyme has MWkcat zero. Drop those
         % isozymes *before* selecting the cheapest one: including them in
         % the min() below would let an isozyme with no kcat or no enzyme
-        % always win over a real kcat on another isozyme of the same reaction.
+        % always be selected over a real kcat on another isozyme of the same reaction.
         % A row with a kcat that is not positive or an enzyme mass that is not
         % positive has no usable cost either.
         hasEnzyme = full(sum(model.ec.rxnEnzMat(ecIdx,:) ~= 0,2)) > 0;

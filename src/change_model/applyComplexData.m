@@ -7,7 +7,7 @@ function [model, foundComplex, proposedComplex] = applyComplexData(model, vararg
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 %
 % Name-Value Arguments
 % --------------------
@@ -60,7 +60,7 @@ function [model, foundComplex, proposedComplex] = applyComplexData(model, vararg
 % --------
 % getComplexData, makeEcModel
 
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'complexInfo',  []; ...
     'modelAdapter', []; ...
     'verbose',      true});

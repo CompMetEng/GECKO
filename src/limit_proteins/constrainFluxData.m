@@ -1,13 +1,21 @@
 function model = constrainFluxData(model, varargin)
-% constrainFluxData  Constrain ecModel fluxes to provided flux data.
+% constrainFluxData  Constrain an ecModel to one measured flux condition.
 %
-% Constrains fluxes to the data that is provided in the fluxData structure,
-% which itself is read by loadFluxData from data/fluxData.tsv.
+% Use it to reproduce one measured condition before an analysis, for
+% example a flux variability analysis or a proteomics integration. The
+% biomass reaction is bounded by the measured growth rate and each exchange
+% reaction of the data by its measured flux in the chosen condition. The
+% data are the flux conditions of data/fluxData.tsv, read by RAVEN's
+% loadFluxData. The preferred carbon source of the adapter is blocked first,
+% so that the data alone decide which carbon source is used. The bounds are
+% set by RAVEN's applyFluxDataConstraints, where the bounds of each setting
+% of looseStrictFlux are listed; this function takes the biomass reaction
+% and the carbon source from the model adapter.
 %
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 %
 % Name-Value Arguments
 % --------------------
@@ -20,6 +28,8 @@ function model = constrainFluxData(model, varargin)
 %     - exchFluxes : exchange fluxes (mmol/gDCWh).
 %     - exchMets : exchanged metabolites, matching exchFluxes.
 %     - exchRxnIDs : exchange reaction IDs, matching exchMets.
+%
+%     Default: the data read from data/fluxData.tsv of the model adapter.
 % condition : double or char
 %     either index number or name of the sample condition in fluxData.conds
 %     (default 1).
@@ -51,8 +61,10 @@ function model = constrainFluxData(model, varargin)
 % Notes
 % -----
 % An exchange reaction in fluxData.exchRxnIDs that is not in the model
-% raises constrainFluxData:missingReaction, and a condition that is not in
-% fluxData.conds raises constrainFluxData:unknownCondition.
+% raises applyFluxDataConstraints:missingReaction, and a condition that is not
+% in fluxData.conds raises applyFluxDataConstraints:unknownCondition. The
+% preferred carbon source of the adapter (c_source) is blocked before the
+% data is applied.
 %
 % If a provided constraint is either -1000 or 1000, then the function will
 % update the reaction lower and upper bound to either allow uptake or
@@ -67,18 +79,15 @@ function model = constrainFluxData(model, varargin)
 %
 % See also
 % --------
-% loadFluxData
+% loadFluxData, applyFluxDataConstraints
 
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'fluxData',        []; ...
     'condition',       []; ...
     'maxMinGrowth',    []; ...
     'looseStrictFlux', []; ...
     'modelAdapter',    []});
 fluxData        = p.fluxData;
-condition       = p.condition;
-maxMinGrowth    = p.maxMinGrowth;
-looseStrictFlux = p.looseStrictFlux;
 modelAdapter    = p.modelAdapter;
 
 if isempty(modelAdapter)
@@ -89,83 +98,19 @@ if isempty(modelAdapter)
 end
 params = modelAdapter.getParameters();
 
-if isempty(looseStrictFlux)
-    looseStrictFlux = 'loose';
-end
-
-if isempty(maxMinGrowth)
-    maxMinGrowth = 'max';
-end
-
 if isempty(fluxData)
-    fluxData = loadFluxData(fullfile(params.path,'data','fluxData.tsv'),modelAdapter);
+    fluxData = loadFluxData(fullfile(params.path,'data','fluxData.tsv'));
 end
 
-if ~(ischar(maxMinGrowth) && any(strcmp(maxMinGrowth, {'max','min'})))
-    error('constrainFluxData:invalidMaxMinGrowth', ...
-        'maxMinGrowth must be ''max'' or ''min''.')
+options = {'cSource', params.c_source};
+if ~isempty(p.condition)
+    options = [options, {'condition', p.condition}];
 end
-
-missingRxns = fluxData.exchRxnIDs(~ismember(fluxData.exchRxnIDs, model.rxns));
-if ~isempty(missingRxns)
-    error('constrainFluxData:missingReaction', ...
-        'The exchange reactions %s of fluxData are not in the model.', strjoin(missingRxns, ', '))
+if ~isempty(p.maxMinGrowth)
+    options = [options, {'maxMinGrowth', p.maxMinGrowth}];
 end
-
-if isempty(condition)
-    condition = 1;
-elseif ~isnumeric(condition)
-    idx = find(strcmp(fluxData.conds,condition));
-    if isempty(idx)
-        error('constrainFluxData:unknownCondition', ...
-            'Condition %s cannot be found in fluxData.', condition)
-    else
-        condition = idx;
-    end
+if ~isempty(p.looseStrictFlux)
+    options = [options, {'looseStrictFlux', p.looseStrictFlux}];
 end
-
-% Select the exchange fluxes of specified condition
-fluxData.exchFluxes = fluxData.exchFluxes(condition,:);
-
-%Set original c-source to zero
-model = setParam(model,'eq',params.c_source,0);
-%Set growth
-switch maxMinGrowth
-    case 'max'
-        model = setParam(model,'lb',params.bioRxn,0);
-        model = setParam(model,'ub',params.bioRxn,fluxData.grRate(condition));
-    case 'min'
-        model = setParam(model,'lb',params.bioRxn,fluxData.grRate(condition));
-        model = setParam(model,'ub',params.bioRxn,1000);
-end
-
-naFlux = isnan(fluxData.exchFluxes);
-negFlux = lt(fluxData.exchFluxes,0); % less than 0
-ub = fluxData.exchFluxes(~(negFlux | naFlux));
-posFlux = fluxData.exchRxnIDs(~(negFlux | naFlux));
-lb = fluxData.exchFluxes(negFlux & ~naFlux);
-negFlux = fluxData.exchRxnIDs(negFlux & ~naFlux);
-
-switch looseStrictFlux
-    case 'loose'
-        model = setParam(model,'lb',negFlux,lb);
-        model = setParam(model,'ub',negFlux,0);
-        model = setParam(model,'lb',posFlux,0);
-        model = setParam(model,'ub',posFlux,ub);
-    otherwise
-        model = setParam(model,'var',negFlux,lb,looseStrictFlux);
-        model = setParam(model,'var',posFlux,ub,looseStrictFlux);
-end
-extremeFlux = find(abs(fluxData.exchFluxes)==1000);
-if any(extremeFlux)
-    exchFlux = fluxData.exchFluxes(extremeFlux);
-    if any(exchFlux==-1000)
-        model = setParam(model,'lb',fluxData.exchRxnIDs(extremeFlux(exchFlux==-1000)),-1000);
-        model = setParam(model,'ub',fluxData.exchRxnIDs(extremeFlux(exchFlux==-1000)),0);
-    end
-    if any(exchFlux==1000)
-        model = setParam(model,'lb',fluxData.exchRxnIDs(extremeFlux(exchFlux==1000)),0);
-        model = setParam(model,'ub',fluxData.exchRxnIDs(extremeFlux(exchFlux==1000)),1000);
-    end
-end
+model = applyFluxDataConstraints(model, fluxData, params.bioRxn, options{:});
 end

@@ -7,7 +7,7 @@ function f = calculateFfactor(model, varargin)
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 %
 % Name-Value Arguments
 % --------------------
@@ -34,9 +34,9 @@ function f = calculateFfactor(model, varargin)
 %
 % See also
 % --------
-% loadProtData, getProtFromProteomics
+% loadProtData, fillEnzConcs
 
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'protData',     []; ...
     'enzymes',      []; ...
     'modelAdapter', []});
@@ -70,7 +70,7 @@ end
 if ischar(protData) && endsWith(protData,'paxDB.tsv')
     % Gather Uniprot database for finding MW. Only needed here, to map paxDB.tsv's gene
     % identifiers onto UniProt IDs and molecular weights --- a protData struct supplied by
-    % the caller already carries UniProt IDs and needs no lookup, so this stays inside the
+    % the caller already has UniProt IDs and needs no lookup, so this stays inside the
     % branch that actually uses it rather than running (and potentially downloading or
     % reading UniProt data) on every call.
     uniprotDB = loadDatabases('uniprot', modelAdapter);

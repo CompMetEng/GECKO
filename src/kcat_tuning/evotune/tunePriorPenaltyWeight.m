@@ -1,7 +1,7 @@
 function sweepTable = tunePriorPenaltyWeight(ecModel,varargin)
 % tunePriorPenaltyWeight  Sweep priorPenaltyWeight and report the
-% fit/reproducibility trade-off, so the value doesn't have to be picked
-% blind.
+% fit/reproducibility trade-off, so the value can be selected from the reported
+% results.
 %
 % priorPenaltyWeight charges for moving a kcat away from its prior, and
 % mainly exists to keep large corrections reproducible across seeds
@@ -26,7 +26,7 @@ function sweepTable = tunePriorPenaltyWeight(ecModel,varargin)
 %
 % Name-Value Arguments
 % --------------------
-% modelAdapter, evoData, tunableMask, screen, targetImpactShare, popsize,
+% modelAdapter, experimentData, tunableMask, screen, targetImpactShare, popsize,
 % nProc, verbose
 %     as in cmaesKcatTuning.
 % candidates : double
@@ -54,9 +54,9 @@ function sweepTable = tunePriorPenaltyWeight(ecModel,varargin)
 % See also
 % --------
 % cmaesKcatTuning, screenKcatLeverage, selectTunableMask, nChanged
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'modelAdapter', []; ...
-    'evoData', []; ...
+    'experimentData', []; ...
     'tunableMask', []; ...
     'screen', []; ...
     'targetImpactShare', 0.9; ...
@@ -67,7 +67,7 @@ p = parseGECKOargs(varargin, { ...
     'seeds', [0, 1]; ...
     'foldThreshold', 2.0});
 modelAdapter      = p.modelAdapter;
-evoData           = p.evoData;
+experimentData           = p.experimentData;
 tunableMask       = p.tunableMask;
 screen            = p.screen;
 targetImpactShare = p.targetImpactShare;
@@ -84,13 +84,13 @@ if isempty(modelAdapter)
         error('Either send in a modelAdapter or set the default ecModel adapter in the ModelAdapterManager.')
     end
 end
-if isempty(evoData)
-    evoData = loadEvotuneData('modelAdapter', modelAdapter);
+if isempty(experimentData)
+    experimentData = loadEvotuneData('modelAdapter', modelAdapter);
 end
 if isempty(tunableMask)
     if isempty(screen)
         screen = screenKcatLeverage(ecModel, 'modelAdapter',modelAdapter, ...
-            'evoData',evoData, 'nProc',nProc);
+            'experimentData',experimentData, 'nProc',nProc);
     end
     tunableMask = selectTunableMask(ecModel, screen, 'targetImpactShare',targetImpactShare);
 end
@@ -121,7 +121,7 @@ for c = 1:nCand
         adapterCopy = modelAdapter;
         adapterCopy.params.evotune = lamParams;
         [~,res] = cmaesKcatTuning(ecModel, 'modelAdapter',adapterCopy, ...
-            'evoData',evoData, 'tunableMask',tunableMask, ...
+            'experimentData',experimentData, 'tunableMask',tunableMask, ...
             'popsize',popsize, 'nProc',nProc, 'seed',seedVal, 'verbose',verbose);
         vectors{s} = res.newKcat;
         if ~isempty(res.rmseTrace)

@@ -13,7 +13,7 @@ function pairs = extractEnzymeSubstratePairs(model, varargin)
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 %
 % Name-Value Arguments
 % --------------------
@@ -36,10 +36,10 @@ function pairs = extractEnzymeSubstratePairs(model, varargin)
 %
 % See also
 % --------
-% writeDLKcatInput, kcatsFromHomologs
+% kcatsFromDLKcat, kcatsFromHomologs
 
 [geckoPath, ~] = findGECKOroot();
-p = parseGECKOargs(varargin, {'ecRxns', []; 'modelAdapter', []});
+p = parseRAVENargs(varargin, {'ecRxns', []; 'modelAdapter', []});
 ecRxnsSel = p.ecRxns;
 if isempty(ecRxnsSel)
     ecRxnsSel = true(numel(model.ec.rxns),1);

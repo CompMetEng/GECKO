@@ -1,0 +1,227 @@
+# source: custom
+# generator: convertCustomKcats (GECKO unknown)
+# parameters: {}
+# data: customKcats.tsv
+# kind: curated
+# created: 2026-11-11T22:56:44Z
+rxn	enzymes	substrate	kcat	log10_sd	source	detail	ec_code	note
+r_0028	P43635		141.3		custom			GECKO v2 manual_data.txt
+r_0062	P06169		145		custom			GECKO v2 manualModifications.m growth limiting
+r_0062	P16467		62		custom			GECKO v2 manual_data.txt
+r_0062	P26263		62		custom			GECKO v2 manual_data.txt
+r_0064	P06169		145		custom			GECKO v2 manualModifications.m growth limiting
+r_0064	P16467		62		custom			GECKO v2 manual_data.txt
+r_0064	P26263		62		custom			GECKO v2 manual_data.txt
+r_0079	P38972		5.3357625		custom			specific activity 2.15 umol/min/mg of E. coli FGAR amidotransferase (BRENDA EC 6.3.5.3; Schendel et al. 1989, doi:10.1021/bi00432a017) times the MW of P38972 (148905 g/mol)
+r_0091	P38858		10		custom			GECKO v2 manual_data.txt
+r_0091	P53315		10		custom			GECKO v2 manual_data.txt
+r_0095	P06169		145		custom			GECKO v2 manualModifications.m growth limiting
+r_0095	P16467		62		custom			GECKO v2 manual_data.txt
+r_0095	P26263		62		custom			GECKO v2 manual_data.txt
+r_0096	P06168		18.3		custom			GECKO v2 manualModifications.m growth limiting
+r_0112	P52910		62.4		custom			GECKO v2 manual_data.txt
+r_0112	Q01574		62.4		custom			GECKO v2 manual_data.txt
+r_0113	Q01574		62.4		custom			GECKO v2 manual_data.txt
+r_0114	P52910		62.4		custom			GECKO v2 manual_data.txt
+r_0163	P00331		143		custom			GECKO v2 manualModifications.m curation carbon source
+r_0165	P10127		900		custom			GECKO v2 manual_data.txt
+r_0166	P00330		900		custom			GECKO v2 manual_data.txt
+r_0167	P10127		900		custom			GECKO v2 manual_data.txt
+r_0168	Q04894		900		custom			GECKO v2 manual_data.txt
+r_0169	P00330		900		custom			GECKO v2 manual_data.txt
+r_0170	P10127		900		custom			GECKO v2 manual_data.txt
+r_0171	Q04894		900		custom			GECKO v2 manual_data.txt
+r_0172	P47771		31.7		custom			GECKO v2 manual_data.txt
+r_0173	P54115		22		custom			GECKO v2 manual_data.txt
+r_0177	P54115		22		custom			GECKO v2 manual_data.txt
+r_0179	P00330		900		custom			GECKO v2 manual_data.txt
+r_0180	P10127		900		custom			GECKO v2 manual_data.txt
+r_0181	Q04894		900		custom			GECKO v2 manual_data.txt
+r_0182	P00330		900		custom			GECKO v2 manual_data.txt
+r_0183	P10127		900		custom			GECKO v2 manual_data.txt
+r_0184	Q04894		900		custom			GECKO v2 manual_data.txt
+r_0185	P47771		31.7		custom			GECKO v2 manual_data.txt
+r_0186	P00330		900		custom			GECKO v2 manual_data.txt
+r_0187	P10127		900		custom			GECKO v2 manual_data.txt
+r_0193	P35172		0.67		custom			GECKO v2 manualModifications.m curation carbon source
+r_0193	P48016		0.67		custom			GECKO v2 manualModifications.m curation carbon source
+r_0198	P0CW40		1278		custom			GECKO v2 manualModifications.m curation carbon source
+r_0198	P0CW41		1278		custom			GECKO v2 manualModifications.m curation carbon source
+r_0198	P38158		1278		custom			GECKO v2 manualModifications.m curation carbon source
+r_0198	P40884		1278		custom			GECKO v2 manualModifications.m curation carbon source
+r_0198	P53051		1278		custom			GECKO v2 manualModifications.m curation carbon source
+r_0198	P53341		1278		custom			GECKO v2 manualModifications.m curation carbon source
+r_0226	P00830 + P00854 + P00856 + P05626 + P07251 + P09457 + P21306 + P30902 + P38077 + P61829 + P81449 + P81450 + P81451 + Q06405 + Q12165 + Q12233 + Q12349		120		custom			GECKO v2 manual_data.txt
+r_0226_REV	P00830 + P00854 + P00856 + P05626 + P07251 + P09457 + P21306 + P30902 + P38077 + P61829 + P81449 + P81450 + P81451 + Q06405 + Q12165 + Q12233 + Q12349		120		custom			GECKO v2 manual_data.txt
+r_0238	P53045		19.8		custom			Growth limiting after proteomics integration, BRENDA kcat with wildCardLvl 1
+r_0239	P53045		19.8		custom			Growth limiting after proteomics integration, BRENDA kcat with wildCardLvl 1
+r_0240	P53045		19.8		custom			Growth limiting after proteomics integration, BRENDA kcat with wildCardLvl 1
+r_0241	P53045		19.8		custom			Growth limiting after proteomics integration, BRENDA kcat with wildCardLvl 1
+r_0252	P80235		1333.3		custom			GECKO v2 manualModifications.m topUsed
+r_0253	P32796		257		custom			GECKO v2 manual_data.txt
+r_0254	P32796		257		custom			GECKO v2 manual_data.txt
+r_0280	P19414		143		custom			GECKO v2 manualModifications.m other changes - two step process
+r_0280_REV	P19414		143		custom			GECKO v2 manualModifications.m other changes - two step process
+r_0300	P00890		141.3		custom			GECKO v2 manual_data.txt
+r_0300	P43635		141.3		custom			GECKO v2 manual_data.txt
+r_0302	P19414		143		custom			GECKO v2 manualModifications.m other changes - two step process
+r_0302_REV	P19414		143		custom			GECKO v2 manualModifications.m other changes - two step process
+r_0303	P19414		143		custom			GECKO v2 manualModifications.m other changes - two step process
+r_0303_REV	P19414		143		custom			GECKO v2 manualModifications.m other changes - two step process
+r_0322	P14540		32.5		custom			GECKO v2 manual_data.txt
+r_0322_REV	P14540		32.5		custom			GECKO v2 manual_data.txt
+r_0356	P00950		576		custom			GECKO v2 manual_data.txt
+r_0356_REV	P00950		576		custom			GECKO v2 manual_data.txt
+r_0362	P52867		70.9		custom			GECKO v2 manualModifications.m growth limiting
+r_0366	P00924		230		custom			GECKO v2 manualModifications.m topUsed
+r_0366	P00925		71		custom			GECKO v2 manual_data.txt
+r_0366_REV	P00924		230		custom			GECKO v2 manualModifications.m topUsed
+r_0366_REV	P00925		71		custom			GECKO v2 manual_data.txt
+r_0449	P09201		69.7		custom			GECKO v2 manual_data.txt
+r_0450	P14540		32.5		custom			GECKO v2 manual_data.txt
+r_0450_REV	P14540		32.5		custom			GECKO v2 manual_data.txt
+r_0451	P08417		1035		custom			GECKO v2 manual_data.txt
+r_0451_REV	P08417		1035		custom			GECKO v2 manual_data.txt
+r_0452	P08417		1035		custom			GECKO v2 manual_data.txt
+r_0452_REV	P08417		1035		custom			GECKO v2 manual_data.txt
+r_0454	P32614		15.4		custom			GECKO v2 manual_data.txt
+r_0454_REV	P32614		15.4		custom			GECKO v2 manual_data.txt
+r_0455	P32614		15.4		custom			GECKO v2 manual_data.txt
+r_0455_REV	P32614		15.4		custom			GECKO v2 manual_data.txt
+r_0458	P04385		22.3		custom			GECKO v2 manual_data.txt
+r_0459	P08431		36		custom			GECKO v2 manual_data.txt
+r_0466	P11412		632.8		custom			GECKO v2 manual_data.txt
+r_0467	P12709		685		custom			GECKO v2 manual_data.txt
+r_0467_REV	P12709		685		custom			GECKO v2 manual_data.txt
+r_0486	P00358		16.7		custom			GECKO v2 manualModifications.m growth limiting
+r_0486	P00359		9.1		custom			GECKO v2 manualModifications.m growth limiting
+r_0486	P00360		29		custom			GECKO v2 manualModifications.m growth limiting
+r_0486_REV	P00358		16.7		custom			GECKO v2 manualModifications.m growth limiting
+r_0486_REV	P00359		9.1		custom			GECKO v2 manualModifications.m growth limiting
+r_0486_REV	P00360		29		custom			GECKO v2 manualModifications.m growth limiting
+r_0487	P14065		0.54		custom			GECKO v2 manualModifications.m curation carbon source
+r_0489	P40106		11.16		custom			GECKO v2 manual_data.txt
+r_0489	P41277		11.16		custom			GECKO v2 manual_data.txt
+r_0491	P41911		113		custom			GECKO v2 manual_data.txt
+r_0491	Q00055		113		custom			GECKO v2 manual_data.txt
+r_0492	P41911		113		custom			GECKO v2 manual_data.txt
+r_0505	P09624 + P19262 + P20967		27.8		custom			GECKO v2 manual_data.txt
+r_0512	Q06817		15.9		custom			GECKO v2 manualModifications.m topUsed
+r_0533	P04806		274		custom			GECKO v2 manual_data.txt
+r_0533	P04807		126.7		custom			GECKO v2 manual_data.txt
+r_0534	P04806		274		custom			GECKO v2 manual_data.txt
+r_0534	P04807		126.7		custom			GECKO v2 manual_data.txt
+r_0534	P17709		274		custom			GECKO v2 manual_data.txt
+r_0535	P04806		274		custom			GECKO v2 manual_data.txt
+r_0535	P04807		126.7		custom			GECKO v2 manual_data.txt
+r_0558	P12683		20.8		custom			GECKO v2 manualModifications.m growth limiting
+r_0558	P12684		20.8		custom			GECKO v2 manualModifications.m growth limiting
+r_0567	P06169		145		custom			GECKO v2 manualModifications.m growth limiting
+r_0567	P16467		62		custom			GECKO v2 manual_data.txt
+r_0567	P26263		62		custom			GECKO v2 manual_data.txt
+r_0662	P28240		13.2		custom			GECKO v2 manual_data.txt
+r_0669	P06168		18.3		custom			GECKO v2 manualModifications.m growth limiting
+r_0713	P17505		190.4		custom			GECKO v2 manual_data.txt
+r_0713_REV	P17505		190.4		custom			GECKO v2 manual_data.txt
+r_0716	P21826		19.2		custom			GECKO v2 manual_data.txt
+r_0716	P30952		19.2		custom			GECKO v2 manual_data.txt
+r_0717	P30952		19.2		custom			GECKO v2 manual_data.txt
+r_0718	P36013		134		custom			GECKO v2 manual_data.txt
+r_0719	P36013		134		custom			GECKO v2 manual_data.txt
+r_0726	P10659		0.583		custom			GECKO v2 manualModifications.m growth limiting
+r_0734	Q12031		13.2		custom			GECKO v2 manual_data.txt
+r_0761	Q04728		20.9		custom			GECKO v2 manualModifications.m topUsed
+r_0761_REV	Q04728		20.9		custom			GECKO v2 manualModifications.m topUsed
+r_0770	P40215		500		custom			GECKO v2 manual_data.txt
+r_0770	Q07500		500		custom			GECKO v2 manual_data.txt
+r_0773	P32340		500		custom			GECKO v2 manual_data.txt
+r_0818	Q04728		20.9		custom			GECKO v2 manualModifications.m topUsed
+r_0831	P09624 + P19262 + P20967		27.8		custom			GECKO v2 manual_data.txt
+r_0832	P09624 + P19262 + P20967		27.8		custom			GECKO v2 manual_data.txt
+r_0884	P10963		62		custom			GECKO v2 manual_data.txt
+r_0886	P16861 + P16862		642		custom			GECKO v2 manual_data.txt
+r_0888	P33401		215		custom			GECKO v2 manual_data.txt
+r_0888	P37012		215		custom			GECKO v2 manual_data.txt
+r_0888_REV	P33401		215		custom			GECKO v2 manual_data.txt
+r_0888_REV	P37012		215		custom			GECKO v2 manual_data.txt
+r_0889	P38720		36.4		custom			GECKO v2 manual_data.txt
+r_0889	P53319		36.4		custom			GECKO v2 manual_data.txt
+r_0892	P00560		536.7		custom			GECKO v2 manual_data.txt
+r_0892_REV	P00560		536.7		custom			GECKO v2 manual_data.txt
+r_0893	P00950		576		custom			GECKO v2 manual_data.txt
+r_0893_REV	P00950		576		custom			GECKO v2 manual_data.txt
+r_0907	P33401		215		custom			GECKO v2 manual_data.txt
+r_0907	P37012		215		custom			GECKO v2 manual_data.txt
+r_0907_REV	P33401		215		custom			GECKO v2 manual_data.txt
+r_0907_REV	P37012		215		custom			GECKO v2 manual_data.txt
+r_0915	P04046		55.6		custom			GECKO v2 manualModifications.m topUsed
+r_0958	P11154		60		custom			GECKO v2 manual_data.txt
+r_0958	P32327		60		custom			GECKO v2 manual_data.txt
+r_0959	P06169		145		custom			GECKO v2 manualModifications.m growth limiting
+r_0959	P16467		62		custom			GECKO v2 manual_data.txt
+r_0959	P26263		62		custom			GECKO v2 manual_data.txt
+r_0960	P06169		145		custom			GECKO v2 manualModifications.m growth limiting
+r_0960	P16467		62		custom			GECKO v2 manual_data.txt
+r_0960	P26263		62		custom			GECKO v2 manual_data.txt
+r_0962	P00549		232		custom			GECKO v2 manual_data.txt
+r_0962	P52489		232		custom			GECKO v2 manual_data.txt
+r_0982	Q12189		9.6		custom			GECKO v2 manual_data.txt
+r_0982_REV	Q12189		9.6		custom			GECKO v2 manual_data.txt
+r_0984	P46969		113.5		custom			GECKO v2 manual_data.txt
+r_0984_REV	P46969		113.5		custom			GECKO v2 manual_data.txt
+r_0990	P14540		32.5		custom			GECKO v2 manual_data.txt
+r_0990_REV	P14540		32.5		custom			GECKO v2 manual_data.txt
+r_1000	P32614		15.4		custom			GECKO v2 manual_data.txt
+r_1000_REV	P32614		15.4		custom			GECKO v2 manual_data.txt
+r_1048	P15019		75		custom			GECKO v2 manualModifications.m topUsed
+r_1048_REV	P15019		75		custom			GECKO v2 manualModifications.m topUsed
+r_1049	P23254		69		custom			GECKO v2 manual_data.txt
+r_1049	P33315		69		custom			GECKO v2 manual_data.txt
+r_1049_REV	P23254		69		custom			GECKO v2 manual_data.txt
+r_1049_REV	P33315		69		custom			GECKO v2 manual_data.txt
+r_1050	P23254		69		custom			GECKO v2 manual_data.txt
+r_1050	P33315		69		custom			GECKO v2 manual_data.txt
+r_1050_REV	P23254		69		custom			GECKO v2 manual_data.txt
+r_1050_REV	P33315		69		custom			GECKO v2 manual_data.txt
+r_1054	P00942		8662.5		custom			GECKO v2 manual_data.txt
+r_1054_REV	P00942		8662.5		custom			GECKO v2 manual_data.txt
+r_1070	P04397		40.8		custom			GECKO v2 manual_data.txt
+r_1070_REV	P04397		40.8		custom			GECKO v2 manual_data.txt
+r_1071	P08431		36		custom			GECKO v2 manual_data.txt
+r_1071_REV	P08431		36		custom			GECKO v2 manual_data.txt
+r_1084	P32861		27		custom			GECKO v2 manual_data.txt
+r_1084_REV	P32861		27		custom			GECKO v2 manual_data.txt
+r_2115	P00330		900		custom			GECKO v2 manual_data.txt
+r_2116	P47771		31.7		custom			GECKO v2 manual_data.txt
+r_2131	P21954		28		custom			GECKO v2 manual_data.txt
+r_2140	P07149 + P19097		8.57		custom			GECKO v2 manualModifications.m topUsed
+r_2141	P07149 + P19097		7.5		custom			GECKO v2 manualModifications.m topUsed
+r_2305	P19414		143		custom			GECKO v2 manualModifications.m other changes - two step process
+r_2305_REV	P19414		143		custom			GECKO v2 manualModifications.m other changes - two step process
+r_4420	P38158		1278		custom			GECKO v2 manualModifications.m curation carbon source
+r_4420	P53341		1278		custom			GECKO v2 manualModifications.m curation carbon source
+r_4435	P40106		11.16		custom			GECKO v2 manual_data.txt
+r_4435	P41277		11.16		custom			GECKO v2 manual_data.txt
+r_4651	P06169		145		custom			GECKO v2 manualModifications.m growth limiting
+r_4651	P16467		62		custom			GECKO v2 manual_data.txt
+r_4651	P26263		62		custom			GECKO v2 manual_data.txt
+r_4652	P00330		900		custom			GECKO v2 manual_data.txt
+r_4653	P10127		900		custom			GECKO v2 manual_data.txt
+r_4654	Q04894		900		custom			GECKO v2 manual_data.txt
+r_4661	P00330		900		custom			GECKO v2 manual_data.txt
+r_4662	P10127		900		custom			GECKO v2 manual_data.txt
+r_4663	Q04894		900		custom			GECKO v2 manual_data.txt
+r_4669	P06169		145		custom			GECKO v2 manualModifications.m growth limiting
+r_4669	P16467		62		custom			GECKO v2 manual_data.txt
+r_4669	P26263		62		custom			GECKO v2 manual_data.txt
+r_4670	P00330		900		custom			GECKO v2 manual_data.txt
+r_4671	P10127		900		custom			GECKO v2 manual_data.txt
+r_4672	Q04894		900		custom			GECKO v2 manual_data.txt
+r_4678	P47771		31.7		custom			GECKO v2 manual_data.txt
+r_4678_REV	P47771		31.7		custom			GECKO v2 manual_data.txt
+r_4718	P54115		22		custom			GECKO v2 manual_data.txt
+r_4718_REV	P54115		22		custom			GECKO v2 manual_data.txt
+r_4719	P54115		22		custom			GECKO v2 manual_data.txt
+r_4719_REV	P54115		22		custom			GECKO v2 manual_data.txt
+r_4750	P04397		40.8		custom			GECKO v2 manual_data.txt
+r_4750_REV	P04397		40.8		custom			GECKO v2 manual_data.txt

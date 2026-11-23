@@ -1,6 +1,9 @@
 function [model, rxnsMissingGPR, standardMW, standardKcat, rxnsNoKcat] = getStandardKcat(model, varargin)
 % getStandardKcat  Assign standard kcat and MW to reactions without enzymes.
 %
+% Low-level: collectKcats and assignKcats run this function; call it
+% directly only to change kcats by hand.
+%
 % Calculates a standard kcat and standard molecular weight (MW) that can be
 % used to apply enzyme constraints to reactions without any associated
 % enzymes. Such reactions have either an empty model.grRules field, or they
@@ -28,13 +31,14 @@ function [model, rxnsMissingGPR, standardMW, standardKcat, rxnsNoKcat] = getStan
 % linked to the "standard" pseudoenzyme, but will use the enzyme that they
 % had already been associated with.
 %
-% Any pre-existing standard kcat assignments (identified by 'standard'
-% entries in model.ec.source) are removed when applying this function.
+% Any pre-existing standard kcat assignments (the entries of model.ec.source
+% whose origin is 'standard' and that have no tuning status) are removed when
+% applying this function.
 %
 % Parameters
 % ----------
 % model : struct
-%     an ecModel in GECKO 3 format (with ecModel.ec structure).
+%     an ecModel (with ecModel.ec structure).
 %
 % Name-Value Arguments
 % --------------------
@@ -80,7 +84,7 @@ function [model, rxnsMissingGPR, standardMW, standardKcat, rxnsNoKcat] = getStan
 % --------
 % removeStandardKcat, applyKcatConstraints
 
-p = parseGECKOargs(varargin, { ...
+p = parseRAVENargs(varargin, { ...
     'modelAdapter', []; ...
     'threshold',    []; ...
     'fillZeroKcat', []});
@@ -145,7 +149,7 @@ if isfield(model,'subSystems') && ~all(cellfun(@isempty, model.subSystems))
     enzSubSystem_names = enzSubSystems(firstOccurrence);
     % Calculate the median kcat per subSystem, counting only reactions
     % with a real (nonzero, non-NaN) kcat toward both the median itself
-    % and the threshold that decides whether a subSystem-specific value
+    % and the threshold that determines whether a subSystem-specific value
     % is used at all.
     numSubSystem = numel(enzSubSystem_names);
     kcatsPerSubSystem = zeros(numSubSystem,1);
@@ -259,7 +263,10 @@ end
 stdMetIdx = find(strcmpi(model.ec.enzymes, 'standard'));
 
 % Remove previous standard kcat assignment
-oldStandardEnz = find(strcmp(model.ec.source,'standard'));
+% A row with a tuning status was changed on purpose and is kept.
+oldSource = parseKcatSource(model.ec.source);
+oldStandardEnz = find(strcmp({oldSource.origin}, 'standard') & cellfun(@isempty, {oldSource.tuned}));
+oldStandardEnz = oldStandardEnz(:);
 if ~isempty(oldStandardEnz)
     oldStandardProt = logical(model.ec.rxnEnzMat(oldStandardEnz,stdMetIdx));
     % If annotated with real enzyme => set kcat to zero
@@ -303,7 +310,7 @@ for i = 1:numel(rxnsMissingGPR)
         model.ec.kcat(end+1) = standardKcat;
     end
 
-    model.ec.source(end+1)   = {'standard'};
+    model.ec.source(end+1)   = {formatKcatSource('standard')};
     model.ec.notes(end+1)    = {''};
     model.ec.eccodes(end+1)  = {''};
 
@@ -316,7 +323,7 @@ rxnsMissingGPR = model.rxns(rxnsMissingGPR);
 if fillZeroKcat
     zeroKcat = model.ec.kcat == 0 | isnan(model.ec.kcat);
     model.ec.kcat(zeroKcat)     = standardKcat;
-    model.ec.source(zeroKcat)   = {'standard'};
+    model.ec.source(zeroKcat)   = {formatKcatSource('standard')};
     rxnsNoKcat = model.ec.rxns(zeroKcat);
 else
     rxnsNoKcat = [];
